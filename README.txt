@@ -1,4 +1,4 @@
-## Installation
+## Installation (Top SummerStudents Project 2014)
 
 export SCRAM_ARCH=slc5_amd64_gcc462
 # For CVS access
@@ -7,7 +7,7 @@ scramv1 project CMSSW CMSSW_5_3_15
 cd CMSSW_5_3_15/src/
 cmsenv
 
-wget -q -O - --no-check-certificate https://raw.github.com/cms2l2v/2l2v_fwk/master/TAGS.txt | sh
+wget -q -O - --no-check-certificate https://raw.github.com/stiegerb/2l2v_fwk/topss2014/TAGS.txt | sh
 
 ## Ntuples
 

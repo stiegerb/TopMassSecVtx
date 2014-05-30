@@ -9,7 +9,7 @@ cd -
 #git cms-addpkg RecoMET/METFilters
 git cms-merge-topic -u cms-met:53X-MVaNoPuMET-20131217-01
 git clone https://github.com/violatingcp/Jets_Short.git
-cp -r Jets_Short/* .
+/bin/cp -r Jets_Short/* .
 rm -rf Jets_Short README.md
 
 #btv related algorithms
@@ -22,7 +22,7 @@ git clone https://github.com/amarini/QuarkGluonTagger.git; cd QuarkGluonTagger ;
 #updated Tau object (Run2 Id and boosted taus)
 git cms-merge-topic -u cms-tau-pog:CMSSW_5_3_X_boostedTaus_2013Dec17
 
-cp ~jez/public/forLoic/140313/tauTools.py PhysicsTools/PatAlgos/python/tools/tauTools.py
+/bin/cp ~jez/public/forLoic/140313/tauTools.py PhysicsTools/PatAlgos/python/tools/tauTools.py
 #cvs co -r V00-02-03s TauAnalysis/CandidateTools #SV fit.
 # Needs to set up cvsroot as in the readme file or to copy the dir from
 # cp -r /afs/cern.ch/user/v/vischia/public/TauAnalysis_forSVfit/ TauAnalysis
@@ -32,10 +32,10 @@ git clone git@github.com:veelken/SVfit_standalone TauAnalysis/SVfitStandalone
 mkdir -p UserCode/llvv_fwk
 cd UserCode/llvv_fwk/
 git init
-git remote add -f origin git@github.com:pfs/2l2v_fwk
+git remote add -f origin git@github.com:stiegerb/2l2v_fwk
 
 git config core.sparsecheckout true
-cp topss2014-sparse-checkout .git/info/sparse-checkout
+/bin/cp /afs/cern.ch/user/s/stiegerb/public/TopSS2014/topss2014-sparse-checkout .git/info/sparse-checkout
 
 git pull origin topss2014
 

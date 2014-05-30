@@ -13,8 +13,8 @@ cp -r Jets_Short/* .
 rm -rf Jets_Short README.md
 
 #btv related algorithms
-git cms-addpkg RecoBTag/SecondaryVertex 
-git cms-addpkg RecoVertex/AdaptiveVertexFinder 
+git cms-addpkg RecoBTag/SecondaryVertex
+git cms-addpkg RecoVertex/AdaptiveVertexFinder
 
 #quark/gluon tagger
 git clone https://github.com/amarini/QuarkGluonTagger.git; cd QuarkGluonTagger ; git checkout v1-2-6; cd -;
@@ -29,6 +29,14 @@ cp ~jez/public/forLoic/140313/tauTools.py PhysicsTools/PatAlgos/python/tools/tau
 git clone git@github.com:veelken/SVfit_standalone TauAnalysis/SVfitStandalone
 
 #checkout the 2l2v framework
-git clone git@github.com:pfs/2l2v_fwk UserCode/llvv_fwk
+mkdir -p UserCode/llvv_fwk
+cd UserCode/llvv_fwk/
+git init
+git remote add -f origin git@github.com:pfs/2l2v_fwk
+
+git config core.sparsecheckout true
+cp topss2014-sparse-checkout .git/info/sparse-checkout
+
+git pull origin topss2014
 
 scram b -j 20

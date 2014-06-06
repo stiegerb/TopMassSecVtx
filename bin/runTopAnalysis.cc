@@ -113,7 +113,7 @@ AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons, data::PhysicsObj
       if( dilepton.mass()<12 ) box.cat=0; //this is a special cut to remove low mass states
     }
 
-  int njetsBin( box.jets.size()>5 ? 5 : 0 );
+  int njetsBin( box.jets.size()>5 ? 5 : box.jets.size() );
   box.jetCat="jet"; box.jetCat += njetsBin;
 
   box.metCat="";

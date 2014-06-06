@@ -67,50 +67,49 @@ using namespace std;
 //cat identifies the category: 11-electron 13-muon 11*11,11*13,13*13-dilepton events
 class AnalysisBox{
 public:
-    AnalysisBox() : cat(0), chCat(""), lCat(""), jetCat(""), metCat("") { }
-    ~AnalysisBox() { }
-    Int_t cat;
-    TString chCat, lCat, jetCat, metCat;
-    data::PhysicsObjectCollection_t leptons, jets;
-    LorentzVector met;
+  AnalysisBox() : cat(0), chCat(""), lCat(""), jetCat(""), metCat("") { }
+  ~AnalysisBox() { }
+  Int_t cat;
+  TString chCat, lCat, jetCat, metCat;
+  std::vector<data::PhysicsObject_t *> leptons,jets;
+  LorentzVector met;
 };
 
 //
 AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons, data::PhysicsObjectCollection_t &jets, LorentzVector &met)
 {
+  AnalysisBox box;
+  box.cat=0;
+  for(size_t i=0; i<jets.size(); i++) { box.jets.push_back( &(jets[i]) ); }
+  box.met=met;
+  int nLooseLeptons(0);
+  for(size_t i=0; i<leptons.size(); i++){
+    if(leptons[i].pt()<20) continue;
+    if(leptons[i].getFlag("passTight"))      box.leptons.push_back( &(leptons[i]) );
+    else if(leptons[i].getFlag("passLoose")) nLooseLeptons++;
+  }
 
-    AnalysisBox box;
-    box.cat=0;
-    box.jets=jets;
-    box.met=met;
-    int nLooseLeptons(0);
-    for(size_t i=0; i<leptons.size(); i++){
-        if(leptons[i].pt()<20) continue;
-        if(leptons[i].getFlag("passTight"))      box.leptons.push_back( leptons[i] );
-        else if(leptons[i].getFlag("passLoose")) nLooseLeptons++;
-    }
+  //
+  // ASSIGN THE BOX
+  // 1. >=2 tight leptons: OS, pt>20,20 GeV -> ll
+  // 2. =1 tight lepton: pt(e)>30  or pt(mu)>26 GeV and =0 vetoLeptons
+  //
+  if(box.leptons.size()>=2){
+    int dilId(box.leptons[0]->get("id")*box.leptons[1]->get("id"));
+    if(dilId<0 && ( abs(dilId)==11*11 || abs(dilId)==13*13 || abs(dilId)==11*13 ) ) box.cat=dilId;
+  }
+  else if(box.leptons.size()==1 && nLooseLeptons==0){
+    int lId=box.leptons[0]->get("id");
+    if( abs(lId)==11      && box.leptons[0]->pt()>30) box.cat=lId;
+    else if( abs(lId)==13 && box.leptons[0]->pt()>26) box.cat=lId;
+  }
 
-    //
-    // ASSIGN THE BOX
-    // 1. >=2 tight leptons: OS, pt>20,20 GeV -> ll
-    // 2. =1 tight lepton: pt(e)>30  or pt(mu)>26 GeV and =0 vetoLeptons
-    //
-    if(box.leptons.size()>=2){
-        int dilId(box.leptons[0].get("id")*box.leptons[1].get("id"));
-        if(dilId<0 && ( abs(dilId)==11*11 || abs(dilId)==13*13 || abs(dilId)==11*13 ) ) box.cat=dilId;
-    }
-    else if(box.leptons.size()==1 && nLooseLeptons==0){
-        int lId=box.leptons[0].get("id");
-        if( abs(lId)==11      && box.leptons[0].pt()>30) box.cat=lId;
-        else if( abs(lId)==13 && box.leptons[0].pt()>26) box.cat=lId;
-    }
-
-    box.lCat="";
-    if( abs(box.cat)==11*11 || abs(box.cat)==13*13 || abs(box.cat)==11*13 )
+  box.lCat="";
+  if( abs(box.cat)==11*11 || abs(box.cat)==13*13 || abs(box.cat)==11*13 )
     {
-        LorentzVector dilepton=box.leptons[0]+box.leptons[1];
-        if( ( abs(box.cat)==11*11 || abs(box.cat)==13*13 ) && fabs(dilepton.mass()-91)<15 ) box.lCat="z";
-        if( dilepton.mass()<12 ) box.cat=0; //this is a special cut to remove low mass states
+      LorentzVector dilepton( *(box.leptons[0]) ); dilepton += *(box.leptons[1]);
+      if( ( abs(box.cat)==11*11 || abs(box.cat)==13*13 ) && fabs(dilepton.mass()-91)<15 ) box.lCat="z";
+      if( dilepton.mass()<12 ) box.cat=0; //this is a special cut to remove low mass states
     }
 
     int njetsBin( box.jets.size()>5 ? 5 : 0 );
@@ -222,12 +221,18 @@ void setGoodJet(data::PhysicsObject_t &jet, data::PhysicsObjectCollection_t &lep
 //select jets
 void selectJets(data::PhysicsObjectCollection_t jets, data::PhysicsObjectCollection_t leptons, data::PhysicsObjectCollection_t &selJets)
 {
-    for(size_t ijet=0; ijet<jets.size(); ijet++){
-        setGoodJet(jets[ijet], leptons, 30., 2.5);
-        if(!jets[ijet].getFlag("passTight")) continue;
-        selJets.push_back(jets[ijet]);
-    }
-    sort(selJets.begin(), selJets.end(), data::PhysicsObject_t::sortByPt);
+  for(size_t ijet=0; ijet<jets.size(); ijet++){
+    setGoodJet(jets[ijet], leptons, 30., 2.5);
+    if(!jets[ijet].getFlag("passTight")) continue;
+
+    //here is a trick just to get the leading lxy jet first
+    const data::PhysicsObject_t &svx=jets[ijet].getObject("svx");
+    jets[ijet].setVal("lxy",svx.vals.find("lxy")->second);
+    selJets.push_back(jets[ijet]);
+  }
+
+  sort(jets.begin(), jets.end(), data::PhysicsObject_t::sortByLxy);
+  //  sort(selJets.begin(), selJets.end(), data::PhysicsObject_t::sortByPt);
 }
 
 //
@@ -488,15 +493,15 @@ int main(int argc, char* argv[])
      //data/MC lepton selection weights
       float lepSelectionWeight(1.0),lepSelectionWeightUp(1.0),lepSelectionWeightDown(1.0);
       if(isMC)
-    	{
-    	  for(size_t ilep=0; ilep<box.leptons.size(); ilep++)
-    	    {
-    	      int id(abs(box.leptons[ilep].get("id")));
-    	      lepSelectionWeight *= fLepEff.getLeptonEfficiency( box.leptons[ilep].pt(), box.leptons[ilep].eta(), id,  "tight").first;
-    	    }
-    	  lepSelectionWeightUp = lepSelectionWeight*1.01;
-    	  lepSelectionWeightUp = lepSelectionWeight*0.99;
-    	}
+	{
+	  for(size_t ilep=0; ilep<box.leptons.size(); ilep++)
+	    {
+	      int id(abs(box.leptons[ilep]->get("id")));
+	      lepSelectionWeight *= fLepEff.getLeptonEfficiency( box.leptons[ilep]->pt(), box.leptons[ilep]->eta(), id,  "tight").first;
+	    }
+	  lepSelectionWeightUp = lepSelectionWeight*1.01;
+	  lepSelectionWeightUp = lepSelectionWeight*0.99;
+	}
 
       //top pT weights
       data::PhysicsObjectCollection_t gen=evSummary.getPhysicsObject(DataEventSummaryHandler::GENPARTICLES);
@@ -541,7 +546,6 @@ int main(int argc, char* argv[])
       if(abs(box.cat)==11 || abs(box.cat)==13)       passJetSelection = (box.jets.size()>=4);
       bool passMetSelection(true);
       if(abs(box.cat)==11*11 || abs(box.cat)==11*13) passMetSelection =(box.met.pt()>40);
-
       std::vector<TString> evCats(1,box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 0,               puWeight*lepSelectionWeight);
       controlHistos.fillHisto("nvertices", evCats, ev.nvtx,         puWeight*lepSelectionWeight);
@@ -563,17 +567,15 @@ int main(int argc, char* argv[])
       evCats.clear();
       if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
       if(box.lCat!="" || box.jetCat!="" || box.metCat!="")   evCats.push_back(box.chCat+box.lCat+box.jetCat+box.metCat);
-      controlHistos.fillHisto("charge",       evCats, box.leptons[0].get("id")>0,    puWeight*lepSelectionWeight);
-      float mt(utils::cmssw::getMT<LorentzVector>(box.leptons[0],box.met)),thetall(0);
+      controlHistos.fillHisto("charge",       evCats, box.leptons[0]->get("id")>0,    puWeight*lepSelectionWeight);
+      float mt(utils::cmssw::getMT<LorentzVector>( *(box.leptons[0]), box.met)),thetall(0);
       if(box.leptons.size()>=2)
-    	{
-    	  mt     += utils::cmssw::getMT<LorentzVector>(box.leptons[1],box.met);
-    	  thetall = utils::cmssw::getArcCos<LorentzVector>(box.leptons[0],box.leptons[1]);
-    	}
+	{
+	  mt     += utils::cmssw::getMT<LorentzVector>( *(box.leptons[1]), box.met );
+	  thetall = utils::cmssw::getArcCos<LorentzVector>( *(box.leptons[0]), *(box.leptons[1]) );
+	}
       controlHistos.fillHisto("mt",       evCats, mt,       puWeight*lepSelectionWeight);
       controlHistos.fillHisto("thetall",  evCats, thetall,  puWeight*lepSelectionWeight);
-
-
       //save selected event
       if(!saveSummaryTree || box.jets.size()==0) continue;
       int evCatSummary(box.cat);
@@ -591,7 +593,6 @@ int main(int argc, char* argv[])
       allWeights.push_back(topPtWgtDown);
       data::PhysicsObjectCollection_t pf=evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
       lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
-
     }
 
     std::cout << std::endl;

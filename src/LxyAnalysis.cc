@@ -43,24 +43,26 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("jpt",       bev_.jpt,       "jpt[nj]/F");
   outT_->Branch("jeta",      bev_.jeta,      "jeta[nj]/F");
   outT_->Branch("jphi",      bev_.jphi,      "jphi[nj]/F");
-  outT_->Branch("bid",      &bev_.bid,       "bid/I");
-  outT_->Branch("bhadid",   &bev_.bhadid,    "bhadid/I");
-  outT_->Branch("svpt",     &bev_.svpt,      "svpt/F");
-  outT_->Branch("sveta",    &bev_.sveta,     "sveta/F");
-  outT_->Branch("svphi",    &bev_.svphi,     "svphi/F");
-  outT_->Branch("svmass",   &bev_.svmass,    "svmass/F");
-  outT_->Branch("svntk",    &bev_.svntk,     "svntk/F");
-  outT_->Branch("svlxy",    &bev_.svlxy,     "svlxy/F");
-  outT_->Branch("svlxyerr", &bev_.svlxyerr,  "svlxyerr/F");
-  outT_->Branch("bpt",      &bev_.bpt,       "bpt/F");
-  outT_->Branch("beta",     &bev_.beta,      "beta/F");
-  outT_->Branch("bphi",     &bev_.bphi,      "bphi/F");
-  outT_->Branch("bhadpt",   &bev_.bhadpt,    "bhadpt/F");
-  outT_->Branch("bhadeta",  &bev_.bhadeta,   "bhadeta/F");
-  outT_->Branch("bhadphi",  &bev_.bhadphi,   "bhadphi/F");
-  outT_->Branch("bhadmass", &bev_.bhadmass,  "bhadmass/F");
-  outT_->Branch("bhadlxy",  &bev_.bhadlxy,   "bhadlxy/F");
+  outT_->Branch("jcsv",      bev_.jcsv,      "jcsv[nj]/F");
+  outT_->Branch("bid",       bev_.bid,       "bid[2]/I");
+  outT_->Branch("bhadid",    bev_.bhadid,    "bhadid[2]/I");
+  outT_->Branch("svpt",      bev_.svpt,      "svpt[2]/F");
+  outT_->Branch("sveta",     bev_.sveta,     "sveta[2]/F");
+  outT_->Branch("svphi",     bev_.svphi,     "svphi[2]/F");
+  outT_->Branch("svmass",    bev_.svmass,    "svmass[2]/F");
+  outT_->Branch("svntk",     bev_.svntk,     "svntk[2]/F");
+  outT_->Branch("svlxy",     bev_.svlxy,     "svlxy[2]/F");
+  outT_->Branch("svlxyerr",  bev_.svlxyerr,  "svlxyerr[2]/F");
+  outT_->Branch("bpt",       bev_.bpt,       "bpt[2]/F");
+  outT_->Branch("beta",      bev_.beta,      "beta[2]/F");
+  outT_->Branch("bphi",      bev_.bphi,      "bphi[2]/F");
+  outT_->Branch("bhadpt",    bev_.bhadpt,    "bhadpt[2]/F");
+  outT_->Branch("bhadeta",   bev_.bhadeta,   "bhadeta[2]/F");
+  outT_->Branch("bhadphi",   bev_.bhadphi,   "bhadphi[2]/F");
+  outT_->Branch("bhadmass",  bev_.bhadmass,  "bhadmass[2]/F");
+  outT_->Branch("bhadlxy",   bev_.bhadlxy,   "bhadlxy[2]/F");
   outT_->Branch("npf",      &bev_.npf,       "npf/F");
+  outT_->Branch("npfb1",    &bev_.npfb1,     "npfb1/F");
   outT_->Branch("pfid",      bev_.pfid,      "pfid[npf]/I");
   outT_->Branch("pfpt",      bev_.pfpt,      "pfpt[npf]/F");
   outT_->Branch("pfeta",     bev_.pfeta,     "pfeta[npf]/F");
@@ -74,8 +76,8 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 			  Int_t nvtx, std::vector<Float_t> weights,
 			  Int_t evcat,
-			  data::PhysicsObjectCollection_t &leptons, 
-			  data::PhysicsObjectCollection_t &jets,
+			  std::vector<data::PhysicsObject_t *> &leptons, 
+			  std::vector<data::PhysicsObject_t *> &jets,
 			  LorentzVector &met, 
 			  data::PhysicsObjectCollection_t &pf,
 			  data::PhysicsObjectCollection_t &mctruth)
@@ -94,48 +96,41 @@ void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
   //leptons
   for(size_t i=0; i<leptons.size(); i++)
     {
-      bev_.lid[bev_.nl]  = leptons[i].get("id");
-      bev_.lpt[bev_.nl]  = leptons[i].pt();
-      bev_.leta[bev_.nl] = leptons[i].eta();
-      bev_.lphi[bev_.nl] = leptons[i].phi();
+      bev_.lid[bev_.nl]  = leptons[i]->get("id");
+      bev_.lpt[bev_.nl]  = leptons[i]->pt();
+      bev_.leta[bev_.nl] = leptons[i]->eta();
+      bev_.lphi[bev_.nl] = leptons[i]->phi();
       bev_.nl++;
     }
 
 
-  //here is a trick just to get the leading lxy jet first
+  //look at the jets now (we assume they are already sorted by Lxy)
   for(size_t i=0; i<jets.size(); i++)
     {
-      const data::PhysicsObject_t &svx=jets[i].getObject("svx");
-      jets[i].setVal("lxy",svx.vals.find("lxy")->second);
-    }
-  sort(jets.begin(), jets.end(), data::PhysicsObject_t::sortByLxy);
-
-  //look at the jets now
-  for(size_t i=0; i<jets.size(); i++)
-    {
-      const data::PhysicsObject_t &genJet=jets[i].getObject("genJet");
+      const data::PhysicsObject_t &genJet=jets[i]->getObject("genJet");
       bev_.jflav[bev_.nj] = genJet.info.find("id")->second;
-      bev_.jpt[bev_.nj]   = jets[i].pt();
-      bev_.jeta[bev_.nj]  = jets[i].eta();
-      bev_.jphi[bev_.nj]  = jets[i].phi();
+      bev_.jpt[bev_.nj]   = jets[i]->pt();
+      bev_.jeta[bev_.nj]  = jets[i]->eta();
+      bev_.jphi[bev_.nj]  = jets[i]->phi();
+      bev_.jcsv[bev_.nj]  = jets[i]->getVal("csv");
       bev_.nj++;
 
-      if(i!=0) continue;
+      if(i>1) continue;
 
-      const data::PhysicsObject_t &genParton=jets[i].getObject("gen");
-      bev_.bid=genParton.info.find("id")->second;
-      bev_.bpt=genParton.pt();
-      bev_.beta=genParton.eta();
-      bev_.bphi=genParton.phi();
+      const data::PhysicsObject_t &genParton=jets[i]->getObject("gen");
+      bev_.bid[i]=genParton.info.find("id")->second;
+      bev_.bpt[i]=genParton.pt();
+      bev_.beta[i]=genParton.eta();
+      bev_.bphi[i]=genParton.phi();
 
-      const data::PhysicsObject_t &svx=jets[i].getObject("svx");
-      bev_.svpt     = svx.pt();
-      bev_.sveta    = svx.eta();
-      bev_.svphi    = svx.phi();
-      bev_.svmass   = svx.mass();
-      bev_.svntk    = svx.info.find("ntrk")->second;
-      bev_.svlxy    = svx.vals.find("lxy")->second;
-      bev_.svlxyerr = svx.vals.find("lxyerr")->second;
+      const data::PhysicsObject_t &svx=jets[i]->getObject("svx");
+      bev_.svpt[i]     = svx.pt();
+      bev_.sveta[i]    = svx.eta();
+      bev_.svphi[i]    = svx.phi();
+      bev_.svmass[i]   = svx.mass();
+      bev_.svntk[i]    = svx.info.find("ntrk")->second;
+      bev_.svlxy[i]    = svx.vals.find("lxy")->second;
+      bev_.svlxyerr[i] = svx.vals.find("lxyErr")->second;
 
       //match to a b-hadron
       for(size_t imc=0; imc<mctruth.size(); imc++)
@@ -143,27 +138,34 @@ void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	  int id=mctruth[imc].get("id");
 	  if(abs(id)<500) continue;
 	  
-	  if(deltaR(mctruth[imc],jets[i])>0.5) continue;
-	  bev_.bhadpt   = mctruth[imc].pt();
-	  bev_.bhadeta  = mctruth[imc].eta();
-	  bev_.bhadphi  = mctruth[imc].phi();
-	  bev_.bhadmass = mctruth[imc].mass();
-	  bev_.bhadlxy  = mctruth[imc].getVal("lxy");
+	  if(deltaR(mctruth[imc],*(jets[i]))>0.5) continue;
+	  bev_.bhadpt[i]   = mctruth[imc].pt();
+	  bev_.bhadeta[i]  = mctruth[imc].eta();
+	  bev_.bhadphi[i]  = mctruth[imc].phi();
+	  bev_.bhadmass[i] = mctruth[imc].mass();
+	  bev_.bhadlxy[i]  = mctruth[imc].getVal("lxy");
 	  
 	  break;
 	}
 
-      //PF candidates clustered in jet
-      size_t pfstart=jets[i].get("pfstart");
-      size_t pfend=jets[i].get("pfend");
+      //charged PF candidates clustered in jet
+      size_t pfstart=jets[i]->get("pfstart");
+      size_t pfend=jets[i]->get("pfend");
       for(size_t ipfn=pfstart; ipfn<=pfend; ipfn++)
 	{
+	  if(pf[ipfn].get("charge")==0) continue;
+
 	  bev_.pfid[bev_.npf]  = pf[ipfn].get("id");
 	  bev_.pfpt[bev_.npf]  = pf[ipfn].pt();
 	  bev_.pfeta[bev_.npf] = pf[ipfn].eta();
 	  bev_.pfphi[bev_.npf] = pf[ipfn].phi();
 	  bev_.npf++;
+	  if(bev_.npf>=200){
+	    cout << "Over 200 PF candidates associated to the two b-jets!" << endl;
+	    break;
+	  }
 	}
+      if(i==0) bev_.npfb1=bev_.npf;
     }
   
   //met

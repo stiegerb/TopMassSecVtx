@@ -39,16 +39,6 @@ public:
 	       data::PhysicsObjectCollection_t &pf,
 	       data::PhysicsObjectCollection_t &mctruth);
 
-  inline void finalize() {
-    if(outDir_ && outT_)
-      {
-	std::cout << "Preparing to write" << outDir_->GetName() << std::endl;
-	outDir_->cd();
-	outT_->Write();
-	std::cout << "All done here" << std::endl;
-      }
-  }
-
 private:
 
   void resetBeautyEvent();

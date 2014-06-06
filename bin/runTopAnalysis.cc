@@ -593,6 +593,7 @@ int main(int argc, char* argv[])
 
     }
 
+    std::cout << std::endl;
     if(nDuplicates) cout << "[Warning] found " << nDuplicates << " duplicate events in this ntuple" << endl;
 
     //
@@ -604,8 +605,8 @@ int main(int argc, char* argv[])
     // finally, save histos and tree to local file
     //
     spyFile->cd();
+    spyFile->Write();
     controlHistos.Write();
-    lxyAn.finalize();
     spyFile->Close();
 
     //that's all folks!

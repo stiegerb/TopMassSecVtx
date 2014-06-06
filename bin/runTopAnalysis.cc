@@ -422,174 +422,175 @@ int main(int argc, char* argv[])
     int nDuplicates(0);
     for (int inum=0; inum < totalEntries; ++inum)
     {
-        if(inum%500==0) { printf("\r [ %d/100 ]",int(100*float(inum)/float(totalEntries))); cout << flush; }
-        evSummary.getEntry(inum);
-        DataEventSummary &ev = evSummary.getEvent();
-        if(!isMC && duplicatesChecker.isDuplicate( ev.run, ev.lumi, ev.event) ) { nDuplicates++; continue; }
+      if(inum%500==0) { printf("\r [ %d/100 ]",int(100*float(inum)/float(totalEntries))); cout << flush; }
+      evSummary.getEntry(inum);
+      DataEventSummary &ev = evSummary.getEvent();
+      if(!isMC && duplicatesChecker.isDuplicate( ev.run, ev.lumi, ev.event) ) { nDuplicates++; continue; }
 
-        //
-        // OBJECT SELECTION
-        //
+      //
+      // OBJECT SELECTION
+      //
 
-        //trigger bits
-        bool eeTrigger   = ev.t_bits[0];
-        bool emuTrigger  = ev.t_bits[4] || ev.t_bits[5];
-        bool mumuTrigger = ev.t_bits[2] || ev.t_bits[3];
-        bool muTrigger   = ev.t_bits[6];
-        bool eTrigger    = ev.t_bits[13];
-        if(!isMC){
-            eeTrigger   &= isDoubleElePD;
-            emuTrigger  &= isMuEGPD;
-            mumuTrigger &= isDoubleMuPD;
-            muTrigger   &= isSingleMuPD;
-            eTrigger    &= isSingleElePD;
-        }
+      //trigger bits
+      bool eeTrigger   = ev.t_bits[0];
+      bool emuTrigger  = ev.t_bits[4] || ev.t_bits[5];
+      bool mumuTrigger = ev.t_bits[2] || ev.t_bits[3];
+      bool muTrigger   = ev.t_bits[6];
+      bool eTrigger    = ev.t_bits[13];
+      if(!isMC){
+    	eeTrigger   &= isDoubleElePD;
+    	emuTrigger  &= isMuEGPD;
+    	mumuTrigger &= isDoubleMuPD;
+    	muTrigger   &= isSingleMuPD;
+    	eTrigger    &= isSingleElePD;
+      }
 
-        //leptons
-        data::PhysicsObjectCollection_t leptons( evSummary.getPhysicsObject(DataEventSummaryHandler::LEPTONS) ), selLeptons;
-        selectLeptons(leptons, selLeptons, ev.rho, isMC);
+      //leptons
+      data::PhysicsObjectCollection_t leptons( evSummary.getPhysicsObject(DataEventSummaryHandler::LEPTONS) ), selLeptons;
+      selectLeptons(leptons, selLeptons, ev.rho, isMC);
 
-        //jet/met
-        data::PhysicsObjectCollection_t jets(evSummary.getPhysicsObject(DataEventSummaryHandler::JETS)), selJets;
-        utils::cmssw::updateJEC(jets,fJesCor,fTotalJESUnc,ev.rho,ev.nvtx,isMC);
-        selectJets(jets,selLeptons,selJets);
-        data::PhysicsObjectCollection_t recoMet=evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
-        std::vector<LorentzVector> met=utils::cmssw::getMETvariations(recoMet[0],selJets,selLeptons,isMC);
+      //jet/met
+      data::PhysicsObjectCollection_t jets(evSummary.getPhysicsObject(DataEventSummaryHandler::JETS)), selJets;
+      utils::cmssw::updateJEC(jets,fJesCor,fTotalJESUnc,ev.rho,ev.nvtx,isMC);
+      selectJets(jets,selLeptons,selJets);
+      data::PhysicsObjectCollection_t recoMet=evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
+      std::vector<LorentzVector> met=utils::cmssw::getMETvariations(recoMet[0],selJets,selLeptons,isMC);
 
-        //get the category
-        AnalysisBox box=assignBox(selLeptons, selJets, met[0]);
-        if(box.cat==0) continue;
-        if(abs(box.cat)==11    && !eTrigger)    continue;
-        if(abs(box.cat)==13    && !muTrigger)   continue;
-        if(abs(box.cat)==11*11 && !eeTrigger)   continue;
-        if(abs(box.cat)==11*13 && !emuTrigger)  continue;
-        if(abs(box.cat)==11*13 && !mumuTrigger) continue;
-
-
-        //
-        // MC CORRECTIONS
-        //
-        if(isV0JetsMC && ev.nup>5) continue;
-        Hhepup->Fill(ev.nup,1);
-
-        //pileup weight
-        float puWeight(1.0), puWeightUp(1.0), puWeightDown(1.0);
-        if(isMC && fLumiWeights) {
-            puWeight     = fLumiWeights->weight(ev.ngenITpu);
-            puWeightUp   = puWeight*fPUshifters[utils::cmssw::PUUP]->Eval(ev.ngenITpu);
-            puWeightDown = puWeight*fPUshifters[utils::cmssw::PUDOWN]->Eval(ev.ngenITpu);
-
-            Hcutflow->Fill(1,1);
-            Hcutflow->Fill(2,puWeight);
-            Hcutflow->Fill(3,puWeightUp);
-            Hcutflow->Fill(4,puWeightDown);
-        }
-
-        //data/MC lepton selection weights
-        float lepSelectionWeight(1.0),lepSelectionWeightUp(1.0),lepSelectionWeightDown(1.0);
-        if(isMC)
-        {
-            for(size_t ilep=0; ilep<box.leptons.size(); ilep++)
-            {
-                int id(abs(box.leptons[ilep].get("id")));
-                lepSelectionWeight *= fLepEff.getLeptonEfficiency( box.leptons[ilep].pt(), box.leptons[ilep].eta(), id,  "tight").first;
-            }
-            lepSelectionWeightUp = lepSelectionWeight*1.01;
-            lepSelectionWeightUp = lepSelectionWeight*0.99;
-        }
-
-        //top pT weights
-        data::PhysicsObjectCollection_t gen=evSummary.getPhysicsObject(DataEventSummaryHandler::GENPARTICLES);
-        bool hasTop(false);
-        int ngenLeptonsStatus3(0);
-        float topPtWgt(1.0), topPtWgtUp(1.0), topPtWgtDown(1.0);
-        if(isMC)
-        {
-            float pttop(0), ptantitop(0);
-            for(size_t igen=0; igen<gen.size(); igen++){
-                if(gen[igen].get("status")!=3) continue;
-                int absid=abs(gen[igen].get("id"));
-                if(absid==6) {
-                    hasTop=true;
-                    if(gen[igen].get("id")==6) pttop=gen[igen].pt();
-                    else                       ptantitop=gen[igen].pt();
-                }
-                if(absid!=11 && absid!=13 && absid!=15) continue;
-                ngenLeptonsStatus3++;
-            }
-            if(mcTruthMode==1)
-            {
-                if( ! ( (abs(box.cat)==11 || abs(box.cat)==13) && (ngenLeptonsStatus3==1 && hasTop) ) ) continue;
-                if( ! ( (abs(box.cat)==11*11 || abs(box.cat)==11*13 || abs(box.cat)==13*13) && (ngenLeptonsStatus3==2 && hasTop) ) ) continue;
-            }
-            if(mcTruthMode==2)
-            {
-                if(  ( (abs(box.cat)==11 || abs(box.cat)==13) && (ngenLeptonsStatus3==1 && hasTop) ) ) continue;
-                if(  ( (abs(box.cat)==11*11 || abs(box.cat)==11*13 || abs(box.cat)==13*13) && (ngenLeptonsStatus3==2 && hasTop) ) ) continue;
-            }
-            if(pttop>0 && ptantitop>0 && topPtWgt && fTopPtWgt)
-            {
-                fTopPtWgt->computeWeight(pttop,ptantitop);
-                fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );
-            }
-        }
-
-        //ready to roll!
-
-        //do s.th. here
-        bool passJetSelection(true);
-        if(abs(box.cat)==11 || abs(box.cat)==13)       passJetSelection = (box.jets.size()>=4);
-        bool passMetSelection(true);
-        if(abs(box.cat)==11*11 || abs(box.cat)==11*13) passMetSelection =(box.met.pt()>40);
-
-        std::vector<TString> evCats(1,box.chCat);
-        controlHistos.fillHisto("evtflow",   evCats, 0,               puWeight*lepSelectionWeight);
-        controlHistos.fillHisto("nvertices", evCats, ev.nvtx,         puWeight*lepSelectionWeight);
-
-        evCats.clear();
-        if(box.lCat!="")         evCats.push_back(box.chCat+box.lCat);
-        if(box.metCat!="")       evCats.push_back(box.chCat+box.metCat);
-        controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
-        if(passJetSelection) evCats.push_back(box.chCat);
-        controlHistos.fillHisto("evtflow",   evCats, 1,               puWeight*lepSelectionWeight);
-
-        evCats.clear();
-        if(box.lCat!="")   evCats.push_back(box.chCat+box.lCat);
-        if(box.jetCat!="") evCats.push_back(box.chCat+box.jetCat);
-        controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
-        if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
-        controlHistos.fillHisto("evtflow",   evCats, 2,               puWeight*lepSelectionWeight);
-
-        evCats.clear();
-        if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
-        if(box.lCat!="" || box.jetCat!="" || box.metCat!="")   evCats.push_back(box.chCat+box.lCat+box.jetCat+box.metCat);
-        controlHistos.fillHisto("charge",       evCats, box.leptons[0].get("id")>0,    puWeight*lepSelectionWeight);
-        float mt(utils::cmssw::getMT<LorentzVector>(box.leptons[0],box.met)),thetall(0);
-        if(box.leptons.size()>=2)
-        {
-            mt     += utils::cmssw::getMT<LorentzVector>(box.leptons[1],box.met);
-            thetall = utils::cmssw::getArcCos<LorentzVector>(box.leptons[0],box.leptons[1]);
-        }
-        controlHistos.fillHisto("mt",       evCats, mt,       puWeight*lepSelectionWeight);
-        controlHistos.fillHisto("thetall",  evCats, thetall,  puWeight*lepSelectionWeight);
+      //get the category
+      AnalysisBox box=assignBox(selLeptons, selJets, met[0]);
+      if(box.cat==0) continue;
+      if(abs(box.cat)==11    && !eTrigger)    continue;
+      if(abs(box.cat)==13    && !muTrigger)   continue;
+      if(abs(box.cat)==11*11 && !eeTrigger)   continue;
+      if(abs(box.cat)==11*13 && !emuTrigger)  continue;
+      if(abs(box.cat)==11*13 && !mumuTrigger) continue;
 
 
-        //save selected event
-        if(!saveSummaryTree || box.jets.size()==0) continue;
-        int evCatSummary(box.cat);
-        if( box.lCat=="z" ) evCatSummary*=1000;
-        std::vector<Float_t> allWeights(1,xsecWeight);
-        allWeights.push_back(puWeight);
-        allWeights.push_back(puWeightUp);
-        allWeights.push_back(puWeightDown);
-        allWeights.push_back(lepSelectionWeight);
-        allWeights.push_back(lepSelectionWeightUp);
-        allWeights.push_back(lepSelectionWeightDown);
-        allWeights.push_back(topPtWgt);
-        allWeights.push_back(topPtWgtUp);
-        allWeights.push_back(topPtWgtDown);
-        data::PhysicsObjectCollection_t pf=evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
-        lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
+      //
+      // MC CORRECTIONS
+      //
+      if(isV0JetsMC && ev.nup>5) continue;
+      Hhepup->Fill(ev.nup,1);
+
+      //pileup weight
+      float puWeight(1.0), puWeightUp(1.0), puWeightDown(1.0);
+      if(isMC && fLumiWeights) {
+    	puWeight     = fLumiWeights->weight(ev.ngenITpu);
+    	puWeightUp   = puWeight*fPUshifters[utils::cmssw::PUUP]->Eval(ev.ngenITpu);
+    	puWeightDown = puWeight*fPUshifters[utils::cmssw::PUDOWN]->Eval(ev.ngenITpu);
+
+    	Hcutflow->Fill(1,1);
+    	Hcutflow->Fill(2,puWeight);
+    	Hcutflow->Fill(3,puWeightUp);
+    	Hcutflow->Fill(4,puWeightDown);
+      }
+
+     //data/MC lepton selection weights
+      float lepSelectionWeight(1.0),lepSelectionWeightUp(1.0),lepSelectionWeightDown(1.0);
+      if(isMC)
+    	{
+    	  for(size_t ilep=0; ilep<box.leptons.size(); ilep++)
+    	    {
+    	      int id(abs(box.leptons[ilep].get("id")));
+    	      lepSelectionWeight *= fLepEff.getLeptonEfficiency( box.leptons[ilep].pt(), box.leptons[ilep].eta(), id,  "tight").first;
+    	    }
+    	  lepSelectionWeightUp = lepSelectionWeight*1.01;
+    	  lepSelectionWeightUp = lepSelectionWeight*0.99;
+    	}
+
+      //top pT weights
+      data::PhysicsObjectCollection_t gen=evSummary.getPhysicsObject(DataEventSummaryHandler::GENPARTICLES);
+      bool hasTop(false);
+      int ngenLeptonsStatus3(0);
+      float topPtWgt(1.0), topPtWgtUp(1.0), topPtWgtDown(1.0);
+      if(isMC)
+    	{
+    	  float pttop(0), ptantitop(0);
+    	  for(size_t igen=0; igen<gen.size(); igen++){
+    	    if(gen[igen].get("status")!=3) continue;
+    	    int absid=abs(gen[igen].get("id"));
+    	    if(absid==6) {
+    	      hasTop=true;
+    	      if(gen[igen].get("id")==6) pttop=gen[igen].pt();
+    	      else                       ptantitop=gen[igen].pt();
+    	    }
+    	    if(absid!=11 && absid!=13 && absid!=15) continue;
+    	    ngenLeptonsStatus3++;
+    	  }
+    	  if(mcTruthMode==1)
+    	    {
+    	      if( ! ( (abs(box.cat)==11 || abs(box.cat)==13) && (ngenLeptonsStatus3==1 && hasTop) ) ) continue;
+    	      if( ! ( (abs(box.cat)==11*11 || abs(box.cat)==11*13 || abs(box.cat)==13*13) && (ngenLeptonsStatus3==2 && hasTop) ) ) continue;
+    	    }
+    	  if(mcTruthMode==2)
+    	    {
+    	      if(  ( (abs(box.cat)==11 || abs(box.cat)==13) && (ngenLeptonsStatus3==1 && hasTop) ) ) continue;
+    	      if(  ( (abs(box.cat)==11*11 || abs(box.cat)==11*13 || abs(box.cat)==13*13) && (ngenLeptonsStatus3==2 && hasTop) ) ) continue;
+    	    }
+    	  if(pttop>0 && ptantitop>0 && fTopPtWgt)
+    	    {
+    	      fTopPtWgt->computeWeight(pttop,ptantitop);
+    	      fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );
+    	    }
+    	}
+
+      //ready to roll!
+
+      //do s.th. here
+      bool passJetSelection(true);
+      if(abs(box.cat)==11 || abs(box.cat)==13)       passJetSelection = (box.jets.size()>=4);
+      bool passMetSelection(true);
+      if(abs(box.cat)==11*11 || abs(box.cat)==11*13) passMetSelection =(box.met.pt()>40);
+
+      std::vector<TString> evCats(1,box.chCat);
+      controlHistos.fillHisto("evtflow",   evCats, 0,               puWeight*lepSelectionWeight);
+      controlHistos.fillHisto("nvertices", evCats, ev.nvtx,         puWeight*lepSelectionWeight);
+
+      evCats.clear();
+      if(box.lCat!="")         evCats.push_back(box.chCat+box.lCat);
+      if(box.metCat!="")       evCats.push_back(box.chCat+box.metCat);
+      controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
+      if(passJetSelection) evCats.push_back(box.chCat);
+      controlHistos.fillHisto("evtflow",   evCats, 1,               puWeight*lepSelectionWeight);
+
+      evCats.clear();
+      if(box.lCat!="")   evCats.push_back(box.chCat+box.lCat);
+      if(box.jetCat!="") evCats.push_back(box.chCat+box.jetCat);
+      controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
+      if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
+      controlHistos.fillHisto("evtflow",   evCats, 2,               puWeight*lepSelectionWeight);
+
+      evCats.clear();
+      if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
+      if(box.lCat!="" || box.jetCat!="" || box.metCat!="")   evCats.push_back(box.chCat+box.lCat+box.jetCat+box.metCat);
+      controlHistos.fillHisto("charge",       evCats, box.leptons[0].get("id")>0,    puWeight*lepSelectionWeight);
+      float mt(utils::cmssw::getMT<LorentzVector>(box.leptons[0],box.met)),thetall(0);
+      if(box.leptons.size()>=2)
+    	{
+    	  mt     += utils::cmssw::getMT<LorentzVector>(box.leptons[1],box.met);
+    	  thetall = utils::cmssw::getArcCos<LorentzVector>(box.leptons[0],box.leptons[1]);
+    	}
+      controlHistos.fillHisto("mt",       evCats, mt,       puWeight*lepSelectionWeight);
+      controlHistos.fillHisto("thetall",  evCats, thetall,  puWeight*lepSelectionWeight);
+
+
+      //save selected event
+      if(!saveSummaryTree || box.jets.size()==0) continue;
+      int evCatSummary(box.cat);
+      if( box.lCat=="z" ) evCatSummary*=1000;
+      if( box.metCat=="lowmet") evCatSummary *=10;
+      std::vector<Float_t> allWeights(1,xsecWeight);
+      allWeights.push_back(puWeight);
+      allWeights.push_back(puWeightUp);
+      allWeights.push_back(puWeightDown);
+      allWeights.push_back(lepSelectionWeight);
+      allWeights.push_back(lepSelectionWeightUp);
+      allWeights.push_back(lepSelectionWeightDown);
+      allWeights.push_back(topPtWgt);
+      allWeights.push_back(topPtWgtUp);
+      allWeights.push_back(topPtWgtDown);
+      data::PhysicsObjectCollection_t pf=evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
+      lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
 
     }
 

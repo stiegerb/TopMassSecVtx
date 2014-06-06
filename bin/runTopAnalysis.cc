@@ -571,6 +571,7 @@ int main(int argc, char* argv[])
       if(!saveSummaryTree || box.jets.size()==0) continue;      
       int evCatSummary(box.cat);
       if( box.lCat=="z" ) evCatSummary*=1000;
+      if( box.metCat=="lowmet") evCatSummary *=10;
       std::vector<Float_t> allWeights(1,xsecWeight);
       allWeights.push_back(puWeight);
       allWeights.push_back(puWeightUp);

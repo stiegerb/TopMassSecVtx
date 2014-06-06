@@ -17,6 +17,7 @@ void LxyAnalysis::resetBeautyEvent()
   bev_.nl=0;
   bev_.nj=0;
   bev_.npf=0;
+  bev_.npfb1=0;
 }
 
 //
@@ -173,7 +174,7 @@ void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
   bev_.metphi=met.phi();
 
   //all done here
-  if(bev_.svlxy>0) outT_->Fill();
+  if(bev_.svlxy[0]>0) outT_->Fill();
 }
 
 

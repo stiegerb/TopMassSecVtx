@@ -27,6 +27,7 @@ class LxyAnalysis
 
 public:
   LxyAnalysis();
+
   void attachToDir(TDirectory *outDir);
 
   void analyze(Int_t run, Int_t event, Int_t lumi,
@@ -37,6 +38,8 @@ public:
 	       LorentzVector &met, 
 	       data::PhysicsObjectCollection_t &pf,
 	       data::PhysicsObjectCollection_t &mctruth);
+
+  inline void finalize() { if(outDir_ && outT_) { outDir_->cd(); outT_->SetDirectory(outDir_); outT_->Write(); } }
 
 private:
 

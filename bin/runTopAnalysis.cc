@@ -598,11 +598,7 @@ int main(int argc, char* argv[])
   //
   spyFile->cd();
   controlHistos.Write();
-  if(saveSummaryTree)
-    {
-      spyDir->cd(); 
-      //spyEvents->getTree()->Write();
-    }
+  lxyAn.finalize();
   spyFile->Close();
   
   //that's all folks!

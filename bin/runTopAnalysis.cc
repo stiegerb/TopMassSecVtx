@@ -597,8 +597,8 @@ int main(int argc, char* argv[])
   // finally, save histos and tree to local file
   //
   spyFile->cd();
+  spyFile->Write();
   controlHistos.Write();
-  lxyAn.finalize();
   spyFile->Close();
   
   //that's all folks!

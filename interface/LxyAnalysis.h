@@ -12,13 +12,13 @@ struct BeautyEvent_t
   Int_t nl,lid[50];
   Float_t lpt[50],leta[50],lphi[50];
   Int_t nj,jflav[50];
-  Float_t jpt[50],jeta[50],jphi[50];
-  Int_t bid,bhadid;
-  Float_t svpt,sveta,svphi,svmass,svntk,svlxy,svlxyerr;
-  Float_t bpt,beta,bphi;
-  Float_t bhadpt,bhadeta,bhadphi,bhadmass,bhadlxy;
-  Int_t npf,pfid[50];
-  Float_t pfpt[50],pfeta[50],pfphi[50];
+  Float_t jpt[50],jeta[50],jphi[50],jcsv[50];
+  Int_t bid[2],bhadid[2];
+  Float_t svpt[2],sveta[2],svphi[2],svmass[2],svntk[2],svlxy[2],svlxyerr[2];
+  Float_t bpt[2],beta[2],bphi[2];
+  Float_t bhadpt[2],bhadeta[2],bhadphi[2],bhadmass[2],bhadlxy[2];
+  Int_t npf,npfb1,pfid[200];
+  Float_t pfpt[200],pfeta[200],pfphi[200];
   Float_t metpt,metphi;
 };
   
@@ -33,8 +33,8 @@ public:
   void analyze(Int_t run, Int_t event, Int_t lumi,
 	       Int_t nvtx, std::vector<Float_t> weights,
 	       Int_t evCat,
-	       data::PhysicsObjectCollection_t &leptons, 
-	       data::PhysicsObjectCollection_t &jets,
+	       std::vector<data::PhysicsObject_t *> &leptons, 
+	       std::vector<data::PhysicsObject_t *> &jets,
 	       LorentzVector &met, 
 	       data::PhysicsObjectCollection_t &pf,
 	       data::PhysicsObjectCollection_t &mctruth);

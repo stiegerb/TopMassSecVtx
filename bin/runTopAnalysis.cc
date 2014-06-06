@@ -56,13 +56,19 @@ DuplicatesChecker duplicatesChecker;
 
 using namespace std;
 
+
+
+
 //
 // ANALYSIS BOXES
 //
 
 //aggregates all the objects needed for the analysis
 //cat identifies the category: 11-electron 13-muon 11*11,11*13,13*13-dilepton events
-struct AnalysisBox_t{
+class AnalysisBox{
+public:
+  AnalysisBox() : cat(0), chCat(""), lCat(""), jetCat(""), metCat("") { }
+  ~AnalysisBox() { }
   Int_t cat;
   TString chCat, lCat, jetCat, metCat;
   data::PhysicsObjectCollection_t leptons, jets;
@@ -70,10 +76,10 @@ struct AnalysisBox_t{
 };
 
 //
-AnalysisBox_t assignBox(data::PhysicsObjectCollection_t &leptons, data::PhysicsObjectCollection_t &jets, LorentzVector &met)
+AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons, data::PhysicsObjectCollection_t &jets, LorentzVector &met)
 {
   
-  AnalysisBox_t box;
+  AnalysisBox box;
   box.cat=0;
   box.jets=jets;
   box.met=met;
@@ -108,7 +114,7 @@ AnalysisBox_t assignBox(data::PhysicsObjectCollection_t &leptons, data::PhysicsO
     }
 
   int njetsBin( box.jets.size()>5 ? 5 : 0 );
-  box.jetCat=box.cat+"jet"; box.jetCat += njetsBin;
+  box.jetCat="jet"; box.jetCat += njetsBin;
 
   box.metCat="";
   if( (abs(box.cat)==11*11 || abs(box.cat)==13*13) && met.pt()<40 ) box.metCat="lowmet";
@@ -381,26 +387,25 @@ int main(int argc, char* argv[])
 
   Float_t xsecWeight(isMC ? xsec/cnorm : 1.0);
 
-  //prepare to spy the file
-  TFile *spyFile=0;
+  LxyAnalysis lxyAn;
+
+  //prepare the output file
+  TString outUrl(out);
+  gSystem->ExpandPathName(outUrl);
+  gSystem->Exec("mkdir -p " + outUrl);
+  outUrl += "/";
+  outUrl += proctag;
+  if(mcTruthMode!=0) { outUrl += "_filt"; outUrl += mcTruthMode; }
+  outUrl += ".root";
+  TFile *spyFile=TFile::Open(outUrl, "recreate");
   TDirectory *spyDir=0;
   if(saveSummaryTree)
     {
       gSystem->Exec("mkdir -p " + out);
       gDirectory->SaveSelf();
-      TString summaryName(out + "/" + proctag);
-      if(mcTruthMode!=0) { summaryName += "_filt"; summaryName += mcTruthMode; } 
-      summaryName += "_summary.root";
-      gSystem->ExpandPathName(summaryName);
-      cout << "Creating event summary file @ " << summaryName << endl;
-
-      //open file
-      spyFile = TFile::Open(summaryName,"RECREATE");
       spyFile->rmdir(proctag);
-      spyDir = spyFile->mkdir("dataAnalyzer");
-      
-      //add summary tuple
-      //summaryTuple->SetDirectory(spyDir);
+      spyDir = spyFile->mkdir("dataAnalyzer");      
+      lxyAn.attachToDir(spyDir);
     }
 
 
@@ -445,7 +450,7 @@ int main(int argc, char* argv[])
       std::vector<LorentzVector> met=utils::cmssw::getMETvariations(recoMet[0],selJets,selLeptons,isMC);
 
       //get the category
-      AnalysisBox_t box=assignBox(selLeptons, selJets, met[0]); 
+      AnalysisBox box=assignBox(selLeptons, selJets, met[0]); 
       if(box.cat==0) continue;
       if(abs(box.cat)==11    && !eTrigger)    continue; 
       if(abs(box.cat)==13    && !muTrigger)   continue; 
@@ -522,10 +527,6 @@ int main(int argc, char* argv[])
 	    }
 	}
 
- 
-   
-      
-
       //ready to roll!
 
       //do s.th. here
@@ -539,18 +540,18 @@ int main(int argc, char* argv[])
       controlHistos.fillHisto("nvertices", evCats, ev.nvtx,         puWeight*lepSelectionWeight);
       
       evCats.clear();
-      if(passJetSelection) evCats.push_back(box.chCat);
       if(box.lCat!="")         evCats.push_back(box.chCat+box.lCat);
       if(box.metCat!="")       evCats.push_back(box.chCat+box.metCat);
+      controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
+      if(passJetSelection) evCats.push_back(box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 1,               puWeight*lepSelectionWeight);
-      controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      
 
       evCats.clear();
-      if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
       if(box.lCat!="")   evCats.push_back(box.chCat+box.lCat);
       if(box.jetCat!="") evCats.push_back(box.chCat+box.jetCat);
+      controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
+      if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 2,               puWeight*lepSelectionWeight);
-      controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight);
 
       evCats.clear();
       if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
@@ -564,12 +565,25 @@ int main(int argc, char* argv[])
 	}
       controlHistos.fillHisto("mt",       evCats, mt,       puWeight*lepSelectionWeight);
       controlHistos.fillHisto("thetall",  evCats, thetall,  puWeight*lepSelectionWeight);
-
+      
       
       //save selected event
-      //if(spyEvents){
-      //spyEvents->getTree()->Fill();
-      //}
+      if(!saveSummaryTree || box.jets.size()==0) continue;      
+      int evCatSummary(box.cat);
+      if( box.lCat=="z" ) evCatSummary*=1000;
+      std::vector<Float_t> allWeights(1,xsecWeight);
+      allWeights.push_back(puWeight);
+      allWeights.push_back(puWeightUp);
+      allWeights.push_back(puWeightDown);
+      allWeights.push_back(lepSelectionWeight);
+      allWeights.push_back(lepSelectionWeightUp);
+      allWeights.push_back(lepSelectionWeightDown);
+      allWeights.push_back(topPtWgt);
+      allWeights.push_back(topPtWgtUp);
+      allWeights.push_back(topPtWgtDown);
+      data::PhysicsObjectCollection_t pf=evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
+      lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
+
     }
   
   if(nDuplicates) cout << "[Warning] found " << nDuplicates << " duplicate events in this ntuple" << endl;
@@ -578,25 +592,18 @@ int main(int argc, char* argv[])
   // close opened files
   // 
   inF->Close();
-  if(spyFile){
-    spyDir->cd(); 
-    //spyEvents->getTree()->Write();
-    spyFile->Close();
-  }
   
   //
-  // finally, save histos to local file
+  // finally, save histos and tree to local file
   //
-  TString outUrl(out);
-  gSystem->ExpandPathName(outUrl);
-  gSystem->Exec("mkdir -p " + outUrl);
-  outUrl += "/";
-  outUrl += proctag;
-  if(mcTruthMode!=0) { outUrl += "_filt"; outUrl += mcTruthMode; }
-  outUrl += ".root";
-  TFile *file=TFile::Open(outUrl, "recreate");
+  spyFile->cd();
   controlHistos.Write();
-  file->Close();
+  if(saveSummaryTree)
+    {
+      spyDir->cd(); 
+      //spyEvents->getTree()->Write();
+    }
+  spyFile->Close();
   
   //that's all folks!
 }  

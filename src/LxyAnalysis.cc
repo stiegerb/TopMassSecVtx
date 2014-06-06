@@ -5,142 +5,173 @@ using namespace std;
 typedef ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double> >::BetaVector BetaVector;
 
 //
-LxyAnalysis::LxyAnalysis(SmartSelectionMonitor &mon,bool runSystematics)
-  : mon_(&mon)
+LxyAnalysis::LxyAnalysis() : outT_(0), outDir_(0)
 {
-  //start monitoring histograms of this analysis
-  mon_->addHistogram( new TH2F ("bjetlxybhad",    "; L_{xy}(reco) [cm]; B-hadron; Jets", 50,0,5, 4,0,4) );
-  TH1 *h=mon_->addHistogram( new TH1F ("lxybhad",    "; L_{xy}(reco) [cm]; B-hadron; Jets",5,0,5) );
-  h->GetXaxis()->SetBinLabel(1,"B^{0}");  h->GetXaxis()->SetBinLabel(2,"B^{+}");  h->GetXaxis()->SetBinLabel(3,"B^{0}_{s}");  h->GetXaxis()->SetBinLabel(4,"B^{+}_{c}");  h->GetXaxis()->SetBinLabel(5,"Others");
-  for(size_t i=0; i<4; i++)
-    {
-      TString pf(""); pf+=i;
-      mon_->addHistogram( new TH2F ("bjetlxygenb"+pf+"had", "; L_{xy}(reco) [cm]; B-hadron; Jets", 50,0,5,50,0,0.15) );
-    }
-  mon_->addHistogram( new TH2F ("bjetlxyrespt",   "; L_{xy}(reco)-L_{xy}(B) [cm]; Jet p_{T} [GeV]; Events", 50, -2.5,2.5, 10,30.,280.) );
-  mon_->addHistogram( new TH2F ("bjetlxyreseta",  "; L_{xy}(reco)-L_{xy}(B) [cm]; Jet #eta; Events", 50, -2.5,2.5, 4,0.,2.5) );
-  mon_->addHistogram( new TH2F ("xbvslxy",        "; p_{T}(B)/p_{T}(b); L_{xy} [cm]; Events",100, 0, 2, 50, 0, 5) );
-  mon_->addHistogram( new TH2F ("ptbvslxy",       "; b quark p_{T} [GeV]; L_{xy} [cm]; Events",100, 0, 200, 50, 0, 5) );
-  mon_->addHistogram( new TH2F ("topptvslxy",     "; Top p_{T} [GeV]; L_{xy} [cm]; Events",100, 0, 1000, 50, 0, 5) );
-  mon_->addHistogram( new TH1F ("jetlxy",         ";L_{xy} [cm]; Jets", 50, 0.,5) );
-  mon_->addHistogram( new TH1F ("jetlxyntk",      ";Number of tracks in sec. vertex; Jets", 10, 0.,10.) );
+  resetBeautyEvent();
 }
 
 //
-void LxyAnalysis::analyze(data::PhysicsObjectCollection_t & leptons, 
-			  data::PhysicsObjectCollection_t &jets,
-			  data::PhysicsObject_t &met, 
-			  data::PhysicsObjectCollection_t &mctruth,
-			  float weight)
+void LxyAnalysis::resetBeautyEvent()
 {
-
-  //check channel
-  TString ch("");
-  int lid1(leptons[0].get("id")), lid2(leptons[1].get("id"));
-  if     (abs(lid1)*abs(lid2)==11*11)  ch="ee";
-  else if(abs(lid1)*abs(lid2)==11*13)  ch="emu";
-  else if(abs(lid1)*abs(lid2)==13*13)  ch="mumu";
-  if(ch=="") return;
- 
-  //select
-  float mll=(leptons[0]+leptons[1]).mass();
-  bool isZcand((ch=="ee" || ch=="mumu") && fabs(mll-91)<15);
-  bool passMet( ch=="emu" || ((ch=="ee" || ch=="mumu") && met.pt()>40));
-  bool isOS( leptons[0].get("id")*leptons[1].get("id") < 0 );
-  bool passJet(jets.size()>2);
-  if(isZcand || !passMet || !isOS || !passJet) return;
-
-  //get leading Lxy jet
-  data::PhysicsObject_t *lxyJet=0;
-  float leadingLxy(-1);
-  for(size_t ijet=0; ijet<jets.size(); ijet++)
-    {
-      //get reconstructed secondary vertex
-      const data::PhysicsObject_t &svx=jets[ijet].getObject("svx");
-      float lxy=svx.vals.find("lxy")->second;
-      if(lxy<=0) continue;
-      if(lxy<leadingLxy) continue;
-    
-      //use lxy if it's larger, prefer also more central jets
-      if(lxyJet==0 || (fabs(lxyJet->eta())>1.1 && fabs(jets[ijet].eta())<fabs(lxyJet->eta())))
-	{
-	  lxyJet=&(jets[ijet]); 
-	  leadingLxy=lxy;
-	}
-    }
-  if(leadingLxy<0) return;
-  bool passFiducialCut(fabs(lxyJet->eta())<1.1);
-
-  //MC truth
-  //get flavor
-  const data::PhysicsObject_t &genJet=lxyJet->getObject("genJet");
-  const data::PhysicsObject_t &genParton=lxyJet->getObject("gen");
-  int flavId=genJet.info.find("id")->second;
-  int genId=genParton.info.find("id")->second;
-  //match to a b-hadron
-  data::PhysicsObject_t *bHad=0,*top=0,*antitop=0;
-  for(size_t imc=0; imc<mctruth.size(); imc++)
-    {
-      int id=mctruth[imc].get("id");
-      if(id==6)       top=&(mctruth[imc]);
-      else if(id==-6) antitop=&(mctruth[imc]);
-      else if(abs(id)<500) continue;
-
-      if(deltaR(mctruth[imc],*lxyJet)>0.5) continue;
-      bHad=&mctruth[imc];
-      break;
-    }
-  float genLxy(-1);
-  if(bHad) genLxy=bHad->getVal("lxy");
-
-  const data::PhysicsObject_t &svx=lxyJet->getObject("svx");
-  if(passFiducialCut)
-    {
-      mon_->fillHisto("jetlxy",ch,leadingLxy,weight);
-      mon_->fillHisto("jetlxyntk",ch,svx.info.find("ntrk")->second,weight);
-    }
-
-  //resolution plots
-  if(genLxy>0 && abs(flavId)==5)
-    {
-      mon_->fillHisto("bjetlxyreseta",ch,leadingLxy-genLxy,fabs(lxyJet->eta()),weight);
-
-      if(passFiducialCut)
-	{
-	  mon_->fillHisto("bjetlxyrespt", ch,leadingLxy-genLxy,lxyJet->pt(),weight);
-            
-	  int absid=abs(bHad->get("id"));
-	  int bHadronBin(3),fullBHadronBin(4); //other not so relevant
-	  if(absid==511 || absid==10511 || absid==513 || absid==10513 || absid==20513 || absid==515) {bHadronBin=0;fullBHadronBin=0;}       //B0 family
-	  else if(absid==521 || absid==10521 || absid==523 || absid==10523 || absid==20523 || absid==525) {bHadronBin=1;fullBHadronBin=1;}  //B+ family
-	  else if(absid==531 || absid==10531 || absid==533 || absid==10533 || absid==20533 || absid==535) {bHadronBin=2;fullBHadronBin=2;}  //B0s family
-	  else if(absid==541 || absid==10541 || absid==543 || absid==10543 || absid==20543 || absid==545) {bHadronBin=3;fullBHadronBin=3;}  //B+c family
-	  mon_->fillHisto("bjetlxybhad",   ch,leadingLxy, bHadronBin,weight);
-	  mon_->fillHisto("lxybhad",   ch,fullBHadronBin,weight);
-	  
-	  if(genParton.pt()>0)
-	    {
-	      float xb(bHad->pt()/genParton.pt());
-	      float bBoost = genParton.BoostToCM().R();
-	      float genLxyCM=sqrt(1-bBoost*bBoost)*genLxy;
-	      
-	      TString pf(""); pf+=bHadronBin;
-	      mon_->fillHisto("bjetlxygenb"+pf+"had",ch,leadingLxy, genLxyCM,    weight);
-	      mon_->fillHisto("xbvslxy",ch, xb, leadingLxy, weight);
-	      mon_->fillHisto("ptbvslxy",ch,genParton.pt(), leadingLxy, weight);
-	    }
-	}
-    }
-
-  //lxy distribution
-  if(!passFiducialCut) return;
-  mon_->fillHisto("jetlxy",ch,leadingLxy,weight);
-  if(top && antitop && abs(genId)==5)
-    {
-      float genpt( genId==-5 ? antitop->pt() : top->pt() );
-      mon_->fillHisto ("topptvslxy", ch, genpt, leadingLxy, weight );
-    }
+  bev_.nw=0;
+  bev_.nl=0;
+  bev_.nj=0;
+  bev_.npf=0;
 }
+
+//
+void LxyAnalysis::attachToDir(TDirectory *outDir)
+{
+  outDir_=outDir;
+  outT_ = new TTree("lxy","lxy analysis tree");
+  outT_->Branch("run",      &bev_.run,       "run/I");
+  outT_->Branch("lumi",     &bev_.lumi,      "lumi/I");
+  outT_->Branch("event",    &bev_.event,     "event/I");
+  outT_->Branch("evcat",    &bev_.evcat,     "evcat/I");
+  outT_->Branch("nvtx",     &bev_.nvtx,      "nvtx/I");
+  outT_->Branch("nw",       &bev_.nw,        "nw/I");
+  outT_->Branch("w",         bev_.w,         "w[nw]/F");
+  outT_->Branch("nl",       &bev_.nl,        "nl/I");
+  outT_->Branch("lid",       bev_.lid,       "lid[nl]/I");
+  outT_->Branch("lpt",       bev_.lpt,       "lpt[nl]/F");
+  outT_->Branch("leta",      bev_.leta,      "leta[nl]/F");
+  outT_->Branch("lphi",      bev_.lphi,      "lphi[nl]/F");
+  outT_->Branch("nj",       &bev_.nj,        "nj/I");
+  outT_->Branch("jflav",     bev_.jflav,     "jflav[nj]/I");
+  outT_->Branch("jpt",       bev_.jpt,       "jpt[nj]/F");
+  outT_->Branch("jeta",      bev_.jeta,      "jeta[nj]/F");
+  outT_->Branch("jphi",      bev_.jphi,      "jphi[nj]/F");
+  outT_->Branch("bid",      &bev_.bid,       "bid/I");
+  outT_->Branch("bhadid",   &bev_.bhadid,    "bhadid/I");
+  outT_->Branch("svpt",     &bev_.svpt,      "svpt/F");
+  outT_->Branch("sveta",    &bev_.sveta,     "sveta/F");
+  outT_->Branch("svphi",    &bev_.svphi,     "svphi/F");
+  outT_->Branch("svmass",   &bev_.svmass,    "svmass/F");
+  outT_->Branch("svntk",    &bev_.svntk,     "svntk/F");
+  outT_->Branch("svlxy",    &bev_.svlxy,     "svlxy/F");
+  outT_->Branch("svlxyerr", &bev_.svlxyerr,  "svlxyerr/F");
+  outT_->Branch("bpt",      &bev_.bpt,       "bpt/F");
+  outT_->Branch("beta",     &bev_.beta,      "beta/F");
+  outT_->Branch("bphi",     &bev_.bphi,      "bphi/F");
+  outT_->Branch("bhadpt",   &bev_.bhadpt,    "bhadpt/F");
+  outT_->Branch("bhadeta",  &bev_.bhadeta,   "bhadeta/F");
+  outT_->Branch("bhadphi",  &bev_.bhadphi,   "bhadphi/F");
+  outT_->Branch("bhadmass", &bev_.bhadmass,  "bhadmass/F");
+  outT_->Branch("bhadlxy",  &bev_.bhadlxy,   "bhadlxy/F");
+  outT_->Branch("npf",      &bev_.npf,       "npf/F");
+  outT_->Branch("pfid",      bev_.pfid,      "pfid[npf]/I");
+  outT_->Branch("pfpt",      bev_.pfpt,      "pfpt[npf]/F");
+  outT_->Branch("pfeta",     bev_.pfeta,     "pfeta[npf]/F");
+  outT_->Branch("pfphi",     bev_.pfphi,     "pfphi[npf]/F");
+  outT_->Branch("metpt",    &bev_.metpt,     "metpt/F");
+  outT_->Branch("metphi",   &bev_.metphi,    "metphi/F");
+}
+
+
+//
+void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
+			  Int_t nvtx, std::vector<Float_t> weights,
+			  Int_t evcat,
+			  data::PhysicsObjectCollection_t &leptons, 
+			  data::PhysicsObjectCollection_t &jets,
+			  LorentzVector &met, 
+			  data::PhysicsObjectCollection_t &pf,
+			  data::PhysicsObjectCollection_t &mctruth)
+{
+  //set all counters to 0
+  resetBeautyEvent();
+
+  //event info
+  bev_.run=run;
+  bev_.event=event;
+  bev_.lumi=lumi;
+  bev_.nvtx=nvtx;
+  for(size_t i=0; i<weights.size(); i++) { bev_.w[i]=weights[i]; bev_.nw++; }
+  bev_.evcat=evcat;
+
+  //leptons
+  for(size_t i=0; i<leptons.size(); i++)
+    {
+      bev_.lid[bev_.nl]  = leptons[i].get("id");
+      bev_.lpt[bev_.nl]  = leptons[i].pt();
+      bev_.leta[bev_.nl] = leptons[i].eta();
+      bev_.lphi[bev_.nl] = leptons[i].phi();
+      bev_.nl++;
+    }
+
+
+  //here is a trick just to get the leading lxy jet first
+  for(size_t i=0; i<jets.size(); i++)
+    {
+      const data::PhysicsObject_t &svx=jets[i].getObject("svx");
+      jets[i].setVal("lxy",svx.vals.find("lxy")->second);
+    }
+  sort(jets.begin(), jets.end(), data::PhysicsObject_t::sortByLxy);
+
+  //look at the jets now
+  for(size_t i=0; i<jets.size(); i++)
+    {
+      const data::PhysicsObject_t &genJet=jets[i].getObject("genJet");
+      bev_.jflav[bev_.nj] = genJet.info.find("id")->second;
+      bev_.jpt[bev_.nj]   = jets[i].pt();
+      bev_.jeta[bev_.nj]  = jets[i].eta();
+      bev_.jphi[bev_.nj]  = jets[i].phi();
+      bev_.nj++;
+
+      if(i!=0) continue;
+
+      const data::PhysicsObject_t &genParton=jets[i].getObject("gen");
+      bev_.bid=genParton.info.find("id")->second;
+      bev_.bpt=genParton.pt();
+      bev_.beta=genParton.eta();
+      bev_.bphi=genParton.phi();
+
+      const data::PhysicsObject_t &svx=jets[i].getObject("svx");
+      bev_.svpt     = svx.pt();
+      bev_.sveta    = svx.eta();
+      bev_.svphi    = svx.phi();
+      bev_.svmass   = svx.mass();
+      bev_.svntk    = svx.info.find("ntrk")->second;
+      bev_.svlxy    = svx.vals.find("lxy")->second;
+      bev_.svlxyerr = svx.vals.find("lxyerr")->second;
+
+      //match to a b-hadron
+      for(size_t imc=0; imc<mctruth.size(); imc++)
+	{
+	  int id=mctruth[imc].get("id");
+	  if(abs(id)<500) continue;
+	  
+	  if(deltaR(mctruth[imc],jets[i])>0.5) continue;
+	  bev_.bhadpt   = mctruth[imc].pt();
+	  bev_.bhadeta  = mctruth[imc].eta();
+	  bev_.bhadphi  = mctruth[imc].phi();
+	  bev_.bhadmass = mctruth[imc].mass();
+	  bev_.bhadlxy  = mctruth[imc].getVal("lxy");
+	  
+	  break;
+	}
+
+      //PF candidates clustered in jet
+      size_t pfstart=jets[i].get("pfstart");
+      size_t pfend=jets[i].get("pfend");
+      for(size_t ipfn=pfstart; ipfn<=pfend; ipfn++)
+	{
+	  bev_.pfid[bev_.npf]  = pf[ipfn].get("id");
+	  bev_.pfpt[bev_.npf]  = pf[ipfn].pt();
+	  bev_.pfeta[bev_.npf] = pf[ipfn].eta();
+	  bev_.pfphi[bev_.npf] = pf[ipfn].phi();
+	  bev_.npf++;
+	}
+    }
+  
+  //met
+  bev_.metpt=met.pt();
+  bev_.metphi=met.phi();
+
+  //all done here
+  if(bev_.svlxy>0) outT_->Fill();
+}
+
 
 
 

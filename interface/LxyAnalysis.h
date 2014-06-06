@@ -4,21 +4,47 @@
 #include "UserCode/llvv_fwk/interface/SmartSelectionMonitor.h"
 #include "UserCode/llvv_fwk/interface/DataEventSummaryHandler.h"
 
+struct BeautyEvent_t
+{
+  Int_t run, lumi, event, evcat, nvtx;
+  Int_t nw;
+  Float_t w[50];
+  Int_t nl,lid[50];
+  Float_t lpt[50],leta[50],lphi[50];
+  Int_t nj,jflav[50];
+  Float_t jpt[50],jeta[50],jphi[50];
+  Int_t bid,bhadid;
+  Float_t svpt,sveta,svphi,svmass,svntk,svlxy,svlxyerr;
+  Float_t bpt,beta,bphi;
+  Float_t bhadpt,bhadeta,bhadphi,bhadmass,bhadlxy;
+  Int_t npf,pfid[50];
+  Float_t pfpt[50],pfeta[50],pfphi[50];
+  Float_t metpt,metphi;
+};
+  
 class LxyAnalysis
 {
 
 public:
-  LxyAnalysis(SmartSelectionMonitor &mon,bool runSystematics);
+  LxyAnalysis();
+  void attachToDir(TDirectory *outDir);
 
-  void analyze(data::PhysicsObjectCollection_t & leptons, 
+  void analyze(Int_t run, Int_t event, Int_t lumi,
+	       Int_t nvtx, std::vector<Float_t> weights,
+	       Int_t evCat,
+	       data::PhysicsObjectCollection_t &leptons, 
 	       data::PhysicsObjectCollection_t &jets,
-	       data::PhysicsObject_t &met, 
-	       data::PhysicsObjectCollection_t &mctruth,
-	       float weight);
+	       LorentzVector &met, 
+	       data::PhysicsObjectCollection_t &pf,
+	       data::PhysicsObjectCollection_t &mctruth);
 
 private:
 
-  SmartSelectionMonitor *mon_;
+  void resetBeautyEvent();
+
+  TTree *outT_;
+  BeautyEvent_t bev_;
+  TDirectory *outDir_;
 
 };
 

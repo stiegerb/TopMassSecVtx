@@ -42,6 +42,7 @@ namespace data
 
     static bool sortByPt(const data::PhysicsObject_t &a, const data::PhysicsObject_t &b)  { return a.pt()>b.pt(); }
     static bool sortByCSV(const data::PhysicsObject_t &a, const data::PhysicsObject_t &b) { return a.vals.find("csv")->second>b.vals.find("csv")->second; }
+    static bool sortByLxy(const data::PhysicsObject_t &a, const data::PhysicsObject_t &b) { return a.vals.find("lxy")->second>b.vals.find("lxy")->second; }
 
     std::map<TString,Int_t > info;
     std::map<TString,Double_t> vals;

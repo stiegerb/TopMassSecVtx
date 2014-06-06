@@ -520,7 +520,7 @@ int main(int argc, char* argv[])
 	      if(  ( (abs(box.cat)==11 || abs(box.cat)==13) && (ngenLeptonsStatus3==1 && hasTop) ) ) continue;
 	      if(  ( (abs(box.cat)==11*11 || abs(box.cat)==11*13 || abs(box.cat)==13*13) && (ngenLeptonsStatus3==2 && hasTop) ) ) continue;
 	    }
-	  if(pttop>0 && ptantitop>0 && topPtWgt)
+	  if(pttop>0 && ptantitop>0 && fTopPtWgt)
 	    {
 	      fTopPtWgt->computeWeight(pttop,ptantitop);
 	      fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );

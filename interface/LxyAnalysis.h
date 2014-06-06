@@ -21,7 +21,7 @@ struct BeautyEvent_t
   Float_t pfpt[50],pfeta[50],pfphi[50];
   Float_t metpt,metphi;
 };
-  
+
 class LxyAnalysis
 {
 
@@ -33,11 +33,21 @@ public:
   void analyze(Int_t run, Int_t event, Int_t lumi,
 	       Int_t nvtx, std::vector<Float_t> weights,
 	       Int_t evCat,
-	       data::PhysicsObjectCollection_t &leptons, 
+	       data::PhysicsObjectCollection_t &leptons,
 	       data::PhysicsObjectCollection_t &jets,
-	       LorentzVector &met, 
+	       LorentzVector &met,
 	       data::PhysicsObjectCollection_t &pf,
 	       data::PhysicsObjectCollection_t &mctruth);
+
+  inline void finalize() {
+    if(outDir_ && outT_)
+      {
+	std::cout << "Preparing to write" << outDir_->GetName() << std::endl;
+	outDir_->cd();
+	outT_->Write();
+	std::cout << "All done here" << std::endl;
+      }
+  }
 
 private:
 

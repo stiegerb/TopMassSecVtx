@@ -62,8 +62,8 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("bhadphi",   bev_.bhadphi,   "bhadphi[2]/F");
   outT_->Branch("bhadmass",  bev_.bhadmass,  "bhadmass[2]/F");
   outT_->Branch("bhadlxy",   bev_.bhadlxy,   "bhadlxy[2]/F");
-  outT_->Branch("npf",      &bev_.npf,       "npf/F");
-  outT_->Branch("npfb1",    &bev_.npfb1,     "npfb1/F");
+  outT_->Branch("npf",      &bev_.npf,       "npf/I");
+  outT_->Branch("npfb1",    &bev_.npfb1,     "npfb1/I");
   outT_->Branch("pfid",      bev_.pfid,      "pfid[npf]/I");
   outT_->Branch("pfpt",      bev_.pfpt,      "pfpt[npf]/F");
   outT_->Branch("pfeta",     bev_.pfeta,     "pfeta[npf]/F");
@@ -77,9 +77,9 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 			  Int_t nvtx, std::vector<Float_t> weights,
 			  Int_t evcat,
-			  std::vector<data::PhysicsObject_t *> &leptons, 
+			  std::vector<data::PhysicsObject_t *> &leptons,
 			  std::vector<data::PhysicsObject_t *> &jets,
-			  LorentzVector &met, 
+			  LorentzVector &met,
 			  data::PhysicsObjectCollection_t &pf,
 			  data::PhysicsObjectCollection_t &mctruth)
 {
@@ -138,14 +138,14 @@ void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	{
 	  int id=mctruth[imc].get("id");
 	  if(abs(id)<500) continue;
-	  
+
 	  if(deltaR(mctruth[imc],*(jets[i]))>0.5) continue;
 	  bev_.bhadpt[i]   = mctruth[imc].pt();
 	  bev_.bhadeta[i]  = mctruth[imc].eta();
 	  bev_.bhadphi[i]  = mctruth[imc].phi();
 	  bev_.bhadmass[i] = mctruth[imc].mass();
 	  bev_.bhadlxy[i]  = mctruth[imc].getVal("lxy");
-	  
+
 	  break;
 	}
 
@@ -168,7 +168,7 @@ void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	}
       if(i==0) bev_.npfb1=bev_.npf;
     }
-  
+
   //met
   bev_.metpt=met.pt();
   bev_.metphi=met.phi();

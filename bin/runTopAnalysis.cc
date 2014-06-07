@@ -352,6 +352,7 @@ int main(int argc, char* argv[])
   //
   // control histograms
   //
+  gROOT->cd(); //THIS LINE IS NEEDED TO MAKE SURE THAT HISTOGRAMS ARE NOT DESTROYED WHEN CLOSING THE INPUT FILE 
   SmartSelectionMonitor controlHistos;
   TH1F* Hhepup        = (TH1F* )controlHistos.addHistogram(new TH1F ("heupnup"    , "hepupnup"    ,20,0,20) ) ;
   TH1F* Hcutflow      = (TH1F*) controlHistos.addHistogram(new TH1F ("cutflow"    , "cutflow"    ,5,0,5) ) ;
@@ -437,11 +438,11 @@ int main(int argc, char* argv[])
       bool muTrigger   = ev.t_bits[6];
       bool eTrigger    = ev.t_bits[13];
       if(!isMC){
-	eeTrigger   &= isDoubleElePD;
-	emuTrigger  &= isMuEGPD;
-	mumuTrigger &= isDoubleMuPD;
-	muTrigger   &= isSingleMuPD;
-	eTrigger    &= isSingleElePD;
+	eeTrigger   &= ( isDoubleElePD && !isMuEGPD && !isDoubleMuPD && !isSingleMuPD && !isSingleElePD);
+	emuTrigger  &= (!isDoubleElePD &&  isMuEGPD && !isDoubleMuPD && !isSingleMuPD && !isSingleElePD);
+	mumuTrigger &= (!isDoubleElePD && !isMuEGPD &&  isDoubleMuPD && !isSingleMuPD && !isSingleElePD);
+	muTrigger   &= (!isDoubleElePD && !isMuEGPD && !isDoubleMuPD &&  isSingleMuPD && !isSingleElePD);
+	eTrigger    &= (!isDoubleElePD && !isMuEGPD && !isDoubleMuPD && !isSingleMuPD &&  isSingleElePD);
       }
 
       //leptons

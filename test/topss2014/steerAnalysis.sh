@@ -16,12 +16,12 @@ mkdir -p ${outdir}/summary/
 
 if [ "$step" == "1" ]; then
     echo "Submitting sample pre-selection"
-    runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/samples.json  -d ${indir} -o ${outdir}/summary/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue};
-    #runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/samples.json  -d ${indir} -o ${outdir}/summary/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -t _tW;
+    #runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/samples.json  -d ${indir} -o ${outdir}/summary/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue};
+    runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/samples.json  -d ${indir} -o ${outdir}/summary/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -t Data -s ${queue};
     echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
 fi
 
 if [ "$step" == "2" ]; then
     echo "Computing weights"
-    runPlotter --iLumi 19736 --inDir ${outdir}/summary/ --json ${outdir}/samples.json --outFile ${outdir}/plotter.root --forceMerged;
+    runPlotter --iLumi 19736 --inDir ${outdir}/summary/ --json ${outdir}/samples.json --outFile ${outdir}/plotter.root;
 fi

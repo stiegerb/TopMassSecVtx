@@ -112,7 +112,7 @@ AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons, data::PhysicsObj
       if( dilepton.mass()<12 ) box.cat=0; //this is a special cut to remove low mass states
     }
 
-    int njetsBin( box.jets.size()>5 ? 5 : 0 );
+    int njetsBin( box.jets.size()>5 ? 5 : box.jets.size() );
     box.jetCat="jet"; box.jetCat += njetsBin;
 
     box.metCat="";
@@ -310,38 +310,6 @@ int main(int argc, char* argv[])
         }
         cout << fBtagEffCorr.size() << " b-tag correction factors have been read" << endl;
     }
-
-  //
-  // control histograms
-  //
-  gROOT->cd(); //THIS LINE IS NEEDED TO MAKE SURE THAT HISTOGRAMS ARE NOT DESTROYED WHEN CLOSING THE INPUT FILE
-  SmartSelectionMonitor controlHistos;
-  TH1F* Hhepup        = (TH1F* )controlHistos.addHistogram(new TH1F ("heupnup"    , "hepupnup"    ,20,0,20) ) ;
-  TH1F* Hcutflow      = (TH1F*) controlHistos.addHistogram(new TH1F ("cutflow"    , "cutflow"    ,5,0,5) ) ;
-  controlHistos.addHistogram( new TH1F ("nvertices", "; Vertex multiplicity; Events", 50, 0.,50.) );
-  TString labels[]={"Lepton(s)", "Jets", "E_{T}^{miss}", "b-jet"};
-  int nsteps=sizeof(labels)/sizeof(TString);
-  TH1F *h              = (TH1F *)controlHistos.addHistogram( new TH1F("evtflow",";Selection step;Events",nsteps,0,nsteps) );
-  for(int i=0; i<nsteps; i++) h->GetXaxis()->SetBinLabel(i+1,labels[i]);
-  controlHistos.addHistogram( new TH1F("thetall",";#theta(l,l') [rad];Events",50,0,3.2) );
-  controlHistos.addHistogram( new TH1F("njets",  ";Jet multiplicity [GeV]; Events",6,0,6) );
-  controlHistos.addHistogram( new TH1F("met",    ";PF E_{T}^{miss} [GeV]; Events",50,0,250) );
-  controlHistos.addHistogram( new TH1F("mt",     ";Transverse mass [GeV];Events",50,0,500) );
-  controlHistos.addHistogram( new TH1F("charge",";Charge; Events",2,0,2) );
-
-  ///
-  // process events file
-  //
-  DataEventSummaryHandler evSummary;
-  if( !evSummary.attach( (TTree *) inF->Get(baseDir+"/data") ) )  { inF->Close();  return -1; }
-  const Int_t totalEntries=evSummary.getEntries();
-
-  float cnorm=1.0;
-  if(isMC){
-    TH1F* cutflowH = (TH1F *) inF->Get(baseDir+"/cutflow");
-    if(cutflowH) cnorm=cutflowH->GetBinContent(1);
-  }
-  Hcutflow->SetBinContent(1,cnorm);
 
     //
     // check input file
@@ -637,9 +605,8 @@ int main(int argc, char* argv[])
       allWeights.push_back(topPtWgtUp);
       allWeights.push_back(topPtWgtDown);
       data::PhysicsObjectCollection_t pf=evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
-      bool accept=lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
-      if(accept)
-	controlHistos.fillHisto("evtflow",   evCats, 3,               puWeight*lepSelectionWeight);
+      bool accept = lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
+      if(accept) controlHistos.fillHisto("evtflow", evCats, 3, puWeight*lepSelectionWeight);
 
     }
 

@@ -463,7 +463,7 @@ int main(int argc, char* argv[])
       if(abs(box.cat)==13    && !muTrigger)   continue; 
       if(abs(box.cat)==11*11 && !eeTrigger)   continue; 
       if(abs(box.cat)==11*13 && !emuTrigger)  continue; 
-      if(abs(box.cat)==11*13 && !mumuTrigger) continue; 
+      if(abs(box.cat)==13*13 && !mumuTrigger) continue; 
 
 
       //
@@ -519,13 +519,25 @@ int main(int argc, char* argv[])
 	  }
 	  if(mcTruthMode==1)
 	    {
-	      if( ! ( (abs(box.cat)==11 || abs(box.cat)==13) && (ngenLeptonsStatus3==1 && hasTop) ) ) continue;
-	      if( ! ( (abs(box.cat)==11*11 || abs(box.cat)==11*13 || abs(box.cat)==13*13) && (ngenLeptonsStatus3==2 && hasTop) ) ) continue;
+	      if( abs(box.cat)==11 || abs(box.cat)==13 )
+		{
+		  if( !(ngenLeptonsStatus3==1 && isTTbarMC) ) continue;
+		}
+	      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
+		{
+		  if( !(ngenLeptonsStatus3==2 && isTTbarMC) ) continue;
+		}
 	    }
 	  if(mcTruthMode==2)
 	    {
-	      if(  ( (abs(box.cat)==11 || abs(box.cat)==13) && (ngenLeptonsStatus3==1 && hasTop) ) ) continue;
-	      if(  ( (abs(box.cat)==11*11 || abs(box.cat)==11*13 || abs(box.cat)==13*13) && (ngenLeptonsStatus3==2 && hasTop) ) ) continue;
+	      if( abs(box.cat)==11 || abs(box.cat)==13 )
+		{
+		  if( ngenLeptonsStatus3==1 && isTTbarMC ) continue;
+		}
+	      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
+		{
+		  if( ngenLeptonsStatus3==2 && isTTbarMC ) continue;
+		}
 	    }
 	  if(pttop>0 && ptantitop>0 && fTopPtWgt)
 	    {
@@ -535,12 +547,12 @@ int main(int argc, char* argv[])
 	}
 
       //ready to roll!
-
       //do s.th. here
       bool passJetSelection(true);
-      if(abs(box.cat)==11 || abs(box.cat)==13)       passJetSelection = (box.jets.size()>=4);
+      if(abs(box.cat)==11 || abs(box.cat)==13)                               passJetSelection = (box.jets.size()>=4);
+      if(abs(box.cat)==11*11 || abs(box.cat)==13*13 || abs(box.cat)==11*13)  passJetSelection = (box.jets.size()>=2);
       bool passMetSelection(true);
-      if(abs(box.cat)==11*11 || abs(box.cat)==11*13) passMetSelection =(box.met.pt()>40);
+      if(abs(box.cat)==11*11 || abs(box.cat)==13*13)                         passMetSelection =(box.met.pt()>40);
       
       std::vector<TString> evCats(1,box.chCat);            
       controlHistos.fillHisto("evtflow",   evCats, 0,               puWeight*lepSelectionWeight);
@@ -549,16 +561,16 @@ int main(int argc, char* argv[])
       evCats.clear();
       if(box.lCat!="")         evCats.push_back(box.chCat+box.lCat);
       if(box.metCat!="")       evCats.push_back(box.chCat+box.metCat);
-      controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
       if(passJetSelection) evCats.push_back(box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 1,               puWeight*lepSelectionWeight);
+      controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
 
       evCats.clear();
       if(box.lCat!="")   evCats.push_back(box.chCat+box.lCat);
       if(box.jetCat!="") evCats.push_back(box.chCat+box.jetCat);
-      controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
       if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 2,               puWeight*lepSelectionWeight);
+      controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
 
       evCats.clear();
       if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);

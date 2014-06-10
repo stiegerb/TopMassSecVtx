@@ -605,8 +605,9 @@ int main(int argc, char* argv[])
       allWeights.push_back(topPtWgtUp);
       allWeights.push_back(topPtWgtDown);
       data::PhysicsObjectCollection_t pf=evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
-      bool accept = lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
-      if(accept) controlHistos.fillHisto("evtflow", evCats, 3, puWeight*lepSelectionWeight);
+      bool accept=lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, ev.rho, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
+      if(accept)
+	controlHistos.fillHisto("evtflow",   evCats, 3,               puWeight*lepSelectionWeight);
 
     }
 

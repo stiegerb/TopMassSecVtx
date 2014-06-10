@@ -32,6 +32,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("event",    &bev_.event,     "event/I");
   outT_->Branch("evcat",    &bev_.evcat,     "evcat/I");
   outT_->Branch("nvtx",     &bev_.nvtx,      "nvtx/I");
+  outT_->Branch("rho",      &bev_.rho,      "rho/F");
   outT_->Branch("nw",       &bev_.nw,        "nw/I");
   outT_->Branch("w",         bev_.w,         "w[nw]/F");
   outT_->Branch("nl",       &bev_.nl,        "nl/I");
@@ -45,6 +46,8 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("jeta",      bev_.jeta,      "jeta[nj]/F");
   outT_->Branch("jphi",      bev_.jphi,      "jphi[nj]/F");
   outT_->Branch("jcsv",      bev_.jcsv,      "jcsv[nj]/F");
+  outT_->Branch("jarea",     bev_.jarea,     "jarea[nj]/F");
+  outT_->Branch("jtoraw",    bev_.jtoraw,    "jtoraw[nj]/F");
   outT_->Branch("svpt",      bev_.svpt,      "svpt[2]/F");
   outT_->Branch("sveta",     bev_.sveta,     "sveta[2]/F");
   outT_->Branch("svphi",     bev_.svphi,     "svphi[2]/F");
@@ -75,7 +78,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 
 //
 bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
-			  Int_t nvtx, std::vector<Float_t> weights,
+			  Int_t nvtx, Float_t rho, std::vector<Float_t> weights,
 			  Int_t evcat,
 			  std::vector<data::PhysicsObject_t *> &leptons, 
 			  std::vector<data::PhysicsObject_t *> &jets,
@@ -91,6 +94,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
   bev_.event=event;
   bev_.lumi=lumi;
   bev_.nvtx=nvtx;
+  bev_.rho=rho;
   for(size_t i=0; i<weights.size(); i++) { bev_.w[i]=weights[i]; bev_.nw++; }
   bev_.evcat=evcat;
 
@@ -114,6 +118,8 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
       bev_.jeta[bev_.nj]  = jets[i]->eta();
       bev_.jphi[bev_.nj]  = jets[i]->phi();
       bev_.jcsv[bev_.nj]  = jets[i]->getVal("csv");
+      bev_.jarea[bev_.nj]  = jets[i]->getVal("area");
+      bev_.jtoraw[bev_.nj]  = jets[i]->getVal("torawsf");
       bev_.nj++;
 
       if(i>1) continue;

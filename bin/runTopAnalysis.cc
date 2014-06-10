@@ -231,7 +231,7 @@ void selectJets(data::PhysicsObjectCollection_t jets, data::PhysicsObjectCollect
     selJets.push_back(jets[ijet]);
   }
 
-  sort(jets.begin(), jets.end(), data::PhysicsObject_t::sortByLxy);
+  sort(selJets.begin(), selJets.end(), data::PhysicsObject_t::sortByLxy);
   //  sort(selJets.begin(), selJets.end(), data::PhysicsObject_t::sortByPt);
 }
 
@@ -310,6 +310,38 @@ int main(int argc, char* argv[])
         }
         cout << fBtagEffCorr.size() << " b-tag correction factors have been read" << endl;
     }
+
+  //
+  // control histograms
+  //
+  gROOT->cd(); //THIS LINE IS NEEDED TO MAKE SURE THAT HISTOGRAMS ARE NOT DESTROYED WHEN CLOSING THE INPUT FILE
+  SmartSelectionMonitor controlHistos;
+  TH1F* Hhepup        = (TH1F* )controlHistos.addHistogram(new TH1F ("heupnup"    , "hepupnup"    ,20,0,20) ) ;
+  TH1F* Hcutflow      = (TH1F*) controlHistos.addHistogram(new TH1F ("cutflow"    , "cutflow"    ,5,0,5) ) ;
+  controlHistos.addHistogram( new TH1F ("nvertices", "; Vertex multiplicity; Events", 50, 0.,50.) );
+  TString labels[]={"Lepton(s)", "Jets", "E_{T}^{miss}", "b-jet"};
+  int nsteps=sizeof(labels)/sizeof(TString);
+  TH1F *h              = (TH1F *)controlHistos.addHistogram( new TH1F("evtflow",";Selection step;Events",nsteps,0,nsteps) );
+  for(int i=0; i<nsteps; i++) h->GetXaxis()->SetBinLabel(i+1,labels[i]);
+  controlHistos.addHistogram( new TH1F("thetall",";#theta(l,l') [rad];Events",50,0,3.2) );
+  controlHistos.addHistogram( new TH1F("njets",  ";Jet multiplicity [GeV]; Events",6,0,6) );
+  controlHistos.addHistogram( new TH1F("met",    ";PF E_{T}^{miss} [GeV]; Events",50,0,250) );
+  controlHistos.addHistogram( new TH1F("mt",     ";Transverse mass [GeV];Events",50,0,500) );
+  controlHistos.addHistogram( new TH1F("charge",";Charge; Events",2,0,2) );
+
+  ///
+  // process events file
+  //
+  DataEventSummaryHandler evSummary;
+  if( !evSummary.attach( (TTree *) inF->Get(baseDir+"/data") ) )  { inF->Close();  return -1; }
+  const Int_t totalEntries=evSummary.getEntries();
+
+  float cnorm=1.0;
+  if(isMC){
+    TH1F* cutflowH = (TH1F *) inF->Get(baseDir+"/cutflow");
+    if(cutflowH) cnorm=cutflowH->GetBinContent(1);
+  }
+  Hcutflow->SetBinContent(1,cnorm);
 
     //
     // check input file
@@ -443,11 +475,11 @@ int main(int argc, char* argv[])
       bool muTrigger   = ev.t_bits[6];
       bool eTrigger    = ev.t_bits[13];
       if(!isMC){
-    	eeTrigger   &= isDoubleElePD;
-    	emuTrigger  &= isMuEGPD;
-    	mumuTrigger &= isDoubleMuPD;
-    	muTrigger   &= isSingleMuPD;
-    	eTrigger    &= isSingleElePD;
+		eeTrigger   &= ( isDoubleElePD && !isMuEGPD && !isDoubleMuPD && !isSingleMuPD && !isSingleElePD);
+		emuTrigger  &= (!isDoubleElePD &&  isMuEGPD && !isDoubleMuPD && !isSingleMuPD && !isSingleElePD);
+		mumuTrigger &= (!isDoubleElePD && !isMuEGPD &&  isDoubleMuPD && !isSingleMuPD && !isSingleElePD);
+		muTrigger   &= (!isDoubleElePD && !isMuEGPD && !isDoubleMuPD &&  isSingleMuPD && !isSingleElePD);
+		eTrigger    &= (!isDoubleElePD && !isMuEGPD && !isDoubleMuPD && !isSingleMuPD &&  isSingleElePD);
       }
 
       //leptons
@@ -468,7 +500,7 @@ int main(int argc, char* argv[])
       if(abs(box.cat)==13    && !muTrigger)   continue;
       if(abs(box.cat)==11*11 && !eeTrigger)   continue;
       if(abs(box.cat)==11*13 && !emuTrigger)  continue;
-      if(abs(box.cat)==11*13 && !mumuTrigger) continue;
+      if(abs(box.cat)==13*13 && !mumuTrigger) continue;
 
 
       //
@@ -509,58 +541,71 @@ int main(int argc, char* argv[])
       int ngenLeptonsStatus3(0);
       float topPtWgt(1.0), topPtWgtUp(1.0), topPtWgtDown(1.0);
       if(isMC)
-    	{
-    	  float pttop(0), ptantitop(0);
-    	  for(size_t igen=0; igen<gen.size(); igen++){
-    	    if(gen[igen].get("status")!=3) continue;
-    	    int absid=abs(gen[igen].get("id"));
-    	    if(absid==6) {
-    	      hasTop=true;
-    	      if(gen[igen].get("id")==6) pttop=gen[igen].pt();
-    	      else                       ptantitop=gen[igen].pt();
-    	    }
-    	    if(absid!=11 && absid!=13 && absid!=15) continue;
-    	    ngenLeptonsStatus3++;
-    	  }
-    	  if(mcTruthMode==1)
-    	    {
-    	      if( ! ( (abs(box.cat)==11 || abs(box.cat)==13) && (ngenLeptonsStatus3==1 && hasTop) ) ) continue;
-    	      if( ! ( (abs(box.cat)==11*11 || abs(box.cat)==11*13 || abs(box.cat)==13*13) && (ngenLeptonsStatus3==2 && hasTop) ) ) continue;
-    	    }
-    	  if(mcTruthMode==2)
-    	    {
-    	      if(  ( (abs(box.cat)==11 || abs(box.cat)==13) && (ngenLeptonsStatus3==1 && hasTop) ) ) continue;
-    	      if(  ( (abs(box.cat)==11*11 || abs(box.cat)==11*13 || abs(box.cat)==13*13) && (ngenLeptonsStatus3==2 && hasTop) ) ) continue;
-    	    }
-    	  if(pttop>0 && ptantitop>0 && fTopPtWgt)
-    	    {
-    	      fTopPtWgt->computeWeight(pttop,ptantitop);
-    	      fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );
-    	    }
-    	}
+		{
+		  float pttop(0), ptantitop(0);
+		  for(size_t igen=0; igen<gen.size(); igen++){
+		    if(gen[igen].get("status")!=3) continue;
+		    int absid=abs(gen[igen].get("id"));
+		    if(absid==6) {
+		      hasTop=true;
+		      if(gen[igen].get("id")==6) pttop=gen[igen].pt();
+		      else                       ptantitop=gen[igen].pt();
+		    }
+		    if(absid!=11 && absid!=13 && absid!=15) continue;
+		    ngenLeptonsStatus3++;
+		  }
+		  if(mcTruthMode==1)
+		    {
+		      if( abs(box.cat)==11 || abs(box.cat)==13 )
+			{
+			  if( !(ngenLeptonsStatus3==1 && isTTbarMC) ) continue;
+			}
+		      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
+			{
+			  if( !(ngenLeptonsStatus3==2 && isTTbarMC) ) continue;
+			}
+		    }
+		  if(mcTruthMode==2)
+		    {
+		      if( abs(box.cat)==11 || abs(box.cat)==13 )
+			{
+			  if( ngenLeptonsStatus3==1 && isTTbarMC ) continue;
+			}
+		      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
+			{
+			  if( ngenLeptonsStatus3==2 && isTTbarMC ) continue;
+			}
+		    }
+		  if(pttop>0 && ptantitop>0 && fTopPtWgt)
+		    {
+		      fTopPtWgt->computeWeight(pttop,ptantitop);
+		      fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );
+		    }
+		}
 
       //ready to roll!
-
       //do s.th. here
       bool passJetSelection(true);
-      if(abs(box.cat)==11 || abs(box.cat)==13)       passJetSelection = (box.jets.size()>=4);
+      if(abs(box.cat)==11 || abs(box.cat)==13)                               passJetSelection = (box.jets.size()>=4);
+      if(abs(box.cat)==11*11 || abs(box.cat)==13*13 || abs(box.cat)==11*13)  passJetSelection = (box.jets.size()>=2);
       bool passMetSelection(true);
-      if(abs(box.cat)==11*11 || abs(box.cat)==11*13) passMetSelection =(box.met.pt()>40);
+      if(abs(box.cat)==11*11 || abs(box.cat)==13*13)                         passMetSelection =(box.met.pt()>40);
+
       std::vector<TString> evCats(1,box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 0,               puWeight*lepSelectionWeight);
       controlHistos.fillHisto("nvertices", evCats, ev.nvtx,         puWeight*lepSelectionWeight);
 
+      controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
       evCats.clear();
       if(box.lCat!="")         evCats.push_back(box.chCat+box.lCat);
       if(box.metCat!="")       evCats.push_back(box.chCat+box.metCat);
-      controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
       if(passJetSelection) evCats.push_back(box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 1,               puWeight*lepSelectionWeight);
 
+      controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
       evCats.clear();
       if(box.lCat!="")   evCats.push_back(box.chCat+box.lCat);
       if(box.jetCat!="") evCats.push_back(box.chCat+box.jetCat);
-      controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
       if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 2,               puWeight*lepSelectionWeight);
 
@@ -592,7 +637,10 @@ int main(int argc, char* argv[])
       allWeights.push_back(topPtWgtUp);
       allWeights.push_back(topPtWgtDown);
       data::PhysicsObjectCollection_t pf=evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
-      lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
+      bool accept=lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
+      if(accept)
+	controlHistos.fillHisto("evtflow",   evCats, 3,               puWeight*lepSelectionWeight);
+
     }
 
     std::cout << std::endl;

@@ -45,8 +45,6 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("jeta",      bev_.jeta,      "jeta[nj]/F");
   outT_->Branch("jphi",      bev_.jphi,      "jphi[nj]/F");
   outT_->Branch("jcsv",      bev_.jcsv,      "jcsv[nj]/F");
-  outT_->Branch("bid",       bev_.bid,       "bid[2]/I");
-  outT_->Branch("bhadid",    bev_.bhadid,    "bhadid[2]/I");
   outT_->Branch("svpt",      bev_.svpt,      "svpt[2]/F");
   outT_->Branch("sveta",     bev_.sveta,     "sveta[2]/F");
   outT_->Branch("svphi",     bev_.svphi,     "svphi[2]/F");
@@ -54,9 +52,11 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("svntk",     bev_.svntk,     "svntk[2]/F");
   outT_->Branch("svlxy",     bev_.svlxy,     "svlxy[2]/F");
   outT_->Branch("svlxyerr",  bev_.svlxyerr,  "svlxyerr[2]/F");
+  outT_->Branch("bid",       bev_.bid,       "bid[2]/I");
   outT_->Branch("bpt",       bev_.bpt,       "bpt[2]/F");
   outT_->Branch("beta",      bev_.beta,      "beta[2]/F");
   outT_->Branch("bphi",      bev_.bphi,      "bphi[2]/F");
+  outT_->Branch("bhadid",    bev_.bhadid,    "bhadid[2]/I");  
   outT_->Branch("bhadpt",    bev_.bhadpt,    "bhadpt[2]/F");
   outT_->Branch("bhadeta",   bev_.bhadeta,   "bhadeta[2]/F");
   outT_->Branch("bhadphi",   bev_.bhadphi,   "bhadphi[2]/F");
@@ -74,7 +74,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 
 
 //
-void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
+bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 			  Int_t nvtx, std::vector<Float_t> weights,
 			  Int_t evcat,
 			  std::vector<data::PhysicsObject_t *> &leptons,
@@ -174,7 +174,9 @@ void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
   bev_.metphi=met.phi();
 
   //all done here
-  if(bev_.svlxy[0]>0) outT_->Fill();
+  if(bev_.svlxy[0]>0) { outT_->Fill(); return true; }
+  return false;
+
 }
 
 

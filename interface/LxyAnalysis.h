@@ -30,7 +30,7 @@ public:
 
   void attachToDir(TDirectory *outDir);
 
-  void analyze(Int_t run, Int_t event, Int_t lumi,
+  bool analyze(Int_t run, Int_t event, Int_t lumi,
 	       Int_t nvtx, std::vector<Float_t> weights,
 	       Int_t evCat,
 	       std::vector<data::PhysicsObject_t *> &leptons, 

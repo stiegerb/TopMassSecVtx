@@ -74,7 +74,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 
 
 //
-void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
+bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 			  Int_t nvtx, std::vector<Float_t> weights,
 			  Int_t evcat,
 			  std::vector<data::PhysicsObject_t *> &leptons, 
@@ -174,7 +174,9 @@ void LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
   bev_.metphi=met.phi();
 
   //all done here
-  if(bev_.svlxy[0]>0) outT_->Fill();
+  if(bev_.svlxy[0]>0) { outT_->Fill(); return true; }
+  return false;
+
 }
 
 

@@ -232,7 +232,7 @@ void selectJets(data::PhysicsObjectCollection_t jets, data::PhysicsObjectCollect
     selJets.push_back(jets[ijet]);
   }
 
-  sort(jets.begin(), jets.end(), data::PhysicsObject_t::sortByLxy);
+  sort(selJets.begin(), selJets.end(), data::PhysicsObject_t::sortByLxy);
   //  sort(selJets.begin(), selJets.end(), data::PhysicsObject_t::sortByPt);
 }
 
@@ -558,19 +558,19 @@ int main(int argc, char* argv[])
       controlHistos.fillHisto("evtflow",   evCats, 0,               puWeight*lepSelectionWeight);
       controlHistos.fillHisto("nvertices", evCats, ev.nvtx,         puWeight*lepSelectionWeight);
       
+      controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
       evCats.clear();
       if(box.lCat!="")         evCats.push_back(box.chCat+box.lCat);
       if(box.metCat!="")       evCats.push_back(box.chCat+box.metCat);
       if(passJetSelection) evCats.push_back(box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 1,               puWeight*lepSelectionWeight);
-      controlHistos.fillHisto("njets", evCats, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
 
+      controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
       evCats.clear();
       if(box.lCat!="")   evCats.push_back(box.chCat+box.lCat);
       if(box.jetCat!="") evCats.push_back(box.chCat+box.jetCat);
       if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
       controlHistos.fillHisto("evtflow",   evCats, 2,               puWeight*lepSelectionWeight);
-      controlHistos.fillHisto("met",       evCats, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
 
       evCats.clear();
       if(passJetSelection && passMetSelection) evCats.push_back(box.chCat);
@@ -601,7 +601,10 @@ int main(int argc, char* argv[])
       allWeights.push_back(topPtWgtUp);
       allWeights.push_back(topPtWgtDown);
       data::PhysicsObjectCollection_t pf=evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
-      lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
+      bool accept=lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
+      if(accept)
+	controlHistos.fillHisto("evtflow",   evCats, 3,               puWeight*lepSelectionWeight);
+
     }
   
   if(nDuplicates) cout << "[Warning] found " << nDuplicates << " duplicate events in this ntuple" << endl;

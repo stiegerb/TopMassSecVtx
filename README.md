@@ -17,7 +17,6 @@ git init
 git config core.sparsecheckout true
 /bin/cp /afs/cern.ch/user/s/stiegerb/public/TopSS2014/topss2014-sparse-checkout .git/info/sparse-checkout
 git remote add -t topss2014 --no-tags origin /afs/cern.ch/work/s/stiegerb/TopSummerStudents/CMSSW_5_3_15/src/UserCode/llvv_fwk
-
 git fetch origin +topss2014:topss2014
 git checkout topss2014
 ```

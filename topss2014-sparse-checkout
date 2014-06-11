@@ -9,12 +9,12 @@ data/weights/xb.root
 data/jec
 
 interface/
-!src/BTVAnalysis.h
-!src/RAnalysis.h
-!src/TopPolarizationAnalysis.h
-!src/UEAnalysis.h
-!src/dFtM.h
-!src/GammaWeightsHandler.h
+!interface/BTVAnalysis.h
+!interface/RAnalysis.h
+!interface/TopPolarizationAnalysis.h
+!interface/HiggsUtils.h
+!interface/dFtM.h
+!interface/GammaWeightsHandler.h
 
 python/storeTools_cff.py
 python/mvaConfig_cfi.py
@@ -24,7 +24,7 @@ src/
 !src/BTVAnalysis.cc
 !src/RAnalysis.cc
 !src/TopPolarizationAnalysis.cc
-!src/UEAnalysis.cc
+!src/HiggsUtils.cc
 !src/dFtM.cc
 !src/GammaWeightsHandler.cc
 

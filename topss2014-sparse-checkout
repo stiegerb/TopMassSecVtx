@@ -9,12 +9,25 @@ data/weights/xb.root
 data/jec
 
 interface/
+!src/BTVAnalysis.h
+!src/RAnalysis.h
+!src/TopPolarizationAnalysis.h
+!src/UEAnalysis.h
+!src/dFtM.h
+!src/GammaWeightsHandler.h
 
 python/storeTools_cff.py
 python/mvaConfig_cfi.py
 
 scripts/
 src/
+!src/BTVAnalysis.cc
+!src/RAnalysis.cc
+!src/TopPolarizationAnalysis.cc
+!src/UEAnalysis.cc
+!src/dFtM.cc
+!src/GammaWeightsHandler.cc
+
 
 test/runAnalysis_cfg.py.templ
 test/topss2014/

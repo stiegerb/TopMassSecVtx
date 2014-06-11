@@ -28,15 +28,18 @@ git cms-merge-topic -u cms-tau-pog:CMSSW_5_3_X_boostedTaus_2013Dec17
 # cp -r /afs/cern.ch/user/v/vischia/public/TauAnalysis_forSVfit/ TauAnalysis
 git clone git@github.com:veelken/SVfit_standalone TauAnalysis/SVfitStandalone
 
-#checkout the 2l2v framework
+#################################
+# Checkout the llvv_fwk framework
 mkdir -p UserCode/llvv_fwk
 cd UserCode/llvv_fwk/
 git init
-git remote add -f origin git@github.com:stiegerb/2l2v_fwk
-
 git config core.sparsecheckout true
 /bin/cp /afs/cern.ch/user/s/stiegerb/public/TopSS2014/topss2014-sparse-checkout .git/info/sparse-checkout
 
-git pull origin topss2014
+#git remote add -t topss2014 --no-tags origin git@github.com:stiegerb/2l2v_fwk
+git remote add -t topss2014 --no-tags origin /afs/cern.ch/work/s/stiegerb/TopSummerStudents/CMSSW_5_3_15/src/UserCode/llvv_fwk
+
+git fetch origin +topss2014:topss2014
+git checkout topss2014
 
 scram b -j 20

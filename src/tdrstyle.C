@@ -90,7 +90,7 @@ void setTDRStyle() {
   // gStyle->SetStatY(Float_t y = 0);
 
 // Margins:
-  gStyle->SetPadTopMargin(0.05);
+  gStyle->SetPadTopMargin(0.02);
   gStyle->SetPadBottomMargin(0.13);
   gStyle->SetPadLeftMargin(0.16);
   gStyle->SetPadRightMargin(0.05);

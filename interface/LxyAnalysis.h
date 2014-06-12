@@ -18,6 +18,8 @@ struct BeautyEvent_t
   Float_t svpt[2],sveta[2],svphi[2],svmass[2],svntk[2],svlxy[2],svlxyerr[2];
   Float_t bpt[2],beta[2],bphi[2];
   Float_t bhadpt[2],bhadeta[2],bhadphi[2],bhadmass[2],bhadlxy[2];
+  Int_t tid[2];
+  Float_t tpt[2],teta[2],tphi[2],tmass[2];
   Int_t npf,npfb1,pfid[200];
   Float_t pfpt[200],pfeta[200],pfphi[200];
   Float_t metpt,metphi;

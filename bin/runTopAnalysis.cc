@@ -31,6 +31,7 @@
 #include "RecoBTag/PerformanceDB/interface/BtagPerformance.h"
 #include "PhysicsTools/FWLite/interface/CommandLineParser.h"
 
+#include "TVectorD.h"
 #include "TSystem.h"
 #include "TFile.h"
 #include "TChain.h"
@@ -397,10 +398,8 @@ int main(int argc, char* argv[])
         }
     }
 
-    Float_t xsecWeight(isMC ? xsec/cnorm : 1.0);
-
     LxyAnalysis lxyAn;
-
+	
     //prepare the output file
     TString outUrl(out);
     gSystem->ExpandPathName(outUrl);
@@ -505,52 +504,52 @@ int main(int argc, char* argv[])
 
       //top pT weights
       data::PhysicsObjectCollection_t gen=evSummary.getPhysicsObject(DataEventSummaryHandler::GENPARTICLES);
-      bool hasTop(false);
+      //bool hasTop(false);
       int ngenLeptonsStatus3(0);
       float topPtWgt(1.0), topPtWgtUp(1.0), topPtWgtDown(1.0);
       if(isMC)
+	{
+	  float pttop(0), ptantitop(0);
+	  for(size_t igen=0; igen<gen.size(); igen++){
+	    if(gen[igen].get("status")!=3) continue;
+	    int absid=abs(gen[igen].get("id"));
+	    if(absid==6) {
+	      //hasTop=true;
+	      if(gen[igen].get("id")==6) pttop=gen[igen].pt();
+	      else                       ptantitop=gen[igen].pt();
+	    }
+	    if(absid!=11 && absid!=13 && absid!=15) continue;
+	    ngenLeptonsStatus3++;
+	  }
+	  if(mcTruthMode==1)
+	    {
+	      if( abs(box.cat)==11 || abs(box.cat)==13 )
 		{
-		  float pttop(0), ptantitop(0);
-		  for(size_t igen=0; igen<gen.size(); igen++){
-		    if(gen[igen].get("status")!=3) continue;
-		    int absid=abs(gen[igen].get("id"));
-		    if(absid==6) {
-		      hasTop=true;
-		      if(gen[igen].get("id")==6) pttop=gen[igen].pt();
-		      else                       ptantitop=gen[igen].pt();
-		    }
-		    if(absid!=11 && absid!=13 && absid!=15) continue;
-		    ngenLeptonsStatus3++;
-		  }
-		  if(mcTruthMode==1)
-		    {
-		      if( abs(box.cat)==11 || abs(box.cat)==13 )
-			{
-			  if( !(ngenLeptonsStatus3==1 && isTTbarMC) ) continue;
-			}
-		      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
-			{
-			  if( !(ngenLeptonsStatus3==2 && isTTbarMC) ) continue;
-			}
-		    }
-		  if(mcTruthMode==2)
-		    {
-		      if( abs(box.cat)==11 || abs(box.cat)==13 )
-			{
-			  if( ngenLeptonsStatus3==1 && isTTbarMC ) continue;
-			}
-		      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
-			{
-			  if( ngenLeptonsStatus3==2 && isTTbarMC ) continue;
-			}
-		    }
-		  if(pttop>0 && ptantitop>0 && fTopPtWgt)
-		    {
-		      fTopPtWgt->computeWeight(pttop,ptantitop);
-		      fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );
-		    }
+		  if( !(ngenLeptonsStatus3==1 && isTTbarMC) ) continue;
 		}
-
+	      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
+		{
+		  if( !(ngenLeptonsStatus3==2 && isTTbarMC) ) continue;
+		}
+	    }
+	  if(mcTruthMode==2)
+	    {
+	      if( abs(box.cat)==11 || abs(box.cat)==13 )
+		{
+		  if( ngenLeptonsStatus3==1 && isTTbarMC ) continue;
+		}
+	      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
+		{
+		  if( ngenLeptonsStatus3==2 && isTTbarMC ) continue;
+		}
+	    }
+	  if(pttop>0 && ptantitop>0 && fTopPtWgt)
+	    {
+	      fTopPtWgt->computeWeight(pttop,ptantitop);
+	      fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );
+	    }
+	}
+      
       //ready to roll!
       //do s.th. here
       bool passJetSelection(true);
@@ -594,7 +593,7 @@ int main(int argc, char* argv[])
       int evCatSummary(box.cat);
       if( box.lCat=="z" ) evCatSummary*=1000;
       if( box.metCat=="lowmet") evCatSummary *=10;
-      std::vector<Float_t> allWeights(1,xsecWeight);
+      std::vector<Float_t> allWeights;
       allWeights.push_back(puWeight);
       allWeights.push_back(puWeightUp);
       allWeights.push_back(puWeightDown);
@@ -624,6 +623,10 @@ int main(int argc, char* argv[])
     //
     spyFile->cd();
     spyFile->Write();
+    TVectorD constVals(2);
+    constVals[0] = isMC ? cnorm : 1.0;
+    constVals[1] = isMC ? xsec  : 1.0;
+    constVals.Write("constVals");
     controlHistos.Write();
     spyFile->Close();
 

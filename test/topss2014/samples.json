@@ -69,7 +69,7 @@
         { "dtag":"MC8TeV_DY2JetsToLL_50toInf"              , "split":10, "xsec":3503.71     , "br":[ 0.0613559322 ]        , "dset":"/DY2JetsToLL_M-50_TuneZ2Star_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7C-v1/AODSIM"        },
         { "dtag":"MC8TeV_DY3JetsToLL_50toInf"              , "split":10, "xsec":3503.71     , "br":[ 0.0173220339 ]        , "dset":"/DY3JetsToLL_M-50_TuneZ2Star_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"        },
         { "dtag":"MC8TeV_DY4JetsToLL_50toInf"              , "split":10, "xsec":3503.71     , "br":[ 0.0078101695 ]        , "dset":"/DY4JetsToLL_M-50_TuneZ2Star_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"        },
-        { "dtag":"MC8TeV_DYJetsToLL_10to50"                , "split":10, "xsec":860.5       , "br":[ 1.0 ]                 , "dset":"/DYJetsToLL_M-10To50filter_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"        },
+        { "dtag":"MC8TeV_DYJetsToLL_10to50"                , "split":5, "xsec":860.5       , "br":[ 1.0 ]                 , "dset":"/DYJetsToLL_M-10To50filter_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"        },
         { "dtag":"MC8TeV_ZG"                               , "split":1, "xsec":123.9       , "br":[ 1.0 ]                 , "dset":"/ZG_Inclusive_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"        }
       ]
     },

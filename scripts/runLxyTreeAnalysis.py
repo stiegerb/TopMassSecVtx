@@ -1,12 +1,15 @@
 #! /usr/bin/env python
-import os, re
+import os,re
 import pprint
 
 PLOTS = [
 ##  ('name',  'branch', 'selection/weight', nbins, minx, maxx)
-    ('cutflow','0.5', 'w[0]*(Entry$==0)', 1, 0., 1),
-    ('jpt',    'jpt[0]', 'w[0]*(abs(evcat)==11)', 100, 0., 300.),
-    ('avpfpt', 'Sum$(pfpt)/Length$(pfpt)', 'w[0]*(abs(evcat)==11)', 100, 0., 20.)
+    ('cutflow','0.5',
+        'w[0]*(Entry$==0)', 1, 0., 1),
+    ('jpt',    'jpt[0]',
+        'w[0]*(abs(evcat)==11)', 100, 0., 300.),
+    ('avpfpt', 'Sum$(pfpt)/Length$(pfpt)',
+        'w[0]*(abs(evcat)==11)', 100, 0., 20.)
 ]
 
 def makeDir(dirname):
@@ -168,7 +171,7 @@ if __name__ == "__main__":
                       action="store", type="string", dest="outDir",
                       help=("Output directory for histogram files "
                             "[default: lxyplots/]"))
-    parser.add_option("-l", "--sharedLib", default="LxyTreeAnalysis_cc.so",
+    parser.add_option("-l", "--sharedLib", default="libUserCodellvv_fwk.so",
                       action="store", type="string", dest="sharedLib",
                       help=("Shared library for LxyTreeAnalysis class "
                             "[default: %default]"))

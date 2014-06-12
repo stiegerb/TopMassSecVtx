@@ -1,182 +1,205 @@
-#!/usr/bin/env python
-import os,sys
+#! /usr/bin/env python
 import json
-import optparse
 import commands
-import math
-import ROOT
-from ROOT import TFile, TH1F, TH2F, THStack, TCanvas, TPad, TPaveText, TLegend
 
-# a wrapper for the plots
-from UserCode.llvv_fwk.PlotUtils import *
-
-"""
-Gets the value of a given item
-(if not available a default value is returned)
-"""
-def getByLabel(desc,key,defaultVal=None) :
+def getByLabel(desc, key, defaultVal=None) :
+    """
+    Gets the value of a given item
+    (if not available a default value is returned)
+    """
     try :
         return desc[key]
     except KeyError:
         return defaultVal
 
+def getCMSPfn(path):
+    from subprocess import Popen, PIPE
+    output = Popen(["cmsPfn", path], stdout=PIPE).communicate()[0]
+    return output.strip()
 
-"""
-Loop over file to find all histograms
-"""
-def getAllPlotsFrom(dir,chopPrefix=False):
-    toReturn=[]
-    allKeys=dir.GetListOfKeys()
+
+def getAllPlotsFrom(dir, chopPrefix=False):
+    """
+    Loop over file to find all histograms
+    """
+    toReturn = []
+    allKeys = dir.GetListOfKeys()
     for tk in allKeys:
-        k=tk.GetName()
-        obj=dir.Get(k)
+        k = tk.GetName()
+        obj = dir.Get(k)
         if obj.InheritsFrom('TDirectory') :
             allKeysInSubdir = getAllPlotsFrom(obj,chopPrefix)
             for kk in allKeysInSubdir :
                 if not chopPrefix:
                     toReturn.append( k+'/'+kk )
                 else:
-                    newObj=obj.Get(kk)
+                    newObj = obj.Get(kk)
                     try:
                         if newObj.InheritsFrom('TDirectory'):
                             toReturn.append( k+'/'+kk )
                     except:
-                        kk=kk.split('/')[-1]
+                        kk = kk.split('/')[-1]
                         toReturn.append(kk)
         elif obj.InheritsFrom('TH1') :
             if chopPrefix:
-                k=k.replace(dir.GetName()+'_','')
+                k = k.replace(dir.GetName()+'_','')
             toReturn.append( k )
     return toReturn
 
 
-"""
-Loop over the inputs and launch jobs
-"""
-def runPlotter(inDir, jsonUrl, lumi, debug ):
+def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
+    """
+    Loop over the inputs and launch jobs
+    """
+    from UserCode.llvv_fwk.PlotUtils import Plot
+    from ROOT import TFile
 
     jsonFile = open(jsonUrl,'r')
-    procList=json.load(jsonFile,encoding='utf-8').items()
+    procList = json.load(jsonFile,encoding = 'utf-8').items()
 
-    #make a survey of *all* existing plots
-    plots=[]
-    baseRootFile=None
-    if inDir.find('.root')>0 :
-        baseRootFile=TFile.Open(inDir)
-        plots=list(set(getAllPlotsFrom(dir=baseRootFile,chopPrefix=True)))
+    # Make a survey of *all* existing plots
+    plots = []
+    baseRootFile = None
+    if inDir.endswith('.root'):
+        baseRootFile = TFile.Open(inDir)
+        plots = list(set(getAllPlotsFrom(dir=baseRootFile,chopPrefix=True)))
     else:
-        for proc in procList :
-            for desc in proc[1] :
+        for proc in procList:
+            for desc in proc[1]:
                 data = desc['data']
                 mctruthmode = getByLabel(desc,'mctruthmode')
+                for d in data:
+                    dtag = getByLabel(d,'dtag','')
+                    split = getByLabel(d,'split',1)
+
+                    for segment in range(0,split):
+                        eventsFile = dtag
+                        if split > 1:
+                            eventsFile = dtag + '_' + str(segment)
+                        if mctruthmode:
+                            eventsFile += '_filt%d' % mctruthmode
+                        rootFileUrl = inDir+'/'+eventsFile+'.root'
+                        if rootFileUrl.startswith('/store/'):
+                            rootFileUrl = getCMSPfn(rootFileUrl)
+                        rootFile = TFile.Open(rootFileUrl)
+                        # try:
+                        if rootFile.IsZombie() : continue
+                        # except:
+                        #     continue
+                        iplots = getAllPlotsFrom(dir = rootFile)
+                        rootFile.Close()
+                        plots = list(set(plots+iplots))
+
+    plots.sort()
+
+    # Now plot them
+    for plot in plots:
+
+        pName = plot.replace('/','')
+        newPlot = Plot(pName)
+
+        for proc in procList :
+            for desc in proc[1] :
+                title = getByLabel(desc,'tag','unknown')
+                isData = getByLabel(desc,'isdata',False)
+                color = int(getByLabel(desc,'color',1))
+                data = desc['data']
+                mctruthmode = getByLabel(desc,'mctruthmode')
+
+                hist = None
                 for d in data :
                     dtag = getByLabel(d,'dtag','')
                     split = getByLabel(d,'split',1)
 
-                    for segment in range(0,split) :
-                        eventsFile=dtag
-                        if split>1: eventsFile=dtag + '_' + str(segment)
-                        if mctruthmode: eventsFile += '_filt%d'%mctruthmode
-                        rootFileUrl=inDir+'/'+eventsFile+'.root'
-                        if(rootFileUrl.find('/store/')==0)  :
-                            rootFileUrl = commands.getstatusoutput('cmsPfn ' + rootFileUrl)[1]
-                        rootFile=TFile.Open(rootFileUrl)
-                        try:
-                            if rootFile.IsZombie() : continue
-                        except:
-                            continue
-                        iplots=getAllPlotsFrom(dir=rootFile)
-                        rootFile.Close()
-                        plots=list(set(plots+iplots))
-
-    #now plot them
-    plots.sort()
-    for p in plots:
-
-        pName=p.replace('/','')
-        newPlot=Plot(pName)
-
-        for proc in procList :
-            for desc in proc[1] :
-                title=getByLabel(desc,'tag','unknown')
-                isData=getByLabel(desc,'isdata',False)
-                color=int(getByLabel(desc,'color',1))
-                data = desc['data']
-                mctruthmode = getByLabel(desc,'mctruthmode')
-
-                h=None
-                for d in data :
-                    dtag = getByLabel(d,'dtag','')
-                    split=getByLabel(d,'split',1)
-
                     if baseRootFile is None:
                         for segment in range(0,split) :
-                            eventsFile=dtag
-                            if split>1: eventsFile=dtag + '_' + str(segment)
-                            if mctruthmode: eventsFile += '_filt%d'%mctruthmode
-                            rootFileUrl=inDir+'/'+eventsFile+'.root'
-                            if(rootFileUrl.find('/store/')==0)  :
-                                rootFileUrl = commands.getstatusoutput('cmsPfn ' + rootFileUrl)[1]
+                            eventsFile = dtag
+                            if split > 1:
+                                eventsFile = dtag + '_' + str(segment)
+                            if mctruthmode:
+                                eventsFile += '_filt%d' % mctruthmode
+                            rootFileUrl = inDir+'/'+eventsFile+'.root'
 
-                            rootFile=TFile.Open(rootFileUrl)
+                            if(rootFileUrl.startswith('/store/')):
+                                rootFileUrl = getCMSPfn(rootFileUrl)
+
+                            rootFile = TFile.Open(rootFileUrl)
+                            # try:
+                            if rootFile.IsZombie(): continue
+                            # except:
+                            #     continue
+                            ihist = rootFile.Get(plot)
                             try:
-                                if rootFile.IsZombie() : continue
-                            except:
+                                if ihist.Integral() <= 0: continue
+                            except AttributeError:
                                 continue
-                            ih=rootFile.Get(p)
-                            try:
-                                if ih.Integral()<=0 : continue
-                            except:
-                                continue
-                            if h is None :
-                                h=ih.Clone(dtag+'_'+pName)
-                                h.SetDirectory(0)
+                            if hist is None :
+                                hist = ihist.Clone(dtag+'_'+pName)
+                                hist.SetDirectory(0)
                             else:
-                                h.Add(ih)
+                                hist.Add(ihist)
                             rootFile.Close()
 
                     else:
-                        ih=baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
+                        ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
                         try:
-                            if ih.Integral()<=0 : continue
+                            if ihist.Integral() <= 0: continue
                         except:
                             continue
                         if h is None:
-                            h=ih.Clone(dtag+'_'+pName)
+                            h = ihist.Clone(dtag+'_'+pName)
                             h.SetDirectory(0)
                         else:
-                            h.Add(ih)
+                            h.Add(ihist)
 
-                if h is None: continue
-                if not isData: h.Scale(lumi)
-                newPlot.add(h,title,color,isData)
+                if hist is None: continue
+                if not isData: hist.Scale(lumi)
+                newPlot.add(hist,title,color,isData)
 
-        #newPlot.info()
-        newPlot.show('plots/')
-        if(debug) : newPlot.showTable('plots/')
+        newPlot.show(outDir)
+        if(debug):
+            newPlot.showTable(outDir)
         newPlot.reset()
 
     if baseRootFile is not None: baseRootFile.Close()
 
-def main():
-
-    usage = 'usage: %prog [options]'
-    parser = optparse.OptionParser(usage)
-    parser.add_option('-i', '--in'         ,    dest='inDir'              , help='Input directory or file'                ,   default=None)
-    parser.add_option('-j', '--json'       ,    dest='json'               , help='A json file with the samples to analyze',   default=None)
-    parser.add_option('-d', '--debug'      ,    dest='debug'              , help='Dump the event yields table for each plot', default=False, action="store_true")
-    parser.add_option('-l', '--lumi'       ,    dest='lumi'               , help='Re-scale to integrated luminosity [pb]',    default=1.0,   type='float')
-    (opt, args) = parser.parse_args()
-
-    if opt.inDir is None or opt.json is None:
-        parser.print_help()
-        sys.exit(1)
-
-    customROOTstyle()
-
-    os.system('mkdir -p plots')
-    runPlotter(inDir=opt.inDir, jsonUrl=opt.json, lumi=opt.lumi, debug=opt.debug)
-    print 'Plots have been saved to plots'
 
 if __name__ == "__main__":
-    main()
+    import os,sys
+    from optparse import OptionParser
+    usage = """
+    usage: %prog [options] input_directory
+    """
+    parser = OptionParser(usage=usage)
+    parser.add_option('-j', '--json', dest='json',
+                      default='test/topss2014/samples.json',
+                      help='A json file with the samples to analyze'
+                           '[default: %default]')
+    parser.add_option('-d', '--debug', dest='debug', action="store_true",
+                      help='Dump the event yields table for each plot')
+    parser.add_option('-l', '--lumi', dest='lumi', default=19700,
+                      type='float',
+                      help='Re-scale to integrated luminosity [pb]'
+                           ' [default: %default]')
+    parser.add_option('-o', '--outDir', dest='outDir', default='plots',
+                      help='Output directory [default: %default]')
+    (opt, args) = parser.parse_args()
+    sys.argv = [] ## clean up arguments to stop pyROOT from messing with -h
+
+    if len(args) > 0:
+        from UserCode.llvv_fwk.PlotUtils import customROOTstyle
+        customROOTstyle()
+
+        os.system('mkdir -p %s'%opt.outDir)
+        runPlotter(inDir=args[0],
+                   jsonUrl=opt.json,
+                   lumi=opt.lumi,
+                   debug=opt.debug,
+                   outDir=opt.outDir)
+        print 'Plots have been saved to %s' % opt.outDir
+        exit(0)
+
+    else:
+        parser.print_help()
+        exit(-1)
+

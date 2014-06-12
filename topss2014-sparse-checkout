@@ -1,5 +1,4 @@
 bin/runTopAnalysis.cc
-bin/runPlotter.cc
 bin/BuildFile.xml
 
 data/top_samples.json

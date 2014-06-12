@@ -7,7 +7,6 @@
 <use name="UserCode/llvv_fwk"/>
 <environment>
   <bin name="runTopAnalysis" file="runTopAnalysis.cc"></bin>
-  <bin name="runPlotter"     file="runPlotter.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>

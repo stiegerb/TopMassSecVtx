@@ -15,6 +15,7 @@ interface/
 !interface/dFtM.h
 !interface/GammaWeightsHandler.h
 
+python/PlotUtils.py
 python/storeTools_cff.py
 python/mvaConfig_cfi.py
 

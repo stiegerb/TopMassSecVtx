@@ -122,9 +122,6 @@ def runLxyTreeAnalysis(name, location, treeloc):
     from ROOT import gSystem, TChain
 
     ## Load the previously compiled shared object library into ROOT
-    gSystem.Load("libFWCoreFWLite.so");
-    from ROOT import AutoLibraryLoader
-    AutoLibraryLoader.enable()
     gSystem.Load("libUserCodellvv_fwk.so")
     ## Load it into PyROOT (this is where the magic happens)
     from ROOT import LxyTreeAnalysis

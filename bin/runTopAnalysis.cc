@@ -37,6 +37,7 @@
 #include "TDirectory.h"
 #include "TEventList.h"
 #include "TRandom.h"
+#include "TGraphErrors.h"
 
 #include <iostream>
 

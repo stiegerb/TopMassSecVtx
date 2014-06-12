@@ -6,9 +6,9 @@ from ROOT import TFile, TH1F, TH2F, THStack
 from ROOT import TCanvas, TPad, TPaveText, TLegend
 
 class Plot:
-"""
-A wrapper to store data and MC histograms for comparison
-"""
+    """
+    A wrapper to store data and MC histograms for comparison
+    """
 
     def __init__(self,name):
         self.name = name
@@ -173,9 +173,9 @@ A wrapper to store data and MC histograms for comparison
         canvas.SaveAs(outDir+'/'+self.name+'.png')
 
 def customROOTstyle() :
-"""
-Style options mostly from CMS's tdrStyle.C
-"""
+    """
+    Style options mostly from CMS's tdrStyle.C
+    """
     ROOT.gROOT.SetBatch(True)
     ROOT.gStyle.SetOptTitle(False)
     ROOT.gStyle.SetOptStat(False)

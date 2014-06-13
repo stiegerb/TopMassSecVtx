@@ -1,6 +1,8 @@
 #! /usr/bin/env python
+import os
 import json
 import commands
+from ROOT import TFile
 
 def getByLabel(desc, key, defaultVal=None) :
     """
@@ -17,33 +19,56 @@ def getCMSPfn(path):
     output = Popen(["cmsPfn", path], stdout=PIPE).communicate()[0]
     return output.strip()
 
+def getNormalization(path):
+    infile = TFile.Open(path, 'read')
+    constVals = infile.Get('constVals')
+    nevents, xsec = constVals[0], constVals[1]
+    return nevents, xsec
 
-def getAllPlotsFrom(dir, chopPrefix=False):
+def openTFile(url):
+    ## File on eos
+    if url.startswith('/store/'):
+        url = getCMSPfn(url)
+        ## Should add a check here for existence
+
+    ## If it's a local file, check it actually exists
+    elif not os.path.exists(url):
+        return None
+
+    rootFile = TFile.Open(url)
+    try:
+        if rootFile.IsZombie(): return None
+    except ReferenceError:
+        ## Failed to open url (file doesn't exist)
+        return None
+    return rootFile
+
+def getAllPlotsFrom(tdir, chopPrefix=False):
     """
-    Loop over file to find all histograms
+    Return a list of all keys deriving from TH1 in a file
     """
     toReturn = []
-    allKeys = dir.GetListOfKeys()
-    for tk in allKeys:
-        k = tk.GetName()
-        obj = dir.Get(k)
+    allKeys = tdir.GetListOfKeys()
+    for tkey in allKeys:
+        key = tkey.GetName()
+        obj = tdir.Get(key)
         if obj.InheritsFrom('TDirectory') :
             allKeysInSubdir = getAllPlotsFrom(obj,chopPrefix)
-            for kk in allKeysInSubdir :
+            for subkey in allKeysInSubdir :
                 if not chopPrefix:
-                    toReturn.append( k+'/'+kk )
+                    toReturn.append( key +'/'+subkey )
                 else:
-                    newObj = obj.Get(kk)
+                    newObj = obj.Get(subkey)
                     try:
                         if newObj.InheritsFrom('TDirectory'):
-                            toReturn.append( k+'/'+kk )
+                            toReturn.append( key +'/'+subkey )
                     except:
-                        kk = kk.split('/')[-1]
-                        toReturn.append(kk)
+                        subkey = subkey.split('/')[-1]
+                        toReturn.append(subkey)
         elif obj.InheritsFrom('TH1') :
             if chopPrefix:
-                k = k.replace(dir.GetName()+'_','')
-            toReturn.append( k )
+                key = key.replace(tdir.GetName()+'_','')
+            toReturn.append(key)
     return toReturn
 
 
@@ -52,7 +77,6 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
     Loop over the inputs and launch jobs
     """
     from UserCode.llvv_fwk.PlotUtils import Plot
-    from ROOT import TFile
 
     jsonFile = open(jsonUrl,'r')
     procList = json.load(jsonFile,encoding = 'utf-8').items()
@@ -62,7 +86,7 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
     baseRootFile = None
     if inDir.endswith('.root'):
         baseRootFile = TFile.Open(inDir)
-        plots = list(set(getAllPlotsFrom(dir=baseRootFile,chopPrefix=True)))
+        plots = list(set(getAllPlotsFrom(tdir=baseRootFile,chopPrefix=True)))
     else:
         for proc in procList:
             for desc in proc[1]:
@@ -79,14 +103,10 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
                         if mctruthmode:
                             eventsFile += '_filt%d' % mctruthmode
                         rootFileUrl = inDir+'/'+eventsFile+'.root'
-                        if rootFileUrl.startswith('/store/'):
-                            rootFileUrl = getCMSPfn(rootFileUrl)
-                        rootFile = TFile.Open(rootFileUrl)
-                        # try:
-                        if rootFile.IsZombie() : continue
-                        # except:
-                        #     continue
-                        iplots = getAllPlotsFrom(dir = rootFile)
+                        rootFile = openTFile(rootFileUrl)
+                        if rootFile is None: continue
+
+                        iplots = getAllPlotsFrom(tdir=rootFile)
                         rootFile.Close()
                         plots = list(set(plots+iplots))
 
@@ -98,8 +118,8 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
         pName = plot.replace('/','')
         newPlot = Plot(pName)
 
-        for proc in procList :
-            for desc in proc[1] :
+        for proc in procList:
+            for desc in proc[1]: # loop on processes
                 title = getByLabel(desc,'tag','unknown')
                 isData = getByLabel(desc,'isdata',False)
                 color = int(getByLabel(desc,'color',1))
@@ -107,9 +127,9 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
                 mctruthmode = getByLabel(desc,'mctruthmode')
 
                 hist = None
-                for d in data :
-                    dtag = getByLabel(d,'dtag','')
-                    split = getByLabel(d,'split',1)
+                for dset in data: # loop on datasets for process
+                    dtag = getByLabel(dset,'dtag','')
+                    split = getByLabel(dset,'split',1)
 
                     if baseRootFile is None:
                         for segment in range(0,split) :
@@ -120,14 +140,9 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
                                 eventsFile += '_filt%d' % mctruthmode
                             rootFileUrl = inDir+'/'+eventsFile+'.root'
 
-                            if(rootFileUrl.startswith('/store/')):
-                                rootFileUrl = getCMSPfn(rootFileUrl)
+                            rootFile = openTFile(rootFileUrl)
+                            if rootFile is None: continue
 
-                            rootFile = TFile.Open(rootFileUrl)
-                            # try:
-                            if rootFile.IsZombie(): continue
-                            # except:
-                            #     continue
                             ihist = rootFile.Get(plot)
                             try:
                                 if ihist.Integral() <= 0: continue
@@ -165,7 +180,7 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
 
 
 if __name__ == "__main__":
-    import os,sys
+    import sys
     from optparse import OptionParser
     usage = """
     usage: %prog [options] input_directory

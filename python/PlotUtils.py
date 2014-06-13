@@ -80,7 +80,7 @@ class Plot:
 
 
     def show(self, outDir):
-        canvas = TCanvas('c','c',500,500)
+        canvas = TCanvas('c_'+self.name,'C',800,800)
         canvas.cd()
         t1 = TPad("t1","t1", 0.0, 0.20, 1.0, 1.0)
         t1.Draw()
@@ -170,7 +170,8 @@ class Plot:
         canvas.cd()
         canvas.Modified()
         canvas.Update()
-        canvas.SaveAs(outDir+'/'+self.name+'.png')
+        canvas.SaveAs(outDir+'/'+self.name+'.pdf')
+        # canvas.SaveAs(outDir+'/'+self.name+'.png')
 
 def customROOTstyle() :
     """

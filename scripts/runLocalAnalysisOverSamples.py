@@ -40,6 +40,9 @@ segment=0
 jsonFile = open(opt.samplesDB,'r')
 procList=json.load(jsonFile,encoding='utf-8').items()
 
+#append the latest tag to the dir
+opt.outdir += '/'+commands.getstatusoutput('git rev-parse --short HEAD')[1]
+
 FarmDirectory                      = opt.outdir+"/FARM"
 JobName                            = opt.theExecutable
 LaunchOnCondor.Jobs_RunHere        = 1
@@ -47,6 +50,8 @@ LaunchOnCondor.Jobs_Queue          = opt.queue
 LaunchOnCondor.Jobs_LSFRequirement = '"'+opt.requirementtoBatch+'"'
 LaunchOnCondor.Jobs_EmailReport    = opt.report
 LaunchOnCondor.SendCluster_Create(FarmDirectory, JobName)
+
+
 
 #run over sample
 for proc in procList :

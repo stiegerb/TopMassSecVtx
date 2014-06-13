@@ -116,6 +116,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 
 
   //look at the jets now (we assume they are already sorted by Lxy)
+  bool hasCSVLtag(false);
   for(size_t i=0; i<jets.size(); i++)
     {
       const data::PhysicsObject_t &genJet=jets[i]->getObject("genJet");
@@ -127,6 +128,8 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
       bev_.jarea[bev_.nj]  = jets[i]->getVal("area");
       bev_.jtoraw[bev_.nj]  = jets[i]->getVal("torawsf");
       bev_.nj++;
+
+      hasCSVLtag |= (jets[i]->getVal("csv")>0.405); 
 
       if(i>1) continue;
 
@@ -197,7 +200,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
   bev_.metphi=met.phi();
 
   //all done here
-  if(bev_.svlxy[0]>0) { outT_->Fill(); return true; }
+  if(bev_.svlxy[0]>0 || hasCSVLtag) { outT_->Fill(); return true; }
   return false;
 
 }

@@ -18,6 +18,7 @@ void LxyAnalysis::resetBeautyEvent()
   bev_.nj=0;
   bev_.npf=0;
   bev_.npfb1=0;
+  for(size_t i=0; i<2; i++) { bev_.tid[i]=0; bev_.bid[i]=0; bev_.bhadid[i]=0; bev_.svmass[i]=0; bev_.svpt[i]=0; }
 }
 
 //
@@ -73,6 +74,11 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("pfphi",     bev_.pfphi,     "pfphi[npf]/F");
   outT_->Branch("metpt",    &bev_.metpt,     "metpt/F");
   outT_->Branch("metphi",   &bev_.metphi,    "metphi/F");
+  outT_->Branch("tid",       bev_.tid,       "tid[2]/I");
+  outT_->Branch("tpt",       bev_.tpt,       "tpt[2]/F");
+  outT_->Branch("teta",      bev_.teta,      "teta[2]/F");
+  outT_->Branch("tphi",      bev_.tphi,      "tphi[2]/F");
+  outT_->Branch("tmass",     bev_.tmass,     "tmass[2]/F");
 }
 
 
@@ -143,6 +149,17 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
       for(size_t imc=0; imc<mctruth.size(); imc++)
 	{
 	  int id=mctruth[imc].get("id");
+
+	  //check if top can be matched by charge to the quark
+	  if(abs(id)==6 && abs(bev_.bid[i])==5 && bev_.bid[i]*id<0 && mctruth[imc].get("status")==3 )
+	    {
+	      bev_.tid[i]=id;
+	      bev_.tpt[i]=mctruth[imc].pt();
+	      bev_.teta[i]=mctruth[imc].eta();
+	      bev_.tphi[i]=mctruth[imc].phi();
+	      bev_.tmass[i]=mctruth[imc].mass();
+	    }
+
 	  if(abs(id)<500) continue;
 
 	  if(deltaR(mctruth[imc],*(jets[i]))>0.5) continue;

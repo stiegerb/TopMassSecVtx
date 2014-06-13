@@ -12,6 +12,7 @@ datapileup_70300_2012abcd_singleMu=cms.vdouble( 1.74887e-05, 8.41971e-05, 0.0002
 runProcess = cms.PSet(
     input = cms.vstring("@input"),
     outdir = cms.string("@outdir"),
+    maxEvents = cms.int32(-1), 	
     isMC = cms.bool(@isMC),
     xsec = cms.double(@xsec),
     suffix = cms.string("@suffix"), 

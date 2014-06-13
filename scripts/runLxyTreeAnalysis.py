@@ -118,6 +118,20 @@ def getListOfTasks(directory, mask=''):
     # pprint.pprint(task_list)
     return task_list
 
+def copyObject(keyname, from_here, to_here):
+    from ROOT import TFile
+    infile = TFile.Open(from_here, 'read')
+    object_ = infile.Get(keyname)
+    infile.Close()
+    # print 'nevents:', object_[0], 'xsec:', object_[1]
+    outfile = TFile.Open(to_here, 'update')
+    outfile.cd()
+    object_.Write(keyname)
+    outfile.Write()
+    outfile.Close()
+    infile.Close()
+
+
 def runLxyTreeAnalysisPacked(args):
     name, location, treeloc = args
     return runLxyTreeAnalysis(name, location, treeloc)
@@ -152,6 +166,8 @@ def runLxyTreeAnalysis(name, location, treeloc):
 
     ## Run the loop
     ana.RunJob(output_file)
+
+    copyObject('constVals', location, output_file)
 
 if __name__ == "__main__":
     from optparse import OptionParser

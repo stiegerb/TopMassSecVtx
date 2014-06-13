@@ -68,6 +68,11 @@ public :
    Float_t         pfphi[200];   //[npf]
    Float_t         metpt;
    Float_t         metphi;
+   Int_t           tid[2];
+   Float_t         tpt[2];
+   Float_t         teta[2];
+   Float_t         tphi[2];
+   Float_t         tmass[2];
 
    // List of branches
    TBranch        *b_run;   //!
@@ -116,6 +121,12 @@ public :
    TBranch        *b_pfphi;   //!
    TBranch        *b_metpt;   //!
    TBranch        *b_metphi;   //!
+   TBranch        *b_tid;   //!
+   TBranch        *b_tpt;   //!
+   TBranch        *b_teta;   //!
+   TBranch        *b_tphi;   //!
+   TBranch        *b_tmass;   //!
+
 
    LxyTreeAnalysisBase(TTree *tree=0);
    virtual ~LxyTreeAnalysisBase();

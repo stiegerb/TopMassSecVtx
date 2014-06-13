@@ -95,6 +95,11 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("pfphi", pfphi, &b_pfphi);
    fChain->SetBranchAddress("metpt", &metpt, &b_metpt);
    fChain->SetBranchAddress("metphi", &metphi, &b_metphi);
+   fChain->SetBranchAddress("tid", tid, &b_tid);
+   fChain->SetBranchAddress("tpt", tpt, &b_tpt);
+   fChain->SetBranchAddress("teta", teta, &b_teta);
+   fChain->SetBranchAddress("tphi", tphi, &b_tphi);
+   fChain->SetBranchAddress("tmass", tmass, &b_tmass);
    Notify();
 }
 

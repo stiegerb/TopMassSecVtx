@@ -134,17 +134,18 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
                                 print "ngen not properly set for", dtag
 
 
-    if len(missing_files):
-        print 20*'-'
-        print "WARNING: Missing the following files:"
-        for filename in missing_files:
-            print filename
-        print 20*'-'
+        if len(missing_files):
+            print 20*'-'
+            print "WARNING: Missing the following files:"
+            for filename in missing_files:
+                print filename
+            print 20*'-'
 
     plots.sort()
 
     # Now plot them
     for plot in plots:
+        print '... processing', plot
 
         pName = plot.replace('/','')
         newPlot = Plot(pName)
@@ -176,8 +177,11 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
 
                             ihist = rootFile.Get(plot)
                             try: ## Check if it is found
-                                if ihist.Integral() <= 0: continue
+                                if ihist.Integral() <= 0:
+                                    rootFile.Close()
+                                    continue
                             except AttributeError:
+                                rootFile.Close()
                                 continue
 
                             ihist.Scale(xsecweights[dtag])

@@ -2,8 +2,8 @@
 
 import math
 import ROOT
-from ROOT import TFile, TH1F, TH2F, THStack, TLatex
-from ROOT import TCanvas, TPad, TPaveText, TLegend
+from ROOT import THStack, TLatex
+from ROOT import TCanvas, TPad, TLegend
 
 class Plot:
     """

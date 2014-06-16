@@ -30,6 +30,7 @@ parser.add_option('-n', '--n'          ,    dest='fperjob'            , help='in
 parser.add_option('-p', '--pars'       ,    dest='params'             , help='extra parameters for the job'          , default='')
 parser.add_option('-c', '--cfg'        ,    dest='cfg_file'           , help='base configuration file template'      , default='')
 parser.add_option('-r', "--report"     ,    dest='report'             , help='If the report should be sent via email', default=False, action="store_true")
+parser.add_option('-f', "--forceHash"  ,    dest='forceHash'          , help='Force to use this hash',                 default=commands.getstatusoutput('git rev-parse --short HEAD')[1])
 (opt, args) = parser.parse_args()
 scriptFile=os.path.expandvars('${CMSSW_BASE}/bin/${SCRAM_ARCH}/wrapLocalAnalysisRun.sh')
 
@@ -41,7 +42,7 @@ jsonFile = open(opt.samplesDB,'r')
 procList=json.load(jsonFile,encoding='utf-8').items()
 
 #append the latest tag to the dir
-opt.outdir += '/'+commands.getstatusoutput('git rev-parse --short HEAD')[1]
+opt.outdir += '/'+opt.forceHash
 
 FarmDirectory                      = opt.outdir+"/FARM"
 JobName                            = opt.theExecutable

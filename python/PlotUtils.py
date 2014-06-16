@@ -138,7 +138,6 @@ class Plot:
         # leg.SetNColumns(nlegCols)
         leg.SetNColumns(2)
         leg.Draw()
-
         ## Draw CMS Preliminary label
         tlat = TLatex()
         tlat.SetNDC()
@@ -147,8 +146,6 @@ class Plot:
         tlat.SetTextAlign(31)
         prelim_text = 'CMS Preliminary, #sqrt{s} = 8 TeV'
         tlat.DrawLatex(0.92, 0.92, prelim_text)
-
-
         if totalMC is None or self.data is None:
             t1.SetPad(0,0,1,1)
         else :
@@ -180,36 +177,10 @@ class Plot:
         canvas.SaveAs(outDir+'/'+self.name+'.pdf')
         # canvas.SaveAs(outDir+'/'+self.name+'.png')
 
+"""
+Loads TDR style
+"""
 def customROOTstyle() :
-    """
-    Style options mostly from CMS's tdrStyle.C
-    """
-    ROOT.gROOT.SetBatch(True)
-    ROOT.gStyle.SetOptTitle(False)
-    ROOT.gStyle.SetOptStat(False)
-    ROOT.gStyle.SetPadTopMargin(0.1);
-    ROOT.gStyle.SetPadBottomMargin(0.13);
-    ROOT.gStyle.SetPadLeftMargin(0.15);
-    ROOT.gStyle.SetPadRightMargin(0.02);
-    ROOT.gStyle.SetLabelColor(1, "XYZ");
-    ROOT.gStyle.SetLabelFont(42, "XYZ");
-    ROOT.gStyle.SetLabelOffset(0.007, "XYZ");
-    ROOT.gStyle.SetLabelSize(0.05, "XYZ");
-    ROOT.gStyle.SetAxisColor(1, "XYZ");
-    ROOT.gStyle.SetStripDecimals(True);
-    ROOT.gStyle.SetTickLength(0.03, "XYZ");
-    ROOT.gStyle.SetNdivisions(510, "XYZ");
-    ROOT.gStyle.SetPadTickX(0);
-    ROOT.gStyle.SetPadTickY(0);
-    ROOT.gStyle.SetMarkerStyle(20);
-    ROOT.gStyle.SetHistLineColor(1);
-    ROOT.gStyle.SetHistLineStyle(0);
-    ROOT.gStyle.SetHistLineWidth(1);
-    ROOT.gStyle.SetFrameBorderMode(0);
-    ROOT.gStyle.SetFrameBorderSize(1);
-    ROOT.gStyle.SetFrameFillColor(0);
-    ROOT.gStyle.SetFrameFillStyle(0);
-    ROOT.gStyle.SetFrameLineColor(1);
-    ROOT.gStyle.SetFrameLineStyle(1);
-    ROOT.gStyle.SetFrameLineWidth(1);
+    ROOT.gSystem.Load("libUserCodellvv_fwk.so")
+    ROOT.setTDRStyle()
 

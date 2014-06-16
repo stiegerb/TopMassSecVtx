@@ -352,11 +352,12 @@ int main(int argc, char* argv[])
     int nsteps=sizeof(labels)/sizeof(TString);
     TH1F *baseEvtFlowH = (TH1F *)controlHistos.addHistogram( new TH1F("evtflow",";Selection step;Events",nsteps,0,nsteps) );
     for(int i=0; i<nsteps; i++) baseEvtFlowH->GetXaxis()->SetBinLabel(i+1,labels[i]);
-    controlHistos.addHistogram( new TH1F("thetall",";#theta(l,l') [rad];Events",50,0,3.2) );
-    controlHistos.addHistogram( new TH1F("njets",  ";Jet multiplicity [GeV]; Events",6,0,6) );
-    controlHistos.addHistogram( new TH1F("met",    ";PF E_{T}^{miss} [GeV]; Events",50,0,250) );
-    controlHistos.addHistogram( new TH1F("mt",     ";Transverse mass [GeV];Events",50,0,500) );
-    controlHistos.addHistogram( new TH1F("charge",";Charge; Events",2,0,2) );
+    controlHistos.addHistogram( new TH1F("thetall", ";#theta(l,l') [rad];Events",50,0,3.2) );
+    controlHistos.addHistogram( new TH1F("njets",   ";Jet multiplicity [GeV]; Events",6,0,6) );
+    controlHistos.addHistogram( new TH1F("met",     ";PF E_{T}^{miss} [GeV]; Events",50,0,250) );
+    controlHistos.addHistogram( new TH1F("mt",      ";Transverse mass [GeV];Events",50,0,500) );
+    controlHistos.addHistogram( new TH1F("mll",     ";Dilepton mass [GeV];Events",50,10,260) );
+    controlHistos.addHistogram( new TH1F("charge", ";Charge; Events",2,0,2) );
 
     ///
     // process events file
@@ -547,14 +548,17 @@ int main(int argc, char* argv[])
 
       //used for background estimates in the dilepton channel
       float mt(utils::cmssw::getMT<LorentzVector>( *(box.leptons[0]), box.met)),thetall(0);
+      LorentzVector ll(*(box.leptons[0]));
       if(box.leptons.size()>=2)
 	{
 	  mt     += utils::cmssw::getMT<LorentzVector>( *(box.leptons[1]), box.met );
 	  thetall = utils::cmssw::getArcCos<LorentzVector>( *(box.leptons[0]), *(box.leptons[1]) );
+	  ll     += *(box.leptons[1]);
 	}
       
       //control plots for the event selection
       controlHistos.fillHisto("nvertices", box.chCat, ev.nvtx,         puWeight*lepSelectionWeight);
+      if(box.leptons.size()>=2) controlHistos.fillHisto("mll",        box.chCat,            ll.mass(),                          puWeight*lepSelectionWeight);
       if(passLeptonSelection)
 	{
 	  controlHistos.fillHisto("evtflow", box.chCat, 1,               puWeight*lepSelectionWeight);

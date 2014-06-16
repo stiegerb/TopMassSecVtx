@@ -2,7 +2,7 @@
 import os
 import json
 import commands
-from ROOT import TFile
+from ROOT import TFile,gROOT,gStyle
 
 def getByLabel(desc, key, defaultVal=None) :
     """
@@ -114,7 +114,7 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
 
     # Now plot them
     for plot in plots:
-
+        print plot
         pName = plot.replace('/','')
         newPlot = Plot(pName)
 
@@ -145,7 +145,9 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
 
                             ihist = rootFile.Get(plot)
                             try:
-                                if ihist.Integral() <= 0: continue
+                                if ihist.Integral() <= 0:
+                                    rootFile.Close()
+                                    continue
                             except AttributeError:
                                 continue
                             if hist is None :
@@ -204,7 +206,10 @@ if __name__ == "__main__":
     if len(args) > 0:
         from UserCode.llvv_fwk.PlotUtils import customROOTstyle
         customROOTstyle()
-
+        gROOT.SetBatch(True)
+        gStyle.SetOptTitle(0)
+        gStyle.SetOptStat(0)
+        
         os.system('mkdir -p %s'%opt.outDir)
         runPlotter(inDir=args[0],
                    jsonUrl=opt.json,

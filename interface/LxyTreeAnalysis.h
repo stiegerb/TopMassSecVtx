@@ -119,6 +119,8 @@ public:
 
    std::vector<TH1*> fHistos;
    TH1D *fHMinv2LeadTrk;
+   TH1D *fHEb1_emu; // Energy of first b-jet in emu channel
+   TH1D *fHmlSv_mu; // Inv. mass of lepton and secondary vertex (mu chan)
 
 };
 

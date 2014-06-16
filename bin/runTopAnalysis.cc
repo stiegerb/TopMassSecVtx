@@ -345,6 +345,7 @@ int main(int argc, char* argv[])
     //
     // control histograms
     //
+    gROOT->cd(); //do not, i repeat, do not remove me ;)
     SmartSelectionMonitor controlHistos;
     TH1F* Hhepup        = (TH1F* )controlHistos.addHistogram(new TH1F ("heupnup"    , "hepupnup"    ,20,0,20) ) ;
     controlHistos.addHistogram( new TH1F ("nvertices", "; Vertex multiplicity; Events", 50, 0.,50.) );
@@ -490,47 +491,29 @@ int main(int argc, char* argv[])
 	  lepSelectionWeightUp = lepSelectionWeight*0.99;
 	}
 
-      //top pT weights
+      //top pT weights and MC truth
       data::PhysicsObjectCollection_t gen=evSummary.getPhysicsObject(DataEventSummaryHandler::GENPARTICLES);
-      //bool hasTop(false);
       int ngenLeptonsStatus3(0);
       float topPtWgt(1.0), topPtWgtUp(1.0), topPtWgtDown(1.0);
       if(isMC)
 	{
 	  float pttop(0), ptantitop(0);
+	  int genCat(1);
 	  for(size_t igen=0; igen<gen.size(); igen++){
 	    if(gen[igen].get("status")!=3) continue;
 	    int absid=abs(gen[igen].get("id"));
 	    if(absid==6) {
-	      //hasTop=true;
 	      if(gen[igen].get("id")==6) pttop=gen[igen].pt();
 	      else                       ptantitop=gen[igen].pt();
 	    }
 	    if(absid!=11 && absid!=13 && absid!=15) continue;
 	    ngenLeptonsStatus3++;
+	    genCat *= gen[igen].get("id"); 
 	  }
-	  if(mcTruthMode==1)
-	    {
-	      if( abs(box.cat)==11 || abs(box.cat)==13 )
-		{
-		  if( !(ngenLeptonsStatus3==1 && isTTbarMC) ) continue;
-		}
-	      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
-		{
-		  if( !(ngenLeptonsStatus3==2 && isTTbarMC) ) continue;
-		}
-	    }
-	  if(mcTruthMode==2)
-	    {
-	      if( abs(box.cat)==11 || abs(box.cat)==13 )
-		{
-		  if( ngenLeptonsStatus3==1 && isTTbarMC ) continue;
-		}
-	      else if( abs(box.cat)==11*11 || abs(box.cat)==11*13 )
-		{
-		  if( ngenLeptonsStatus3==2 && isTTbarMC ) continue;
-		}
-	    }
+
+	  if(mcTruthMode==1 && isTTbarMC) if(abs(box.cat)!=abs(genCat)) continue;
+	  if(mcTruthMode==2 && isTTbarMC) if(abs(box.cat)==abs(genCat)) continue;
+
 	  if(pttop>0 && ptantitop>0 && fTopPtWgt)
 	    {
 	      fTopPtWgt->computeWeight(pttop,ptantitop);
@@ -558,6 +541,7 @@ int main(int argc, char* argv[])
       
       //control plots for the event selection
       controlHistos.fillHisto("nvertices", box.chCat, ev.nvtx,         puWeight*lepSelectionWeight);
+   
       if(box.leptons.size()>=2) controlHistos.fillHisto("mll",        box.chCat,            ll.mass(),                          puWeight*lepSelectionWeight);
       if(passLeptonSelection)
 	{

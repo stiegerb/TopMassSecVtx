@@ -241,7 +241,7 @@ if __name__ == "__main__":
     parser.add_option('-v', '--verbose', dest='verbose', action="store",
                       type='int', default=1,
                       help='Verbose mode [default: %default (semi-quiet)]')
-    parser.add_option('-l', '--lumi', dest='lumi', default=19700,
+    parser.add_option('-l', '--lumi', dest='lumi', default=19736,
                       type='float',
                       help='Re-scale to integrated luminosity [pb]'
                            ' [default: %default]')

@@ -24,5 +24,5 @@ fi
 
 if [ "$step" == "2" ]; then
     echo "Computing weights"
-    runPlotter.pu -l 19736  -j ${outdir}/samples.json -o ${outdir}/summary/${hash} ${outdir}/summary/${hash};
+    runPlotter.py -l 19736  -j ${outdir}/samples.json -o ${outdir}/summary/${hash} ${outdir}/summary/${hash};
 fi

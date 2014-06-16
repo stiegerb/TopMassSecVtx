@@ -17,6 +17,8 @@ class Plot {
            Int_t nbins, Float_t minx, Float_t maxx, TTree *tree=0){
          fName = name;
          fHisto = new TH1D(name, name, nbins, minx, maxx);
+         fHisto->Sumw2();
+         fHisto->SetXTitle(var);
          fVariable  = new TTreeFormula("Variable", var, tree);
          fSelection = new TTreeFormula("Formula", selection, tree);
       };

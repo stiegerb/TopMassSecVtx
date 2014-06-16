@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 import os
 import json
-import commands
-from ROOT import TFile,gROOT,gStyle
 
 def getByLabel(desc, key, defaultVal=None) :
     """
@@ -25,6 +23,7 @@ def getNormalization(tfile):
     return nevents, xsec
 
 def openTFile(url):
+    from ROOT import TFile
     ## File on eos
     if url.startswith('/store/'):
         url = getCMSPfn(url)
@@ -71,10 +70,11 @@ def getAllPlotsFrom(tdir, chopPrefix=False):
     return toReturn
 
 
-def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
+def runPlotter(inDir, jsonUrl, lumi, debug, outDir, verbose=0):
     """
     Loop over the inputs and launch jobs
     """
+    from ROOT import TFile
     from UserCode.llvv_fwk.PlotUtils import Plot
 
     jsonFile = open(jsonUrl,'r')
@@ -134,7 +134,7 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
                                 print "ngen not properly set for", dtag
 
 
-        if len(missing_files):
+        if len(missing_files) and verbose>0:
             print 20*'-'
             print "WARNING: Missing the following files:"
             for filename in missing_files:
@@ -145,7 +145,7 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
 
     # Now plot them
     for plot in plots:
-        print '... processing', plot
+        if verbose>0: print '... processing', plot
         pName = plot.replace('/','')
         newPlot = Plot(pName)
 
@@ -223,6 +223,10 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
 
 if __name__ == "__main__":
     import sys
+    tmpargv  = sys.argv[:]     # [:] for a copy, not reference
+    sys.argv = []
+    from ROOT import gROOT, gStyle
+    sys.argv = tmpargv
     from optparse import OptionParser
     usage = """
     usage: %prog [options] input_directory
@@ -234,6 +238,9 @@ if __name__ == "__main__":
                            '[default: %default]')
     parser.add_option('-d', '--debug', dest='debug', action="store_true",
                       help='Dump the event yields table for each plot')
+    parser.add_option('-v', '--verbose', dest='verbose', action="store",
+                      type='int', default=1,
+                      help='Verbose mode [default: %default (semi-quiet)]')
     parser.add_option('-l', '--lumi', dest='lumi', default=19700,
                       type='float',
                       help='Re-scale to integrated luminosity [pb]'
@@ -241,7 +248,6 @@ if __name__ == "__main__":
     parser.add_option('-o', '--outDir', dest='outDir', default='plots',
                       help='Output directory [default: %default]')
     (opt, args) = parser.parse_args()
-    sys.argv = [] ## clean up arguments to stop pyROOT from messing with -h
 
     if len(args) > 0:
         from UserCode.llvv_fwk.PlotUtils import customROOTstyle
@@ -255,7 +261,8 @@ if __name__ == "__main__":
                    jsonUrl=opt.json,
                    lumi=opt.lumi,
                    debug=opt.debug,
-                   outDir=opt.outDir)
+                   outDir=opt.outDir,
+                   verbose=opt.verbose)
         print 'Plots have been saved to %s' % opt.outDir
         exit(0)
 

@@ -31,10 +31,13 @@ void LxyTreeAnalysis::BookHistos(){
 	// Book all the histograms here
 	fHMinv2LeadTrk = new TH1D("Minv2LeadTrk", "Minv2LeadTrk (EMu channel)",
 		                      100, 0., 10.); fHistos.push_back(fHMinv2LeadTrk);
+	fHMinv2LeadTrk->SetXTitle("Inv. Mass of leading tracks in b-jet [GeV]");
 	fHEb1_emu = new TH1D("Eb1_emu", "E_b1 in EMu channel",
 		                      100, 30., 500.); fHistos.push_back(fHEb1_emu);
+	fHEb1_emu->SetXTitle("Energy of first b-jet [GeV]");
 	fHmlSv_mu = new TH1D("mlSv_mu", "Lepton/SecVtx Mass in Mu channel",
 		                      100, 0., 150.); fHistos.push_back(fHmlSv_mu);
+	fHmlSv_mu->SetXTitle("Lepton/SecVtx mass [GeV]");
 
 	// Call Sumw2() for all of them
 	std::vector<TH1*>::iterator h;

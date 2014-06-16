@@ -24,6 +24,11 @@ class Plot:
         self.garbageList.append(h)
         h.SetTitle(title)
 
+        if "GeV" in h.GetXaxis().GetTitle():
+            h.GetYaxis().SetTitle("Events / %3.1f GeV" % h.GetBinWidth(1))
+        else:
+            h.GetYaxis().SetTitle("Events / %3.1f" % h.GetBinWidth(1))
+
         if isData:
             h.SetMarkerStyle(20)
             h.SetMarkerColor(color)
@@ -58,8 +63,8 @@ class Plot:
         err = 0
         for h in self.mc:
             maxBins = h.GetXaxis().GetNbins()
-            if lastBin<1 : lastBin = maxBins
-            if lastBin>maxBins : lastBin = maxBins
+            if lastBin<1: lastBin = maxBins
+            if lastBin>maxBins: lastBin = maxBins
             if firstBin>maxBins: firstBin = maxBins
             ierr = ROOT.Double(0)
             itot = h.IntegralAndError(firstBin,lastBin,ierr)
@@ -72,7 +77,7 @@ class Plot:
         f.write('Total'.ljust(20),)
         f.write('%3.3f +/- %3.3f\n'%(tot,math.sqrt(err)))
 
-        if self.data is None : return
+        if self.data is None: return
         f.write('------------------------------------------\n')
         f.write('Data'.ljust(20),)
         f.write('%d\n'%(self.data.Integral(firstBin,lastBin)))
@@ -106,7 +111,7 @@ class Plot:
 
         totalMC = None
         stack = THStack('mc','mc')
-        for h in self.mc :
+        for h in self.mc:
             stack.Add(h,'hist')
             leg.AddEntry(h,h.GetTitle(),'f')
             nlegCols = nlegCols+1
@@ -138,6 +143,7 @@ class Plot:
         # leg.SetNColumns(nlegCols)
         leg.SetNColumns(2)
         leg.Draw()
+
         ## Draw CMS Preliminary label
         tlat = TLatex()
         tlat.SetNDC()
@@ -146,9 +152,11 @@ class Plot:
         tlat.SetTextAlign(31)
         prelim_text = 'CMS Preliminary, #sqrt{s} = 8 TeV'
         tlat.DrawLatex(0.92, 0.92, prelim_text)
+
+
         if totalMC is None or self.data is None:
             t1.SetPad(0,0,1,1)
-        else :
+        else:
             canvas.cd()
             t2 = TPad("t2","t2", 0.0, 0.0, 1.0, 0.2)
             self.garbageList.append(t2)
@@ -177,10 +185,10 @@ class Plot:
         canvas.SaveAs(outDir+'/'+self.name+'.pdf')
         # canvas.SaveAs(outDir+'/'+self.name+'.png')
 
-"""
-Loads TDR style
-"""
-def customROOTstyle() :
+def customROOTstyle():
+    """
+    Loads TDR style
+    """
     ROOT.gSystem.Load("libUserCodellvv_fwk.so")
     ROOT.setTDRStyle()
 

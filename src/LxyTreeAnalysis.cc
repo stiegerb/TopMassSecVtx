@@ -25,17 +25,16 @@ void LxyTreeAnalysis::End(TFile *file){
 	WriteHistos();
 	file->Write();
 	file->Close();
-
-	// // Clean up
-	// for (size_t i = 0; i < fPlotList.size(); ++i){
-	// 	delete fPlotList[i];
-	// }
 }
 
 void LxyTreeAnalysis::BookHistos(){
 	// Book all the histograms here
-	fHMinv2LeadTrk = new TH1D("Minv2LeadTrk", "Minv2LeadTrk",
+	fHMinv2LeadTrk = new TH1D("Minv2LeadTrk", "Minv2LeadTrk (EMu channel)",
 		                      100, 0., 10.); fHistos.push_back(fHMinv2LeadTrk);
+	fHEb1_emu = new TH1D("Eb1_emu", "E_b1 in EMu channel",
+		                      100, 30., 500.); fHistos.push_back(fHEb1_emu);
+	fHmlSv_mu = new TH1D("mlSv_mu", "Lepton/SecVtx Mass in Mu channel",
+		                      100, 0., 150.); fHistos.push_back(fHmlSv_mu);
 
 	// Call Sumw2() for all of them
 	std::vector<TH1*>::iterator h;
@@ -60,7 +59,26 @@ void LxyTreeAnalysis::analyze(){
 	TLorentzVector p_track1, p_track2;
 	p_track1.SetPtEtaPhiM(pfpt[0], pfeta[0], pfphi[0], 0.);
 	p_track2.SetPtEtaPhiM(pfpt[1], pfeta[1], pfphi[1], 0.);
-	fHMinv2LeadTrk->Fill((p_track1+p_track2).M(), w[0]);
+
+	if(abs(evcat) == 11*13 && nj > 3){
+		// emu channel
+		fHMinv2LeadTrk->Fill((p_track1+p_track2).M(), w[0]);
+
+		// Just take the first jet for now, should check/fix this
+		float E_b1 = jpt[0]*cosh(jeta[0]);
+		fHEb1_emu->Fill(E_b1, w[0]);
+	}
+
+	if(abs(evcat) == 13 && metpt > 30. && svlxy[0] > 0. && nj > 3){
+		// mu channel
+		// Just take first lepton and first sec vtx now
+		// Should ask them to be close by
+		TLorentzVector p_secvtx, p_mu;
+		p_secvtx.SetPtEtaPhiM(svpt[0], sveta[0], svphi[0], 0.);
+		p_mu.SetPtEtaPhiM(lpt[0], leta[0], lphi[0], 0.);
+		fHmlSv_mu->Fill((p_secvtx+p_mu).M(), w[0]);
+	}
+
 }
 
 void LxyTreeAnalysis::Loop(){

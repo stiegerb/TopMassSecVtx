@@ -4,12 +4,10 @@ import pprint
 
 PLOTS = [
 ##  ('name',  'branch', 'selection/weight', nbins, minx, maxx)
-    ('cutflow','0.5',
-        'w[0]*(Entry$==0)', 1, 0., 1),
     ('jpt',    'jpt[0]',
-        'w[0]*(abs(evcat)==11)', 100, 0., 300.),
+        'w[0]*(abs(evcat)==11&&metpt>30)', 100, 30., 300.),
     ('avpfpt', 'Sum$(pfpt)/Length$(pfpt)',
-        'w[0]*(abs(evcat)==11)', 100, 0., 20.)
+        'w[0]*(abs(evcat)==11&&metpt>30)', 100, 0., 20.)
 ]
 
 def makeDir(dirname):
@@ -130,7 +128,6 @@ def copyObject(keyname, from_here, to_here):
     outfile.Write()
     outfile.Close()
     infile.Close()
-
 
 def runLxyTreeAnalysisPacked(args):
     name, location, treeloc = args

@@ -19,10 +19,9 @@ def getCMSPfn(path):
     output = Popen(["cmsPfn", path], stdout=PIPE).communicate()[0]
     return output.strip()
 
-def getNormalization(path):
-    infile = TFile.Open(path, 'read')
-    constVals = infile.Get('constVals')
-    nevents, xsec = constVals[0], constVals[1]
+def getNormalization(tfile):
+    constVals = tfile.Get('constVals')
+    nevents, xsec = int(constVals[0]), float(constVals[1])
     return nevents, xsec
 
 def openTFile(url):
@@ -83,6 +82,8 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
 
     # Make a survey of *all* existing plots
     plots = []
+    xsecweights = {}
+    missing_files = []
     baseRootFile = None
     if inDir.endswith('.root'):
         baseRootFile = TFile.Open(inDir)
@@ -91,10 +92,14 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
         for proc in procList:
             for desc in proc[1]:
                 data = desc['data']
+                isData = getByLabel(desc,'isdata',False)
                 mctruthmode = getByLabel(desc,'mctruthmode')
                 for d in data:
                     dtag = getByLabel(d,'dtag','')
                     split = getByLabel(d,'split',1)
+                    xsec = getByLabel(d,'xsec',1)
+                    brratio = getByLabel(d,'br',[1])
+                    ngen = 0
 
                     for segment in range(0,split):
                         eventsFile = dtag
@@ -104,11 +109,37 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
                             eventsFile += '_filt%d' % mctruthmode
                         rootFileUrl = inDir+'/'+eventsFile+'.root'
                         rootFile = openTFile(rootFileUrl)
-                        if rootFile is None: continue
+                        if rootFile is None:
+                            missing_files.append(eventsFile+'.root')
+                            continue
 
                         iplots = getAllPlotsFrom(tdir=rootFile)
+                        if not isData:
+                            ngen_seg,_ = getNormalization(rootFile)
+                            ngen += ngen_seg
+
                         rootFile.Close()
                         plots = list(set(plots+iplots))
+
+
+                    # Calculate weight:
+                    if dtag not in xsecweights.keys():
+                        # print dtag, xsec, xsecf, ngen
+                        try:
+                            xsecweights[str(dtag)] = brratio[0]*xsec/ngen
+                        except ZeroDivisionError:
+                            if isData:
+                                xsecweights[str(dtag)] = 1.0
+                            else:
+                                print "ngen not properly set for", dtag
+
+
+    if len(missing_files):
+        print 20*'-'
+        print "WARNING: Missing the following files:"
+        for filename in missing_files:
+            print filename
+        print 20*'-'
 
     plots.sort()
 
@@ -144,12 +175,14 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
                             if rootFile is None: continue
 
                             ihist = rootFile.Get(plot)
-                            try:
-                                if ihist.Integral() <= 0:
-                                    rootFile.Close()
-                                    continue
+                            try: ## Check if it is found
+                                if ihist.Integral() <= 0: continue
                             except AttributeError:
                                 continue
+
+                            ihist.Scale(xsecweights[dtag])
+                            # print dtag,xsecweights[dtag]
+
                             if hist is None :
                                 hist = ihist.Clone(dtag+'_'+pName)
                                 hist.SetDirectory(0)
@@ -161,16 +194,20 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir):
                         ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
                         try:
                             if ihist.Integral() <= 0: continue
-                        except:
+                        except AttributeError:
                             continue
-                        if h is None:
-                            h = ihist.Clone(dtag+'_'+pName)
-                            h.SetDirectory(0)
+
+                        ihist.Scale(xsecweights[dtag])
+
+                        if hist is None: ## Check if it is found
+                            hist = ihist.Clone(dtag+'_'+pName)
+                            hist.SetDirectory(0)
                         else:
-                            h.Add(ihist)
+                            hist.Add(ihist)
 
                 if hist is None: continue
-                if not isData: hist.Scale(lumi)
+                if not isData:
+                    hist.Scale(lumi)
                 newPlot.add(hist,title,color,isData)
 
         newPlot.show(outDir)

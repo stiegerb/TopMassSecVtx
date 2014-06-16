@@ -2,7 +2,7 @@
 
 import math
 import ROOT
-from ROOT import TFile, TH1F, TH2F, THStack
+from ROOT import TFile, TH1F, TH2F, THStack, TLatex
 from ROOT import TCanvas, TPad, TPaveText, TLegend
 
 class Plot:
@@ -88,10 +88,12 @@ class Plot:
         self.garbageList.append(t1)
 
         frame = None
-        leg = TLegend(0.15,0.9,0.9,0.95)
+        # leg = TLegend(0.15,0.9,0.9,0.95)
+        leg = TLegend(0.65,0.75,0.92,0.89)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
         leg.SetTextFont(42)
+        leg.SetTextSize(0.03)
         nlegCols = 0
 
         maxY = 1.0
@@ -127,22 +129,23 @@ class Plot:
             print '%s is empty'%self.name
             return
 
-        frame.GetYaxis().SetRangeUser(1e-2,maxY)
+        frame.GetYaxis().SetRangeUser(1e-2,1.2*maxY)
         frame.SetDirectory(0)
         frame.Draw()
         frame.GetYaxis().SetTitleOffset(1.6)
         stack.Draw('hist same')
-        if self.data is not None: self.data.Draw('same')
-        leg.SetNColumns(nlegCols)
+        if self.data is not None: self.data.Draw('P same')
+        # leg.SetNColumns(nlegCols)
+        leg.SetNColumns(2)
         leg.Draw()
-        pt = TPaveText(0.12,0.94,0.9,0.97,'brNDC')
-        pt.SetBorderSize(0)
-        pt.SetFillStyle(0)
-        pt.SetTextAlign(12)
-        pt.SetTextFont(42)
-        pt.AddText('CMS preliminary, #sqrt{s} = 8 TeV')
-        pt.Draw()
-
+        ## Draw CMS Preliminary label
+        tlat = TLatex()
+        tlat.SetNDC()
+        tlat.SetTextFont(62)
+        tlat.SetTextSize(0.04)
+        tlat.SetTextAlign(31)
+        prelim_text = 'CMS Preliminary, #sqrt{s} = 8 TeV'
+        tlat.DrawLatex(0.92, 0.92, prelim_text)
         if totalMC is None or self.data is None:
             t1.SetPad(0,0,1,1)
         else :

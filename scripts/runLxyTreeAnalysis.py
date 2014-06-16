@@ -5,9 +5,9 @@ import pprint
 PLOTS = [
 ##  ('name',  'branch', 'selection/weight', nbins, minx, maxx)
     ('jpt',    'jpt[0]',
-        'w[0]*(abs(evcat)==11)', 100, 0., 300.),
+        'w[0]*(abs(evcat)==11&&metpt>30)', 100, 30., 300.),
     ('avpfpt', 'Sum$(pfpt)/Length$(pfpt)',
-        'w[0]*(abs(evcat)==11)', 100, 0., 20.)
+        'w[0]*(abs(evcat)==11&&metpt>30)', 100, 0., 20.)
 ]
 
 def makeDir(dirname):

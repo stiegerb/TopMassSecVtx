@@ -19,7 +19,10 @@ def getCMSPfn(path):
 
 def getNormalization(tfile):
     constVals = tfile.Get('constVals')
-    nevents, xsec = int(constVals[0]), float(constVals[1])
+    try:
+        nevents, xsec = int(constVals[0]), float(constVals[1])
+    except:
+        nevents, xsec = 0, 0
     return nevents, xsec
 
 def openTFile(url):
@@ -214,8 +217,7 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir, verbose=0):
                 newPlot.add(hist,title,color,isData)
 
         newPlot.show(outDir)
-        if(debug):
-            newPlot.showTable(outDir)
+        if(debug or newPlot.name.find('flow')>=0 ) : newPlot.showTable(outDir)
         newPlot.reset()
 
     if baseRootFile is not None: baseRootFile.Close()

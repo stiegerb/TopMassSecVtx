@@ -269,7 +269,7 @@ int main(int argc, char* argv[])
     bool isMC           = runProcess.getParameter<bool>("isMC");
     int mcTruthMode     = runProcess.getParameter<int>("mctruthmode");
     double xsec         = runProcess.getParameter<double>("xsec");
-    bool isV0JetsMC(isMC && (url.Contains("DYJetsToLL_50toInf") || url.Contains("WJets")));
+    bool isV0JetsMC(isMC && (url.Contains("DYJetsToLL_50toInf") || url.Contains("_WJets")));
     bool isTTbarMC(isMC && (url.Contains("TTJets") || url.Contains("_TT_") || url.Contains("TT2l_R")));
     TString out          = runProcess.getParameter<std::string>("outdir");
     bool saveSummaryTree = runProcess.getParameter<bool>("saveSummaryTree");
@@ -284,26 +284,26 @@ int main(int argc, char* argv[])
     //b-tag efficiencies read b-tag efficiency map
     if(weightsFile.size() && isMC)
     {
-        TString btagEffCorrUrl(weightsFile[0].c_str()); btagEffCorrUrl += "/btagEff.root";
-        gSystem->ExpandPathName(btagEffCorrUrl);
-        TFile *btagF=TFile::Open(btagEffCorrUrl);
-        if(btagF!=0 && !btagF->IsZombie())
+      TString btagEffCorrUrl(weightsFile[0].c_str()); btagEffCorrUrl += "/btagEff.root";
+      gSystem->ExpandPathName(btagEffCorrUrl);
+      TFile *btagF=TFile::Open(btagEffCorrUrl);
+      if(btagF!=0 && !btagF->IsZombie())
         {
-            TList *dirs=btagF->GetListOfKeys();
-            for(int itagger=0; itagger<dirs->GetEntries(); itagger++)
+	  TList *dirs=btagF->GetListOfKeys();
+	  for(int itagger=0; itagger<dirs->GetEntries(); itagger++)
             {
-                TString iDir(dirs->At(itagger)->GetName());
-                fBtagEffCorr[ std::pair<TString,TString>(iDir,"b") ]
+	      TString iDir(dirs->At(itagger)->GetName());
+	      fBtagEffCorr[ std::pair<TString,TString>(iDir,"b") ]
                 = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/beff"),(TGraphErrors *) btagF->Get(iDir+"/sfb") );
-                fBtagEffCorr[ std::pair<TString,TString>(iDir,"c") ]
+	      fBtagEffCorr[ std::pair<TString,TString>(iDir,"c") ]
                 = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/ceff"),(TGraphErrors *) btagF->Get(iDir+"/sfc") );
-                fBtagEffCorr[ std::pair<TString,TString>(iDir,"udsg") ]
+	      fBtagEffCorr[ std::pair<TString,TString>(iDir,"udsg") ]
                 = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/udsgeff"),(TGraphErrors *) btagF->Get(iDir+"/sfudsg") );
             }
         }
-        cout << fBtagEffCorr.size() << " b-tag correction factors have been read" << endl;
+      cout << fBtagEffCorr.size() << " b-tag correction factors have been read" << endl;
     }
-
+    
     //
     // check input file
     //
@@ -349,12 +349,12 @@ int main(int argc, char* argv[])
     SmartSelectionMonitor controlHistos;
     TH1F* Hhepup        = (TH1F* )controlHistos.addHistogram(new TH1F ("heupnup"    , "hepupnup"    ,20,0,20) ) ;
     controlHistos.addHistogram( new TH1F ("nvertices", "; Vertex multiplicity; Events", 50, 0.,50.) );
-    TString labels[]={"Reco","Lepton(s)", "Jets", "E_{T}^{miss}", "b-jet"};
+    TString labels[]={"Lepton(s)", "Jets", "E_{T}^{miss}", "b-jet"};
     int nsteps=sizeof(labels)/sizeof(TString);
     TH1F *baseEvtFlowH = (TH1F *)controlHistos.addHistogram( new TH1F("evtflow",";Selection step;Events",nsteps,0,nsteps) );
     for(int i=0; i<nsteps; i++) baseEvtFlowH->GetXaxis()->SetBinLabel(i+1,labels[i]);
     controlHistos.addHistogram( new TH1F("thetall", ";#theta(l,l') [rad];Events",50,0,3.2) );
-    controlHistos.addHistogram( new TH1F("njets",   ";Jet multiplicity [GeV]; Events",6,0,6) );
+    controlHistos.addHistogram( new TH1F("njets",   ";Jet multiplicity; Events",6,0,6) );
     controlHistos.addHistogram( new TH1F("met",     ";PF E_{T}^{miss} [GeV]; Events",50,0,250) );
     controlHistos.addHistogram( new TH1F("mt",      ";Transverse mass [GeV];Events",50,0,500) );
     controlHistos.addHistogram( new TH1F("mll",     ";Dilepton mass [GeV];Events",50,10,260) );
@@ -376,7 +376,6 @@ int main(int argc, char* argv[])
       TH1F* cutflowH = (TH1F *) inF->Get(baseDir+"/cutflow");
         if(cutflowH) cnorm=cutflowH->GetBinContent(1);
     }
-    baseEvtFlowH->SetBinContent(1,cnorm);
     
     cout << "Processing: " << proctag << " @ " << url << endl
 	 << "Initial number of events: " << cnorm << endl
@@ -542,31 +541,37 @@ int main(int argc, char* argv[])
       //control plots for the event selection
       controlHistos.fillHisto("nvertices", box.chCat, ev.nvtx,         puWeight*lepSelectionWeight);
    
-      if(box.leptons.size()>=2) controlHistos.fillHisto("mll",        box.chCat,            ll.mass(),                          puWeight*lepSelectionWeight);
+      if(box.leptons.size()>=2) controlHistos.fillHisto("mll",       box.chCat+"inc",            ll.mass(),  puWeight*lepSelectionWeight);
+      else                      controlHistos.fillHisto("mt",        box.chCat+"inc",            mt,         puWeight*lepSelectionWeight);
       if(passLeptonSelection)
 	{
-	  controlHistos.fillHisto("evtflow", box.chCat, 1,               puWeight*lepSelectionWeight);
+	  controlHistos.fillHisto("evtflow", box.chCat, 0,               puWeight*lepSelectionWeight);
 	  controlHistos.fillHisto("njets",   box.chCat, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
 	  if(passJetSelection)
 	    {
-	      controlHistos.fillHisto("evtflow",   box.chCat,            2,               puWeight*lepSelectionWeight);
+	      controlHistos.fillHisto("evtflow",   box.chCat,            1,               puWeight*lepSelectionWeight);
 	      controlHistos.fillHisto("met",       box.chCat,            box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
-	      controlHistos.fillHisto("met",       box.chCat+box.jetCat, box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
-
+	      
 	      if(passMetSelection)
 		{
-		  controlHistos.fillHisto("evtflow",   box.chCat,            3,                           puWeight*lepSelectionWeight);		  
-		  controlHistos.fillHisto("charge",    box.chCat,            box.leptons[0]->get("id")>0, puWeight*lepSelectionWeight);
-		  controlHistos.fillHisto("charge",    box.chCat+box.jetCat, box.leptons[0]->get("id")>0, puWeight*lepSelectionWeight);
-		  controlHistos.fillHisto("mt",        box.chCat,            mt,                          puWeight*lepSelectionWeight);
-		  controlHistos.fillHisto("thetall",   box.chCat,            thetall,                     puWeight*lepSelectionWeight);
+		  controlHistos.fillHisto("evtflow",   box.chCat, 2,                           puWeight*lepSelectionWeight);		  
+		  controlHistos.fillHisto("charge",    box.chCat, box.leptons[0]->get("id")>0, puWeight*lepSelectionWeight);
+		  if(box.leptons.size()>=2) 
+		    controlHistos.fillHisto("mll",     box.chCat, ll.mass(),                   puWeight*lepSelectionWeight);
+		  controlHistos.fillHisto("mt",        box.chCat, mt,                          puWeight*lepSelectionWeight);
+		  controlHistos.fillHisto("thetall",   box.chCat, thetall,                     puWeight*lepSelectionWeight);
 		}
 	      else
 		{
-		  controlHistos.fillHisto("thetall",   box.chCat+"lowmet", thetall,            puWeight*lepSelectionWeight);
+		  controlHistos.fillHisto("thetall",   box.chCat+"lowmet", thetall, puWeight*lepSelectionWeight);
 		}
 	    }
-
+	  else if(passMetSelection)
+	    {
+	      controlHistos.fillHisto("met",       box.chCat+box.jetCat, box.met.pt(),                puWeight*lepSelectionWeight); //N-1 plot
+	      controlHistos.fillHisto("mt",        box.chCat+box.jetCat, mt,                          puWeight*lepSelectionWeight);
+	      controlHistos.fillHisto("charge",    box.chCat+box.jetCat, box.leptons[0]->get("id")>0, puWeight*lepSelectionWeight);
+	    }
 	}
       
       //save selected event
@@ -587,7 +592,7 @@ int main(int argc, char* argv[])
       data::PhysicsObjectCollection_t pf=evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
       bool acceptLxy=lxyAn.analyze(ev.run,ev.event,ev.lumi, ev.nvtx, ev.rho, allWeights, evCatSummary, box.leptons, box.jets, box.met, pf, gen);
       if(passLeptonSelection && passJetSelection && passMetSelection && acceptLxy)
-	controlHistos.fillHisto("evtflow",  box.chCat, 4,               puWeight*lepSelectionWeight); 
+	controlHistos.fillHisto("evtflow",  box.chCat, 3,               puWeight*lepSelectionWeight); 
     }
 
     std::cout << std::endl;

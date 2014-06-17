@@ -116,14 +116,6 @@ namespace utils
   }
 
 
-  //round up and show in TeX
-  std::string toLatexRounded(double value, double error, double systError=-1,bool doPowers=true);
-
-  //clean up ROOT version of TeX
-  void TLatexToTex(TString &expr);
-
-
-
 // FWLITE CODE
 
   // loop on all the lumi blocks for an EDM file in order to count the number of events that are in a sample

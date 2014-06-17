@@ -67,11 +67,14 @@ class Plot:
         tot ={}
         err = {}
         f.write(' '.ljust(20),)
-        for xbin in xrange(1,self.mc[0].GetXaxis().GetNbins()+1):
-            pcut=self.mc[0].GetXaxis().GetBinLabel(xbin)
-            f.write(pcut.ljust(40),)
-            tot[xbin]=0
-            err[xbin]=0
+        try:
+            for xbin in xrange(1,self.mc[0].GetXaxis().GetNbins()+1):
+                pcut=self.mc[0].GetXaxis().GetBinLabel(xbin)
+                f.write(pcut.ljust(40),)
+                tot[xbin]=0
+                err[xbin]=0
+        except:
+            pass
         f.write('\n')
         f.write('------------------------------------------\n')
 
@@ -156,7 +159,7 @@ class Plot:
         if self.data is not None: nlegCols = nlegCols+1
         if nlegCols == 0:
             print '%s is empty'%self.name
-            return
+            return 
 
         frame.GetYaxis().SetRangeUser(1e-2,1.2*maxY)
         frame.SetDirectory(0)

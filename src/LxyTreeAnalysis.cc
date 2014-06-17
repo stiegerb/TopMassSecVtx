@@ -63,13 +63,13 @@ void LxyTreeAnalysis::analyze(){
 	p_track1.SetPtEtaPhiM(pfpt[0], pfeta[0], pfphi[0], 0.);
 	p_track2.SetPtEtaPhiM(pfpt[1], pfeta[1], pfphi[1], 0.);
 
-	if(abs(evcat) == 11*13 && nj > 3){
+	if(abs(evcat) == 11*13 ){
 		// emu channel
 		fHMinv2LeadTrk->Fill((p_track1+p_track2).M(), w[0]);
 
 		// Just take the first jet for now, should check/fix this
 		float E_b1 = jpt[0]*cosh(jeta[0]);
-		fHEb1_emu->Fill(E_b1, w[0]);
+		if(nj==2) fHEb1_emu->Fill(E_b1, w[0]);
 	}
 
 	if(abs(evcat) == 13 && metpt > 30. && svlxy[0] > 0. && nj > 3){

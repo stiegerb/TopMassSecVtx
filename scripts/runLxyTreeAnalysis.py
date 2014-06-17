@@ -31,6 +31,12 @@ def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms'):
     out,err = data.communicate()
 
     full_list = []
+
+    ## if input file was single root file:
+    if directory.endswith('.root'):
+        if len(out.split('\n')[0]) > 0:
+            return [prepend + directory]
+
     for line in out.split('\n'):
         if len(line.split()) == 0: continue
         ## instead of only the file name append the the string
@@ -49,6 +55,10 @@ def getListOfTasks(directory, mask=''):
     #########################
     ## Single .root file:
     if directory.endswith('.root'):
+        if directory.startswith('/store/'):
+            # print directory
+            # print getEOSlslist(directory)
+            return [(getBareName(directory), getEOSlslist(directory)[0])]
         return [(getBareName(directory), directory)]
 
     #########################

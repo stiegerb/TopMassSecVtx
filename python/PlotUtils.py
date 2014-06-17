@@ -51,11 +51,14 @@ class Plot:
         for o in self.garbageList: o.Delete()
 
     def showTable(self, outDir, firstBin=1, lastBin=-1):
+        if len(self.mc)==0:
+            print '%s is empty' % self.name
+            return
 
         if not self.loadedBaseTools:
             ROOT.gSystem.Load("libUserCodellvv_fwk.so")
             self.loadedBaseTools=True
-            
+
         if firstBin<1: firstBin = 1
 
         f = open(outDir+'/'+self.name+'.dat','w')
@@ -87,14 +90,14 @@ class Plot:
                 tot[xbin] = tot[xbin]+itot
                 err[xbin] = err[xbin]+ierr*ierr
             f.write('\n')
-            
+
         f.write('------------------------------------------\n')
         f.write('Total'.ljust(20),)
         for xbin in tot:
             pval=' & %s'%ROOT.toLatexRounded(tot[xbin],math.sqrt(err[xbin]),-1,True)
             f.write(pval.ljust(40),)
         f.write('\n')
-        
+
         if self.data is None: return
         f.write('------------------------------------------\n')
         f.write('Data'.ljust(20),)
@@ -108,6 +111,9 @@ class Plot:
 
 
     def show(self, outDir):
+        if len(self.mc)==0:
+            print '%s is empty' % self.name
+            return
         canvas = TCanvas('c_'+self.name,'C',600,600)
         canvas.cd()
         t1 = TPad("t1","t1", 0.0, 0.20, 1.0, 1.0)

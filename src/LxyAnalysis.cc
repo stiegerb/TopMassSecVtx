@@ -27,7 +27,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outDir_=outDir;
   outT_ = new TTree("lxy","lxy analysis tree");
   outT_->SetDirectory(outDir_);
-  outT_->SetAutoSave();
+  outT_->SetAutoSave(500000);
   outT_->Branch("run",      &bev_.run,       "run/I");
   outT_->Branch("lumi",     &bev_.lumi,      "lumi/I");
   outT_->Branch("event",    &bev_.event,     "event/I");

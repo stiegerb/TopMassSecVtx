@@ -56,8 +56,6 @@ DuplicatesChecker duplicatesChecker;
 using namespace std;
 
 
-
-
 //
 // ANALYSIS BOXES
 //
@@ -94,21 +92,23 @@ AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons, data::PhysicsObj
   // 2. =1 tight lepton: pt(e)>30  or pt(mu)>26 GeV and =0 vetoLeptons
   //
   box.lCat="";
-  if(box.leptons.size()>=2){
-    int dilId(box.leptons[0]->get("id")*box.leptons[1]->get("id"));
-    LorentzVector dilepton( *(box.leptons[0]) ); 
-    dilepton += *(box.leptons[1]);
-    if(dilepton.mass()>12 && dilId<0)
-      {
-	if(abs(dilId)==11*11 || abs(dilId)==13*13 || abs(dilId)==11*13 ) box.cat=dilId;
-	if(fabs(dilepton.mass()-91)<15)                                  box.lCat="z";
-      }
-  }
-  else if(box.leptons.size()==1 && nLooseLeptons==0){
-    int lId=box.leptons[0]->get("id");
-    if( abs(lId)==11      && box.leptons[0]->pt()>30)                                    box.cat=lId;
-    else if( abs(lId)==13 && box.leptons[0]->pt()>26 && fabs(box.leptons[0]->eta())<2.1) box.cat=lId;
-  }
+  if(box.leptons.size()>=2)
+    {
+      int dilId(box.leptons[0]->get("id")*box.leptons[1]->get("id"));
+      LorentzVector dilepton( *(box.leptons[0]) ); 
+      dilepton += *(box.leptons[1]);
+      if(dilepton.mass()>12 && dilId<0)
+	{
+	  if(abs(dilId)==11*11 || abs(dilId)==13*13 || abs(dilId)==11*13 )              box.cat=dilId;
+	  if( (abs(dilId)==11*11 || abs(dilId)==13*13) && fabs(dilepton.mass()-91)<15)  box.lCat="z";
+	}
+    }
+  else if(box.leptons.size()==1 && nLooseLeptons==0)
+    {
+      int lId=box.leptons[0]->get("id");
+      if( abs(lId)==11      && box.leptons[0]->pt()>30)                                    box.cat=lId;
+      else if( abs(lId)==13 && box.leptons[0]->pt()>26 && fabs(box.leptons[0]->eta())<2.1) box.cat=lId;
+    }
 
   int njetsBin( box.jets.size()>6 ? 6  : box.jets.size() );
   box.jetCat="jet"; box.jetCat += njetsBin;
@@ -165,10 +165,10 @@ void setGoodMuon(data::PhysicsObject_t &mu, float minpt, float maxeta, float isM
     // Muon energy scale and uncertainties
     Int_t id = mu.get("id");
     if( fMuCor ){
-        TLorentzVector p4(mu.px(),mu.py(),mu.pz(),mu.energy());
-        fMuCor->applyPtCorrection(p4 , id<0 ? -1 : 1 );
-        if( isMC ) fMuCor->applyPtSmearing(p4, id<0 ? -1 : 1, false);
-        mu.SetPxPyPzE(p4.Px(),p4.Py(),p4.Pz(),p4.E());
+      TLorentzVector p4(mu.px(),mu.py(),mu.pz(),mu.energy());
+      fMuCor->applyPtCorrection(p4 , id<0 ? -1 : 1 );
+      if( isMC ) fMuCor->applyPtSmearing(p4, id<0 ? -1 : 1, false);
+      mu.SetPxPyPzE(p4.Px(),p4.Py(),p4.Pz(),p4.E());
     }
 
     // Kinematic cuts
@@ -234,7 +234,7 @@ void selectLeptons(data::PhysicsObjectCollection_t leptons, data::PhysicsObjectC
     for(size_t ilep=0; ilep<leptons.size(); ilep++){
         Int_t id=leptons[ilep].get("id");
         if(abs(id)==11)      setGoodElectron(leptons[ilep], 15., 2.5, rho);
-        else if(abs(id)==13) setGoodMuon(leptons[ilep], 15., 2.5, isMC);
+        else if(abs(id)==13) setGoodMuon(leptons[ilep], 15., 2.4, isMC);
 
         if(!leptons[ilep].getFlag("passLoose") && !leptons[ilep].getFlag("passTight")) continue;
         selLeptons.push_back(leptons[ilep]);
@@ -281,6 +281,9 @@ int main(int argc, char* argv[])
     fJesCor        = utils::cmssw::getJetCorrector(jecDir,isMC);
     fTotalJESUnc = new JetCorrectionUncertainty((jecDir+"/MC_Uncertainty_AK5PFchs.txt").Data());
 
+    //muon energy corrector
+    fMuCor=getMuonCorrector(jecDir,url);
+
     //b-tag efficiencies read b-tag efficiency map
     if(weightsFile.size() && isMC)
     {
@@ -314,10 +317,10 @@ int main(int argc, char* argv[])
     Ssiz_t pos=proctag.Index(".root");
     proctag.Remove(pos,proctag.Length());
     bool isDoubleElePD(!isMC && url.Contains("DoubleEle"));
-    bool isDoubleMuPD(!isMC && url.Contains("DoubleMu"));
-    bool isMuEGPD(!isMC && url.Contains("MuEG"));
+    bool isDoubleMuPD (!isMC && url.Contains("DoubleMu"));
+    bool isMuEGPD     (!isMC && url.Contains("MuEG"));
     bool isSingleElePD(!isMC && url.Contains("SingleEle"));
-    bool isSingleMuPD(!isMC && url.Contains("SingleMu"));
+    bool isSingleMuPD (!isMC && url.Contains("SingleMu"));
 
     //
     // pileup reweighter
@@ -402,6 +405,7 @@ int main(int argc, char* argv[])
     if(mcTruthMode!=0) { outUrl += "_filt"; outUrl += mcTruthMode; }
     outUrl += ".root";
     TFile *spyFile=TFile::Open(outUrl, "recreate");
+    spyFile->cd();
     TDirectory *spyDir=0;
     if(saveSummaryTree)
     {
@@ -409,7 +413,8 @@ int main(int argc, char* argv[])
         gDirectory->SaveSelf();
         spyFile->rmdir(proctag);
         spyDir = spyFile->mkdir("dataAnalyzer");
-        lxyAn.attachToDir(spyDir);
+	spyDir->cd();
+	lxyAn.attachToDir(spyDir);
     }
 
 
@@ -486,8 +491,8 @@ int main(int argc, char* argv[])
 	      int id(abs(box.leptons[ilep]->get("id")));
 	      lepSelectionWeight *= fLepEff.getLeptonEfficiency( box.leptons[ilep]->pt(), box.leptons[ilep]->eta(), id,  "tight").first;
 	    }
-	  lepSelectionWeightUp = lepSelectionWeight*1.01;
-	  lepSelectionWeightUp = lepSelectionWeight*0.99;
+	  lepSelectionWeightUp   = lepSelectionWeight*1.01;
+	  lepSelectionWeightDown = lepSelectionWeight*0.99;
 	}
 
       //top pT weights and MC truth
@@ -509,7 +514,7 @@ int main(int argc, char* argv[])
 	    ngenLeptonsStatus3++;
 	    genCat *= gen[igen].get("id"); 
 	  }
-
+	  
 	  if(mcTruthMode==1 && isTTbarMC) if(abs(box.cat)!=abs(genCat)) continue;
 	  if(mcTruthMode==2 && isTTbarMC) if(abs(box.cat)==abs(genCat)) continue;
 

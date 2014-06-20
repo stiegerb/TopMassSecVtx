@@ -554,8 +554,8 @@ int main(int argc, char* argv[])
             controlHistos.fillHisto("njets",   box.chCat, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
 
             // LEPTON CHARGE
-            int lepid = -1.*box.leptons[0]->get("id");
-            int lepcharge = lepid/abs(lepid);
+            int lepid = box.leptons[0]->get("id");
+            int lepcharge = -1.*lepid/abs(lepid);
             if( isMC && !url.Contains("QCDMuPt20") ) lepcharge *= -1.;
             if( url.Contains("SingleMu2012B"))       lepcharge *= -1.;
 

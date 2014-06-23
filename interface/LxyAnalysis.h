@@ -41,6 +41,7 @@ public:
 	LxyAnalysis();
 
 	void attachToDir(TDirectory *outDir);
+	inline void setTruthMode(int mode){mcTruthMode = mode;}
 
 	bool analyze(Int_t run, Int_t event, Int_t lumi,
 				 Int_t nvtx, Float_t rho,
@@ -59,6 +60,8 @@ private:
 	TTree *outT_;
 	BeautyEvent_t bev_;
 	TDirectory *outDir_;
+
+	int mcTruthMode;
 
 };
 

@@ -395,6 +395,7 @@ int main(int argc, char* argv[])
 
     //control the sec vtx analysis
     LxyAnalysis lxyAn;
+    lxyAn.setTruthMode(mcTruthMode);
 
     //prepare the output file
     TString outUrl(out);
@@ -566,16 +567,16 @@ int main(int argc, char* argv[])
 
                 if(passMetSelection)
                 {
-                    controlHistos.fillHisto("evtflow",   box.chCat, 2,         puWeight*lepSelectionWeight);
-                    controlHistos.fillHisto("charge",    box.chCat, lepcharge, puWeight*lepSelectionWeight);
+                    controlHistos.fillHisto("evtflow", box.chCat, 2,         puWeight*lepSelectionWeight);
+                    controlHistos.fillHisto("charge",  box.chCat, lepcharge, puWeight*lepSelectionWeight);
                     if(box.leptons.size()>=2)
-                        controlHistos.fillHisto("mll",   box.chCat, ll.mass(), puWeight*lepSelectionWeight);
-                    controlHistos.fillHisto("mt",        box.chCat, mt,        puWeight*lepSelectionWeight);
-                    controlHistos.fillHisto("thetall",   box.chCat, thetall,   puWeight*lepSelectionWeight);
+                        controlHistos.fillHisto("mll", box.chCat, ll.mass(), puWeight*lepSelectionWeight);
+                    controlHistos.fillHisto("mt",      box.chCat, mt,        puWeight*lepSelectionWeight);
+                    controlHistos.fillHisto("thetall", box.chCat, thetall,   puWeight*lepSelectionWeight);
                 }
                 else
                 {
-                    controlHistos.fillHisto("thetall",   box.chCat+"lowmet", thetall, puWeight*lepSelectionWeight);
+                    controlHistos.fillHisto("thetall", box.chCat+"lowmet", thetall, puWeight*lepSelectionWeight);
                 }
             }
             else if(passMetSelection)

@@ -18,7 +18,13 @@ void LxyAnalysis::resetBeautyEvent()
 	bev_.nj=0;
 	bev_.npf=0;
 	bev_.npfb1=0;
-	for(size_t i=0; i<2; i++) { bev_.tid[i]=0; bev_.bid[i]=0; bev_.bhadid[i]=0; bev_.svmass[i]=0; bev_.svpt[i]=0; }
+	for(size_t i=0; i<2; i++){
+		bev_.tid[i]=0;
+		bev_.bid[i]=0;
+		bev_.bhadid[i]=0;
+		bev_.svmass[i]=0;
+		bev_.svpt[i]=0;
+	}
 }
 
 //
@@ -136,8 +142,8 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 		bev_.jeta[bev_.nj]  = jets[i]->eta();
 		bev_.jphi[bev_.nj]  = jets[i]->phi();
 		bev_.jcsv[bev_.nj]  = jets[i]->getVal("csv");
-		bev_.jarea[bev_.nj]  = jets[i]->getVal("area");
-		bev_.jtoraw[bev_.nj]  = jets[i]->getVal("torawsf");
+		bev_.jarea[bev_.nj] = jets[i]->getVal("area");
+		bev_.jtoraw[bev_.nj] = jets[i]->getVal("torawsf");
 		bev_.nj++;
 
 		hasCSVLtag |= (jets[i]->getVal("csv")>0.405);
@@ -212,10 +218,56 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	bev_.metpt=met.pt();
 	bev_.metphi=met.phi();
 
-	//all done here
-	if(bev_.svlxy[0]>0 || hasCSVLtag) { outT_->Fill(); return true; }
-	return false;
+	//event selection
+	bool accept_event = false;
 
+	if( (bev_.svlxy[0]>0 || hasCSVLtag) && bev_.nl > 0){ // paranoia check
+		accept_event = true;
+
+		// MC truth mode (sec vtx/lep association)
+		if(mcTruthMode > 2){
+			bool mode_matched = false;
+			int nsecvtx = 0;
+			if(bev_.svlxy[0] > 0) nsecvtx++;
+			if(bev_.svlxy[1] > 0) nsecvtx++;
+
+			// Pos(neg.) lepton matches neg.(pos.) b-quark:
+			// -11/-13 matches 5, 11/13 matches -5
+			if(nsecvtx == 1){
+				// one SV: check if lep[0] and sv[0] match
+				if(bev_.glid[0]*bev_.bid[0] < 0) mode_matched = true;
+			}
+			if(nsecvtx == 2){
+				// two SV: check if lep[0] and and closest
+				// SV match
+				TLorentzVector p_lep, p_sv0, p_sv1;
+				p_lep.SetPtEtaPhiM(bev_.lpt[0],
+					               bev_.leta[0],
+					               bev_.lphi[0], 0.);
+				p_sv0.SetPtEtaPhiM(bev_.svpt[0],
+					               bev_.sveta[0],
+					               bev_.svphi[0], 0.);
+				p_sv1.SetPtEtaPhiM(bev_.svpt[1],
+					               bev_.sveta[1],
+					               bev_.svphi[1], 0.);
+				int sv_index = 0;
+				if(p_lep.DeltaR(p_sv0) > p_lep.DeltaR(p_sv1)) sv_index = 1;
+				if(bev_.glid[0]*bev_.bid[sv_index] < 0) mode_matched = true;
+			}
+
+			// Mode 3: throw away events that DON'T match
+			// (or that don't have a SV)
+			if(mcTruthMode == 3 && !mode_matched) accept_event = false;
+			// Mode 4: throw away events that DO match
+			if(mcTruthMode == 4 && mode_matched)  accept_event = false;
+		}
+	}
+
+	if(accept_event){
+		outT_->Fill();
+		return true;
+	}
+	return false;
 }
 
 

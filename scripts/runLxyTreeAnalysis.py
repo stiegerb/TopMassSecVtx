@@ -141,7 +141,14 @@ def copyObject(keyname, from_here, to_here):
 
 def runLxyTreeAnalysisPacked(args):
     name, location, treeloc = args
-    return runLxyTreeAnalysis(name, location, treeloc)
+    try:
+        return runLxyTreeAnalysis(name, location, treeloc)
+    except ReferenceError:
+        print 50*'<'
+        print "  Problem with", name, "continuing without"
+        print 50*'<'
+        return False
+
 def runLxyTreeAnalysis(name, location, treeloc):
     from ROOT import gSystem, TChain
 

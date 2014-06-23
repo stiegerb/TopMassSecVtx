@@ -236,6 +236,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 			if(nsecvtx == 1){
 				// one SV: check if lep[0] and sv[0] match
 				if(bev_.glid[0]*bev_.bid[0] < 0) mode_matched = true;
+				if(abs(bev_.bid[0]) != 5)        mode_matched = false;
 			}
 			if(nsecvtx == 2){
 				// two SV: check if lep[0] and and closest
@@ -253,10 +254,11 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 				int sv_index = 0;
 				if(p_lep.DeltaR(p_sv0) > p_lep.DeltaR(p_sv1)) sv_index = 1;
 				if(bev_.glid[0]*bev_.bid[sv_index] < 0) mode_matched = true;
+				if(abs(bev_.bid[sv_index]) != 5)        mode_matched = false;
 			}
 
 			// Mode 3: throw away events that DON'T match
-			// (or that don't have a SV)
+			// (or that don't have a SV, or weren't matched to a b)
 			if(mcTruthMode == 3 && !mode_matched) accept_event = false;
 			// Mode 4: throw away events that DO match
 			if(mcTruthMode == 4 && mode_matched)  accept_event = false;

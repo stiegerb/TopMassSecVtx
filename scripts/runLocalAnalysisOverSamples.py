@@ -36,10 +36,16 @@ scriptFile=os.path.expandvars('${CMSSW_BASE}/bin/${SCRAM_ARCH}/wrapLocalAnalysis
 
 split=1
 segment=0
-                                        
+
 #open the file which describes the sample
 jsonFile = open(opt.samplesDB,'r')
-procList=json.load(jsonFile,encoding='utf-8').items()
+try:
+    procList=json.load(jsonFile,encoding='utf-8').items()
+except ValueError:
+    print 40*'#'
+    print "Error parsing JSON file, check syntax!"
+    print 40*'#'
+    exit(-1)
 
 #append the latest tag to the dir
 opt.outdir += '/'+opt.forceHash
@@ -73,13 +79,13 @@ for proc in procList :
             suffix = str(getByLabel(d,'suffix' ,""))
             if opt.onlytag!='all' and dtag.find(opt.onlytag)<0 : continue
             if mctruthmode!=0 : dtag+='_filt'+str(mctruthmode)
-                                
+
             if(xsec>0 and not isdata) :
                 for ibr in br :  xsec = xsec*ibr
             split=getByLabel(d,'split',1)
 
 	    for segment in range(0,split) :
-                if(split==1): 
+                if(split==1):
                     eventsFile=opt.indir + '/' + origdtag + '.root'
                 else:
                     eventsFile=opt.indir + '/' + origdtag + '_' + str(segment) + '.root'
@@ -106,7 +112,7 @@ for proc in procList :
                         if(len(varopt)<2) : continue
                         sedcmd += 's%' + varopt[0] + '%' + varopt[1] + '%;'
             	sedcmd += '\"'
-		if(split==1): 
+		if(split==1):
                     cfgfile=opt.outdir +'/'+ dtag + suffix + '_cfg.py'
 		else:
                     cfgfile=opt.outdir +'/'+ dtag + suffix + '_' + str(segment) + '_cfg.py'

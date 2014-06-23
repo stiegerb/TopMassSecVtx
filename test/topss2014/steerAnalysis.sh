@@ -11,7 +11,7 @@ outdir="${CMSSW_BASE}/src/UserCode/llvv_fwk/test/topss2014"
 indir="/store/cmst3/user/psilva/5311_ntuples"
 cfg="$CMSSW_BASE/src/UserCode/llvv_fwk/test/runAnalysis_cfg.py.templ"
 queue=8nh
-hash=a8b66b1
+hash=f0599ff
 
 #prepare output directories
 mkdir -p ${outdir}/summary/

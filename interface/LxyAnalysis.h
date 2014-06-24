@@ -11,8 +11,8 @@ struct BeautyEvent_t
 	static const unsigned gMaxNWeights = 50;
 	static const unsigned gMaxNLeps = 5;
 	static const unsigned gMaxNJets = 50;
-	static const unsigned gMaxNSV = 2;
-	static const unsigned gMaxNPFCands = 200;
+	static const unsigned gMaxNSV = 50;
+	static const unsigned gMaxNPFCands = 500;
 
 	Int_t run, lumi, event, evcat, nvtx;
 	Float_t rho;
@@ -26,6 +26,7 @@ struct BeautyEvent_t
 	// Jets
 	Int_t nj,jflav[gMaxNJets];
 	Float_t jpt[gMaxNJets],jeta[gMaxNJets],jphi[gMaxNJets];
+	Float_t gjpt[gMaxNJets],gjeta[gMaxNJets],gjphi[gMaxNJets];
 	Float_t jcsv[gMaxNJets],jarea[gMaxNJets],jtoraw[gMaxNJets];
 	// Sec.Vertices
 	Float_t svpt[gMaxNSV],sveta[gMaxNSV],svphi[gMaxNSV];

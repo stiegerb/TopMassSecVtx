@@ -13,18 +13,72 @@ LxyAnalysis::LxyAnalysis() : outT_(0), outDir_(0)
 //
 void LxyAnalysis::resetBeautyEvent()
 {
+	// Reset all the tree variables
 	bev_.nw=0;
 	bev_.nl=0;
 	bev_.nj=0;
 	bev_.npf=0;
 	bev_.npfb1=0;
-	for(size_t i=0; i<2; i++){
-		bev_.tid[i]=0;
-		bev_.bid[i]=0;
-		bev_.bhadid[i]=0;
-		bev_.svmass[i]=0;
-		bev_.svpt[i]=0;
+
+	for(size_t i=0; i<bev_.gMaxNWeights; i++){
+		bev_.w[i] = -999.99;
 	}
+	for(size_t i=0; i<bev_.gMaxNLeps; i++){
+		bev_.lid[i]  = 0;
+		bev_.glid[i] = 0;
+		bev_.lpt[i]   = -999.99;
+		bev_.leta[i]  = -999.99;
+		bev_.lphi[i]  = -999.99;
+		bev_.glpt[i]  = -999.99;
+		bev_.gleta[i] = -999.99;
+		bev_.glphi[i] = -999.99;
+	}
+	for(size_t i=0; i<bev_.gMaxNJets; i++){
+		bev_.jflav[i] = 0;
+		bev_.jpt[i]  = -999.99;
+		bev_.jeta[i] = -999.99;
+		bev_.jphi[i] = -999.99;
+		bev_.jcsv[i] = -999.99;
+		bev_.jarea[i] = -999.99;
+		bev_.jtoraw[i] = -999.99;
+	}
+	for(size_t i=0; i<bev_.gMaxNSV; i++){
+		bev_.tid[i] = 0;
+		bev_.tpt[i]   = -999.99;
+		bev_.teta[i]  = -999.99;
+		bev_.tphi[i]  = -999.99;
+		bev_.tmass[i] = -999.99;
+
+		bev_.bid[i] = 0;
+		bev_.bpt[i]  = -999.99;
+		bev_.beta[i] = -999.99;
+		bev_.bphi[i] = -999.99;
+
+		bev_.bhadid[i] = 0;
+		bev_.bhadpt[i]   = -999.99;
+		bev_.bhadeta[i]  = -999.99;
+		bev_.bhadphi[i]  = -999.99;
+		bev_.bhadmass[i] = -999.99;
+		bev_.bhadlxy[i]  = -999.99;
+
+		bev_.svmass[i]   = -999.99;
+		bev_.svpt[i]     = -999.99;
+		bev_.sveta[i]    = -999.99;
+		bev_.svphi[i]    = -999.99;
+		bev_.svmass[i]   = -999.99;
+		bev_.svntk[i]    = -999;
+		bev_.svlxy[i]    = -999.99;
+		bev_.svlxyerr[i] = -999.99;
+	}
+	for(size_t i=0; i<bev_.gMaxNPFCands; i++){
+		bev_.pfid[i] = 0;
+		bev_.pfpt[i]  = -999.99;
+		bev_.pfeta[i] = -999.99;
+		bev_.pfphi[i] = -999.99;
+	}
+
+	bev_.metpt  = -999.99;
+	bev_.metphi = -999.99;
 }
 
 //
@@ -111,12 +165,16 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	bev_.lumi=lumi;
 	bev_.nvtx=nvtx;
 	bev_.rho=rho;
-	for(size_t i=0; i<weights.size(); i++) { bev_.w[i]=weights[i]; bev_.nw++; }
+	for(size_t i=0; i<weights.size(); i++){
+		if(i>=bev_.gMaxNWeights) continue; // Maximum 50 weights
+		bev_.w[i]=weights[i]; bev_.nw++;
+	}
 	bev_.evcat=evcat;
 
 	//leptons
 	for(size_t i=0; i<leptons.size(); i++)
 	{
+		if(i>=bev_.gMaxNLeps) continue; // Maximum 5 leptons
 		bev_.lid[bev_.nl]  = leptons[i]->get("id");
 		bev_.lpt[bev_.nl]  = leptons[i]->pt();
 		bev_.leta[bev_.nl] = leptons[i]->eta();
@@ -136,6 +194,8 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	bool hasCSVLtag(false);
 	for(size_t i=0; i<jets.size(); i++)
 	{
+		if(i>=bev_.gMaxNJets) continue; // Maximum 50 jets
+
 		const data::PhysicsObject_t &genJet=jets[i]->getObject("genJet");
 		bev_.jflav[bev_.nj] = genJet.info.find("id")->second;
 		bev_.jpt[bev_.nj]   = jets[i]->pt();
@@ -148,7 +208,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 
 		hasCSVLtag |= (jets[i]->getVal("csv")>0.405);
 
-		if(i>1) continue;
+		if(i>=bev_.gMaxNSV) continue; // Maximum 2 SVs
 
 		const data::PhysicsObject_t &genParton=jets[i]->getObject("gen");
 		bev_.bid[i]=genParton.info.find("id")->second;
@@ -185,6 +245,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 			if(deltaR(mctruth[imc],*(jets[i]))>0.5) continue;
 			// This might in some cases go wrong
 			// (if there are two jets within 0.5 of this gen bhadron)
+			bev_.bhadid[i]   = mctruth[imc].get("id");
 			bev_.bhadpt[i]   = mctruth[imc].pt();
 			bev_.bhadeta[i]  = mctruth[imc].eta();
 			bev_.bhadphi[i]  = mctruth[imc].phi();
@@ -206,7 +267,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 			bev_.pfeta[bev_.npf] = pf[ipfn].eta();
 			bev_.pfphi[bev_.npf] = pf[ipfn].phi();
 			bev_.npf++;
-			if(bev_.npf>=200){
+			if(bev_.npf >= int(bev_.gMaxNPFCands)){
 				cout << "Over 200 PF candidates associated to the two b-jets!" << endl;
 				break;
 			}
@@ -261,7 +322,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 			// (or that don't have a SV, or weren't matched to a b)
 			if(mcTruthMode == 3 && !mode_matched) accept_event = false;
 			// Mode 4: throw away events that DO match
-			if(mcTruthMode == 4 && mode_matched)  accept_event = false;
+			if(mcTruthMode == 4 && mode_matched) accept_event = false;
 		}
 	}
 

@@ -4,32 +4,43 @@
 #include "UserCode/llvv_fwk/interface/SmartSelectionMonitor.h"
 #include "UserCode/llvv_fwk/interface/DataEventSummaryHandler.h"
 
+
+
 struct BeautyEvent_t
 {
+	static const unsigned gMaxNWeights = 50;
+	static const unsigned gMaxNLeps = 5;
+	static const unsigned gMaxNJets = 50;
+	static const unsigned gMaxNSV = 2;
+	static const unsigned gMaxNPFCands = 200;
+
 	Int_t run, lumi, event, evcat, nvtx;
 	Float_t rho;
 	// Weights
 	Int_t nw;
-	Float_t w[50];
+	Float_t w[gMaxNWeights];
 	// Leptons / GenLeptons
-	Int_t nl,lid[50],glid[50];
-	Float_t lpt[50],leta[50],lphi[50];
-	Float_t glpt[50],gleta[50],glphi[50];
+	Int_t nl,lid[gMaxNLeps],glid[gMaxNLeps];
+	Float_t lpt[gMaxNLeps],leta[gMaxNLeps],lphi[gMaxNLeps];
+	Float_t glpt[gMaxNLeps],gleta[gMaxNLeps],glphi[gMaxNLeps];
 	// Jets
-	Int_t nj,jflav[50];
-	Float_t jpt[50],jeta[50],jphi[50],jcsv[50],jarea[50],jtoraw[50];
+	Int_t nj,jflav[gMaxNJets];
+	Float_t jpt[gMaxNJets],jeta[gMaxNJets],jphi[gMaxNJets];
+	Float_t jcsv[gMaxNJets],jarea[gMaxNJets],jtoraw[gMaxNJets];
 	// Sec.Vertices
-	Float_t svpt[2],sveta[2],svphi[2],svmass[2],svntk[2],svlxy[2],svlxyerr[2];
+	Float_t svpt[gMaxNSV],sveta[gMaxNSV],svphi[gMaxNSV];
+	Float_t svmass[gMaxNSV],svntk[gMaxNSV],svlxy[gMaxNSV],svlxyerr[gMaxNSV];
 	// Gen Bhadrons
-	Int_t bid[2],bhadid[2];
-	Float_t bpt[2],beta[2],bphi[2];
-	Float_t bhadpt[2],bhadeta[2],bhadphi[2],bhadmass[2],bhadlxy[2];
+	Int_t bid[gMaxNSV],bhadid[gMaxNSV];
+	Float_t bpt[gMaxNSV],beta[gMaxNSV],bphi[gMaxNSV];
+	Float_t bhadpt[gMaxNSV],bhadeta[gMaxNSV],bhadphi[gMaxNSV];
+	Float_t bhadmass[gMaxNSV],bhadlxy[gMaxNSV];
 	// Gen Top
-	Int_t tid[2];
-	Float_t tpt[2],teta[2],tphi[2],tmass[2];
+	Int_t tid[gMaxNSV];
+	Float_t tpt[gMaxNSV],teta[gMaxNSV],tphi[gMaxNSV],tmass[gMaxNSV];
 	// PF Candidates
-	Int_t npf,npfb1,pfid[200];
-	Float_t pfpt[200],pfeta[200],pfphi[200];
+	Int_t npf,npfb1,pfid[gMaxNPFCands];
+	Float_t pfpt[gMaxNPFCands],pfeta[gMaxNPFCands],pfphi[gMaxNPFCands];
 	// MET
 	Float_t metpt,metphi;
 };

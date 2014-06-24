@@ -39,7 +39,7 @@ struct BeautyEvent_t
 	Int_t tid[gMaxNSV];
 	Float_t tpt[gMaxNSV],teta[gMaxNSV],tphi[gMaxNSV],tmass[gMaxNSV];
 	// PF Candidates
-	Int_t npf,npfb1,pfid[gMaxNPFCands];
+	Int_t npf,npfb1,pfid[gMaxNPFCands],pfjetidx[gMaxNPFCands];
 	Float_t pfpt[gMaxNPFCands],pfeta[gMaxNPFCands],pfphi[gMaxNPFCands];
 	// MET
 	Float_t metpt,metphi;

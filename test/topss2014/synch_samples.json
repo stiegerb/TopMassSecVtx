@@ -1,0 +1,26 @@
+{
+  "proc":[
+    {
+      "tag":"t#bar{t} 2l",
+      "isdata":false,
+      "spimpose":true,
+      "color":8,
+      "lcolor":1,
+      "isinvisible":true,
+      "data":[
+        { "dtag":"Synch_ll_ntuple"          , "split":1, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
+      ]
+    },
+    {
+      "tag":"t#bar{t} l+jets",
+      "isdata":false,
+      "spimpose":true,
+      "color":8,
+      "lcolor":1,
+      "isinvisible":true,
+      "data":[
+        { "dtag":"Synch_ljets_ntuple"           , "split":1, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
+      ]
+    }
+  ]
+}

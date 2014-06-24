@@ -13,6 +13,7 @@ LxyAnalysis::LxyAnalysis() : outT_(0), outDir_(0)
 //
 void LxyAnalysis::resetBeautyEvent()
 {
+<<<<<<< HEAD
 	// Reset all the tree variables
 	bev_.nw=0;
 	bev_.nl=0;
@@ -72,6 +73,7 @@ void LxyAnalysis::resetBeautyEvent()
 	}
 	for(size_t i=0; i<bev_.gMaxNPFCands; i++){
 		bev_.pfid[i] = 0;
+		bev_.pfjetidx[i] = 0;
 		bev_.pfpt[i]  = -999.99;
 		bev_.pfeta[i] = -999.99;
 		bev_.pfphi[i] = -999.99;
@@ -84,6 +86,7 @@ void LxyAnalysis::resetBeautyEvent()
 //
 void LxyAnalysis::attachToDir(TDirectory *outDir)
 {
+<<<<<<< HEAD
 	outDir_=outDir;
 	outT_ = new TTree("lxy","lxy analysis tree");
 	outT_->SetDirectory(outDir_);
@@ -133,6 +136,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 	outT_->Branch("npf",      &bev_.npf,       "npf/I");
 	outT_->Branch("npfb1",    &bev_.npfb1,     "npfb1/I");
 	outT_->Branch("pfid",      bev_.pfid,      "pfid[npf]/I");
+	outT_->Branch("pfjetidx",  bev_.pfjetidx,  "pfjetidx[npf]/I");
 	outT_->Branch("pfpt",      bev_.pfpt,      "pfpt[npf]/F");
 	outT_->Branch("pfeta",     bev_.pfeta,     "pfeta[npf]/F");
 	outT_->Branch("pfphi",     bev_.pfphi,     "pfphi[npf]/F");
@@ -156,124 +160,125 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 						  data::PhysicsObjectCollection_t &pf,
 						  data::PhysicsObjectCollection_t &mctruth)
 {
-	//set all counters to 0
-	resetBeautyEvent();
+  //set all counters to 0
+  resetBeautyEvent();
 
-	//event info
-	bev_.run=run;
-	bev_.event=event;
-	bev_.lumi=lumi;
-	bev_.nvtx=nvtx;
-	bev_.rho=rho;
-	for(size_t i=0; i<weights.size(); i++){
-		if(i>=bev_.gMaxNWeights) continue; // Maximum 50 weights
-		bev_.w[i]=weights[i]; bev_.nw++;
-	}
-	bev_.evcat=evcat;
+  //event info
+  bev_.run=run;
+  bev_.event=event;
+  bev_.lumi=lumi;
+  bev_.nvtx=nvtx;
+  bev_.rho=rho;
+  for(size_t i=0; i<weights.size(); i++) { bev_.w[i]=weights[i]; bev_.nw++; }
+  bev_.evcat=evcat;
 
-	//leptons
-	for(size_t i=0; i<leptons.size(); i++)
+  //leptons
+  for(size_t i=0; i<leptons.size(); i++)
+    {
+      bev_.lid[bev_.nl]  = leptons[i]->get("id");
+      bev_.lpt[bev_.nl]  = leptons[i]->pt();
+      bev_.leta[bev_.nl] = leptons[i]->eta();
+      bev_.lphi[bev_.nl] = leptons[i]->phi();
+
+      bev_.glid[bev_.nl]  = leptons[i]->get("id");
+      bev_.glpt[bev_.nl]  = leptons[i]->pt();
+      bev_.gleta[bev_.nl] = leptons[i]->eta();
+      bev_.glphi[bev_.nl] = leptons[i]->phi();
+
+      bev_.nl++;
+    }
+
+
+  //look at the jets now
+  bool hasCSVtag(false);
+  float btagCut(leptons.size()==1 ? 0.783 : 0.405 );
+  for(size_t i=0; i<jets.size(); i++)
+    {
+      const data::PhysicsObject_t &genJet=jets[i]->getObject("genJet");
+      bev_.jpt[bev_.nj]   = jets[i]->pt();
+      bev_.jeta[bev_.nj]  = jets[i]->eta();
+      bev_.jphi[bev_.nj]  = jets[i]->phi();
+      if(genJet.pt()>0){
+	bev_.jflav[bev_.nj] = genJet.info.find("id")->second;
+	bev_.gjpt[bev_.nj]   = genJet.pt();
+	bev_.gjeta[bev_.nj]  = genJet.eta();
+	bev_.gjphi[bev_.nj]  = genJet.phi();
+      }
+      bev_.jcsv[bev_.nj]  = jets[i]->getVal("csv");
+      hasCSVtag |= (jets[i]->getVal("csv")>btagCut);
+      bev_.jarea[bev_.nj]  = jets[i]->getVal("area");
+      bev_.jtoraw[bev_.nj]  = jets[i]->getVal("torawsf");
+
+      const data::PhysicsObject_t &genParton=jets[i]->getObject("gen");
+      if(genParton.pt()>0){
+	bev_.bid[bev_.nj]=genParton.info.find("id")->second;
+	bev_.bpt[bev_.nj]=genParton.pt();
+	bev_.beta[bev_.nj]=genParton.eta();
+	bev_.bphi[bev_.nj]=genParton.phi();
+      }
+
+      const data::PhysicsObject_t &svx=jets[i]->getObject("svx");
+      if(svx.pt()>0){
+	bev_.svpt[bev_.nj]     = svx.pt();
+	bev_.sveta[bev_.nj]    = svx.eta();
+	bev_.svphi[bev_.nj]    = svx.phi();
+	bev_.svmass[bev_.nj]   = svx.mass();
+	bev_.svntk[bev_.nj]    = svx.info.find("ntrk")->second;
+	bev_.svlxy[bev_.nj]    = svx.vals.find("lxy")->second;
+	bev_.svlxyerr[bev_.nj] = svx.vals.find("lxyErr")->second;
+      }
+
+      //match to a b-hadron
+      for(size_t imc=0; imc<mctruth.size(); imc++)
 	{
-		if(i>=bev_.gMaxNLeps) continue; // Maximum 5 leptons
-		bev_.lid[bev_.nl]  = leptons[i]->get("id");
-		bev_.lpt[bev_.nl]  = leptons[i]->pt();
-		bev_.leta[bev_.nl] = leptons[i]->eta();
-		bev_.lphi[bev_.nl] = leptons[i]->phi();
+	  int id=mctruth[imc].get("id");
 
-		const data::PhysicsObject_t &genlep = leptons[i]->getObject("gen");
-		bev_.glid[bev_.nl]  = genlep.info.find("id")->second;
-		bev_.glpt[bev_.nl]  = genlep.pt();
-		bev_.gleta[bev_.nl] = genlep.eta();
-		bev_.glphi[bev_.nl] = genlep.phi();
+	  //check if top can be matched by charge to the quark
+	  if(genParton.pt()>0 && abs(id)==6 && abs(bev_.bid[bev_.nj])==5 && bev_.bid[bev_.nj]*id<0 && mctruth[imc].get("status")==3 )
+	    {
+	      bev_.tid[bev_.nj]=id;
+	      bev_.tpt[bev_.nj]=mctruth[imc].pt();
+	      bev_.teta[bev_.nj]=mctruth[imc].eta();
+	      bev_.tphi[bev_.nj]=mctruth[imc].phi();
+	      bev_.tmass[bev_.nj]=mctruth[imc].mass();
+	    }
 
-		bev_.nl++;
+	  if(abs(id)<500) continue;
+
+	  if(deltaR(mctruth[imc],*(jets[i]))>0.5) continue;
+	  bev_.bhadpt[bev_.nj]   = mctruth[imc].pt();
+	  bev_.bhadeta[bev_.nj]  = mctruth[imc].eta();
+	  bev_.bhadphi[bev_.nj]  = mctruth[imc].phi();
+	  bev_.bhadmass[bev_.nj] = mctruth[imc].mass();
+	  bev_.bhadlxy[bev_.nj]  = mctruth[imc].getVal("lxy");
+
+	  break;
 	}
 
-
-	//look at the jets now (we assume they are already sorted by Lxy)
-	bool hasCSVLtag(false);
-	for(size_t i=0; i<jets.size(); i++)
+      //charged PF candidates clustered in jet
+      size_t pfstart=jets[i]->get("pfstart");
+      size_t pfend=jets[i]->get("pfend");
+      if(pfstart<pf.size() && pfend<pf.size())
 	{
-		if(i>=bev_.gMaxNJets) continue; // Maximum 50 jets
+	  for(size_t ipfn=pfstart; ipfn<=pfend; ipfn++)
+	    {
+	      if(pf[ipfn].get("charge")==0) continue;
 
-		const data::PhysicsObject_t &genJet=jets[i]->getObject("genJet");
-		bev_.jflav[bev_.nj] = genJet.info.find("id")->second;
-		bev_.jpt[bev_.nj]   = jets[i]->pt();
-		bev_.jeta[bev_.nj]  = jets[i]->eta();
-		bev_.jphi[bev_.nj]  = jets[i]->phi();
-		bev_.jcsv[bev_.nj]  = jets[i]->getVal("csv");
-		bev_.jarea[bev_.nj] = jets[i]->getVal("area");
-		bev_.jtoraw[bev_.nj] = jets[i]->getVal("torawsf");
-		bev_.nj++;
-
-		hasCSVLtag |= (jets[i]->getVal("csv")>0.405);
-
-		if(i>=bev_.gMaxNSV) continue; // Maximum 2 SVs
-
-		const data::PhysicsObject_t &genParton=jets[i]->getObject("gen");
-		bev_.bid[i]=genParton.info.find("id")->second;
-		bev_.bpt[i]=genParton.pt();
-		bev_.beta[i]=genParton.eta();
-		bev_.bphi[i]=genParton.phi();
-
-		const data::PhysicsObject_t &svx=jets[i]->getObject("svx");
-		bev_.svpt[i]     = svx.pt();
-		bev_.sveta[i]    = svx.eta();
-		bev_.svphi[i]    = svx.phi();
-		bev_.svmass[i]   = svx.mass();
-		bev_.svntk[i]    = svx.info.find("ntrk")->second;
-		bev_.svlxy[i]    = svx.vals.find("lxy")->second;
-		bev_.svlxyerr[i] = svx.vals.find("lxyErr")->second;
-
-		//match to a b-hadron
-		for(size_t imc=0; imc<mctruth.size(); imc++)
-		{
-			int id=mctruth[imc].get("id");
-
-			//check if top can be matched by charge to the quark
-			if(abs(id)==6 && abs(bev_.bid[i])==5 && bev_.bid[i]*id<0 && mctruth[imc].get("status")==3 )
-			{
-				bev_.tid[i]=id;
-				bev_.tpt[i]=mctruth[imc].pt();
-				bev_.teta[i]=mctruth[imc].eta();
-				bev_.tphi[i]=mctruth[imc].phi();
-				bev_.tmass[i]=mctruth[imc].mass();
-			}
-
-			if(abs(id)<500) continue;
-
-			if(deltaR(mctruth[imc],*(jets[i]))>0.5) continue;
-			// This might in some cases go wrong
-			// (if there are two jets within 0.5 of this gen bhadron)
-			bev_.bhadid[i]   = mctruth[imc].get("id");
-			bev_.bhadpt[i]   = mctruth[imc].pt();
-			bev_.bhadeta[i]  = mctruth[imc].eta();
-			bev_.bhadphi[i]  = mctruth[imc].phi();
-			bev_.bhadmass[i] = mctruth[imc].mass();
-			bev_.bhadlxy[i]  = mctruth[imc].getVal("lxy");
-
-			break;
-		}
-
-		//charged PF candidates clustered in jet
-		size_t pfstart=jets[i]->get("pfstart");
-		size_t pfend=jets[i]->get("pfend");
-		for(size_t ipfn=pfstart; ipfn<=pfend; ipfn++)
-		{
-			if(pf[ipfn].get("charge")==0) continue;
-
-			bev_.pfid[bev_.npf]  = pf[ipfn].get("id");
-			bev_.pfpt[bev_.npf]  = pf[ipfn].pt();
-			bev_.pfeta[bev_.npf] = pf[ipfn].eta();
-			bev_.pfphi[bev_.npf] = pf[ipfn].phi();
-			bev_.npf++;
-			if(bev_.npf >= int(bev_.gMaxNPFCands)){
-				cout << "Over 200 PF candidates associated to the two b-jets!" << endl;
-				break;
-			}
-		}
-		if(i==0) bev_.npfb1=bev_.npf;
+	      bev_.pfid[bev_.npf]  = pf[ipfn].get("id");
+	      bev_.pfpt[bev_.npf]  = pf[ipfn].pt();
+	      bev_.pfeta[bev_.npf] = pf[ipfn].eta();
+	      bev_.pfphi[bev_.npf] = pf[ipfn].phi();
+	      bev_.pfjetidx[bev_.npf]=i;
+	      bev_.npf++;
+	      if(bev_.npf>500){
+		cout << "Over 500 PF candidates associated to the jets!" << endl;
+		break;
+	      }
+	    }
 	}
+
+      bev_.nj++;
+    }
 
 	//met
 	bev_.metpt=met.pt();

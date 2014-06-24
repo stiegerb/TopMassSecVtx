@@ -9,12 +9,20 @@ step=$1
 optim_step=$2
 outdir="${CMSSW_BASE}/src/UserCode/llvv_fwk/test/topss2014"
 indir="/store/cmst3/user/psilva/5311_ntuples"
+synchdir="/store/cmst3/group/top/summer2014/synchEx"
 cfg="$CMSSW_BASE/src/UserCode/llvv_fwk/test/runAnalysis_cfg.py.templ"
 queue=8nh
 hash=f0599ff
 
 #prepare output directories
 mkdir -p ${outdir}/summary/
+
+if [ "$step" == "0" ]; then
+    echo "Submitting selection synchronization"
+    runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/synch_samples.json  -d ${synchdir} -o ${outdir}/summary/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -f ${hash};
+    python test/topss2014/showSynchTable.py > synch_results.txt;
+    cat synch_results.txt;
+fi
 
 if [ "$step" == "1" ]; then
     echo "Submitting sample pre-selection"

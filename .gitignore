@@ -10,3 +10,4 @@ LSFJOB*
 *pyc
 # no python init file
 python/__init__.py
+*.root

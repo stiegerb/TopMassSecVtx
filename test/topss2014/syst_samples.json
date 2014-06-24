@@ -143,8 +143,8 @@
       "lwidth":1,
       "mctruthmode":1,
       "data":[
-        { "dtag":"MC8TeV_TTJets_172v5"                     , "split":5,  "xsec":1.0         , "br":[ 1.0 ]                 , "dset":"Unknown"        },
-        { "dtag":"MC8TeV_TTJets_172v5_v2"                  , "split":10, "xsec":1.0         , "br":[ 1.0 ]                 , "dset":"Unknown"        }
+        { "dtag":"MC8TeV_TTJets_172v5"                     , "split":5, "xsec":1.0         , "br":[ 1.0 ]                 , "dset":"Unknown"        },
+        { "dtag":"MC8TeV_TTJets_MSDecays_v2_172v5"        , "split":10, "xsec":245.8, "dset":"Unknown" }
       ]
     },
     {

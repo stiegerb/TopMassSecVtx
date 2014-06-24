@@ -13,7 +13,6 @@ LxyAnalysis::LxyAnalysis() : outT_(0), outDir_(0)
 //
 void LxyAnalysis::resetBeautyEvent()
 {
-<<<<<<< HEAD
 	// Reset all the tree variables
 	bev_.nw=0;
 	bev_.nl=0;
@@ -86,7 +85,6 @@ void LxyAnalysis::resetBeautyEvent()
 //
 void LxyAnalysis::attachToDir(TDirectory *outDir)
 {
-<<<<<<< HEAD
 	outDir_=outDir;
 	outT_ = new TTree("lxy","lxy analysis tree");
 	outT_->SetDirectory(outDir_);

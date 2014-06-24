@@ -285,7 +285,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	//event selection
 	bool accept_event = false;
 
-	if( (bev_.svlxy[0]>0 || hasCSVLtag) && bev_.nl > 0){ // paranoia check
+	if( (bev_.svlxy[0]>0 || hasCSVtag) && bev_.nl > 0){ // paranoia check
 		accept_event = true;
 
 		// MC truth mode (sec vtx/lep association)

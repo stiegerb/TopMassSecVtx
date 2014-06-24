@@ -73,7 +73,7 @@ def getAllPlotsFrom(tdir, chopPrefix=False):
     return toReturn
 
 
-def runPlotter(inDir, jsonUrl, lumi, debug, outDir, verbose=0):
+def runPlotter(inDir, jsonUrl, lumi, debug, outDir, mask='', verbose=0):
     """
     Loop over the inputs and launch jobs
     """
@@ -143,6 +143,11 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir, verbose=0):
             for filename in missing_files:
                 print filename
             print 20*'-'
+
+    # Apply mask:
+    if len(mask)>0:
+        masked_plots = [_ for _ in plots if mask in _]
+        plots = masked_plots
 
     plots.sort()
 
@@ -243,6 +248,10 @@ if __name__ == "__main__":
     parser.add_option('-v', '--verbose', dest='verbose', action="store",
                       type='int', default=1,
                       help='Verbose mode [default: %default (semi-quiet)]')
+    parser.add_option('-m', '--plotMask', dest='plotMask',
+                      default='',
+                      help='Only process plots matching this mask'
+                           '[default: all plots]')
     parser.add_option('-l', '--lumi', dest='lumi', default=19736,
                       type='float',
                       help='Re-scale to integrated luminosity [pb]'
@@ -264,6 +273,7 @@ if __name__ == "__main__":
                    lumi=opt.lumi,
                    debug=opt.debug,
                    outDir=opt.outDir,
+                   mask=opt.plotMask,
                    verbose=opt.verbose)
         print 'Plots have been saved to %s' % opt.outDir
         exit(0)

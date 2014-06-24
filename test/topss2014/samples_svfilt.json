@@ -72,22 +72,22 @@
       ]
     },
     {
+      "tag":"t#bar{t} (wrong matches)",
+      "isdata":false,
+      "color":822,
+      "lcolor":1,
+      "mctruthmode":4,
+      "data":[
+        { "dtag":"MC8TeV_TTJets_MSDecays_172v5", "split":5, "xsec":245.8, "dset":"Unknown"}
+      ]
+    },
+    {
       "tag":"t#bar{t}",
       "issignal":true,
       "isdata":false,
       "color":614,
       "lcolor":1,
       "mctruthmode":3,
-      "data":[
-        { "dtag":"MC8TeV_TTJets_MSDecays_172v5", "split":5, "xsec":245.8, "dset":"Unknown"}
-      ]
-    },
-    {
-      "tag":"t#bar{t} (wrong matches)",
-      "isdata":false,
-      "color":822,
-      "lcolor":1,
-      "mctruthmode":4,
       "data":[
         { "dtag":"MC8TeV_TTJets_MSDecays_172v5", "split":5, "xsec":245.8, "dset":"Unknown"}
       ]

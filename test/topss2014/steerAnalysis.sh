@@ -20,7 +20,7 @@ mkdir -p ${outdir}/summary/
 if [ "$step" == "0" ]; then
     echo "Submitting selection synchronization"
     runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/synch_samples.json  -d ${synchdir} -o ${outdir}/summary/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -f ${hash};
-    python test/topss2014/showSynchTable.py > synch_results.txt;
+    python test/topss2014/showSynchTable.py ${outdir}/summary/${hash} > synch_results.txt;
     cat synch_results.txt;
 fi
 

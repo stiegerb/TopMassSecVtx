@@ -1,10 +1,12 @@
 import ROOT
 import os
-dir="%s/src/UserCode/llvv_fwk/test/topss2014/summary/a8b66b1/"%os.environ['CMSSW_BASE']
+import sys
+
+inputdir = sys.argv[1]
 
 ctsMap=[]
-files=[[ROOT.TFile.Open(dir+"/Synch_ll_ntuple.root"),["ee","mumu","emu"]],
-       [ROOT.TFile.Open(dir+"/Synch_ljets_ntuple.root"),["e","mu"]]
+files=[[ROOT.TFile.Open(inputdir+"/Synch_ll_ntuple.root"),["ee","mumu","emu"]],
+       [ROOT.TFile.Open(inputdir+"/Synch_ljets_ntuple.root"),["e","mu"]]
        ]
 allch=[]
 
@@ -21,7 +23,7 @@ for f in files:
             label=h.GetXaxis().GetBinLabel(xbin)
             cts=h.GetBinContent(xbin)
             ctsMap[xbin-1][1].append(cts)
- 
+
 
 colSize=15
 print "-----------------------------------------"

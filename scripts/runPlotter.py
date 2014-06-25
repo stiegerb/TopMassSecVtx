@@ -73,6 +73,54 @@ def getAllPlotsFrom(tdir, chopPrefix=False):
     return toReturn
 
 
+def checkMissingFiles(inDir, jsonUrl):
+    """
+    Loop over the inputs and launch jobs
+    """
+    from ROOT import TFile
+    from UserCode.llvv_fwk.PlotUtils import Plot
+
+    jsonFile = open(jsonUrl,'r')
+    procList = json.load(jsonFile,encoding = 'utf-8').items()
+
+    # Make a survey of *all* existing plots
+    total_expected = 0
+    missing_files = []
+    if not os.path.isdir(inDir):
+        print inDir, "is not a directory"
+        return False
+
+    for proc in procList:
+        for desc in proc[1]:
+            data = desc['data']
+            isData = getByLabel(desc,'isdata',False)
+            mctruthmode = getByLabel(desc,'mctruthmode')
+            for d in data:
+                dtag = getByLabel(d,'dtag','')
+                split = getByLabel(d,'split',1)
+
+                for segment in range(0,split):
+                    eventsFile = dtag
+                    if split > 1:
+                        eventsFile = dtag + '_' + str(segment)
+                    if mctruthmode:
+                        eventsFile += '_filt%d' % mctruthmode
+                    rootFileUrl = inDir+'/'+eventsFile+'.root'
+                    total_expected += 1
+                    if not os.path.exists(rootFileUrl):
+                        missing_files.append(eventsFile+'.root')
+                    continue
+
+    print 20*'-'
+    if len(missing_files):
+        print "Missing the following files:"
+        print "(%d out of %d expected)"% (len(missing_files), total_expected)
+        for filename in missing_files:
+            print filename
+    else:
+        print "NO MISSING FILES!"
+    print 20*'-'
+
 def runPlotter(inDir, jsonUrl, lumi, debug, outDir, mask='', verbose=0):
     """
     Loop over the inputs and launch jobs
@@ -243,6 +291,10 @@ if __name__ == "__main__":
                       default='test/topss2014/samples.json',
                       help='A json file with the samples to analyze'
                            '[default: %default]')
+    parser.add_option('-c', '--checkMissingFiles', dest='checkMissingFiles',
+                      action="store_true",
+                      help=('Check a directory for missing files (as '
+                            'expected from the json file) and exit.'))
     parser.add_option('-d', '--debug', dest='debug', action="store_true",
                       help='Dump the event yields table for each plot')
     parser.add_option('-v', '--verbose', dest='verbose', action="store",
@@ -261,6 +313,10 @@ if __name__ == "__main__":
     (opt, args) = parser.parse_args()
 
     if len(args) > 0:
+        if opt.checkMissingFiles:
+            checkMissingFiles(inDir=args[0], jsonUrl=opt.json)
+            exit(0)
+
         from UserCode.llvv_fwk.PlotUtils import customROOTstyle
         customROOTstyle()
         gROOT.SetBatch(True)

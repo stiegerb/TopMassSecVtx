@@ -26,15 +26,20 @@ public :
    Int_t           lumi;
    Int_t           event;
    Int_t           evcat;
+   Int_t           gevcat;
    Int_t           nvtx;
    Float_t         rho;
    Int_t           nw;
    Float_t         w[50];   //[nw]
    Int_t           nl;
-   Int_t           lid[50];   //[nl]
-   Float_t         lpt[50];   //[nl]
-   Float_t         leta[50];   //[nl]
-   Float_t         lphi[50];   //[nl]
+   Int_t           lid[5];   //[nl]
+   Float_t         lpt[5];   //[nl]
+   Float_t         leta[5];   //[nl]
+   Float_t         lphi[5];   //[nl]
+   Int_t           glid[5];   //[nl]
+   Float_t         glpt[5];   //[nl]
+   Float_t         gleta[5];   //[nl]
+   Float_t         glphi[5];   //[nl]
    Int_t           nj;
    Int_t           jflav[50];   //[nj]
    Float_t         jpt[50];   //[nj]
@@ -43,42 +48,47 @@ public :
    Float_t         jcsv[50];   //[nj]
    Float_t         jarea[50];   //[nj]
    Float_t         jtoraw[50];   //[nj]
-   Float_t         svpt[2];
-   Float_t         sveta[2];
-   Float_t         svphi[2];
-   Float_t         svmass[2];
-   Float_t         svntk[2];
-   Float_t         svlxy[2];
-   Float_t         svlxyerr[2];
-   Int_t           bid[2];
-   Float_t         bpt[2];
-   Float_t         beta[2];
-   Float_t         bphi[2];
-   Int_t           bhadid[2];
-   Float_t         bhadpt[2];
-   Float_t         bhadeta[2];
-   Float_t         bhadphi[2];
-   Float_t         bhadmass[2];
-   Float_t         bhadlxy[2];
+   Float_t         gjpt[50];   //[nj]
+   Float_t         gjeta[50];   //[nj]
+   Float_t         gjphi[50];   //[nj]
+   Float_t         svpt[50];   //[nj]
+   Float_t         sveta[50];   //[nj]
+   Float_t         svphi[50];   //[nj]
+   Float_t         svmass[50];   //[nj]
+   Float_t         svntk[50];   //[nj]
+   Float_t         svlxy[50];   //[nj]
+   Float_t         svlxyerr[50];   //[nj]
+   Int_t           bid[50];   //[nj]
+   Float_t         bpt[50];   //[nj]
+   Float_t         beta[50];   //[nj]
+   Float_t         bphi[50];   //[nj]
+   Int_t           bhadid[50];   //[nj]
+   Float_t         bhadpt[50];   //[nj]
+   Float_t         bhadeta[50];   //[nj]
+   Float_t         bhadphi[50];   //[nj]
+   Float_t         bhadmass[50];   //[nj]
+   Float_t         bhadlxy[50];   //[nj]
    Int_t           npf;
    Int_t           npfb1;
-   Int_t           pfid[200];   //[npf]
-   Float_t         pfpt[200];   //[npf]
-   Float_t         pfeta[200];   //[npf]
-   Float_t         pfphi[200];   //[npf]
+   Int_t           pfid[500];   //[npf]
+   Int_t           pfjetidx[500];   //[npf]
+   Float_t         pfpt[500];   //[npf]
+   Float_t         pfeta[500];   //[npf]
+   Float_t         pfphi[500];   //[npf]
    Float_t         metpt;
    Float_t         metphi;
-   Int_t           tid[2];
-   Float_t         tpt[2];
-   Float_t         teta[2];
-   Float_t         tphi[2];
-   Float_t         tmass[2];
+   Int_t           tid[50];   //[nj]
+   Float_t         tpt[50];   //[nj]
+   Float_t         teta[50];   //[nj]
+   Float_t         tphi[50];   //[nj]
+   Float_t         tmass[50];   //[nj]
 
    // List of branches
    TBranch        *b_run;   //!
    TBranch        *b_lumi;   //!
    TBranch        *b_event;   //!
    TBranch        *b_evcat;   //!
+   TBranch        *b_gevcat;   //!
    TBranch        *b_nvtx;   //!
    TBranch        *b_rho;   //!
    TBranch        *b_nw;   //!
@@ -88,6 +98,10 @@ public :
    TBranch        *b_lpt;   //!
    TBranch        *b_leta;   //!
    TBranch        *b_lphi;   //!
+   TBranch        *b_glid;   //!
+   TBranch        *b_glpt;   //!
+   TBranch        *b_gleta;   //!
+   TBranch        *b_glphi;   //!
    TBranch        *b_nj;   //!
    TBranch        *b_jflav;   //!
    TBranch        *b_jpt;   //!
@@ -96,6 +110,9 @@ public :
    TBranch        *b_jcsv;   //!
    TBranch        *b_jarea;   //!
    TBranch        *b_jtoraw;   //!
+   TBranch        *b_gjpt;   //!
+   TBranch        *b_gjeta;   //!
+   TBranch        *b_gjphi;   //!
    TBranch        *b_svpt;   //!
    TBranch        *b_sveta;   //!
    TBranch        *b_svphi;   //!
@@ -116,6 +133,7 @@ public :
    TBranch        *b_npf;   //!
    TBranch        *b_npfb1;   //!
    TBranch        *b_pfid;   //!
+   TBranch        *b_pfjetidx;   //!
    TBranch        *b_pfpt;   //!
    TBranch        *b_pfeta;   //!
    TBranch        *b_pfphi;   //!

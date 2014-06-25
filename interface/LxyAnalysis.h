@@ -14,7 +14,7 @@ struct BeautyEvent_t
 	static const unsigned gMaxNSV = 50;
 	static const unsigned gMaxNPFCands = 500;
 
-	Int_t run, lumi, event, evcat, nvtx;
+	Int_t run, lumi, event, evcat, gevcat, nvtx;
 	Float_t rho;
 	// Weights
 	Int_t nw;
@@ -53,12 +53,11 @@ public:
 	LxyAnalysis();
 
 	void attachToDir(TDirectory *outDir);
-	inline void setTruthMode(int mode){mcTruthMode = mode;}
 
 	bool analyze(Int_t run, Int_t event, Int_t lumi,
 				 Int_t nvtx, Float_t rho,
 				 std::vector<Float_t> weights,
-				 Int_t evCat,
+				 Int_t evCat, Int_t gevCat,
 				 std::vector<data::PhysicsObject_t *> &leptons,
 				 std::vector<data::PhysicsObject_t *> &jets,
 				 LorentzVector &met,
@@ -72,8 +71,6 @@ private:
 	TTree *outT_;
 	BeautyEvent_t bev_;
 	TDirectory *outDir_;
-
-	int mcTruthMode;
 
 };
 

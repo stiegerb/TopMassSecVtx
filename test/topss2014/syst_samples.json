@@ -5,7 +5,6 @@
       "isdata":false,
       "spimpose":true,
       "color":8,
-      "mctruthmode":1,
       "lcolor":1,
       "isinvisible":true,
       "data":[
@@ -17,7 +16,6 @@
       "isdata":false,
       "spimpose":true,
       "color":8,
-      "mctruthmode":1,
       "lcolor":1,
       "isinvisible":true,
       "data":[
@@ -116,7 +114,6 @@
       "lcolor":4,
       "fill":0,
       "spimpose":1,
-      "mctruthmode":1,
       "data":[
         { "dtag":"MC8TeV_TTJets_MSDecays_166v5"       , "split":10, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
       ]
@@ -128,7 +125,6 @@
       "lcolor":5,
       "fill":0,
       "spimpose":1,
-      "mctruthmode":1,
       "data":[
         { "dtag":"MC8TeV_TTJets_MSDecays_169v5"                     , "split":10, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
       ]
@@ -141,7 +137,6 @@
       "fill":0,
       "spimpose":1,
       "lwidth":1,
-      "mctruthmode":1,
       "data":[
         { "dtag":"MC8TeV_TTJets_172v5"                     , "split":5, "xsec":1.0         , "br":[ 1.0 ]                 , "dset":"Unknown"        },
         { "dtag":"MC8TeV_TTJets_MSDecays_v2_172v5"        , "split":10, "xsec":245.8, "dset":"Unknown" }
@@ -154,7 +149,6 @@
       "lcolor":6,
       "fill":0,
       "spimpose":1,
-      "mctruthmode":1,
       "data":[
         { "dtag":"MC8TeV_TTJets_MSDecays_173v5"                     , "split":10, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
       ]
@@ -166,7 +160,6 @@
       "lcolor":7,
       "fill":0,
       "spimpose":1,
-      "mctruthmode":1,
       "data":[
         { "dtag":"MC8TeV_TTJets_MSDecays_175v5"                     , "split":10, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
       ]
@@ -178,7 +171,6 @@
       "lcolor":8,
       "fill":0,
       "spimpose":1,
-      "mctruthmode":1,
       "data":[
         { "dtag":"MC8TeV_TTJets_178v5"                     , "split":10, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
       ]

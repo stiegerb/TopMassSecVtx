@@ -85,6 +85,7 @@ void LxyAnalysis::resetBeautyEvent()
 //
 void LxyAnalysis::attachToDir(TDirectory *outDir)
 {
+	// FIXME: genjet branches missing!
 	outDir_=outDir;
 	outT_ = new TTree("lxy","lxy analysis tree");
 	outT_->SetDirectory(outDir_);
@@ -114,23 +115,23 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 	outT_->Branch("jcsv",      bev_.jcsv,      "jcsv[nj]/F");
 	outT_->Branch("jarea",     bev_.jarea,     "jarea[nj]/F");
 	outT_->Branch("jtoraw",    bev_.jtoraw,    "jtoraw[nj]/F");
-	outT_->Branch("svpt",      bev_.svpt,      "svpt[2]/F");
-	outT_->Branch("sveta",     bev_.sveta,     "sveta[2]/F");
-	outT_->Branch("svphi",     bev_.svphi,     "svphi[2]/F");
-	outT_->Branch("svmass",    bev_.svmass,    "svmass[2]/F");
-	outT_->Branch("svntk",     bev_.svntk,     "svntk[2]/F");
-	outT_->Branch("svlxy",     bev_.svlxy,     "svlxy[2]/F");
-	outT_->Branch("svlxyerr",  bev_.svlxyerr,  "svlxyerr[2]/F");
-	outT_->Branch("bid",       bev_.bid,       "bid[2]/I");
-	outT_->Branch("bpt",       bev_.bpt,       "bpt[2]/F");
-	outT_->Branch("beta",      bev_.beta,      "beta[2]/F");
-	outT_->Branch("bphi",      bev_.bphi,      "bphi[2]/F");
-	outT_->Branch("bhadid",    bev_.bhadid,    "bhadid[2]/I");
-	outT_->Branch("bhadpt",    bev_.bhadpt,    "bhadpt[2]/F");
-	outT_->Branch("bhadeta",   bev_.bhadeta,   "bhadeta[2]/F");
-	outT_->Branch("bhadphi",   bev_.bhadphi,   "bhadphi[2]/F");
-	outT_->Branch("bhadmass",  bev_.bhadmass,  "bhadmass[2]/F");
-	outT_->Branch("bhadlxy",   bev_.bhadlxy,   "bhadlxy[2]/F");
+	outT_->Branch("svpt",      bev_.svpt,      "svpt[nj]/F");
+	outT_->Branch("sveta",     bev_.sveta,     "sveta[nj]/F");
+	outT_->Branch("svphi",     bev_.svphi,     "svphi[nj]/F");
+	outT_->Branch("svmass",    bev_.svmass,    "svmass[nj]/F");
+	outT_->Branch("svntk",     bev_.svntk,     "svntk[nj]/F");
+	outT_->Branch("svlxy",     bev_.svlxy,     "svlxy[nj]/F");
+	outT_->Branch("svlxyerr",  bev_.svlxyerr,  "svlxyerr[nj]/F");
+	outT_->Branch("bid",       bev_.bid,       "bid[nj]/I");
+	outT_->Branch("bpt",       bev_.bpt,       "bpt[nj]/F");
+	outT_->Branch("beta",      bev_.beta,      "beta[nj]/F");
+	outT_->Branch("bphi",      bev_.bphi,      "bphi[nj]/F");
+	outT_->Branch("bhadid",    bev_.bhadid,    "bhadid[nj]/I");
+	outT_->Branch("bhadpt",    bev_.bhadpt,    "bhadpt[nj]/F");
+	outT_->Branch("bhadeta",   bev_.bhadeta,   "bhadeta[nj]/F");
+	outT_->Branch("bhadphi",   bev_.bhadphi,   "bhadphi[nj]/F");
+	outT_->Branch("bhadmass",  bev_.bhadmass,  "bhadmass[nj]/F");
+	outT_->Branch("bhadlxy",   bev_.bhadlxy,   "bhadlxy[nj]/F");
 	outT_->Branch("npf",      &bev_.npf,       "npf/I");
 	outT_->Branch("npfb1",    &bev_.npfb1,     "npfb1/I");
 	outT_->Branch("pfid",      bev_.pfid,      "pfid[npf]/I");
@@ -140,11 +141,11 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 	outT_->Branch("pfphi",     bev_.pfphi,     "pfphi[npf]/F");
 	outT_->Branch("metpt",    &bev_.metpt,     "metpt/F");
 	outT_->Branch("metphi",   &bev_.metphi,    "metphi/F");
-	outT_->Branch("tid",       bev_.tid,       "tid[2]/I");
-	outT_->Branch("tpt",       bev_.tpt,       "tpt[2]/F");
-	outT_->Branch("teta",      bev_.teta,      "teta[2]/F");
-	outT_->Branch("tphi",      bev_.tphi,      "tphi[2]/F");
-	outT_->Branch("tmass",     bev_.tmass,     "tmass[2]/F");
+	outT_->Branch("tid",       bev_.tid,       "tid[nj]/I");
+	outT_->Branch("tpt",       bev_.tpt,       "tpt[nj]/F");
+	outT_->Branch("teta",      bev_.teta,      "teta[nj]/F");
+	outT_->Branch("tphi",      bev_.tphi,      "tphi[nj]/F");
+	outT_->Branch("tmass",     bev_.tmass,     "tmass[nj]/F");
 }
 
 
@@ -268,7 +269,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	      bev_.pfphi[bev_.npf] = pf[ipfn].phi();
 	      bev_.pfjetidx[bev_.npf]=i;
 	      bev_.npf++;
-	      if(bev_.npf>500){
+	      if(bev_.npf>bev_.gMaxNPFCands){
 		cout << "Over 500 PF candidates associated to the jets!" << endl;
 		break;
 	      }
@@ -285,6 +286,7 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	//event selection
 	bool accept_event = false;
 
+	// FIXME: Jets no longer ordered in lxy!
 	if( (bev_.svlxy[0]>0 || hasCSVtag) && bev_.nl > 0){ // paranoia check
 		accept_event = true;
 

@@ -86,6 +86,7 @@ def checkMissingFiles(inDir, jsonUrl):
     # Make a survey of *all* existing plots
     total_expected = 0
     missing_files = []
+    suspicious_files = []
     if not os.path.isdir(inDir):
         print inDir, "is not a directory"
         return False
@@ -105,10 +106,13 @@ def checkMissingFiles(inDir, jsonUrl):
                         eventsFile = dtag + '_' + str(segment)
                     if mctruthmode:
                         eventsFile += '_filt%d' % mctruthmode
-                    rootFileUrl = inDir+'/'+eventsFile+'.root'
+                    filename = eventsFile+'.root'
+                    rootFileUrl = inDir+'/'+filename
                     total_expected += 1
                     if not os.path.exists(rootFileUrl):
-                        missing_files.append(eventsFile+'.root')
+                        missing_files.append(filename)
+                    elif (os.path.getsize(rootFileUrl) < 1024):
+                        suspicious_files.append(filename)
                     continue
 
     print 20*'-'
@@ -119,6 +123,12 @@ def checkMissingFiles(inDir, jsonUrl):
             print filename
     else:
         print "NO MISSING FILES!"
+    print 20*'-'
+    if len(suspicious_files):
+        print "The following files are suspicious (< 1kB size):"
+        print "(%d out of %d expected)"% (len(suspicious_files), total_expected)
+        for filename in suspicious_files:
+            print filename
     print 20*'-'
 
 def runPlotter(inDir, jsonUrl, lumi, debug, outDir, mask='', verbose=0):

@@ -87,27 +87,6 @@
       ]
     },
     {
-      "tag":"t#bar{t}systmepsdown",
-      "isdata":false,
-      "color":8,
-      "lcolor":1,
-      "isinvisible":true,
-      "data":[
-        { "dtag":"TTJets_MSDecays_matchingdown"              , "split":10, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
-      ]
-    },
-    {
-      "tag":"t#bar{t}systmepsup",
-      "isdata":false,
-      "color":8,
-      "lcolor":1,
-      "isinvisible":true,
-      "data":[
-        { "dtag":"TTJets_MSDecays_matchingdown"                , "split":10, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        },
-        { "dtag":"TTJets_MSDecays_matchingdown_v2"             , "split":10, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
-      ]
-    },
-    {
       "tag":"t#bar{t}166.5",
       "isdata":false,
       "color":4,
@@ -138,8 +117,7 @@
       "spimpose":1,
       "lwidth":1,
       "data":[
-        { "dtag":"MC8TeV_TTJets_172v5"                     , "split":5, "xsec":1.0         , "br":[ 1.0 ]                 , "dset":"Unknown"        },
-        { "dtag":"MC8TeV_TTJets_MSDecays_v2_172v5"        , "split":10, "xsec":245.8, "dset":"Unknown" }
+        { "dtag":"MC8TeV_TTJets_172v5"                     , "split":5, "xsec":1.0         , "br":[ 1.0 ]                 , "dset":"Unknown"        }
       ]
     },
     {

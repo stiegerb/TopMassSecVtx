@@ -25,7 +25,8 @@ parser.add_option('-R', '--R'          ,    dest='requirementtoBatch' , help='re
 parser.add_option('-j', '--json'       ,    dest='samplesDB'          , help='samples json file'                     , default='')
 parser.add_option('-d', '--dir'        ,    dest='indir'              , help='input directory or tag in json file'   , default='aoddir')
 parser.add_option('-o', '--out'        ,    dest='outdir'             , help='output directory'                      , default='')
-parser.add_option('-t', '--tag'        ,    dest='onlytag'            , help='process only samples matching this tag', default='all')
+parser.add_option('-t', '--tag'        ,    dest='onlytag'            , help='process only samples matching this tag', default='')
+parser.add_option('--onlySplits'       ,    dest='onlysplits'         , help='process only this split file (to be used together with --tag)', default='')
 parser.add_option('-n', '--n'          ,    dest='fperjob'            , help='input files per job'                   , default=-1,  type=int)
 parser.add_option('-p', '--pars'       ,    dest='params'             , help='extra parameters for the job'          , default='')
 parser.add_option('-c', '--cfg'        ,    dest='cfg_file'           , help='base configuration file template'      , default='')
@@ -33,6 +34,28 @@ parser.add_option('-r', "--report"     ,    dest='report'             , help='If
 parser.add_option('-f', "--forceHash"  ,    dest='forceHash'          , help='Force to use this hash',                 default=commands.getstatusoutput('git rev-parse --short HEAD')[1])
 (opt, args) = parser.parse_args()
 scriptFile=os.path.expandvars('${CMSSW_BASE}/bin/${SCRAM_ARCH}/wrapLocalAnalysisRun.sh')
+
+def stringRangeToList(stringrange):
+    """
+    Converts strings like 1,4,5 or 1-4 or 1-9,11,14
+    to lists. I.e. the above examples would be:
+    [1,4,5], [1,2,3,4], and [1,2,3,4,5,6,7,8,9,11,14]
+    """
+    result = []
+    for part in stringrange.split(','):
+        if '-' in part:
+            a, b = part.split('-')
+            a, b = int(a), int(b)
+            result.extend(range(a, b+1))
+        else:
+            a = int(part)
+            result.append(a)
+    return result
+
+splits_to_process = []
+if len(opt.onlysplits)>0:
+    splits_to_process = stringRangeToList(opt.onlysplits)
+    print "Only processing these splits:", splits_to_process
 
 split=1
 segment=0
@@ -77,44 +100,49 @@ for proc in procList :
             xsec = getByLabel(d,'xsec',-1)
             br = getByLabel(d,'br',[])
             suffix = str(getByLabel(d,'suffix' ,""))
-            if opt.onlytag!='all' and dtag.find(opt.onlytag)<0 : continue
+            if len(opt.onlytag)>0:
+                if not opt.onlytag in dtag: continue
+
             if mctruthmode!=0 : dtag+='_filt'+str(mctruthmode)
 
             if(xsec>0 and not isdata) :
                 for ibr in br :  xsec = xsec*ibr
             split=getByLabel(d,'split',1)
 
-	    for segment in range(0,split) :
+            for segment in range(0,split):
                 if(split==1):
                     eventsFile=opt.indir + '/' + origdtag + '.root'
                 else:
                     eventsFile=opt.indir + '/' + origdtag + '_' + str(segment) + '.root'
 
+                if len(opt.onlytag)>0 and len(splits_to_process)>0:
+                    if not segment in splits_to_process: continue
+
                 if(eventsFile.find('/store/')==0)  : eventsFile = commands.getstatusoutput('cmsPfn ' + eventsFile)[1]
 
                 #create the cfg file
-            	sedcmd = 'sed \"s%@input%' + eventsFile +'%;s%@outdir%' + opt.outdir +'%;s%@isMC%' + str(not isdata) + '%;s%@mctruthmode%'+str(mctruthmode)+'%;s%@xsec%'+str(xsec)+'%;'
+                sedcmd = 'sed \"s%@input%' + eventsFile +'%;s%@outdir%' + opt.outdir +'%;s%@isMC%' + str(not isdata) + '%;s%@mctruthmode%'+str(mctruthmode)+'%;s%@xsec%'+str(xsec)+'%;'
                 sedcmd += 's%@cprime%'+str(getByLabel(d,'cprime',-1))+'%;'
                 sedcmd += 's%@brnew%' +str(getByLabel(d,'brnew' ,-1))+'%;'
                 sedcmd += 's%@suffix%' +suffix+'%;'
-            	if(opt.params.find('@useMVA')<0) :          opt.params = '@useMVA=False ' + opt.params
+                if(opt.params.find('@useMVA')<0) :          opt.params = '@useMVA=False ' + opt.params
                 if(opt.params.find('@weightsFile')<0) :     opt.params = '@weightsFile= ' + opt.params
                 if(opt.params.find('@evStart')<0) :         opt.params = '@evStart=0 '    + opt.params
                 if(opt.params.find('@evEnd')<0) :           opt.params = '@evEnd=-1 '     + opt.params
-            	if(opt.params.find('@saveSummaryTree')<0) : opt.params = '@saveSummaryTree=False ' + opt.params
-            	if(opt.params.find('@runSystematics')<0) :  opt.params = '@runSystematics=False '  + opt.params
+                if(opt.params.find('@saveSummaryTree')<0) : opt.params = '@saveSummaryTree=False ' + opt.params
+                if(opt.params.find('@runSystematics')<0) :  opt.params = '@runSystematics=False '  + opt.params
                 if(opt.params.find('@jacknife')<0) :        opt.params = '@jacknife=-1 ' + opt.params
                 if(opt.params.find('@jacks')<0) :           opt.params = '@jacks=-1 '    + opt.params
-            	if(len(opt.params)>0) :
+                if(len(opt.params)>0) :
                     extracfgs = opt.params.split(' ')
                     for icfg in extracfgs :
                         varopt=icfg.split('=')
                         if(len(varopt)<2) : continue
                         sedcmd += 's%' + varopt[0] + '%' + varopt[1] + '%;'
-            	sedcmd += '\"'
-		if(split==1):
+                sedcmd += '\"'
+                if(split==1):
                     cfgfile=opt.outdir +'/'+ dtag + suffix + '_cfg.py'
-		else:
+                else:
                     cfgfile=opt.outdir +'/'+ dtag + suffix + '_' + str(segment) + '_cfg.py'
                 os.system('cat ' + opt.cfg_file + ' | ' + sedcmd + ' > ' + cfgfile)
 
@@ -128,4 +156,4 @@ for proc in procList :
                     #os.system(batchCommand)
                     LaunchOnCondor.SendCluster_Push(["BASH", str(opt.theExecutable + ' ' + cfgfile)])
 
-LaunchOnCondor.SendCluster_Submit()
+# LaunchOnCondor.SendCluster_Submit()

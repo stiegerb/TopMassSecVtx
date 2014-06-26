@@ -156,4 +156,4 @@ for proc in procList :
                     #os.system(batchCommand)
                     LaunchOnCondor.SendCluster_Push(["BASH", str(opt.theExecutable + ' ' + cfgfile)])
 
-# LaunchOnCondor.SendCluster_Submit()
+LaunchOnCondor.SendCluster_Submit()

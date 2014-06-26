@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import os
+import sys
 import json
 
 def getByLabel(desc, key, defaultVal=None) :
@@ -87,7 +88,17 @@ def checkMissingFiles(inDir, jsonUrl):
     total_expected = 0
     missing_files = []
     suspicious_files = []
-    if not os.path.isdir(inDir):
+
+    protocol = 'local'
+    if inDir.startswith('/store/'):
+        protocol = 'rfio'
+
+    sys.path.append('/afs/cern.ch/cms/caf/python/')
+    from cmsIO import cmsFile
+
+    cmsInDir = cmsFile(inDir, protocol)
+
+    if not cmsInDir.isdir():
         print inDir, "is not a directory"
         return False
 
@@ -109,9 +120,10 @@ def checkMissingFiles(inDir, jsonUrl):
                     filename = eventsFile+'.root'
                     rootFileUrl = inDir+'/'+filename
                     total_expected += 1
-                    if not os.path.exists(rootFileUrl):
+                    cmsInRootFile = cmsFile(rootFileUrl, protocol)
+                    if not cmsInRootFile.isfile():
                         missing_files.append(filename)
-                    elif (os.path.getsize(rootFileUrl) < 1024):
+                    elif (cmsInRootFile.size() < 1024):
                         suspicious_files.append(filename)
                     continue
 
@@ -129,7 +141,7 @@ def checkMissingFiles(inDir, jsonUrl):
         print "(%d out of %d expected)"% (len(suspicious_files), total_expected)
         for filename in suspicious_files:
             print filename
-    print 20*'-'
+        print 20*'-'
 
 def runPlotter(inDir, jsonUrl, lumi, debug, outDir, mask='', verbose=0):
     """

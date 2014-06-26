@@ -623,34 +623,40 @@ int main(int argc, char* argv[])
 				if(passSynchJetSelection && passMetSelection && passBtagging) controlHistos.fillHisto("synchevtflow",   box.chCat, 7, 1.0);
 			}
 
+			// LEPTON CHARGE
+			int lepid = box.leptons[0]->get("id");
+			int lepcharge = -1.*lepid/abs(lepid);
+			if( isMC && !url.Contains("QCDMuPt20") ) lepcharge *= -1.;
+			if( url.Contains("SingleMu2012B"))       lepcharge *= -1.;
+
 			//our analysis selection
 			if(jetBin) {
-				controlHistos.fillHisto("evtflow",         box.chCat, jetBin,                          puWeight*lepSelectionWeight);
+				controlHistos.fillHisto("evtflow", box.chCat, jetBin, puWeight*lepSelectionWeight);
 				if(passJetSelection)
 				{
-					controlHistos.fillHisto("met",       box.chCat,            box.met.pt(),    puWeight*lepSelectionWeight); //N-1 plot
-					controlHistos.fillHisto("evtflow",   box.chCat, 5,                           puWeight*lepSelectionWeight);
+					controlHistos.fillHisto("met",     box.chCat, box.met.pt(), puWeight*lepSelectionWeight); //N-1 plot
+					controlHistos.fillHisto("evtflow", box.chCat, 5,            puWeight*lepSelectionWeight);
 
 					if(passMetSelection)
 					{
-						controlHistos.fillHisto("evtflow",   box.chCat, 6,                           puWeight*lepSelectionWeight);
-						controlHistos.fillHisto("charge",    box.chCat, box.leptons[0]->get("id")>0, puWeight*lepSelectionWeight);
+						controlHistos.fillHisto("evtflow", box.chCat, 6,         puWeight*lepSelectionWeight);
+						controlHistos.fillHisto("charge",  box.chCat, lepcharge, puWeight*lepSelectionWeight);
 						if(box.leptons.size()>=2)
-							controlHistos.fillHisto("mll",     box.chCat, ll.mass(),                   puWeight*lepSelectionWeight);
-						controlHistos.fillHisto("mt",        box.chCat, mt,                          puWeight*lepSelectionWeight);
-						controlHistos.fillHisto("thetall",   box.chCat, thetall,                     puWeight*lepSelectionWeight);
+							controlHistos.fillHisto("mll", box.chCat, ll.mass(), puWeight*lepSelectionWeight);
+						controlHistos.fillHisto("mt",      box.chCat, mt,        puWeight*lepSelectionWeight);
+						controlHistos.fillHisto("thetall", box.chCat, thetall,   puWeight*lepSelectionWeight);
 					}
 				}
 				else
 				{
-					controlHistos.fillHisto("thetall",   box.chCat+"lowmet", thetall, puWeight*lepSelectionWeight);
+					controlHistos.fillHisto("thetall", box.chCat+"lowmet", thetall, puWeight*lepSelectionWeight);
 				}
 			}
 			else if(passMetSelection)
 			{
-				controlHistos.fillHisto("met",       box.chCat+box.jetCat, box.met.pt(),                puWeight*lepSelectionWeight); //N-1 plot
-				controlHistos.fillHisto("mt",        box.chCat+box.jetCat, mt,                          puWeight*lepSelectionWeight);
-				controlHistos.fillHisto("charge",    box.chCat+box.jetCat, box.leptons[0]->get("id")>0, puWeight*lepSelectionWeight);
+				controlHistos.fillHisto("met",    box.chCat+box.jetCat, box.met.pt(), puWeight*lepSelectionWeight); //N-1 plot
+				controlHistos.fillHisto("mt",     box.chCat+box.jetCat, mt,           puWeight*lepSelectionWeight);
+				controlHistos.fillHisto("charge", box.chCat+box.jetCat, lepcharge,    puWeight*lepSelectionWeight);
 			}
 		}
 

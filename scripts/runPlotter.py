@@ -3,6 +3,10 @@ import os
 import sys
 import json
 
+sys.path.append('/afs/cern.ch/cms/caf/python/')
+from cmsIO import cmsFile
+
+
 def getByLabel(desc, key, defaultVal=None) :
     """
     Gets the value of a given item
@@ -13,10 +17,9 @@ def getByLabel(desc, key, defaultVal=None) :
     except KeyError:
         return defaultVal
 
-def getCMSPfn(path):
-    from subprocess import Popen, PIPE
-    output = Popen(["cmsPfn", path], stdout=PIPE).communicate()[0]
-    return output.strip()
+def getCMSPfn(path, protocol='rfio'):
+    cmsf = cmsFile(url, protocol)
+    return cmsf.pfn
 
 def getNormalization(tfile):
     constVals = tfile.Get('constVals')
@@ -30,11 +33,12 @@ def openTFile(url):
     from ROOT import TFile
     ## File on eos
     if url.startswith('/store/'):
-        url = getCMSPfn(url)
-        ## Should add a check here for existence
+        cmsf = cmsFile(url, 'rfio')
+        if not cmsf.isfile(): ## check existence
+            return None
+        url = cmsf.pfn
 
-    ## If it's a local file, check it actually exists
-    elif not os.path.exists(url):
+    elif not os.path.exists(url): ## check existence
         return None
 
     rootFile = TFile.Open(url)
@@ -76,10 +80,9 @@ def getAllPlotsFrom(tdir, chopPrefix=False):
 
 def checkMissingFiles(inDir, jsonUrl):
     """
-    Loop over the inputs and launch jobs
+    Loop over json inputs and check existence of files.
+    Also checks if files have a reasonable size (> 1kB)
     """
-    from ROOT import TFile
-    from UserCode.llvv_fwk.PlotUtils import Plot
 
     jsonFile = open(jsonUrl,'r')
     procList = json.load(jsonFile,encoding = 'utf-8').items()
@@ -92,9 +95,6 @@ def checkMissingFiles(inDir, jsonUrl):
     protocol = 'local'
     if inDir.startswith('/store/'):
         protocol = 'rfio'
-
-    sys.path.append('/afs/cern.ch/cms/caf/python/')
-    from cmsIO import cmsFile
 
     cmsInDir = cmsFile(inDir, protocol)
 
@@ -143,14 +143,91 @@ def checkMissingFiles(inDir, jsonUrl):
             print filename
         print 20*'-'
 
-def runPlotter(inDir, jsonUrl, lumi, debug, outDir, mask='', verbose=0):
+def makePlotPacked(packedargs):
+    key, inDir, procList, xsecweights, options = packedargs
+    return makePlot(key, inDir, procList, xsecweights, options)
+def makePlot(key, inDir, procList, xsecweights, options):
+    from UserCode.llvv_fwk.PlotUtils import Plot
+    print "... processing", key
+    pName = key.replace('/','')
+    newPlot = Plot(pName)
+    baseRootFile = None ## FIXME
+    for proc in procList:
+        for desc in proc[1]: # loop on processes
+            title = getByLabel(desc,'tag','unknown')
+            isData = getByLabel(desc,'isdata',False)
+            color = int(getByLabel(desc,'color',1))
+            data = desc['data']
+            mctruthmode = getByLabel(desc,'mctruthmode')
+
+            hist = None
+            for dset in data: # loop on datasets for process
+                dtag = getByLabel(dset,'dtag','')
+                split = getByLabel(dset,'split',1)
+
+                if baseRootFile is None:
+                    for segment in range(0,split) :
+                        eventsFile = dtag
+                        if split > 1:
+                            eventsFile = dtag + '_' + str(segment)
+                        if mctruthmode:
+                            eventsFile += '_filt%d' % mctruthmode
+                        rootFileUrl = inDir+'/'+eventsFile+'.root'
+
+                        rootFile = openTFile(rootFileUrl)
+                        if rootFile is None: continue
+
+                        ihist = rootFile.Get(key)
+                        try: ## Check if it is found
+                            if ihist.Integral() <= 0:
+                                rootFile.Close()
+                                continue
+                        except AttributeError:
+                            rootFile.Close()
+                            continue
+
+                        ihist.Scale(xsecweights[dtag])
+                        # print dtag,xsecweights[dtag]
+
+                        if hist is None :
+                            hist = ihist.Clone(dtag+'_'+pName)
+                            hist.SetDirectory(0)
+                        else:
+                            hist.Add(ihist)
+                        rootFile.Close()
+
+                else:
+                    ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
+                    try:
+                        if ihist.Integral() <= 0: continue
+                    except AttributeError:
+                        continue
+
+                    ihist.Scale(xsecweights[dtag])
+
+                    if hist is None: ## Check if it is found
+                        hist = ihist.Clone(dtag+'_'+pName)
+                        hist.SetDirectory(0)
+                    else:
+                        hist.Add(ihist)
+
+            if hist is None: continue
+            if not isData:
+                hist.Scale(options.lumi)
+            newPlot.add(hist,title,color,isData)
+
+    newPlot.show(options.outDir)
+    if(options.debug or newPlot.name.find('flow')>=0 ) : newPlot.showTable(options.outDir)
+    newPlot.reset()
+
+
+def runPlotter(inDir, options):
     """
     Loop over the inputs and launch jobs
     """
     from ROOT import TFile
-    from UserCode.llvv_fwk.PlotUtils import Plot
 
-    jsonFile = open(jsonUrl,'r')
+    jsonFile = open(options.json,'r')
     procList = json.load(jsonFile,encoding = 'utf-8').items()
 
     # Make a survey of *all* existing plots
@@ -207,7 +284,7 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir, mask='', verbose=0):
                                 print "ngen not properly set for", dtag
 
 
-        if len(missing_files) and verbose>0:
+        if len(missing_files) and options.verbose>0:
             print 20*'-'
             print "WARNING: Missing the following files:"
             for filename in missing_files:
@@ -215,85 +292,24 @@ def runPlotter(inDir, jsonUrl, lumi, debug, outDir, mask='', verbose=0):
             print 20*'-'
 
     # Apply mask:
-    if len(mask)>0:
-        masked_plots = [_ for _ in plots if mask in _]
+    if len(options.plotMask)>0:
+        masked_plots = [_ for _ in plots if options.plotMask in _]
         plots = masked_plots
 
     plots.sort()
 
     # Now plot them
-    for plot in plots:
-        if verbose>0: print '... processing', plot
-        pName = plot.replace('/','')
-        newPlot = Plot(pName)
+    if options.jobs==0:
+        for plot in plots:
+            makePlot(plot, inDir, procList, xsecweights, options)
 
-        for proc in procList:
-            for desc in proc[1]: # loop on processes
-                title = getByLabel(desc,'tag','unknown')
-                isData = getByLabel(desc,'isdata',False)
-                color = int(getByLabel(desc,'color',1))
-                data = desc['data']
-                mctruthmode = getByLabel(desc,'mctruthmode')
+    else:
+        from multiprocessing import Pool
+        pool = Pool(options.jobs)
 
-                hist = None
-                for dset in data: # loop on datasets for process
-                    dtag = getByLabel(dset,'dtag','')
-                    split = getByLabel(dset,'split',1)
+        tasklist = [(p, inDir, procList, xsecweights, options) for p in plots]
+        pool.map(makePlotPacked, tasklist)
 
-                    if baseRootFile is None:
-                        for segment in range(0,split) :
-                            eventsFile = dtag
-                            if split > 1:
-                                eventsFile = dtag + '_' + str(segment)
-                            if mctruthmode:
-                                eventsFile += '_filt%d' % mctruthmode
-                            rootFileUrl = inDir+'/'+eventsFile+'.root'
-
-                            rootFile = openTFile(rootFileUrl)
-                            if rootFile is None: continue
-
-                            ihist = rootFile.Get(plot)
-                            try: ## Check if it is found
-                                if ihist.Integral() <= 0:
-                                    rootFile.Close()
-                                    continue
-                            except AttributeError:
-                                rootFile.Close()
-                                continue
-
-                            ihist.Scale(xsecweights[dtag])
-                            # print dtag,xsecweights[dtag]
-
-                            if hist is None :
-                                hist = ihist.Clone(dtag+'_'+pName)
-                                hist.SetDirectory(0)
-                            else:
-                                hist.Add(ihist)
-                            rootFile.Close()
-
-                    else:
-                        ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
-                        try:
-                            if ihist.Integral() <= 0: continue
-                        except AttributeError:
-                            continue
-
-                        ihist.Scale(xsecweights[dtag])
-
-                        if hist is None: ## Check if it is found
-                            hist = ihist.Clone(dtag+'_'+pName)
-                            hist.SetDirectory(0)
-                        else:
-                            hist.Add(ihist)
-
-                if hist is None: continue
-                if not isData:
-                    hist.Scale(lumi)
-                newPlot.add(hist,title,color,isData)
-
-        newPlot.show(outDir)
-        if(debug or newPlot.name.find('flow')>=0 ) : newPlot.showTable(outDir)
-        newPlot.reset()
 
     if baseRootFile is not None: baseRootFile.Close()
 
@@ -332,6 +348,10 @@ if __name__ == "__main__":
                            ' [default: %default]')
     parser.add_option('-o', '--outDir', dest='outDir', default='plots',
                       help='Output directory [default: %default]')
+    parser.add_option("--jobs", default=0,
+                      action="store", type="int", dest="jobs",
+                      help=("Run N jobs in parallel."
+                            "[default: %default]"))
     (opt, args) = parser.parse_args()
 
     if len(args) > 0:
@@ -346,13 +366,14 @@ if __name__ == "__main__":
         gStyle.SetOptStat(0)
 
         os.system('mkdir -p %s'%opt.outDir)
-        runPlotter(inDir=args[0],
-                   jsonUrl=opt.json,
-                   lumi=opt.lumi,
-                   debug=opt.debug,
-                   outDir=opt.outDir,
-                   mask=opt.plotMask,
-                   verbose=opt.verbose)
+        runPlotter(inDir=args[0], options=opt)
+        # runPlotter(inDir=args[0],
+        #            jsonUrl=opt.json,
+        #            lumi=opt.lumi,
+        #            debug=opt.debug,
+        #            outDir=opt.outDir,
+        #            mask=opt.plotMask,
+        #            verbose=opt.verbose)
         print 'Plots have been saved to %s' % opt.outDir
         exit(0)
 

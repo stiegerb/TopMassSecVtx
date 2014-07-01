@@ -62,7 +62,7 @@ class Plot {
 
 class LxyTreeAnalysis : public LxyTreeAnalysisBase {
 public:
-   LxyTreeAnalysis(TTree *tree=0):LxyTreeAnalysisBase(tree){}
+   LxyTreeAnalysis(TTree *tree=0):LxyTreeAnalysisBase(tree){fMaxevents = -1;}
    virtual ~LxyTreeAnalysis(){}
    virtual void RunJob(TString);
    virtual void Begin(TFile*);
@@ -73,6 +73,8 @@ public:
    virtual void WriteHistos();
 
    virtual void analyze();
+
+   inline virtual void setMaxEvents(Long64_t max){fMaxevents = max;}
 
    /////////////////////////////////////////////
    // LxyTreeAnalysis interface:
@@ -118,9 +120,13 @@ public:
 
    /////////////////////////////////////////////
    std::vector<Plot*> fPlotList;
+   Long64_t fMaxevents;
 
    std::vector<TH1*> fHistos;
    TH1D *fHMinv2LeadTrk; // Inv. mass of two leading tracks in b-jet (emu chan)
+   TH1D *fHDiTrkInvMass; // Inv. mass of and two opposite sign tracks in b-jet (emu chan) (between 1.7 and 2 GeV)
+   TH1D *fHDiMuInvMass; // Inv. mass of and two opposite sign muons in b-jet (emu chan) (between 2.0 and 4.0 GeV)
+   TH1D *fHJPsiKInvMass; // Inv. mass of J/Psi and third track in b-jet (emu chan) (between 2.0 and 4.0 GeV)
    TH1D *fHEb1_emu; // Energy of first b-jet in emu channel
    TH1D *fHmlSv_mu; // Inv. mass of lepton and secondary vertex (mu chan)
 

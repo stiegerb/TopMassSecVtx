@@ -28,22 +28,112 @@ void LxyTreeAnalysis::End(TFile *file){
 }
 
 void LxyTreeAnalysis::BookHistos(){
-	// Book all the histograms here
-	fHMinv2LeadTrk = new TH1D("Minv2LeadTrk", "Minv2LeadTrk (EMu channel)",
-		                      100, 0., 10.); fHistos.push_back(fHMinv2LeadTrk);
-	fHMinv2LeadTrk->SetXTitle("Inv. Mass of leading tracks in b-jet [GeV]");
-	fHEb1_emu = new TH1D("Eb1_emu", "E_b1 in EMu channel",
-		                      100, 30., 500.); fHistos.push_back(fHEb1_emu);
-	fHEb1_emu->SetXTitle("Energy of first b-jet [GeV]");
-	fHmlSv_mu = new TH1D("mlSv_mu", "Lepton/SecVtx Mass in Mu channel",
-		                      100, 0., 150.); fHistos.push_back(fHmlSv_mu);
-	fHmlSv_mu->SetXTitle("Lepton/SecVtx mass [GeV]");
 
-	// Call Sumw2() for all of them
-	std::vector<TH1*>::iterator h;
-	for(h = fHistos.begin(); h != fHistos.end(); ++h){
-		(*h)->Sumw2();
-	}
+	fHmlSv_emu_deltar = new TH1D("mlSv_emu_deltar", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar);
+	fHmlSv_emu_deltar->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_deltar_correct = new TH1D("mlSv_emu_deltar_correct", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_correct);
+	fHmlSv_emu_deltar_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_deltar_wrong = new TH1D("mlSv_emu_deltar_wrong", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_wrong);
+	fHmlSv_emu_deltar_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+
+	fHmlSv_emu_deltar_ntr2 = new TH1D("mlSv_emu_deltar_ntr2", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_ntr2);
+	fHmlSv_emu_deltar_ntr2->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_deltar_ntr2_correct = new TH1D("mlSv_emu_deltar_ntr2_correct", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_ntr2_correct);
+	fHmlSv_emu_deltar_ntr2_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_deltar_ntr2_wrong = new TH1D("mlSv_emu_deltar_ntr2_wrong", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_ntr2_wrong);
+	fHmlSv_emu_deltar_ntr2_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+
+	fHmlSv_emu_deltar_ntr3 = new TH1D("mlSv_emu_deltar_ntr3", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_ntr3);
+	fHmlSv_emu_deltar_ntr3->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_deltar_ntr3_correct = new TH1D("mlSv_emu_deltar_ntr3_correct", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_ntr3_correct);
+	fHmlSv_emu_deltar_ntr3_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_deltar_ntr3_wrong = new TH1D("mlSv_emu_deltar_ntr3_wrong", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_ntr3_wrong);
+	fHmlSv_emu_deltar_ntr3_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+
+	fHmlSv_emu_deltar_ntr4 = new TH1D("mlSv_emu_deltar_ntr4", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_ntr4);
+	fHmlSv_emu_deltar_ntr4->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+
+	fHmlSv_emu_deltar_ntr4_correct = new TH1D("mlSv_emu_deltar_ntr4_correct", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_ntr4_correct);
+	fHmlSv_emu_deltar_ntr4_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_deltar_ntr4_wrong = new TH1D("mlSv_emu_deltar_ntr4_wrong", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_deltar_ntr4_wrong);
+	fHmlSv_emu_deltar_ntr4_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+// min mass method
+
+
+	fHmlSv_emu_minmass = new TH1D("mlSv_emu_minmass", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass);
+	fHmlSv_emu_minmass->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_minmass_correct = new TH1D("mlSv_emu_minmass_correct", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_correct);
+	fHmlSv_emu_minmass_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_minmass_wrong = new TH1D("mlSv_emu_minmass_wrong", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_wrong);
+	fHmlSv_emu_minmass_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+
+	fHmlSv_emu_minmass_ntr2 = new TH1D("mlSv_emu_minmass_ntr2", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_ntr2);
+	fHmlSv_emu_minmass_ntr2->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_minmass_ntr2_correct = new TH1D("mlSv_emu_minmass_ntr2_correct", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_ntr2_correct);
+	fHmlSv_emu_minmass_ntr2_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_minmass_ntr2_wrong = new TH1D("mlSv_emu_minmass_ntr2_wrong", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_ntr2_wrong);
+	fHmlSv_emu_minmass_ntr2_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+
+	fHmlSv_emu_minmass_ntr3 = new TH1D("mlSv_emu_minmass_ntr3", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_ntr3);
+	fHmlSv_emu_minmass_ntr3->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_minmass_ntr3_correct = new TH1D("mlSv_emu_minmass_ntr3_correct", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_ntr3_correct);
+	fHmlSv_emu_minmass_ntr3_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_minmass_ntr3_wrong = new TH1D("mlSv_emu_minmass_ntr3_wrong", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_ntr3_wrong);
+	fHmlSv_emu_minmass_ntr3_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+
+	fHmlSv_emu_minmass_ntr4 = new TH1D("mlSv_emu_minmass_ntr4", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_ntr4);
+	fHmlSv_emu_minmass_ntr4->SetXTitle("Lepton/SecVtx malss [GeV]");
+
+	fHmlSv_emu_minmass_ntr4_correct = new TH1D("mlSv_emu_minmass_ntr4_correct", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_ntr4_correct);
+	fHmlSv_emu_minmass_ntr4_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
+
+	fHmlSv_emu_minmass_ntr4_wrong = new TH1D("mlSv_emu_minmass_ntr4_wrong", "Lepton/SecVtx Mass in eMu channel",
+		                      50, 0., 150.); fHistos.push_back(fHmlSv_emu_minmass_ntr4_wrong);
+	fHmlSv_emu_minmass_ntr4_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
 }
 
 void LxyTreeAnalysis::WriteHistos(){
@@ -59,27 +149,96 @@ void LxyTreeAnalysis::analyze(){
 	// Called once per event
 	FillPlots();
 
-	TLorentzVector p_track1, p_track2;
-	p_track1.SetPtEtaPhiM(pfpt[0], pfeta[0], pfphi[0], 0.);
-	p_track2.SetPtEtaPhiM(pfpt[1], pfeta[1], pfphi[1], 0.);
+	std::vector <int> indices(2,-1);
+        float lxymax1(0), lxymax2(0);
+	
+	for( int i=0; i < nj; i++){
+		if(svlxy[i]>0){
+			if(svlxyerr[i]!=0){
+				if(svlxy[i]/svlxyerr[i]>lxymax1) {
+					lxymax2=lxymax1;
+					indices[1]=indices[0];
+					lxymax1=svlxy[i]/svlxyerr[i];
+					indices[0]=i;
+				}		
+		           	else if (svlxy[i]/svlxyerr[i]>lxymax2) {
+					lxymax2=svlxy[i]/svlxyerr[i];
+					indices[1]=i;
+				}
+			}
+		}
+        }
+     if(indices[1]<0) indices.pop_back();
+     if(indices[0]<0) indices.pop_back();
+     bool check_secv(indices.size());
+ 
+   //if (svlxy[i]>0){
+//			indices.push_back(i);
+//			check_secv=1;
+//		}
+//	}
 
-	if(abs(evcat) == 11*13 ){
+	if(abs(evcat) == 11*13  && check_secv && nj > 1 ){
 		// emu channel
-		fHMinv2LeadTrk->Fill((p_track1+p_track2).M(), w[0]);
+		// inv.m of l and correct sec.v. (deltar and minmass methods)
+		TLorentzVector p_secvtx1, p_secvtx2, p_secvtx1m, p_secvtx2m, p_l;		
+		p_l.SetPtEtaPhiM(lpt[0], leta[0], lphi[0], 0.);	
+		p_secvtx1.SetPtEtaPhiM(svpt[indices[0]], sveta[indices[0]], svphi[indices[0]], svmass[indices[0]]);
+		p_secvtx1m.SetPtEtaPhiM(svpt[indices[0]], sveta[indices[0]], svphi[indices[0]], svmass[indices[0]]);
+		int index_for_correct=indices[0];
+		int index_for_correct_m=indices[0];
+	
+	for (unsigned int iii=1; iii<indices.size(); iii++){
+				p_secvtx2.SetPtEtaPhiM(svpt[indices[iii]], sveta[indices[iii]], svphi[indices[iii]], svmass[indices[iii]]);
+				p_secvtx2m.SetPtEtaPhiM(svpt[indices[iii]], sveta[indices[iii]], svphi[indices[iii]], svmass[indices[iii]]);				
+				if(p_secvtx1.DeltaR(p_l) > p_secvtx2.DeltaR(p_l)){
+					p_secvtx1=p_secvtx2;
+					index_for_correct=indices[iii];
+				}
+				if((p_secvtx1m+p_l).M() > (p_secvtx2m+p_l).M()){
+					p_secvtx1m=p_secvtx2m;
+					index_for_correct_m=indices[iii];
+				}
+	
+		}
 
-		// Just take the first jet for now, should check/fix this
-		float E_b1 = jpt[0]*cosh(jeta[0]);
-		if(nj==2) fHEb1_emu->Fill(E_b1, w[0]);
-	}
+		fHmlSv_emu_deltar->Fill((p_secvtx1+p_l).M(), w[0]);
+		if (svntk[index_for_correct] ==2){fHmlSv_emu_deltar_ntr2->Fill((p_secvtx1+p_l).M(), w[0]);}
+		if (svntk[index_for_correct] ==3){fHmlSv_emu_deltar_ntr3->Fill((p_secvtx1+p_l).M(), w[0]);}
+		if (svntk[index_for_correct] > 3){fHmlSv_emu_deltar_ntr4->Fill((p_secvtx1+p_l).M(), w[0]);}
 
-	if(abs(evcat) == 13 && metpt > 30. && svlxy[0] > 0. && nj > 3){
-		// mu channel
-		// Just take first lepton and first sec vtx now
-		// Should ask them to be close by
-		TLorentzVector p_secvtx, p_mu;
-		p_secvtx.SetPtEtaPhiM(svpt[0], sveta[0], svphi[0], 0.);
-		p_mu.SetPtEtaPhiM(lpt[0], leta[0], lphi[0], 0.);
-		fHmlSv_mu->Fill((p_secvtx+p_mu).M(), w[0]);
+		fHmlSv_emu_minmass->Fill((p_secvtx1m+p_l).M(), w[0]);
+		if (svntk[index_for_correct_m] ==2){fHmlSv_emu_minmass_ntr2->Fill((p_secvtx1m+p_l).M(), w[0]);}
+		if (svntk[index_for_correct_m] ==3){fHmlSv_emu_minmass_ntr3->Fill((p_secvtx1m+p_l).M(), w[0]);}
+		if (svntk[index_for_correct_m] > 3){fHmlSv_emu_minmass_ntr4->Fill((p_secvtx1m+p_l).M(), w[0]);}
+
+		if( (lid[0] > 0 && bid[index_for_correct] == -5 ) || (lid[0] < 0 && bid[index_for_correct] == 5) ){  
+			fHmlSv_emu_deltar_correct->Fill((p_secvtx1+p_l).M(), w[0]);
+			if (svntk[index_for_correct] ==2){fHmlSv_emu_deltar_ntr2_correct->Fill((p_secvtx1+p_l).M(), w[0]);}
+			if (svntk[index_for_correct] ==3){fHmlSv_emu_deltar_ntr3_correct->Fill((p_secvtx1+p_l).M(), w[0]);}
+			if (svntk[index_for_correct] > 3){fHmlSv_emu_deltar_ntr4_correct->Fill((p_secvtx1+p_l).M(), w[0]);}
+		}
+		
+		else {  
+			fHmlSv_emu_deltar_wrong->Fill((p_secvtx1+p_l).M(), w[0]);
+			if (svntk[index_for_correct] ==2){fHmlSv_emu_deltar_ntr2_wrong->Fill((p_secvtx1+p_l).M(), w[0]);}
+			if (svntk[index_for_correct] ==3){fHmlSv_emu_deltar_ntr3_wrong->Fill((p_secvtx1+p_l).M(), w[0]);}
+			if (svntk[index_for_correct] >3){fHmlSv_emu_deltar_ntr4_wrong->Fill((p_secvtx1+p_l).M(), w[0]);}
+		}
+
+		if( (lid[0] > 0 && bid[index_for_correct_m] == -5 ) || (lid[0] < 0 && bid[index_for_correct_m] == 5) ){  
+			fHmlSv_emu_minmass_correct->Fill((p_secvtx1m+p_l).M(), w[0]);
+			if (svntk[index_for_correct_m] ==2){fHmlSv_emu_minmass_ntr2_correct->Fill((p_secvtx1m+p_l).M(), w[0]);}
+			if (svntk[index_for_correct_m] ==3){fHmlSv_emu_minmass_ntr3_correct->Fill((p_secvtx1m+p_l).M(), w[0]);}
+			if (svntk[index_for_correct_m] > 3){fHmlSv_emu_minmass_ntr4_correct->Fill((p_secvtx1m+p_l).M(), w[0]);}
+		}
+		
+		else {  
+			fHmlSv_emu_minmass_wrong->Fill((p_secvtx1m+p_l).M(), w[0]);
+			if (svntk[index_for_correct_m] ==2){fHmlSv_emu_minmass_ntr2_wrong->Fill((p_secvtx1m+p_l).M(), w[0]);}
+			if (svntk[index_for_correct_m] ==3){fHmlSv_emu_minmass_ntr3_wrong->Fill((p_secvtx1m+p_l).M(), w[0]);}
+			if (svntk[index_for_correct_m] >3){fHmlSv_emu_minmass_ntr4_wrong->Fill((p_secvtx1m+p_l).M(), w[0]);}
+		} 
 	}
 
 }
@@ -106,5 +265,7 @@ void LxyTreeAnalysis::Loop(){
 	}
 	std::cout << "\r [   done  ]" << std::endl;
 }
+
+
 
 #endif

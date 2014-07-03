@@ -6,6 +6,8 @@ PLOTS = [
 ##  ('name',  'branch', 'selection/weight', nbins, minx, maxx)
     ('jpt',    'jpt[0]',
         'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 30., 300.),
+    ('met',    'metpt',
+        'w[0]*(abs(evcat)==11*13&&nj>1)', 100, 0., 200.),
     ('avpfpt', 'Sum$(pfpt)/Length$(pfpt)',
         'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 0., 20.)
 ]
@@ -167,6 +169,14 @@ def runLxyTreeAnalysis(name, location, treeloc):
     elif location.endswith('.root'):
         ## add a single file
         ch.Add(location)
+
+    # Check tree
+    entries = ch.GetEntries()
+    if entries<1:
+        print 50*'<'
+        print "  Problem with", name, "continuing without"
+        print 50*'<'
+        return False
 
     ana = LxyTreeAnalysis(ch)
 

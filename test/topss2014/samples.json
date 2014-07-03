@@ -78,7 +78,8 @@
       "color":614,
       "lcolor":1,
       "data":[
-        { "dtag":"MC8TeV_TTJets_MSDecays_172v5"           , "split":5, "xsec":245.8, "dset":"Unknown" }
+        { "dtag":"MC8TeV_TTJets_MSDecays_172v5"     , "split":5,  "xsec":245.8, "dset":"MC8TeV_TTJets_MSDecays" },
+        { "dtag":"MC8TeV_TTJets_MSDecays_172v5_v2"  , "split":10, "xsec":245.8, "dset":"MC8TeV_TTJets_MSDecays" }
       ]
     },
     {

@@ -77,7 +77,6 @@ def getAllPlotsFrom(tdir, chopPrefix=False):
             toReturn.append(key)
     return toReturn
 
-
 def checkMissingFiles(inDir, jsonUrl):
     """
     Loop over json inputs and check existence of files.
@@ -152,8 +151,8 @@ def makePlot(key, inDir, procList, xsecweights, options):
     pName = key.replace('/','')
     newPlot = Plot(pName)
     baseRootFile = None ## FIXME
-    for proc in procList:
-        for desc in proc[1]: # loop on processes
+    for proc_tag in procList:
+        for desc in proc_tag[1]: # loop on processes
             title = getByLabel(desc,'tag','unknown')
             isData = getByLabel(desc,'isdata',False)
             color = int(getByLabel(desc,'color',1))
@@ -161,9 +160,9 @@ def makePlot(key, inDir, procList, xsecweights, options):
             mctruthmode = getByLabel(desc,'mctruthmode')
 
             hist = None
-            for dset in data: # loop on datasets for process
-                dtag = getByLabel(dset,'dtag','')
-                split = getByLabel(dset,'split',1)
+            for process in data: # loop on datasets for process
+                dtag = getByLabel(process,'dtag','')
+                split = getByLabel(process,'split',1)
 
                 if baseRootFile is None:
                     for segment in range(0,split) :
@@ -220,7 +219,6 @@ def makePlot(key, inDir, procList, xsecweights, options):
     if(options.debug or newPlot.name.find('flow')>=0 ) : newPlot.showTable(options.outDir)
     newPlot.reset()
 
-
 def runPlotter(inDir, options):
     """
     Loop over the inputs and launch jobs
@@ -233,23 +231,27 @@ def runPlotter(inDir, options):
     # Make a survey of *all* existing plots
     plots = []
     xsecweights = {}
+    tot_ngen = {}
     missing_files = []
     baseRootFile = None
     if inDir.endswith('.root'):
         baseRootFile = TFile.Open(inDir)
         plots = list(set(getAllPlotsFrom(tdir=baseRootFile,chopPrefix=True)))
     else:
-        for proc in procList:
-            for desc in proc[1]:
+        for proc_tag in procList:
+            for desc in proc_tag[1]:
                 data = desc['data']
                 isData = getByLabel(desc,'isdata',False)
                 mctruthmode = getByLabel(desc,'mctruthmode')
-                for d in data:
-                    dtag = getByLabel(d,'dtag','')
-                    split = getByLabel(d,'split',1)
-                    xsec = getByLabel(d,'xsec',1)
-                    brratio = getByLabel(d,'br',[1])
-                    ngen = 0
+                for process in data:
+                    dtag = getByLabel(process,'dtag','')
+                    split = getByLabel(process,'split',1)
+                    dset = getByLabel(process,'dset',dtag)
+
+                    try:
+                        ngen = tot_ngen[dset]
+                    except KeyError:
+                        ngen = 0
 
                     for segment in range(0,split):
                         eventsFile = dtag
@@ -271,11 +273,18 @@ def runPlotter(inDir, options):
                         rootFile.Close()
                         plots = list(set(plots+iplots))
 
+                    tot_ngen[dset] = ngen
 
-                    # Calculate weight:
+
+                # Calculate weights:
+                for process in data:
+                    dtag = getByLabel(process,'dtag','')
+                    dset = getByLabel(process,'dset',dtag)
+                    brratio = getByLabel(process,'br',[1])
+                    xsec = getByLabel(process,'xsec',1)
                     if dtag not in xsecweights.keys():
-                        # print dtag, xsec, xsecf, ngen
                         try:
+                            ngen = tot_ngen[dset]
                             xsecweights[str(dtag)] = brratio[0]*xsec/ngen
                         except ZeroDivisionError:
                             if isData:

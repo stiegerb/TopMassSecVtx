@@ -43,12 +43,14 @@ void LxyAnalysis::resetBeautyEvent()
 	}
 	for(size_t i=0; i<bev_.gMaxNJets; i++){
 		bev_.jflav[i] = 0;
-		bev_.jpt[i]  = -999.99;
-		bev_.jeta[i] = -999.99;
-		bev_.jphi[i] = -999.99;
-		bev_.jcsv[i] = -999.99;
-		bev_.jarea[i] = -999.99;
+		bev_.jpt[i]    = -999.99;
+		bev_.jeta[i]   = -999.99;
+		bev_.jphi[i]   = -999.99;
+		bev_.jcsv[i]   = -999.99;
+		bev_.jarea[i]  = -999.99;
 		bev_.jtoraw[i] = -999.99;
+		bev_.jjesup[i] = -999.99;
+		bev_.jjesdn[i] = -999.99;
 	}
 	for(size_t i=0; i<bev_.gMaxNSV; i++){
 		bev_.tid[i] = 0;
@@ -88,6 +90,10 @@ void LxyAnalysis::resetBeautyEvent()
 
 	bev_.metpt  = -999.99;
 	bev_.metphi = -999.99;
+
+	for(size_t i=0; i<8; i++){
+		bev_.metvar[i] = -999.99;
+	}
 }
 
 //
@@ -123,6 +129,8 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 	outT_->Branch("jcsv",      bev_.jcsv,      "jcsv[nj]/F");
 	outT_->Branch("jarea",     bev_.jarea,     "jarea[nj]/F");
 	outT_->Branch("jtoraw",    bev_.jtoraw,    "jtoraw[nj]/F");
+	outT_->Branch("jjesup",    bev_.jjesup,    "jjesup[nj]/F");
+	outT_->Branch("jjesdn",    bev_.jjesdn,    "jjesdn[nj]/F");
 	outT_->Branch("gjpt",      bev_.gjpt,      "gjpt[nj]/F");
 	outT_->Branch("gjeta",     bev_.gjeta,     "gjeta[nj]/F");
 	outT_->Branch("gjphi",     bev_.gjphi,     "gjphi[nj]/F");
@@ -152,6 +160,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 	outT_->Branch("pfphi",     bev_.pfphi,     "pfphi[npf]/F");
 	outT_->Branch("metpt",    &bev_.metpt,     "metpt/F");
 	outT_->Branch("metphi",   &bev_.metphi,    "metphi/F");
+	outT_->Branch("metvar",    bev_.metvar,    "metvar[8]/F");
 	outT_->Branch("tid",       bev_.tid,       "tid[nj]/I");
 	outT_->Branch("tpt",       bev_.tpt,       "tpt[nj]/F");
 	outT_->Branch("teta",      bev_.teta,      "teta[nj]/F");
@@ -166,7 +175,8 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 						  Int_t evcat, Int_t gevcat,
 						  std::vector<data::PhysicsObject_t *> &leptons,
 						  std::vector<data::PhysicsObject_t *> &jets,
-						  LorentzVector &met,
+						  std::vector<LorentzVector> &mets,
+						  // LorentzVector &met,
 						  data::PhysicsObjectCollection_t &pf,
 						  data::PhysicsObjectCollection_t &mctruth)
 {
@@ -217,8 +227,10 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 		}
 		bev_.jcsv[bev_.nj]  = jets[i]->getVal("csv");
 		hasCSVtag |= (jets[i]->getVal("csv")>btagCut);
-		bev_.jarea[bev_.nj]  = jets[i]->getVal("area");
-		bev_.jtoraw[bev_.nj]  = jets[i]->getVal("torawsf");
+		bev_.jarea[bev_.nj] = jets[i]->getVal("area");
+		bev_.jtoraw[bev_.nj] = jets[i]->getVal("torawsf");
+		bev_.jjesup[bev_.nj] = jets[i]->getVal("jesup");
+		bev_.jjesdn[bev_.nj] = jets[i]->getVal("jesdown");
 
 		const data::PhysicsObject_t &genParton=jets[i]->getObject("gen");
 		if(genParton.pt()>0){
@@ -292,8 +304,13 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 	}
 
 	//met
-	bev_.metpt=met.pt();
-	bev_.metphi=met.phi();
+	bev_.metpt  = mets[0].pt();
+	bev_.metphi = mets[0].phi();
+
+	// met variations
+	for (int i = 1; i < 9; ++i){
+		bev_.metvar[i-1] = mets[i].pt();
+	}
 
 	//event selection
 	if( hasCSVtag ){

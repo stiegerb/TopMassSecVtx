@@ -246,9 +246,6 @@ void LxyTreeAnalysis::analyze(){
 	}
 
 
-
-
-
 	for (r[1] = 0; r[1] < npf; ++r[1])
 	{
 		if (pfjetidx[r[1]]==second_maxind)

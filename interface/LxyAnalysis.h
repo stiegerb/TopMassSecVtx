@@ -27,7 +27,8 @@ struct BeautyEvent_t
 	Int_t nj,jflav[gMaxNJets];
 	Float_t jpt[gMaxNJets],jeta[gMaxNJets],jphi[gMaxNJets];
 	Float_t gjpt[gMaxNJets],gjeta[gMaxNJets],gjphi[gMaxNJets];
-	Float_t jcsv[gMaxNJets],jarea[gMaxNJets],jtoraw[gMaxNJets];
+	Float_t jcsv[gMaxNJets],jarea[gMaxNJets];
+	Float_t jtoraw[gMaxNJets],jjesup[gMaxNJets],jjesdn[gMaxNJets];
 	// Sec.Vertices
 	Float_t svpt[gMaxNSV],sveta[gMaxNSV],svphi[gMaxNSV];
 	Float_t svmass[gMaxNSV],svntk[gMaxNSV],svlxy[gMaxNSV],svlxyerr[gMaxNSV];
@@ -43,7 +44,11 @@ struct BeautyEvent_t
 	Int_t npf,npfb1,pfid[gMaxNPFCands],pfjetidx[gMaxNPFCands];
 	Float_t pfpt[gMaxNPFCands],pfeta[gMaxNPFCands],pfphi[gMaxNPFCands];
 	// MET
-	Float_t metpt,metphi;
+	Float_t metpt, metphi;
+	// MET Variations:
+	// 0 = jerup  1 = jerdown  2 = jesup 3 = jesdown
+	// 4 = umetup 5 = umetdown 6 = lesup 7 = lesdown
+	Float_t metvar[8];
 };
 
 class LxyAnalysis
@@ -60,7 +65,7 @@ public:
 				 Int_t evCat, Int_t gevCat,
 				 std::vector<data::PhysicsObject_t *> &leptons,
 				 std::vector<data::PhysicsObject_t *> &jets,
-				 LorentzVector &met,
+				 std::vector<LorentzVector> &mets,
 				 data::PhysicsObjectCollection_t &pf,
 				 data::PhysicsObjectCollection_t &mctruth);
 

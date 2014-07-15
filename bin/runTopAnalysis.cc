@@ -264,7 +264,7 @@ data::PhysicsObjectCollection_t selectJets(data::PhysicsObjectCollection_t &jets
 	data::PhysicsObjectCollection_t selJets;
 	for(size_t ijet=0; ijet<jets.size(); ijet++)
 	{
-		data::PhysicsObject_t selJet=getTopSelectionTaggedJet(jets[ijet], leptons, 20., 2.5);
+		data::PhysicsObject_t selJet = getTopSelectionTaggedJet(jets[ijet], leptons, 20., 2.5);
 
 		if(!selJet.get("passGoodJet")) continue;
 
@@ -315,11 +315,11 @@ int main(int argc, char* argv[])
 
 	//jet energy scale uncertainties
 	gSystem->ExpandPathName(jecDir);
-	fJesCor        = utils::cmssw::getJetCorrector(jecDir,isMC);
+	fJesCor = utils::cmssw::getJetCorrector(jecDir,isMC);
 	fTotalJESUnc = new JetCorrectionUncertainty((jecDir+"/MC_Uncertainty_AK5PFchs.txt").Data());
 
 	//muon energy corrector
-	fMuCor=getMuonCorrector(jecDir,url);
+	fMuCor = getMuonCorrector(jecDir,url);
 
 	//b-tag efficiencies read b-tag efficiency map
 	if(weightsFile.size() && isMC)
@@ -493,13 +493,15 @@ int main(int argc, char* argv[])
 
 		//jet/met
 		data::PhysicsObjectCollection_t jets(evSummary.getPhysicsObject(DataEventSummaryHandler::JETS));
-		utils::cmssw::updateJEC(jets,fJesCor,fTotalJESUnc,ev.rho,ev.nvtx,isMC);
-		data::PhysicsObjectCollection_t selJets=selectJets(jets,selLeptons);
-		data::PhysicsObjectCollection_t recoMet=evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
-		std::vector<LorentzVector> met=utils::cmssw::getMETvariations(recoMet[0],selJets,selLeptons,isMC);
+		utils::cmssw::updateJEC(jets, fJesCor, fTotalJESUnc, ev.rho, ev.nvtx, isMC);
+		data::PhysicsObjectCollection_t selJets = selectJets(jets,selLeptons);
+		data::PhysicsObjectCollection_t recoMet = evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
+		std::vector<LorentzVector> met = utils::cmssw::getMETvariations(recoMet[0], selJets, selLeptons, isMC);
 
 		//get the category and check if trigger is consistent
-		AnalysisBox box=assignBox(selLeptons, selJets, met[0], (eeTrigger || emuTrigger || mumuTrigger), (eTrigger || muTrigger) );
+		AnalysisBox box = assignBox(selLeptons, selJets, met[0],
+			                        (eeTrigger || emuTrigger || mumuTrigger),
+			                        (eTrigger || muTrigger) );
 		if(box.cat==0) continue;
 		if(abs(box.cat)==11    && !eTrigger)    continue;
 		if(abs(box.cat)==13    && !muTrigger)   continue;
@@ -510,7 +512,9 @@ int main(int argc, char* argv[])
 		//b-tagging
 		float btagCut(box.leptons.size()==1 ? 0.783 : 0.405 );
 		bool passBtagging(false);
-		for(size_t ijet=0; ijet<box.jets.size(); ijet++) passBtagging |= (box.jets[ijet]->getVal("csv")>btagCut);
+		for(size_t ijet=0; ijet<box.jets.size(); ijet++){
+			passBtagging |= (box.jets[ijet]->getVal("csv")>btagCut);
+		}
 
 		//
 		// MC CORRECTIONS
@@ -681,7 +685,7 @@ int main(int argc, char* argv[])
 									   evCatSummary, genCat,
 									   box.leptons,
 									   box.jets,
-									   box.met, pf, gen);
+									   met, pf, gen);
 		if(passLeptonSelection &&
 		   passJetSelection &&
 		   passMetSelection &&

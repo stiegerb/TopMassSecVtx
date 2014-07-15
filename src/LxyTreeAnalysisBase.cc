@@ -75,6 +75,8 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("jcsv", jcsv, &b_jcsv);
    fChain->SetBranchAddress("jarea", jarea, &b_jarea);
    fChain->SetBranchAddress("jtoraw", jtoraw, &b_jtoraw);
+   fChain->SetBranchAddress("jjesup", jjesup, &b_jjesup);
+   fChain->SetBranchAddress("jjesdn", jjesdn, &b_jjesdn);
    fChain->SetBranchAddress("gjpt", gjpt, &b_gjpt);
    fChain->SetBranchAddress("gjeta", gjeta, &b_gjeta);
    fChain->SetBranchAddress("gjphi", gjphi, &b_gjphi);
@@ -104,6 +106,7 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("pfphi", pfphi, &b_pfphi);
    fChain->SetBranchAddress("metpt", &metpt, &b_metpt);
    fChain->SetBranchAddress("metphi", &metphi, &b_metphi);
+   fChain->SetBranchAddress("metvar", metvar, &b_metvar);
    fChain->SetBranchAddress("tid", tid, &b_tid);
    fChain->SetBranchAddress("tpt", tpt, &b_tpt);
    fChain->SetBranchAddress("teta", teta, &b_teta);

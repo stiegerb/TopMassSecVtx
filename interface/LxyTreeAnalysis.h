@@ -73,6 +73,8 @@ public:
    virtual void WriteHistos();
 
    virtual void analyze();
+   void fillJPsiHists(int);
+   void fillD0Hist(int, TH1D*&);
 
    /////////////////////////////////////////////
    // LxyTreeAnalysis interface:
@@ -120,10 +122,21 @@ public:
    std::vector<Plot*> fPlotList;
 
    std::vector<TH1*> fHistos;
-   TH1D *fHMinv2LeadTrk; // Inv. mass of two leading tracks in b-jet (emu chan)
-   TH1D *fHEb1_emu; // Energy of first b-jet in emu channel
-   TH1D *fHmlSv_mu; // Inv. mass of lepton and secondary vertex (mu chan)
-
+   TH1D *fHMinv2LeadTrk;// Inv. mass of two leading tracks in b-jet (emu chan)
+   TH1D *fHMinvJPsiTrk;// Inv. mass of JPsi in b-jet (emu chan)
+   TH1D *fHMinvJPsiTrkmu;//
+   TH1D *fHMinvJPsiTrke;//
+   TH1D *fHMinvD0Trk;// Inv. mass of D0 in b-jet (emu chan)
+   TH1D *fHMinvD0SecondTrk;// Inv. mass of D0 in second b-jet (emu chan)
+   TH1D *fHMinvD0Trkchargeselection;//Inv. mass of B-hadron 
+   TH1D *fHMinvBTrkJPsiK;//Inv. mass of B-hadron 
+   TH1D *fHMinvBTrkD0;//Inv. mass of B-hadron
+   TH1D *fHMinvBTrkD0chargeselection;//Inv. mass of B-hadron
+   TH1D *fHMinvBTrktotal;//Inv. mass of B-hadron
+   TH1D *fHMinvBTrktotalchargeselection;//Inv. mass of B-hadron
+   TH1D *fHEb1_emu;// Energy of first b-jet in emu channel
+   TH1D *fHmlSv_mu;// Inv. mass of lepton and secondary vertex (mu chan) 
+   TH1D *fHMinvDplusminusTrk;//
 };
 
 #endif

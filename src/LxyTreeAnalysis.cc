@@ -237,8 +237,9 @@ void LxyTreeAnalysis::analyze(){
 
 //---------------------------------------------------------------------------------------------------------- D0
 
-	int r[] = {0, 0};
 
+
+	int r[] = {0, 0};
 	for (r[0] = 0; r[0] < npf; ++r[0])
 	{
 		if (pfjetidx[r[0]]==maxind)
@@ -286,7 +287,8 @@ void LxyTreeAnalysis::analyze(){
 					// mass assumption was correct (second is Kaon)
 					fHMinvD0Trkchargeselection->Fill((p_track1+p_track2).M(), w[0]);
 					
-					if (abs((p_track1+p_track2).M()-1.86)<0.06){
+					if (abs((p_track1+p_track2).M()-1.86)<0.06)
+					{
 						fHMinvBTrkD0chargeselection->Fill((p_track1+p_track2+p_track3).M(), w[0]);
 						fHMinvBTrktotalchargeselection->Fill((p_track1+p_track2+p_track3).M(), w[0]);
 					}
@@ -305,7 +307,8 @@ void LxyTreeAnalysis::analyze(){
 					// mass assumption was wrong (second is pion, first is kaon)
 					fHMinvD0Trkchargeselection->Fill((p_track1+p_track2).M(), w[0]);
 					
-					if (abs((p_track1+p_track2).M()-1.86)<0.06){
+					if (abs((p_track1+p_track2).M()-1.86)<0.06)
+					{
 						fHMinvBTrkD0chargeselection->Fill((p_track1+p_track2+p_track3).M(), w[0]);
 						fHMinvBTrktotalchargeselection->Fill((p_track1+p_track2+p_track3).M(), w[0]);
 					}

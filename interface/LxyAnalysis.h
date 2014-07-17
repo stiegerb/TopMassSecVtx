@@ -29,6 +29,7 @@ struct BeautyEvent_t
 	Float_t gjpt[gMaxNJets],gjeta[gMaxNJets],gjphi[gMaxNJets];
 	Float_t jcsv[gMaxNJets],jarea[gMaxNJets];
 	Float_t jtoraw[gMaxNJets],jjesup[gMaxNJets],jjesdn[gMaxNJets];
+	Float_t jbhadmatchdr[gMaxNJets];
 	// Sec.Vertices
 	Float_t svpt[gMaxNSV],sveta[gMaxNSV],svphi[gMaxNSV];
 	Float_t svmass[gMaxNSV],svntk[gMaxNSV],svlxy[gMaxNSV],svlxyerr[gMaxNSV];

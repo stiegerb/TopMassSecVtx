@@ -129,37 +129,37 @@ void LxyTreeAnalysis::BookHistos(){
 
 
 
-	checkfHMinvD0Trk1 = new TH1D("checkMinvD0Trk1", "checkMinvD0Trk1 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(checkfHMinvD0Trk1);
-	checkfHMinvD0Trk1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV]");
+	fHcheckMinvD0Trk1 = new TH1D("checkMinvD0Trk1", "checkMinvD0Trk1 (EMu channel)",
+		100, 1.6, 2.2); fHistos.push_back(fHcheckMinvD0Trk1);
+	fHcheckMinvD0Trk1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV]");
 
 
-	checkfHMinvD0Trk2 = new TH1D("checkMinvD0Trk2", "checkMinvD0Trk2 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(checkfHMinvD0Trk2);
-	checkfHMinvD0Trk2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV]");
+	fHcheckMinvD0Trk2 = new TH1D("checkMinvD0Trk2", "checkMinvD0Trk2 (EMu channel)",
+		100, 1.6, 2.2); fHistos.push_back(fHcheckMinvD0Trk2);
+	fHcheckMinvD0Trk2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV]");
 
 
-	checkfHMinvD0Trk12 = new TH1D("MinvD0Trk12", "MinvD0Trk12 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(checkfHMinvD0Trk12);
-	checkfHMinvD0Trk12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV]");
+	fHcheckMinvD0Trk12 = new TH1D("checkMinvD0Trk12", "checkMinvD0Trk12 (EMu channel)",
+		100, 1.6, 2.2); fHistos.push_back(fHcheckMinvD0Trk12);
+	fHcheckMinvD0Trk12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV]");
 
 
 
 	
 
-	checkfHMinvD0Trkchargeselection1 = new TH1D("checkMinvD0Trkchargeselection1", "checkMinvD0Trkchargeselection1 (EMu channel)",	
-		100, 1.6, 2.2); fHistos.push_back(checkfHMinvD0Trkchargeselection1);
-	checkfHMinvD0Trkchargeselection1->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
+	fHcheckMinvD0Trkchargeselection1 = new TH1D("checkMinvD0Trkchargeselection1", "checkMinvD0Trkchargeselection1 (EMu channel)",	
+		100, 1.6, 2.2); fHistos.push_back(fHcheckMinvD0Trkchargeselection1);
+	fHcheckMinvD0Trkchargeselection1->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
 
 
-	checkfHMinvD0Trkchargeselection2 = new TH1D("checkMinvD0Trkchargeselection2", "checkMinvD0Trkchargeselection2 (EMu channel)",	
-		100, 1.6, 2.2); fHistos.push_back(checkfHMinvD0Trkchargeselection2);
-	checkfHMinvD0Trkchargeselection2->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
+	fHcheckMinvD0Trkchargeselection2 = new TH1D("checkMinvD0Trkchargeselection2", "checkMinvD0Trkchargeselection2 (EMu channel)",	
+		100, 1.6, 2.2); fHistos.push_back(fHcheckMinvD0Trkchargeselection2);
+	fHcheckMinvD0Trkchargeselection2->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
 
 
-	checkfHMinvD0Trkchargeselection12 = new TH1D("checkMinvD0Trkchargeselection12", "checkMinvD0Trkchargeselection12 (EMu channel)",	
-		100, 1.6, 2.2); fHistos.push_back(checkfHMinvD0Trkchargeselection12);
-	checkfHMinvD0Trkchargeselection12->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
+	fHcheckMinvD0Trkchargeselection12 = new TH1D("checkMinvD0Trkchargeselection12", "checkMinvD0Trkchargeselection12 (EMu channel)",	
+		100, 1.6, 2.2); fHistos.push_back(fHcheckMinvD0Trkchargeselection12);
+	fHcheckMinvD0Trkchargeselection12->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
 
 
 
@@ -392,7 +392,8 @@ void LxyTreeAnalysis::WriteHistos(){
 	}
 }
 
-void LxyTreeAnalysis::fillJPsiHists(int jetindex, TH1D*& a, TH1D*& b, TH1D*& c, TH1D*& d, TH1D*& e, TH1D*& f){
+void LxyTreeAnalysis::fillJPsiHists(int jetindex, TH1D*& a, TH1D*& b, TH1D*& c//, TH1D*& d, TH1D*& e, TH1D*& f
+	){
 	
 	TLorentzVector p_track1, p_track2;
 				
@@ -416,23 +417,23 @@ void LxyTreeAnalysis::fillJPsiHists(int jetindex, TH1D*& a, TH1D*& b, TH1D*& c, 
 					//leptonindex2=j;
 					c->Fill((p_track1+p_track2).M(), w[0]);
 			//---------------------------------------------------------------------------------------------------------- J/Psi + K
-					TLorentzVector p_track3;
+					// TLorentzVector p_track3;
 
-					if (fabs((p_track1+p_track2).M() - 3.1) < 0.1 )
-					{	
-						for (int k = 0; k < npf; ++k) // look for the K
-						{
-							if (pfjetidx[k]!=pfjetidx[j]){continue; }
-							if (abs(pfid[k])!=211){continue; }
-							if (pfpt[k]<2){continue; }
+					// if (fabs((p_track1+p_track2).M() - 3.1) < 0.1 )
+					// {	
+					// 	for (int k = 0; k < npf; ++k) // look for the K
+					// 	{
+					// 		if (pfjetidx[k]!=pfjetidx[j]){continue; }
+					// 		if (abs(pfid[k])!=211){continue; }
+					// 		if (pfpt[k]<2){continue; }
 
-							//if (k==leptonindex1 or k==leptonindex2 ){continue; }
-							p_track3.SetPtEtaPhiM(pfpt[k], pfeta[k], pfphi[k], kaonmass);
-							d->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-							e->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-							f->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-						}
-					}
+					// 		//if (k==leptonindex1 or k==leptonindex2 ){continue; }
+					// 		p_track3.SetPtEtaPhiM(pfpt[k], pfeta[k], pfphi[k], kaonmass);
+					// 		d->Fill((p_track1+p_track2+p_track3).M(), w[0]);
+					// 		e->Fill((p_track1+p_track2+p_track3).M(), w[0]);
+					// 		f->Fill((p_track1+p_track2+p_track3).M(), w[0]);
+					// 	}
+					// }
 				}
 			}
 		}
@@ -488,9 +489,14 @@ void LxyTreeAnalysis::fillMuD0Hists(int jetindex, TH1D*& histo, TH1D*& histo2, f
 }
 
 
-void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& h, TH1D*& i, TH1D*& j, TH1D*& k, TH1D*& l, TH1D*& m, TH1D*& n, TH1D*& o, TH1D*& x, TH1D*& z, TH1D*& y, TH1D*& u, TH1D*& v, TH1D*& q){
-	TLorentzVector p_track1, p_track2, p_track3;
 
+// g=fHMinvD0Trk
+// l=fHMinvD0Trk
+// o=fHMinvD0Trkchargeselection
+
+
+void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& o, TH1D*& q, TH1D*& s, TH1D*& v){
+	TLorentzVector p_track1, p_track2, p_track3;
 
 
 	int r = 0;
@@ -501,116 +507,73 @@ void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& h, TH1D*& i, TH
 	}
 
 	// permutations
-	int p1[] = {r+2, r+2, r+1};
-	int p2[] = {r+1, r, r};
-	int p3[] = {r, r+1, r+2};	
+	int p1[] = {r+2, 	r+2, 	r+1};
+	int p2[] = {r+1, 	r, 		r};
+	int p3[] = {r, 		r+1, 	r+2};	
 
-		if (abs(pfid[r]+pfid[r+1]+pfid[r+2])!=211) {return; } // not all the same charge
+	if (abs(pfid[r]+pfid[r+1]+pfid[r+2])!=211) 
+	{ 
 
-		if (pfjetidx[r+2]!=jetindex ) {return;}
+				if (pfjetidx[r+2]!=jetindex ) {return;}
 
 
 
-		for (int p = 0; p < 3; ++p)
-		{
-			int pf1id=p1[p];
-			int pf2id=p2[p];
-			int pf3id=p3[p];
-			
-			if (abs(pfid[pf1id]+pfid[pf2id])==0){
-				p_track1.SetPtEtaPhiM(pfpt[pf1id], pfeta[pf1id], pfphi[pf1id], pionmass);	// Calculate four vector
-				p_track2.SetPtEtaPhiM(pfpt[pf2id], pfeta[pf2id], pfphi[pf2id], kaonmass);	
-				p_track3.SetPtEtaPhiM(pfpt[pf3id], pfeta[pf3id], pfphi[pf3id], pionmass);
-
-				g->Fill((p_track1+p_track2).M(), w[0]);	
-				h->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-				i->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-
-				if (abs(pfid[pf3id]+pfid[pf2id])==422) // second/third have same sign
+				for (int p = 0; p < 3; ++p)
 				{
-					// mass assumption was correct (second is Kaon)
-					o->Fill((p_track1+p_track2).M(), w[0]);
-					for (int t = 0; t < npf; ++t)
-					{ 
-						if (pfjetidx[t]==jetindex){
-							if (abs(pfid[t])==13){
-								x->Fill((p_track1+p_track2).M(), w[0]);
-
-								if (pfid[pf2id]/211==pfid[t]/13)
-								{
-									u->Fill((p_track1+p_track2).M(), w[0]);
-								}
-							}
-
-							if (abs(pfid[t])==11){y->Fill((p_track1+p_track2).M(), w[0]);
-								if (pfid[pf2id]/211==pfid[t]/11)
-								{
-									v->Fill((p_track1+p_track2).M(), w[0]);
-								}
-							}
-							if (abs(pfid[t])==11 || abs(pfid[t])==13){z->Fill((p_track1+p_track2).M(), w[0]);
-
-								if (pfid[pf2id]/211==pfid[t]/11 || pfid[pf2id]/211==pfid[t]/13 )
-								{
-									q->Fill((p_track1+p_track2).M(), w[0]);
-								}
-							}
-							
-							
-						}
-					}		
+					int pf1id=p1[p];
+					int pf2id=p2[p];
+					int pf3id=p3[p];
+				
+				
 					
-					if (abs((p_track1+p_track2).M()-1.86)<0.06)
-					{
-						j->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-						k->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-					}
-				}
+					if (abs(pfid[pf1id]+pfid[pf2id])==0){
+				
+					p_track1.SetPtEtaPhiM(pfpt[pf1id], pfeta[pf1id], pfphi[pf1id], pionmass);	// Calculate four vector
+					p_track2.SetPtEtaPhiM(pfpt[pf2id], pfeta[pf2id], pfphi[pf2id], kaonmass);	
 
-				// switch masses:
-				p_track1.SetPtEtaPhiM(pfpt[pf1id], pfeta[pf1id], pfphi[pf1id], kaonmass);	// Calculate four vector
-				p_track2.SetPtEtaPhiM(pfpt[pf2id], pfeta[pf2id], pfphi[pf2id], pionmass);	
+					g->Fill((p_track1+p_track2).M(), w[0]);	
+		
+						if (abs(pfid[pf3id]+pfid[pf2id])==422) // second/third have same sign
+						{
+							// mass assumption was correct (second is Kaon)
+							o->Fill((p_track1+p_track2).M(), w[0]);
 
-				l->Fill((p_track1+p_track2).M(), w[0]);	
-				m->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-				n->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-	
-				if (abs(pfid[pf3id]+pfid[pf1id])==422) // first/third have same sign
-				{  	
-					// mass assumption was wrong (second is pion, first is kaon)
-					o->Fill((p_track1+p_track2).M(), w[0]);
-				for (int t = 0; t < npf; ++t)
-					{ 
-						if (pfjetidx[t]==jetindex){
-							if (abs(pfid[t])==13){x->Fill((p_track1+p_track2).M(), w[0]);
-								if (pfid[pf1id]/211==pfid[t]/13)
-								{
-									u->Fill((p_track1+p_track2).M(), w[0]);
+							for (int t = 0; t < npf; ++t)
+							{ 
+								if (pfjetidx[t]==jetindex){
+
+
+										if (pfid[pf2id]/211==pfid[t]/-13)
+										{
+											q->Fill((p_track1+p_track2).M(), w[0]);
+										}
+									
+
+
+										if (pfid[pf2id]/211==pfid[t]/-11)
+										{
+											v->Fill((p_track1+p_track2).M(), w[0]);
+										}
+									
+									
+
+										if (pfid[pf2id]/211==pfid[t]/-11 || pfid[pf2id]/211==pfid[t]/-13 )
+										{
+											s->Fill((p_track1+p_track2).M(), w[0]);
+										}
+									
+										
+									
 								}
-
 							}
-							if (abs(pfid[t])==11){y->Fill((p_track1+p_track2).M(), w[0]);}
-							if (abs(pfid[t])==11 || abs(pfid[t])==13){z->Fill((p_track1+p_track2).M(), w[0]);
-
-
-							}
-							
-							
 						}
 					}
-					
-					if (abs((p_track1+p_track2).M()-1.86)<0.06)
-					{
-						j->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-						k->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-					}
 				}
-			} 
-		}
-
-	
-}
-
+	}
+}				
+							
+						
+						
 void LxyTreeAnalysis::fillDplusminusHists(int jetindex, TH1D*& s){
 	TLorentzVector p_track1, p_track2, p_track3;
 
@@ -714,26 +677,25 @@ void LxyTreeAnalysis::analyze(){
 //---------------------------------------------------------------------------------------------------------- J/Psi ( + K)
 		//int leptonindex1;
 		//int leptonindex2;
-		fillJPsiHists(maxind,        fHMinvJPsiTrke1, 	fHMinvJPsiTrkmu1, 	fHMinvJPsiTrk1, 	fHMinvBTrkJPsiK1, 	fHMinvBTrktotalchargeselection1, 	fHMinvBTrktotal1);
-		fillJPsiHists(second_maxind, fHMinvJPsiTrke2, 	fHMinvJPsiTrkmu2, 	fHMinvJPsiTrk2, 	fHMinvBTrkJPsiK2, 	fHMinvBTrktotalchargeselection2, 	fHMinvBTrktotal2);
-		fillJPsiHists(maxind,        fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12, 	fHMinvBTrkJPsiK12, 	fHMinvBTrktotalchargeselection12, 	fHMinvBTrktotal12);
-		fillJPsiHists(second_maxind, fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12, 	fHMinvBTrkJPsiK12, 	fHMinvBTrktotalchargeselection12, 	fHMinvBTrktotal12);
-		// fillD0Hist(maxind, fHMinvD0Trk);
-		// fillD0Hist(second_maxind, fHMinvD0SecondTrk);
+		fillJPsiHists(maxind,        fHMinvJPsiTrke1, 	fHMinvJPsiTrkmu1, 	fHMinvJPsiTrk1);
+		fillJPsiHists(second_maxind, fHMinvJPsiTrke2, 	fHMinvJPsiTrkmu2, 	fHMinvJPsiTrk2);
+		fillJPsiHists(maxind,        fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12);
+		fillJPsiHists(second_maxind, fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12);
+
 
 
 
 //---------------------------------------------------------------------------------------------------------- D0
-	fillD0Hists(maxind, 		fHMinvD0Trk1, 	fHMinvBTrkD01, 	fHMinvBTrktotal1, 	fHMinvBTrkD0chargeselection1, 	fHMinvBTrktotalchargeselection1, 	fHMinvD0Trk1, 	fHMinvBTrkD01, 		fHMinvBTrktotal1, 	fHMinvD0Trkchargeselection1, 	fHMinvD0Trkchargeselectionmuon1, 	fHMinvD0Trkchargeselectionlepton1, 	fHMinvD0Trkchargeselectionelectron1, 	fHMinvD0Trkdoublechargeselectionmuon1, 		fHMinvD0Trkdoublechargeselectionelectron1,		fHMinvD0Trkdoublechargeselectionlepton1);
-	fillD0Hists(second_maxind, 	fHMinvD0Trk2, 	fHMinvBTrkD02, 	fHMinvBTrktotal2, 	fHMinvBTrkD0chargeselection2, 	fHMinvBTrktotalchargeselection2, 	fHMinvD0Trk2, 	fHMinvBTrkD02, 		fHMinvBTrktotal2, 	fHMinvD0Trkchargeselection2, 	fHMinvD0Trkchargeselectionmuon2,	fHMinvD0Trkchargeselectionlepton2,	fHMinvD0Trkchargeselectionelectron2, 	fHMinvD0Trkdoublechargeselectionmuon2, 		fHMinvD0Trkdoublechargeselectionelectron2,		fHMinvD0Trkdoublechargeselectionlepton1);
-	fillD0Hists(maxind, 		fHMinvD0Trk12, 	fHMinvBTrkD012, fHMinvBTrktotal12, 	fHMinvBTrkD0chargeselection12, 	fHMinvBTrktotalchargeselection12, 	fHMinvD0Trk12, 	fHMinvBTrkD012, 	fHMinvBTrktotal12, 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, 	fHMinvD0Trkdoublechargeselectionmuon12, 	fHMinvD0Trkdoublechargeselectionelectron12,		fHMinvD0Trkdoublechargeselectionlepton1);
-	fillD0Hists(second_maxind, 	fHMinvD0Trk12, 	fHMinvBTrkD012, fHMinvBTrktotal12, 	fHMinvBTrkD0chargeselection12, 	fHMinvBTrktotalchargeselection12, 	fHMinvD0Trk12, 	fHMinvBTrkD012, 	fHMinvBTrktotal12, 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, 	fHMinvD0Trkdoublechargeselectionmuon12, 	fHMinvD0Trkdoublechargeselectionelectron12,		fHMinvD0Trkdoublechargeselectionlepton1);
+	fillD0Hists(maxind, 		fHMinvD0Trk1, 	 	fHMinvD0Trkchargeselection1, 	fHMinvD0Trkchargeselectionmuon1, 	fHMinvD0Trkchargeselectionlepton1, 	fHMinvD0Trkchargeselectionelectron1); 
+	fillD0Hists(second_maxind, 	fHMinvD0Trk2, 		fHMinvD0Trkchargeselection2, 	fHMinvD0Trkchargeselectionmuon2,	fHMinvD0Trkchargeselectionlepton2,	fHMinvD0Trkchargeselectionelectron2);
+	fillD0Hists(maxind, 		fHMinvD0Trk12,	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12);
+	fillD0Hists(second_maxind, 	fHMinvD0Trk12, 	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12);
 
 
-	fillMuD0Hists(maxind,        checkfHMinvD0Trk1, 		checkfHMinvD0Trkchargeselection1, 	1.0, 	0.5);
-	fillMuD0Hists(second_maxind, checkfHMinvD0Trk2, 		checkfHMinvD0Trkchargeselection2, 	1.0, 	0.5);
-	fillMuD0Hists(maxind,        checkfHMinvD0Trk12, 		checkfHMinvD0Trkchargeselection12, 	1.0, 	0.5);
-	fillMuD0Hists(second_maxind, checkfHMinvD0Trk12, 		checkfHMinvD0Trkchargeselection12, 	1.0, 	0.5);
+	fillMuD0Hists(maxind,        fHcheckMinvD0Trk1, 		fHcheckMinvD0Trkchargeselection1, 	1.0, 	0.5);
+	fillMuD0Hists(second_maxind, fHcheckMinvD0Trk2, 		fHcheckMinvD0Trkchargeselection2, 	1.0, 	0.5);
+	fillMuD0Hists(maxind,        fHcheckMinvD0Trk12, 		fHcheckMinvD0Trkchargeselection12, 	1.0, 	0.5);
+	fillMuD0Hists(second_maxind, fHcheckMinvD0Trk12, 		fHcheckMinvD0Trkchargeselection12, 	1.0, 	0.5);
 
 
 	// g=fHMinvD0Trk
@@ -750,10 +712,10 @@ void LxyTreeAnalysis::analyze(){
 
 //------------------------------------------------------------------------------------------------------------------------- B+
 
-		fillDplusminusHists(maxind,fHMinvDplusminusTrk1);
-		fillDplusminusHists(second_maxind,fHMinvDplusminusTrk2);
-		fillDplusminusHists(maxind,fHMinvDplusminusTrk12);
-		fillDplusminusHists(second_maxind,fHMinvDplusminusTrk12);
+fillDplusminusHists(maxind,fHMinvDplusminusTrk1);
+fillDplusminusHists(second_maxind,fHMinvDplusminusTrk2);
+fillDplusminusHists(maxind,fHMinvDplusminusTrk12);
+fillDplusminusHists(second_maxind,fHMinvDplusminusTrk12);
 
 
 		//----------------------------------------------------------------------------------------------------------  Lead ions

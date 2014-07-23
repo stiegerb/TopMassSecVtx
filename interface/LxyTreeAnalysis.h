@@ -74,7 +74,7 @@ public:
 
    virtual void analyze();
    void fillJPsiHists(int, TH1D*&, TH1D*&, TH1D*&);
-   void fillD0Hists(int, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&);
+   void fillD0Hists(int, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&);
    void fillDplusminusHists(int, TH1D*&);
    void fillMuD0Hists(int, TH1D*&, TH1D*&, float=1., float=1.0, int=13);
 
@@ -203,6 +203,9 @@ public:
    TH1D *fHMinvDplusminusTrk1;//
    TH1D *fHMinvDplusminusTrk2;//
    TH1D *fHMinvDplusminusTrk12;//
+   TH1D *normal1;
+   TH1D *normal2;
+   TH1D *normal12;
 };
 
 #endif

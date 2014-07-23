@@ -41,7 +41,21 @@ void LxyTreeAnalysis::BookHistos(){
 	fHMinv2LeadTrk->SetXTitle("Inv. Mass of in b-jet [GeV]");
 	
 
-	
+	normal1 = new TH1D("normal1", "normal1 (All channels)",
+		100, 2., 4.); fHistos.push_back(normal1);
+	normal1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV]");
+
+
+	normal2 = new TH1D("normal2", "normal2 (All channels)",
+		100, 2., 4.); fHistos.push_back(normal2);
+	normal2->SetXTitle("Inv. Mass of J/Psi in second hardest b-jet [GeV]");
+
+
+	normal12 = new TH1D("normalqw", "normal12 (All channels)",
+		100, 2., 4.); fHistos.push_back(normal12);
+	normal12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV]");
+
+
 	fHMinvJPsiTrk1 = new TH1D("MinvJPsiTrk1", "MinvJPsiTrk1 (All channels)",
 		100, 2., 4.); fHistos.push_back(fHMinvJPsiTrk1);
 	fHMinvJPsiTrk1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV]");
@@ -495,9 +509,8 @@ void LxyTreeAnalysis::fillMuD0Hists(int jetindex, TH1D*& histo, TH1D*& histo2, f
 // o=fHMinvD0Trkchargeselection
 
 
-void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& o, TH1D*& q, TH1D*& s, TH1D*& v){
+void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& o, TH1D*& q, TH1D*& s, TH1D*& v, TH1D*& normal){
 	TLorentzVector p_track1, p_track2, p_track3;
-
 
 	int r = 0;
 	for (r = 0; r < npf; ++r)
@@ -505,6 +518,34 @@ void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& o, TH1D*& q, TH
 		if (pfjetidx[r]==jetindex)
 			{break;}
 	}
+
+for (int i = r; i < r+5; ++i)
+		{	
+			if (pfjetidx[i]!= jetindex){continue; }  //select the first b-jet
+			if (abs(pfid[i])!=211){continue; } //select a kaon or pion
+			for (int j = i+1; j < r+5; ++j) //find another kaon or pion
+					{
+						if(pfjetidx[j]!=jetindex){continue; } //select most probable b-jet
+						if(pfid[j]*pfid[i]!=-211*211){continue; } 
+						//TLorentzVector p_track1, p_track2; // Calculate four vector			
+				
+						p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], pionmass);// Calculate four vector
+						p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], kaonmass);
+																			
+						if (p_track1.DeltaR(p_track2)>0.2){continue; }
+																
+						normal->Fill((p_track1+p_track2).M(), w[0]);
+																						
+						p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], kaonmass);// Calculate four vector
+						p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], pionmass);
+																	
+						if (p_track1.DeltaR(p_track2)>0.2){continue; }
+
+						normal->Fill((p_track1+p_track2).M(), w[0]);
+
+					}
+			}
+						
 
 	// permutations
 	int p1[] = {r+2, 	r+2, 	r+1};
@@ -686,10 +727,10 @@ void LxyTreeAnalysis::analyze(){
 
 
 //---------------------------------------------------------------------------------------------------------- D0
-	fillD0Hists(maxind, 		fHMinvD0Trk1, 	 	fHMinvD0Trkchargeselection1, 	fHMinvD0Trkchargeselectionmuon1, 	fHMinvD0Trkchargeselectionlepton1, 	fHMinvD0Trkchargeselectionelectron1); 
-	fillD0Hists(second_maxind, 	fHMinvD0Trk2, 		fHMinvD0Trkchargeselection2, 	fHMinvD0Trkchargeselectionmuon2,	fHMinvD0Trkchargeselectionlepton2,	fHMinvD0Trkchargeselectionelectron2);
-	fillD0Hists(maxind, 		fHMinvD0Trk12,	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12);
-	fillD0Hists(second_maxind, 	fHMinvD0Trk12, 	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12);
+	fillD0Hists(maxind, 		fHMinvD0Trk1, 	 	fHMinvD0Trkchargeselection1, 	fHMinvD0Trkchargeselectionmuon1, 	fHMinvD0Trkchargeselectionlepton1, 	fHMinvD0Trkchargeselectionelectron1, normal1); 
+	fillD0Hists(second_maxind, 	fHMinvD0Trk2, 		fHMinvD0Trkchargeselection2, 	fHMinvD0Trkchargeselectionmuon2,	fHMinvD0Trkchargeselectionlepton2,	fHMinvD0Trkchargeselectionelectron2, normal2);
+	fillD0Hists(maxind, 		fHMinvD0Trk12,	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, normal12);
+	fillD0Hists(second_maxind, 	fHMinvD0Trk12, 	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, normal12);
 
 
 	fillMuD0Hists(maxind,        fHcheckMinvD0Trk1, 		fHcheckMinvD0Trkchargeselection1, 	1.0, 	0.5);

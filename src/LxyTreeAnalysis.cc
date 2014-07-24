@@ -23,6 +23,7 @@ void LxyTreeAnalysis::Begin(TFile *file){
 	// Anything that has to be done once at the beginning
 	file->cd();
 	BookHistos();
+	BookCharmTree();
 }
 
 void LxyTreeAnalysis::End(TFile *file){
@@ -30,6 +31,7 @@ void LxyTreeAnalysis::End(TFile *file){
 	file->cd();
 	WritePlots();
 	WriteHistos();
+	fCharmInfoTree->Write(fCharmInfoTree->GetName());
 	file->Write();
 	file->Close();
 }
@@ -284,6 +286,60 @@ void LxyTreeAnalysis::BookHistos(){
 	for(h = fHistos.begin(); h != fHistos.end(); ++h){
 		(*h)->Sumw2();
 	}
+}
+
+void LxyTreeAnalysis::BookCharmTree(){
+	fCharmInfoTree = new TTree("CharmInfo", "Charm Info Tree");
+	fCharmInfoTree->Branch("CandType",     &fTCandType,     "CandType/I");
+	fCharmInfoTree->Branch("CandMass",     &fTCandMass,     "CandMass/F");
+	fCharmInfoTree->Branch("CandPt",       &fTCandPt,       "CandPt/F");
+	fCharmInfoTree->Branch("CandPtRel",    &fTCandPtRel,    "CandPtRel/F");
+	fCharmInfoTree->Branch("CandDeltaR",   &fTCandDeltaR,   "CandDeltaR/F");
+	fCharmInfoTree->Branch("JetPt",        &fTJetPt,        "JetPt/F");
+	fCharmInfoTree->Branch("SumPtCharged", &fTSumPtCharged, "SumPtCharged/F");
+}
+
+void LxyTreeAnalysis::ResetCharmTree(){
+	fTCandType     = -99;
+	fTCandMass     = -99.99;
+	fTCandPt       = -99.99;
+	fTCandPtRel    = -99.99;
+	fTCandDeltaR   = -99.99;
+	fTJetPt        = -99.99;
+	fTSumPtCharged = -99.99;
+}
+
+void LxyTreeAnalysis::FillCharmTree(int type, int jetindex,
+	                                int ind1, float mass1,
+	                                int ind2, float mass2){
+	// Check that indices make sense
+	if(jetindex < 0 || ind1 < 0 || ind2 < 0) return;
+	if(jetindex >= nj || ind1 >= npf || ind2 >= npf) return;
+
+	fTCandType = type;
+	TLorentzVector p_track1, p_track2, p_cand, p_jet;
+	p_track1.SetPtEtaPhiM(pfpt[ind1], pfeta[ind1], pfphi[ind1], mass1);
+	p_track2.SetPtEtaPhiM(pfpt[ind2], pfeta[ind2], pfphi[ind2], mass1);
+	p_cand = p_track1+p_track2;
+	p_jet.SetPtEtaPhiM(jpt[jetindex], jeta[jetindex], jphi[jetindex], 0.);
+
+	fTCandMass     = p_cand.M();
+	fTCandPt       = p_cand.Pt();
+
+	// TLorentzVector p_cand_boosted = p_cand;
+	// p_cand_boosted.Boost(p_jet.BoostVector());
+	// fTCandPtRel    = p_cand_boosted.Pt(); // FIXME?
+	fTCandPtRel    = fTCandPt/jpt[jetindex]; // Placeholder
+
+	fTCandDeltaR   = p_cand.DeltaR(p_jet);
+	fTJetPt        = jpt[jetindex];
+	fTSumPtCharged = 0.;
+	for (int i = 0; i < npf; ++i){
+		if (pfjetidx[i] != jetindex) continue;
+		fTSumPtCharged += pfpt[i];
+	}
+	fCharmInfoTree->Fill();
+	return;
 }
 
 void LxyTreeAnalysis::WriteHistos(){

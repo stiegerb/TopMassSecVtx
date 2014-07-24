@@ -72,6 +72,12 @@ public:
    virtual void BookHistos();
    virtual void WriteHistos();
 
+   virtual void BookCharmTree();
+   virtual void ResetCharmTree();
+   virtual void FillCharmTree(int type, int jetindex,
+                              int trackind1, float mass1,
+                              int trackind2, float mass2);
+
    virtual void analyze();
    void fillJPsiHists(int, TH1D*&, TH1D*&, TH1D*&);
    void fillD0Hists(int, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&);
@@ -209,6 +215,12 @@ public:
    TH1D *angle1;
    TH1D *angle2;
    TH1D *angle12;
+
+   TTree *fCharmInfoTree;
+   Int_t    fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
+   Float_t  fTCandMass, fTCandPt, fTCandPtRel, fTCandDeltaR;
+   Float_t  fTJetPt, fTSumPtCharged;
+
 };
 
 #endif

@@ -56,6 +56,25 @@ void LxyTreeAnalysis::BookHistos(){
 	normal12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV]");
 
 
+
+
+	angle1 = new TH1D("angle1", "angle1 (All channels)",
+		100, 0., 2.); fHistos.push_back(angle1);
+	angle1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV]");
+
+
+	angle2 = new TH1D("angle2", "angle2 (All channels)",
+		100, 0., 2.); fHistos.push_back(angle2);
+	angle2->SetXTitle("Inv. Mass of J/Psi in second hardest b-jet [GeV]");
+
+
+	angle12 = new TH1D("angle12", "angle12 (All channels)",
+		100, 0., 2.); fHistos.push_back(angle12);
+	angle12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV]");
+
+
+
+
 	fHMinvJPsiTrk1 = new TH1D("MinvJPsiTrk1", "MinvJPsiTrk1 (All channels)",
 		100, 2., 4.); fHistos.push_back(fHMinvJPsiTrk1);
 	fHMinvJPsiTrk1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV]");
@@ -86,6 +105,7 @@ void LxyTreeAnalysis::BookHistos(){
 	fHMinvJPsiTrke12 = new TH1D("MinvJPsiTrke12", "MinvJPsiTrke12 (All channels)",
 		100,2.,4.); fHistos.push_back(fHMinvJPsiTrke12);
 	fHMinvJPsiTrke12->SetXTitle("Inv. Mass of J/Psi in two hardest b-jets [GeV], only electrons");
+
 
 
 
@@ -143,6 +163,7 @@ void LxyTreeAnalysis::BookHistos(){
 
 
 
+
 	fHcheckMinvD0Trk1 = new TH1D("checkMinvD0Trk1", "checkMinvD0Trk1 (EMu channel)",
 		100, 1.6, 2.2); fHistos.push_back(fHcheckMinvD0Trk1);
 	fHcheckMinvD0Trk1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV]");
@@ -196,56 +217,6 @@ void LxyTreeAnalysis::BookHistos(){
 
 
 
-	fHMinvD0Trkdoublechargeselectionmuon1 = new TH1D("MinvD0Trkdoublechargeselectionmuon1", "MinvD0Trkdoublechargeselectionmuon1 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkdoublechargeselectionmuon1);
-	fHMinvD0Trkdoublechargeselectionmuon1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV], CS, CWL, mu");
-
-
-	fHMinvD0Trkdoublechargeselectionmuon2 = new TH1D("MinvD0Trkdoublechargeselectionmuon2", "MinvD0Trkdoublechargeselectionmuon2 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkdoublechargeselectionmuon2);
-	fHMinvD0Trkdoublechargeselectionmuon2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV],CS, CWL, mu");
-
-
-	fHMinvD0Trkdoublechargeselectionmuon12 = new TH1D("MinvD0Trkdoublechargeselectionmuon12", "MinvD0Trkdoublechargeselectionmuon12 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkdoublechargeselectionmuon12);
-	fHMinvD0Trkdoublechargeselectionmuon12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV], CS, CWL, mu");
-
-
-
-	fHMinvD0Trkdoublechargeselectionelectron1 = new TH1D("MinvD0Trkdoublechargeselectionelectron1", "MinvD0Trkdoublechargeselectionelectron1 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkdoublechargeselectionelectron1);
-	fHMinvD0Trkdoublechargeselectionelectron1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV], CS, CWL, e");
-
-
-	fHMinvD0Trkdoublechargeselectionelectron2 = new TH1D("MinvD0Trkdoublechargeselectionelectron2", "MinvD0Trkdoublechargeselectionelectron2 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkdoublechargeselectionelectron2);
-	fHMinvD0Trkdoublechargeselectionelectron2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV],CS, CWL, e");
-
-
-	fHMinvD0Trkdoublechargeselectionelectron12 = new TH1D("MinvD0Trkdoublechargeselectionelectron12", "MinvD0Trkdoublechargeselectionelectron12 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkdoublechargeselectionelectron12);
-	fHMinvD0Trkdoublechargeselectionelectron12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV], CS, , e");
-
-
-
-
-
-	fHMinvD0Trkdoublechargeselectionlepton1 = new TH1D("MinvD0Trkdoublechargeselectionlepton1", "MinvD0Trkdoublechargeselectionlepton1 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkdoublechargeselectionlepton1);
-	fHMinvD0Trkdoublechargeselectionlepton1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV], CS, CWL, e");
-
-
-	fHMinvD0Trkdoublechargeselectionlepton2 = new TH1D("MinvD0Trkdoublechargeselectionlepton2", "MinvD0Trkdoublechargeselectionlepton2 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkdoublechargeselectionlepton2);
-	fHMinvD0Trkdoublechargeselectionlepton2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV],CS, CWL, e");
-
-
-	fHMinvD0Trkdoublechargeselectionlepton12 = new TH1D("MinvD0Trkdoublechargeselectionlepton12", "MinvD0Trkdoublechargeselectionlepton12 (EMu channel)",
-		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkdoublechargeselectionlepton12);
-	fHMinvD0Trkdoublechargeselectionlepton12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV], CS, , e");
-
-
-
 
 	fHMinvD0Trkchargeselectionelectron1 = new TH1D("MinvD0Trkchargeselectionelectron1", "MinvD0Trkchargeselectionelectron1 (EMu channel)",
 		100, 1.6, 2.2); fHistos.push_back(fHMinvD0Trkchargeselectionelectron1);
@@ -295,88 +266,6 @@ void LxyTreeAnalysis::BookHistos(){
 		100, 1.6, 2.2); fHistos.push_back(fHMinvDplusminusTrk12);
 	fHMinvDplusminusTrk12->SetXTitle("Inv. Mass of D+- in b-jet [GeV]");
 
-
-
-
-	fHMinvBTrkJPsiK1 = new TH1D("MinvBTrkJPsiK1", "MinvBTrkJPsiK1 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrkJPsiK1);
-	fHMinvBTrkJPsiK1->SetXTitle("Inv. Mass of B in hardest b-jet, from J/Psi+K [GeV]");
-
-	
-	fHMinvBTrkJPsiK2 = new TH1D("MinvBTrkJPsiK", "MinvBTrkJPsiK (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrkJPsiK2);
-	fHMinvBTrkJPsiK2->SetXTitle("Inv. Mass of B in second hardest b-jet, from J/Psi+K [GeV]");
-
-	
-	fHMinvBTrkJPsiK12 = new TH1D("MinvBTrkJPsiK12", "MinvBTrkJPsiK12 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrkJPsiK12);
-	fHMinvBTrkJPsiK12->SetXTitle("Inv. Mass of B in two hardest b-jets, from J/Psi+K [GeV]");
-
-
-
-
-	fHMinvBTrkD01 = new TH1D("MinvBTrkD01", "MinvBTrkD01 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrkD01);
-	fHMinvBTrkD01->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV]");
-
-
-	fHMinvBTrkD02 = new TH1D("MinvBTrkD02", "MinvBTrkD02 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrkD02);
-	fHMinvBTrkD02->SetXTitle("Inv. Mass of B in second hardest b-jet [GeV]");
-
-
-	fHMinvBTrkD012 = new TH1D("MinvBTrkD012", "MinvBTrkD012 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrkD012);
-	fHMinvBTrkD012->SetXTitle("Inv. Mass of B in two hardest b-jets [GeV]");
-
-
-
-
-	fHMinvBTrkD0chargeselection1 = new TH1D("MinvBTrkD0chargeselection1", "MinvBTrkD0chargeselection1 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrkD0chargeselection1);
-	fHMinvBTrkD0chargeselection1->SetXTitle("Inv. Mass of B in hardest b-jet, from D0 [GeV]");
-
-	fHMinvBTrkD0chargeselection2 = new TH1D("MinvBTrkD0chargeselection2", "MinvBTrkD0chargeselection2 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrkD0chargeselection2);
-	fHMinvBTrkD0chargeselection2->SetXTitle("Inv. Mass of B in b-jet, from D0 [GeV]");
-
-	fHMinvBTrkD0chargeselection12 = new TH1D("MinvBTrkD0chargeselection12", "MinvBTrkD0chargeselection12 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrkD0chargeselection12);
-	fHMinvBTrkD0chargeselection12->SetXTitle("Inv. Mass of B in b-jet, from D0 [GeV]");
-
-
-
-
-	fHMinvBTrktotal1 = new TH1D("HMinvBTrktotal1", "HMinvBTrktotal1 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrktotal1);
-	fHMinvBTrktotal1->SetXTitle("Inv. Mass of B in b-jet [GeV], from both JPSI as D0");
-
-
-	fHMinvBTrktotal2 = new TH1D("HMinvBTrktotal2", "HMinvBTrktotal2 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrktotal2);
-	fHMinvBTrktotal2->SetXTitle("Inv. Mass of B in b-jet [GeV], from both JPSI as D0");
-
-
-	fHMinvBTrktotal12 = new TH1D("HMinvBTrktotal12", "HMinvBTrktotal12 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrktotal12);
-	fHMinvBTrktotal12->SetXTitle("Inv. Mass of B in b-jet [GeV], from both JPSI as D0");
-
-
-
-
-	fHMinvBTrktotalchargeselection1 = new TH1D("MinvBTrktotalchargeselection1", "MinvBTrktotalchargeselection1 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrktotalchargeselection1);
-	fHMinvBTrktotalchargeselection1->SetXTitle("Inv. Mass of B in b-jet [GeV], from both JPSI as CS D0");
-
-
-	fHMinvBTrktotalchargeselection2 = new TH1D("MinvBTrktotalchargeselection2", "MinvBTrktotalchargeselection2 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrktotalchargeselection2);
-	fHMinvBTrktotalchargeselection2->SetXTitle("Inv. Mass of B in b-jet [GeV], from both JPSI as CS D0");
-
-
-	fHMinvBTrktotalchargeselection12 = new TH1D("MinvBTrktotalchargeselection12", "MinvBTrktotalchargeselection12 (EMu channel)",
-		100, 4., 7.); fHistos.push_back(fHMinvBTrktotalchargeselection12);
-	fHMinvBTrktotalchargeselection12->SetXTitle("Inv. Mass of B in b-jet [GeV], from both JPSI as CS D0");
 
 
 
@@ -509,9 +398,9 @@ void LxyTreeAnalysis::fillMuD0Hists(int jetindex, TH1D*& histo, TH1D*& histo2, f
 // o=fHMinvD0Trkchargeselection
 
 
-void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& o, TH1D*& q, TH1D*& s, TH1D*& v, TH1D*& normal){
+void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& o, TH1D*& q, TH1D*& s, TH1D*& v, TH1D*& normal, TH1D*& c){
 	TLorentzVector p_track1, p_track2, p_track3;
-
+	int ev=0;
 	int r = 0;
 	for (r = 0; r < npf; ++r)
 	{
@@ -544,73 +433,102 @@ for (int i = r; i < r+5; ++i)
 						normal->Fill((p_track1+p_track2).M(), w[0]);
 
 					}
-			}
+		}
 						
 
-	// permutations
-	int p1[] = {r+2, 	r+2, 	r+1};
-	int p2[] = {r+1, 	r, 		r};
-	int p3[] = {r, 		r+1, 	r+2};	
+// permutations
+int p1[] = {r+2, 	r+2, 	r+1};
+int p2[] = {r+1, 	r, 		r};
+int p3[] = {r, 		r+1, 	r+2};	
 
-	if (abs(pfid[r]+pfid[r+1]+pfid[r+2])!=211) 
-	{ 
-
-				if (pfjetidx[r+2]!=jetindex ) {return;}
+if (pfjetidx[r+2]!=jetindex ) {return;}
 
 
 
-				for (int p = 0; p < 3; ++p)
-				{
-					int pf1id=p1[p];
-					int pf2id=p2[p];
-					int pf3id=p3[p];
-				
-				
-					
-					if (abs(pfid[pf1id]+pfid[pf2id])==0){
-				
-					p_track1.SetPtEtaPhiM(pfpt[pf1id], pfeta[pf1id], pfphi[pf1id], pionmass);	// Calculate four vector
-					p_track2.SetPtEtaPhiM(pfpt[pf2id], pfeta[pf2id], pfphi[pf2id], kaonmass);	
-
-					g->Fill((p_track1+p_track2).M(), w[0]);	
+	for (int p = 0; p < 3; ++p)
+	{
+		int pf1id=p1[p];
+		int pf2id=p2[p];
+		int pf3id=p3[p];
+	
+	
 		
-						if (abs(pfid[pf3id]+pfid[pf2id])==422) // second/third have same sign
-						{
-							// mass assumption was correct (second is Kaon)
-							o->Fill((p_track1+p_track2).M(), w[0]);
+		if (pfid[pf1id]*pfid[pf2id]!=-44521) continue;
+	
+		p_track1.SetPtEtaPhiM(pfpt[pf1id], pfeta[pf1id], pfphi[pf1id], pionmass);	// Calculate four vector
+		p_track2.SetPtEtaPhiM(pfpt[pf2id], pfeta[pf2id], pfphi[pf2id], kaonmass);	
 
-							for (int t = 0; t < npf; ++t)
-							{ 
-								if (pfjetidx[t]==jetindex){
+		g->Fill((p_track1+p_track2).M(), w[0]);	
 
 
-										if (pfid[pf2id]/211==pfid[t]/-13)
-										{
-											q->Fill((p_track1+p_track2).M(), w[0]);
-										}
-									
+
+		std::vector<int> event;
+		std::vector<int> instance;
+
+		if (abs(pfid[pf3id]+pfid[pf2id])==422) // second/third have same sign
+		{
+
+				// int i=0;
+
+				if ((p_track1+p_track2).M()>1.8 && (p_track1+p_track2).M()<1.92){
+
+					c->Fill((p_track1.DeltaR(p_track2), w[0]));
 
 
-										if (pfid[pf2id]/211==pfid[t]/-11)
-										{
-											v->Fill((p_track1+p_track2).M(), w[0]);
-										}
-									
-									
+					// event.push_back(event);
+					// event.push_back(event);
+					instance.push_back(pf1id);
+					instance.push_back(pf2id);
+				
+		 		// 	int peak[];
 
-										if (pfid[pf2id]/211==pfid[t]/-11 || pfid[pf2id]/211==pfid[t]/-13 )
-										{
-											s->Fill((p_track1+p_track2).M(), w[0]);
-										}
-									
-										
-									
-								}
-							}
-						}
-					}
-				}
+		 		// 	peak[i]=r;
+		 		// 	peak[i+1]=r+1;
+		 		// 	i=i+2;
+		 		// 	peak
+
+					// }
+
+					// cout peak
+				// mass assumption was correct (second is Kaon)
+
+				}	
+
+		for (size_t v = 0;  v < instance.size(); ++v)
+		{	
+			int a = instance[v];
+			int b = instance[v+1];
+		p_track1.SetPtEtaPhiM(pfpt[a], pfeta[a], pfphi[a], pionmass);	// Calculate four vector
+		p_track2.SetPtEtaPhiM(pfpt[b], pfeta[b], pfphi[b], kaonmass);
+		// test->Fill()
+		}
+
+			o->Fill((p_track1+p_track2).M(), w[0]);
+		}
+
+		for (int t = 0; t < npf; ++t)
+		{ 
+			if (pfjetidx[t]!=jetindex) continue;
+			if (t == pf1id) continue;
+			if (t == pf2id) continue;
+
+			if (abs(pfid[t]) != 13 && abs(pfid[t]) != 11) continue;
+
+			if (pfid[pf2id]/abs(pfid[pf2id])==pfid[t]/-13)
+			{
+				q->Fill((p_track1+p_track2).M(), w[0]);
+				s->Fill((p_track1+p_track2).M(), w[0]);
+			}
+
+			if (pfid[pf2id]/abs(pfid[pf2id])==pfid[t]/-11)
+			{
+				v->Fill((p_track1+p_track2).M(), w[0]);
+				s->Fill((p_track1+p_track2).M(), w[0]);
+			}
+		
+		}
 	}
+	ev=ev+1;
 }				
 							
 						
@@ -705,51 +623,37 @@ void LxyTreeAnalysis::analyze(){
 
 
 
-
 	TLorentzVector p_track1, p_track2, p_track3;
 
 
 
-	if(abs(evcat) == 11*13 || // emu
-	   (abs(evcat) == 11*11 && metpt > 40.) || // ee
-	   (abs(evcat) == 13*13 && metpt > 40.) ||
-	   (abs(evcat) == 11 && nj > 3) ||
-	   (abs(evcat) == 13 && nj > 3)  ){
+	if 		(abs(evcat) == 11*13 || // emu
+			(abs(evcat) == 11*11 && metpt > 40.) || // ee
+			(abs(evcat) == 13*13 && metpt > 40.) || // mumu
+			(abs(evcat) == 11 && nj > 3) ||			// singleelectron
+			(abs(evcat) == 13 && nj > 3)  ){		// singlemuon
 //---------------------------------------------------------------------------------------------------------- J/Psi ( + K)
-		//int leptonindex1;
-		//int leptonindex2;
-		fillJPsiHists(maxind,        fHMinvJPsiTrke1, 	fHMinvJPsiTrkmu1, 	fHMinvJPsiTrk1);
-		fillJPsiHists(second_maxind, fHMinvJPsiTrke2, 	fHMinvJPsiTrkmu2, 	fHMinvJPsiTrk2);
-		fillJPsiHists(maxind,        fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12);
-		fillJPsiHists(second_maxind, fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12);
+//int leptonindex1;
+//int leptonindex2;
+fillJPsiHists(maxind,        fHMinvJPsiTrke1, 	fHMinvJPsiTrkmu1, 	fHMinvJPsiTrk1);
+fillJPsiHists(second_maxind, fHMinvJPsiTrke2, 	fHMinvJPsiTrkmu2, 	fHMinvJPsiTrk2);
+fillJPsiHists(maxind,        fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12);
+fillJPsiHists(second_maxind, fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12);
 
 
 
 
 //---------------------------------------------------------------------------------------------------------- D0
-	fillD0Hists(maxind, 		fHMinvD0Trk1, 	 	fHMinvD0Trkchargeselection1, 	fHMinvD0Trkchargeselectionmuon1, 	fHMinvD0Trkchargeselectionlepton1, 	fHMinvD0Trkchargeselectionelectron1, normal1); 
-	fillD0Hists(second_maxind, 	fHMinvD0Trk2, 		fHMinvD0Trkchargeselection2, 	fHMinvD0Trkchargeselectionmuon2,	fHMinvD0Trkchargeselectionlepton2,	fHMinvD0Trkchargeselectionelectron2, normal2);
-	fillD0Hists(maxind, 		fHMinvD0Trk12,	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, normal12);
-	fillD0Hists(second_maxind, 	fHMinvD0Trk12, 	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, normal12);
+fillD0Hists(maxind, 		fHMinvD0Trk1, 	 	fHMinvD0Trkchargeselection1, 	fHMinvD0Trkchargeselectionmuon1, 	fHMinvD0Trkchargeselectionlepton1, 	fHMinvD0Trkchargeselectionelectron1, normal1, angle1); 
+fillD0Hists(second_maxind, 	fHMinvD0Trk2, 		fHMinvD0Trkchargeselection2, 	fHMinvD0Trkchargeselectionmuon2,	fHMinvD0Trkchargeselectionlepton2,	fHMinvD0Trkchargeselectionelectron2, normal2, angle2);
+fillD0Hists(maxind, 		fHMinvD0Trk12,	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, normal12, angle12);
+fillD0Hists(second_maxind, 	fHMinvD0Trk12, 	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, normal12, angle12);
 
 
-	fillMuD0Hists(maxind,        fHcheckMinvD0Trk1, 		fHcheckMinvD0Trkchargeselection1, 	1.0, 	0.5);
-	fillMuD0Hists(second_maxind, fHcheckMinvD0Trk2, 		fHcheckMinvD0Trkchargeselection2, 	1.0, 	0.5);
-	fillMuD0Hists(maxind,        fHcheckMinvD0Trk12, 		fHcheckMinvD0Trkchargeselection12, 	1.0, 	0.5);
-	fillMuD0Hists(second_maxind, fHcheckMinvD0Trk12, 		fHcheckMinvD0Trkchargeselection12, 	1.0, 	0.5);
-
-
-	// g=fHMinvD0Trk
-// h=fHMinvBTrkD0
-// i=fHMinvBTrktotal
-// j=fHMinvBTrkD0chargeselection
-// k=fHMinvBTrktotalchargeselection
-// l=fHMinvD0Trk
-// m=fHMinvBTrkD0
-// n=fHMinvBTrktotal
-// o=fHMinvD0Trkchargeselection
-// p=fHMinvBTrkD0chargeselection
-// q=fHMinvBTrktotalchargeselection
+fillMuD0Hists(maxind,        fHcheckMinvD0Trk1, 		fHcheckMinvD0Trkchargeselection1, 	1.0, 	0.5);
+fillMuD0Hists(second_maxind, fHcheckMinvD0Trk2, 		fHcheckMinvD0Trkchargeselection2, 	1.0, 	0.5);
+fillMuD0Hists(maxind,        fHcheckMinvD0Trk12, 		fHcheckMinvD0Trkchargeselection12, 	1.0, 	0.5);
+fillMuD0Hists(second_maxind, fHcheckMinvD0Trk12, 		fHcheckMinvD0Trkchargeselection12, 	1.0, 	0.5);
 
 //------------------------------------------------------------------------------------------------------------------------- B+
 
@@ -759,9 +663,9 @@ fillDplusminusHists(maxind,fHMinvDplusminusTrk12);
 fillDplusminusHists(second_maxind,fHMinvDplusminusTrk12);
 
 
-		//----------------------------------------------------------------------------------------------------------  Lead ions
-		// emu channel
-		//TLorentzVector p_track1, p_track2;
+	//----------------------------------------------------------------------------------------------------------  Lead ions
+	// emu channel
+	//TLorentzVector p_track1, p_track2;
 	p_track1.SetPtEtaPhiM(pfpt[0], pfeta[0], pfphi[0], 0.);
 	p_track2.SetPtEtaPhiM(pfpt[1], pfeta[1], pfphi[1], 0.);
 	fHMinv2LeadTrk->Fill((p_track1+p_track2).M(), w[0]);

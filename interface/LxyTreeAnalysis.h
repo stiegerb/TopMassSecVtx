@@ -72,6 +72,12 @@ public:
    virtual void BookHistos();
    virtual void WriteHistos();
 
+   virtual void BookCharmTree();
+   virtual void ResetCharmTree();
+   virtual void FillCharmTree(int type, int jetindex,
+                              int trackind1, float mass1,
+                              int trackind2, float mass2);
+
    virtual void analyze();
 
    inline virtual void setMaxEvents(Long64_t max){fMaxevents = max;}
@@ -129,6 +135,11 @@ public:
    TH1D *fHJPsiKInvMass; // Inv. mass of J/Psi and third track in b-jet (emu chan) (between 2.0 and 4.0 GeV)
    TH1D *fHEb1_emu; // Energy of first b-jet in emu channel
    TH1D *fHmlSv_mu; // Inv. mass of lepton and secondary vertex (mu chan)
+
+   TTree *fCharmInfoTree;
+   Int_t    fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
+   Float_t  fTCandMass, fTCandPt, fTCandPtRel, fTCandDeltaR;
+   Float_t  fTJetPt, fTSumPtCharged;
 
 };
 

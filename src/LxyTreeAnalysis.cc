@@ -9,8 +9,10 @@
 //plot with ./scripts/runPlotter.py lxyplots/ -j test/topss2014/samples_noqcd.json
 
 
-float pionmass = 0.1396;
-float kaonmass = 0.4937;
+float pionmass 			= 	0.1396;
+float kaonmass 			= 	0.4937;
+float electronmass		= 	0.00051;
+float muonmass			=	105.66;
 
 void LxyTreeAnalysis::RunJob(TString filename){
 	TFile *file = TFile::Open(filename, "recreate");
@@ -56,6 +58,23 @@ void LxyTreeAnalysis::BookHistos(){
 	normal12 = new TH1D("normalqw", "normal12 (All channels)",
 		100, 2., 4.); fHistos.push_back(normal12);
 	normal12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV]");
+
+
+
+
+	test1 = new TH1D("test1", "test1 (All channels)",
+		100, 2., 4.); fHistos.push_back(test1);
+	test1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV]");
+
+
+	test2 = new TH1D("test2", "test2 (All channels)",
+		100, 2., 4.); fHistos.push_back(test2);
+	test2->SetXTitle("Inv. Mass of J/Psi in second hardest b-jet [GeV]");
+
+
+	test12 = new TH1D("test12", "test12 (All channels)",
+		100, 2., 4.); fHistos.push_back(test12);
+	test12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV]");
 
 
 
@@ -354,6 +373,26 @@ void LxyTreeAnalysis::WriteHistos(){
 void LxyTreeAnalysis::fillJPsiHists(int jetindex, TH1D*& a, TH1D*& b, TH1D*& c//, TH1D*& d, TH1D*& e, TH1D*& f
 	){
 	
+float maxcsv = -1.;
+int maxind=-1;
+float second_max=-1.0;
+int second_maxind=-1;
+
+	for(int k = 0; k < nj; k++){
+	    // use >= n not just > as max and second_max can hav same value. Ex:{1,2,3,3}   
+		if(jcsv[k] >= maxcsv){  
+			second_max=maxcsv;
+			maxcsv=jcsv[k];   
+			maxind=k;
+			second_maxind=maxind;       
+		}
+		else if(jcsv[k] > second_max){
+			second_max=jcsv[k];
+			second_maxind=k;
+		}
+	}
+
+
 	TLorentzVector p_track1, p_track2;
 				
 			for (int i = 0; i < npf; ++i)
@@ -370,13 +409,21 @@ void LxyTreeAnalysis::fillJPsiHists(int jetindex, TH1D*& a, TH1D*& b, TH1D*& c//
 					p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], trackmass);
 					p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], trackmass);
 
-					if (abs(pfid[i])==11){a->Fill((p_track1+p_track2).M(), w[0]);}
-					if (abs(pfid[i])==13){b->Fill((p_track1+p_track2).M(), w[0]);}
+					if (abs(pfid[i])==11){a->	Fill((p_track1+p_track2).M(), w[0]);
+												// FillCharmTree(443, maxind, i, electronmass, j, electronmass);	
+												// FillCharmTree(443, second_maxind, i, electronmass, j, electronmass);	
+												}
+					if (abs(pfid[i])==13){b->	Fill((p_track1+p_track2).M(), w[0]);
+												// FillCharmTree(443, maxind, i, muonmass, j, muonmass);
+												// FillCharmTree(443, second_maxind, i, muonmass, j, muonmass);	
+												}
 					//leptonindex1=i;
 					//leptonindex2=j;
 					c->Fill((p_track1+p_track2).M(), w[0]);
+					
+
 			//---------------------------------------------------------------------------------------------------------- J/Psi + K
-					// TLorentzVector p_track3;
+					// TLorentzVector p_track3; 
 
 					// if (fabs((p_track1+p_track2).M() - 3.1) < 0.1 )
 					// {	
@@ -426,6 +473,7 @@ void LxyTreeAnalysis::fillMuD0Hists(int jetindex, TH1D*& histo, TH1D*& histo2, f
 
 
 			histo->Fill((p_track1+p_track2).M());
+			// FillCharmTree(421, jetindex, i, pionmass, j, kaonmass);
 
 			for (int k = 0; k < npf; ++k)
 			{
@@ -454,7 +502,29 @@ void LxyTreeAnalysis::fillMuD0Hists(int jetindex, TH1D*& histo, TH1D*& histo2, f
 // o=fHMinvD0Trkchargeselection
 
 
-void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& o, TH1D*& q, TH1D*& s, TH1D*& v, TH1D*& normal, TH1D*& c){
+void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& o, TH1D*& q, TH1D*& s, TH1D*& v, TH1D*& normal, TH1D*& c)//, TH1D*& test)
+{
+
+float maxcsv = -1.;
+int maxind=-1;
+float second_max=-1.0;
+int second_maxind=-1;
+
+	for(int k = 0; k < nj; k++){
+	    // use >= n not just > as max and second_max can hav same value. Ex:{1,2,3,3}   
+		if(jcsv[k] >= maxcsv){  
+			second_max=maxcsv;
+			maxcsv=jcsv[k];   
+			maxind=k;
+			second_maxind=maxind;       
+		}
+		else if(jcsv[k] > second_max){
+			second_max=jcsv[k];
+			second_maxind=k;
+		}
+	}
+
+
 	TLorentzVector p_track1, p_track2, p_track3;
 	int ev=0;
 	int r = 0;
@@ -515,6 +585,8 @@ if (pfjetidx[r+2]!=jetindex ) {return;}
 		p_track2.SetPtEtaPhiM(pfpt[pf2id], pfeta[pf2id], pfphi[pf2id], kaonmass);	
 
 		g->Fill((p_track1+p_track2).M(), w[0]);	
+		// FillCharmTree(421, maxind, p1[p], pionmass, p2[p], kaonmass);
+		// FillCharmTree(421, second_maxind, p1[p], pionmass, p2[p], kaonmass);
 
 
 
@@ -550,14 +622,14 @@ if (pfjetidx[r+2]!=jetindex ) {return;}
 
 				}	
 
-		for (size_t v = 0;  v < instance.size(); ++v)
-		{	
-			int a = instance[v];
-			int b = instance[v+1];
-		p_track1.SetPtEtaPhiM(pfpt[a], pfeta[a], pfphi[a], pionmass);	// Calculate four vector
-		p_track2.SetPtEtaPhiM(pfpt[b], pfeta[b], pfphi[b], kaonmass);
-		// test->Fill()
-		}
+			// for (size_t v = 0;  v < instance.size(); ++v)
+			// {	
+				// int a = instance[v];
+				// int b = instance[v+1];
+			// p_track1.SetPtEtaPhiM(pfpt[a], pfeta[a], pfphi[a], pionmass);	// Calculate four vector
+			//p_track2.SetPtEtaPhiM(pfpt[b], pfeta[b], pfphi[b], kaonmass);
+			//test->Fill((p_track1+p_track2).M(), w[0]);
+			// 	}
 
 			o->Fill((p_track1+p_track2).M(), w[0]);
 		}
@@ -592,6 +664,25 @@ if (pfjetidx[r+2]!=jetindex ) {return;}
 void LxyTreeAnalysis::fillDplusminusHists(int jetindex, TH1D*& s){
 	TLorentzVector p_track1, p_track2, p_track3;
 
+	float maxcsv = -1.;
+	int maxind=-1;
+	float second_max=-1.0;
+	int second_maxind=-1;
+
+	for(int k = 0; k < nj; k++){
+	    // use >= n not just > as max and second_max can hav same value. Ex:{1,2,3,3}   
+		if(jcsv[k] >= maxcsv){  
+			second_max=maxcsv;
+			maxcsv=jcsv[k];   
+			maxind=k;
+			second_maxind=maxind;       
+		}
+		else if(jcsv[k] > second_max){
+			second_max=jcsv[k];
+			second_maxind=k;
+		}
+	}
+
 	int r = 0;
 	for (r = 0; r < npf; ++r)
 	{
@@ -625,6 +716,7 @@ void LxyTreeAnalysis::fillDplusminusHists(int jetindex, TH1D*& s){
 					p_track3.SetPtEtaPhiM(pfpt[pf3id], pfeta[pf3id], pfphi[pf3id], pionmass);
 
 					s->Fill((p_track1+p_track2+p_track3).M(), w[0]);
+					// FillCharmTree(411, second_maxind, p1[p], kaonmass, p2[p], pionmass);
 
 				}
 
@@ -639,6 +731,7 @@ void LxyTreeAnalysis::fillDplusminusHists(int jetindex, TH1D*& s){
 					p_track3.SetPtEtaPhiM(pfpt[pf3id], pfeta[pf3id], pfphi[pf3id], pionmass);
 
 					s->Fill((p_track1+p_track2+p_track3).M(), w[0]); 
+					// FillCharmTree(421, second_maxind, p1[p], pionmass, p2[p], kaonmass);
 				}
 
 
@@ -654,7 +747,7 @@ void LxyTreeAnalysis::fillDplusminusHists(int jetindex, TH1D*& s){
 void LxyTreeAnalysis::analyze(){
 	// Called once per event
 	FillPlots();
-
+	ResetCharmTree();
 
 	float maxcsv = -1.;
 	int maxind=-1;
@@ -700,10 +793,10 @@ fillJPsiHists(second_maxind, fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTr
 
 
 //---------------------------------------------------------------------------------------------------------- D0
-fillD0Hists(maxind, 		fHMinvD0Trk1, 	 	fHMinvD0Trkchargeselection1, 	fHMinvD0Trkchargeselectionmuon1, 	fHMinvD0Trkchargeselectionlepton1, 	fHMinvD0Trkchargeselectionelectron1, normal1, angle1); 
-fillD0Hists(second_maxind, 	fHMinvD0Trk2, 		fHMinvD0Trkchargeselection2, 	fHMinvD0Trkchargeselectionmuon2,	fHMinvD0Trkchargeselectionlepton2,	fHMinvD0Trkchargeselectionelectron2, normal2, angle2);
-fillD0Hists(maxind, 		fHMinvD0Trk12,	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, normal12, angle12);
-fillD0Hists(second_maxind, 	fHMinvD0Trk12, 	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, normal12, angle12);
+fillD0Hists(maxind, 		fHMinvD0Trk1, 	 	fHMinvD0Trkchargeselection1, 	fHMinvD0Trkchargeselectionmuon1, 	fHMinvD0Trkchargeselectionlepton1, 	fHMinvD0Trkchargeselectionelectron1, 	normal1,	angle1);//, 	test1); 
+fillD0Hists(second_maxind, 	fHMinvD0Trk2, 		fHMinvD0Trkchargeselection2, 	fHMinvD0Trkchargeselectionmuon2,	fHMinvD0Trkchargeselectionlepton2,	fHMinvD0Trkchargeselectionelectron2, 	normal2,	angle2);//, 	test2);
+fillD0Hists(maxind, 		fHMinvD0Trk12,	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, 	normal12,	angle12);//,	test12);	
+fillD0Hists(second_maxind, 	fHMinvD0Trk12, 	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkchargeselectionmuon12,	fHMinvD0Trkchargeselectionlepton12,	fHMinvD0Trkchargeselectionelectron12, 	normal12, 	angle12);//,	test12);
 
 
 fillMuD0Hists(maxind,        fHcheckMinvD0Trk1, 		fHcheckMinvD0Trkchargeselection1, 	1.0, 	0.5);
@@ -725,10 +818,6 @@ fillDplusminusHists(second_maxind,fHMinvDplusminusTrk12);
 	p_track1.SetPtEtaPhiM(pfpt[0], pfeta[0], pfphi[0], 0.);
 	p_track2.SetPtEtaPhiM(pfpt[1], pfeta[1], pfphi[1], 0.);
 	fHMinv2LeadTrk->Fill((p_track1+p_track2).M(), w[0]);
-
-
-
-
 
 
 

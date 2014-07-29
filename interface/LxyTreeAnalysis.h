@@ -80,7 +80,7 @@ public:
 
    virtual void analyze();
    void fillJPsiHists(int, TH1D*&, TH1D*&, TH1D*&);
-   void fillD0Hists(int, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&);
+   void fillD0Hists(int, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&);//, TH1D*&);
    void fillDplusminusHists(int, TH1D*&);
    void fillMuD0Hists(int, TH1D*&, TH1D*&, float=1., float=1.0, int=13);
 
@@ -215,6 +215,9 @@ public:
    TH1D *angle1;
    TH1D *angle2;
    TH1D *angle12;
+   TH1D *test1;
+   TH1D *test2;
+   TH1D *test12;
 
    TTree *fCharmInfoTree;
    Int_t    fTCandType; // J/Psi = 443, D0 = 421, D+ = 411

@@ -3,6 +3,7 @@
 
 #include <TFile.h>
 #include <TH1D.h>
+#include <TH2D.h>
 #include <TString.h>
 #include <TTreeFormula.h>
 
@@ -121,103 +122,170 @@ public:
 
    std::vector<TH1*> fHistos;
 
-   TH1D *fHmlSv_emu_deltar;
-   TH1D *fHmlSv_emu_deltar_correct;
-   TH1D *fHmlSv_emu_deltar_wrong;
+// cut 
+   TH1D *fHmlsv_emu_deltar_cut;
+   TH1D *fHmlsv_emu_deltar_cut_flow;
+   TH1D *fHmlsv_emu_deltar_cut_correct;
+   TH1D *fHmlsv_emu_deltar_cut_wrong;
 
-   TH1D *fHmlSv_emu_deltar_ntr2;
-   TH1D *fHmlSv_emu_deltar_ntr2_correct;
-   TH1D *fHmlSv_emu_deltar_ntr2_wrong;
+   TH1D *fHmlsv_emu_deltar_cut_ntr2;
+   TH1D *fHmlsv_emu_deltar_cut_ntr2_correct;
+   TH1D *fHmlsv_emu_deltar_cut_ntr2_wrong;
 
-   TH1D *fHmlSv_emu_deltar_ntr3;
-   TH1D *fHmlSv_emu_deltar_ntr3_correct;
-   TH1D *fHmlSv_emu_deltar_ntr3_wrong;
+   TH1D *fHmlsv_emu_deltar_cut_ntr3;
+   TH1D *fHmlsv_emu_deltar_cut_ntr3_correct;
+   TH1D *fHmlsv_emu_deltar_cut_ntr3_wrong;
 
-   TH1D *fHmlSv_emu_deltar_ntr4;
-   TH1D *fHmlSv_emu_deltar_ntr4_correct;
-   TH1D *fHmlSv_emu_deltar_ntr4_wrong;
+   TH1D *fHmlsv_emu_deltar_cut_ntr4;
+   TH1D *fHmlsv_emu_deltar_cut_ntr4_correct;
+   TH1D *fHmlsv_emu_deltar_cut_ntr4_wrong;
+
+
+
+
+
+//invm using deltar
+   TH1D *fHdeltar_lsv_emu_deltar_cut;
+   TH1D *fHdeltar_lsv_emu_deltar_cut_correct;
+   TH1D *fHdeltar_lsv_emu_deltar_cut_wrong; 
+
+   TH1D *fHmlsv_emu_deltar;
+   TH1D *fHmlsv_emu_deltar_correct;
+   TH1D *fHmlsv_emu_deltar_wrong;
+
+   TH1D *fHmlsv_emu_deltar_ntr2;
+   TH1D *fHmlsv_emu_deltar_ntr2_correct;
+   TH1D *fHmlsv_emu_deltar_ntr2_wrong;
+
+   TH1D *fHmlsv_emu_deltar_ntr3;
+   TH1D *fHmlsv_emu_deltar_ntr3_correct;
+   TH1D *fHmlsv_emu_deltar_ntr3_wrong;
+
+   TH1D *fHmlsv_emu_deltar_ntr4;
+   TH1D *fHmlsv_emu_deltar_ntr4_correct;
+   TH1D *fHmlsv_emu_deltar_ntr4_wrong;
 
 //minmass
 
-   TH1D *fHmlSv_emu_minmass;
-   TH1D *fHmlSv_emu_minmass_correct;
-   TH1D *fHmlSv_emu_minmass_wrong;
+   TH1D *fHmlsv_emu_minmass;
+   TH1D *fHmlsv_emu_minmass_flow;
+   TH1D *fHmlsv_emu_minmass_correct;
+   TH1D *fHmlsv_emu_minmass_wrong;
 
-   TH1D *fHmlSv_emu_minmass_ntr2;
-   TH1D *fHmlSv_emu_minmass_ntr2_correct;
-   TH1D *fHmlSv_emu_minmass_ntr2_wrong;
+   TH1D *fHmlsv_emu_minmass_ntr2;
+   TH1D *fHmlsv_emu_minmass_ntr2_correct;
+   TH1D *fHmlsv_emu_minmass_ntr2_wrong;
 
-   TH1D *fHmlSv_emu_minmass_ntr3;
-   TH1D *fHmlSv_emu_minmass_ntr3_correct;
-   TH1D *fHmlSv_emu_minmass_ntr3_wrong;
+   TH1D *fHmlsv_emu_minmass_ntr3;
+   TH1D *fHmlsv_emu_minmass_ntr3_correct;
+   TH1D *fHmlsv_emu_minmass_ntr3_wrong;
 
-   TH1D *fHmlSv_emu_minmass_ntr4;
-   TH1D *fHmlSv_emu_minmass_ntr4_correct;
-   TH1D *fHmlSv_emu_minmass_ntr4_wrong;
-/*
-   TH1D *fHMinv2LeadTrk; // Inv. mass of two leading tracks in b-jet (emu chan)
-   TH1D *fHEb1_emu; // Energy of first b-jet in emu channel
+   TH1D *fHmlsv_emu_minmass_ntr4;
+   TH1D *fHmlsv_emu_minmass_ntr4_correct;
+   TH1D *fHmlsv_emu_minmass_ntr4_wrong;
 
-//Jevgeny
-   TH1D *fHmlSv_mu_deltar; // Inv. mass of lepton and secondary vertex(the closest one of first two) (mu chan)
-   TH1D *fHmlSv_e_deltar;
-   TH1D *fHmlSv_ee_deltar;
-   TH1D *fHmlSv_mumu_deltar;
-   TH1D *fHmlSv_emu_deltar; // inv.m. of lepton and secondary vertex (emu chan)  
-   TH1D *fHmlSv_emu_deltar_correct; // inv.m. of lepton and secondary vertex (emu chan) (correct charge)
-   TH1D *fHmlSv_emu_deltar_wrong; // inv.m. of lepton and secondary vertex (emu chan)  (wrong charge)
+   TH1D *fHmlsv_emu_deltar_cut_correct_topweight;
+   TH1D *fHmlsv_emu_deltar_cut_correct_topweight_up;
+   TH1D *fHmlsv_emu_deltar_cut_wrong_topweight;
+   TH1D *fHmlsv_emu_deltar_cut_wrong_topweight_up;
 
-   //number of tracks
-   TH1D *fHntrSv_emu_deltar;
-   TH1D *fHntrSv_emu_deltar_wrong;
-   TH1D *fHntrSv_emu_deltar_correct;
+   TH1D *fHmlsv_emu_minmass_correct_topweight;
+   TH1D *fHmlsv_emu_minmass_correct_topweight_up;
+   TH1D *fHmlsv_emu_minmass_wrong_topweight;
+   TH1D *fHmlsv_emu_minmass_wrong_topweight_up;
 
-   // using 2 leptopns
-   TH1D *fHm2lSv_emu;
+   TH1D *fHmlsv_emu_minmass_correct_nvtx_1bin;
+   TH1D *fHmlsv_emu_minmass_correct_nvtx_2bin;
+   TH1D *fHmlsv_emu_minmass_correct_nvtx_3bin;
+   TH1D *fHmlsv_emu_minmass_correct_nvtx_4bin;
 
-   //using charge to find correct sec.v.
-   TH1D *fHmlSv_emu_wrong;
-   TH1D *fHmlSv_mumu;
-   TH1D *fHmlSv_emu;
-   TH1D *fHmlSv_ee;
+   TH1D *fHmlsv_emu_minmass_wrong_nvtx_1bin;
+   TH1D *fHmlsv_emu_minmass_wrong_nvtx_2bin;
+   TH1D *fHmlsv_emu_minmass_wrong_nvtx_3bin;
+   TH1D *fHmlsv_emu_minmass_wrong_nvtx_4bin;
+   TH1D *fHsvntk;
 
-   //using charge to find correct bhadron
-   TH1D *fHmlbh_emu;
-   TH1D *fHmlbh_emu_correct;
-   TH1D *fHmlbh_emu_wrong;
+// pratio
 
-   //various number of tracks
+   TH1D *fHsecbhad_pratio_emu;
+   TH1D *fHsecbhad_pratio_emu_ntr2;
+   TH1D *fHsecbhad_pratio_emu_ntr3;
+   TH1D *fHsecbhad_pratio_emu_ntr4;
+   TH1D *fHsecbhad_pratio_emu_ntr5;
+   TH1D *fHsecbhad_pratio_emu_ntr6;
+   TH1D *fHsecbhad_pratio_emu_ntr7;
+   TH1D *fHsecbhad_pratio_emu_ntr8;
+   TH1D *fHsecbhad_pratio_emu_ntr9;
+   TH1D *fHsecbhad_pratio_emu_ntr10;
+   TH1D *fHsecbhad_pratio_emu_ntr11;
+   TH1D *fHsecbhad_pratio_emu_ntr12;
+   TH1D *fHsecbhad_pratio_emu_ntr13;
+   TH1D *fHsecbhad_pratio_emu_ntr14;
+   TH1D *fHsecbhad_pratio_emu_ntr15;
 
-   TH1D *fHmlSv_emu_deltar_ntr2; // inv.m. of lepton and secondary vertex (emu chan)  
-   TH1D *fHmlSv_emu_deltar_ntr2_correct; // inv.m. of lepton and secondary vertex (emu chan) (correct charge)
-   TH1D *fHmlSv_emu_deltar_ntr2_wrong; // inv.m. of lepton and secondary vertex (emu chan)  (wrong charge)
+   TH1D *fHsecbhad_deltar_emu;
+   TH1D *fHsecbhad_deltar_emu_ntr2;
+   TH1D *fHsecbhad_deltar_emu_ntr3;
+   TH1D *fHsecbhad_deltar_emu_ntr4;
+   TH1D *fHsecbhad_deltar_emu_ntr5;
+   TH1D *fHsecbhad_deltar_emu_ntr6;
+   TH1D *fHsecbhad_deltar_emu_ntr7;
+   TH1D *fHsecbhad_deltar_emu_ntr8;
+   TH1D *fHsecbhad_deltar_emu_ntr9;
+   TH1D *fHsecbhad_deltar_emu_ntr10;
+   TH1D *fHsecbhad_deltar_emu_ntr11;
+   TH1D *fHsecbhad_deltar_emu_ntr12;
+   TH1D *fHsecbhad_deltar_emu_ntr13;
+   TH1D *fHsecbhad_deltar_emu_ntr14;
+   TH1D *fHsecbhad_deltar_emu_ntr15;
 
-   TH1D *fHmlSv_emu_deltar_ntr3; // inv.m. of lepton and secondary vertex (emu chan)  
-   TH1D *fHmlSv_emu_deltar_ntr3_correct; // inv.m. of lepton and secondary vertex (emu chan) (correct charge)
-   TH1D *fHmlSv_emu_deltar_ntr3_wrong; // inv.m. of lepton and secondary vertex (emu chan)  (wrong charge)
+   TH1D *fHsecb_pratio_emu;
+   TH1D *fHsecb_pratio_emu_ntr2;
+   TH1D *fHsecb_pratio_emu_ntr3;
+   TH1D *fHsecb_pratio_emu_ntr4;
+   TH1D *fHsecb_pratio_emu_ntr5;
+   TH1D *fHsecb_pratio_emu_ntr6;
+   TH1D *fHsecb_pratio_emu_ntr7;
+   TH1D *fHsecb_pratio_emu_ntr8;
+   TH1D *fHsecb_pratio_emu_ntr9;
+   TH1D *fHsecb_pratio_emu_ntr10;
+   TH1D *fHsecb_pratio_emu_ntr11;
+   TH1D *fHsecb_pratio_emu_ntr12;
+   TH1D *fHsecb_pratio_emu_ntr13;
+   TH1D *fHsecb_pratio_emu_ntr14;
+   TH1D *fHsecb_pratio_emu_ntr15;
 
-   TH1D *fHmlSv_emu_deltar_ntr4; // inv.m. of lepton and secondary vertex (emu chan)  
-   TH1D *fHmlSv_emu_deltar_ntr4_correct; // inv.m. of lepton and secondary vertex (emu chan) (correct charge)
-   TH1D *fHmlSv_emu_deltar_ntr4_wrong; // inv.m. of lepton and secondary vertex (emu chan)  (wrong charge)
-// only sec v mass
+   TH1D *fHsecb_deltar_emu;
+   TH1D *fHsecb_deltar_emu_ntr2;
+   TH1D *fHsecb_deltar_emu_ntr3;
+   TH1D *fHsecb_deltar_emu_ntr4;
+   TH1D *fHsecb_deltar_emu_ntr5;
+   TH1D *fHsecb_deltar_emu_ntr6;
+   TH1D *fHsecb_deltar_emu_ntr7;
+   TH1D *fHsecb_deltar_emu_ntr8;
+   TH1D *fHsecb_deltar_emu_ntr9;
+   TH1D *fHsecb_deltar_emu_ntr10;
+   TH1D *fHsecb_deltar_emu_ntr11;
+   TH1D *fHsecb_deltar_emu_ntr12;
+   TH1D *fHsecb_deltar_emu_ntr13;
+   TH1D *fHsecb_deltar_emu_ntr14;
+   TH1D *fHsecb_deltar_emu_ntr15;
 
-   TH1D *fHmSv_emu_deltar; // inv.m. of lepton and secondary vertex (emu chan)  
-   TH1D *fHmSv_emu_deltar_correct; // inv.m. of lepton and secondary vertex (emu chan) (correct charge)
-   TH1D *fHmSv_emu_deltar_wrong; // inv.m. of lepton and secondary vertex (emu chan)  (wrong charge)
+   TH2D *fHdeltar_svl_emu_2d;
 
-   TH1D *fHmSv_emu_deltar_ntr2; // inv.m. of lepton and secondary vertex (emu chan)  
-   TH1D *fHmSv_emu_deltar_ntr2_correct; // inv.m. of lepton and secondary vertex (emu chan) (correct charge)
-   TH1D *fHmSv_emu_deltar_ntr2_wrong; // inv.m. of lepton and secondary vertex (emu chan)  (wrong charge)
+   TH1D *fHdeltar_svl_emu_correct;
+   TH1D *fHdeltar_svl_emu_correct_ntr2;
+   TH1D *fHdeltar_svl_emu_correct_ntr3;
+   TH1D *fHdeltar_svl_emu_correct_ntr4;
+   TH1D *fHdeltar_svl_emu_correct_ntr5;
 
-   TH1D *fHmSv_emu_deltar_ntr3; // inv.m. of lepton and secondary vertex (emu chan)  
-   TH1D *fHmSv_emu_deltar_ntr3_correct; // inv.m. of lepton and secondary vertex (emu chan) (correct charge)
-   TH1D *fHmSv_emu_deltar_ntr3_wrong; // inv.m. of lepton and secondary vertex (emu chan)  (wrong charge)
+   TH1D *fHdeltar_svl_emu_wrong;
+   TH1D *fHdeltar_svl_emu_wrong_ntr2;
+   TH1D *fHdeltar_svl_emu_wrong_ntr3;
+   TH1D *fHdeltar_svl_emu_wrong_ntr4;
+   TH1D *fHdeltar_svl_emu_wrong_ntr5;
 
-   TH1D *fHmSv_emu_deltar_ntr4; // inv.m. of lepton and secondary vertex (emu chan)  
-   TH1D *fHmSv_emu_deltar_ntr4_correct; // inv.m. of lepton and secondary vertex (emu chan) (correct charge)
-   TH1D *fHmSv_emu_deltar_ntr4_wrong; // inv.m. of lepton and secondary vertex (emu chan)  (wrong charge)
-*/
-
+// sumw2
 };
 #endif
 

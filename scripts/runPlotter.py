@@ -351,7 +351,7 @@ if __name__ == "__main__":
                       default='',
                       help='Only process plots matching this mask'
                            '[default: all plots]')
-    parser.add_option('-l', '--lumi', dest='lumi', default=19736,
+    parser.add_option('-l', '--lumi', dest='lumi', default=17123,
                       type='float',
                       help='Re-scale to integrated luminosity [pb]'
                            ' [default: %default]')

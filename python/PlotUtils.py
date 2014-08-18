@@ -183,7 +183,7 @@ class Plot:
         tlat.SetTextFont(62)
         tlat.SetTextSize(0.04)
         tlat.SetTextAlign(31)
-        prelim_text = 'CMS Preliminary, #sqrt{s} = 8 TeV'
+        prelim_text = 'CMS work in progress, #sqrt{s} = 8 TeV'
         tlat.DrawLatex(0.92, 0.92, prelim_text)
 
 

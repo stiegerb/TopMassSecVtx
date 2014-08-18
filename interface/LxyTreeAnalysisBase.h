@@ -48,6 +48,8 @@ public :
    Float_t         jcsv[50];   //[nj]
    Float_t         jarea[50];   //[nj]
    Float_t         jtoraw[50];   //[nj]
+   Float_t         jjesup[50];   //[nj]
+   Float_t         jjesdn[50];   //[nj]
    Float_t         gjpt[50];   //[nj]
    Float_t         gjeta[50];   //[nj]
    Float_t         gjphi[50];   //[nj]
@@ -77,6 +79,7 @@ public :
    Float_t         pfphi[500];   //[npf]
    Float_t         metpt;
    Float_t         metphi;
+   Float_t         metvar[8];
    Int_t           tid[50];   //[nj]
    Float_t         tpt[50];   //[nj]
    Float_t         teta[50];   //[nj]
@@ -110,6 +113,8 @@ public :
    TBranch        *b_jcsv;   //!
    TBranch        *b_jarea;   //!
    TBranch        *b_jtoraw;   //!
+   TBranch        *b_jjesup;   //!
+   TBranch        *b_jjesdn;   //!
    TBranch        *b_gjpt;   //!
    TBranch        *b_gjeta;   //!
    TBranch        *b_gjphi;   //!
@@ -139,6 +144,7 @@ public :
    TBranch        *b_pfphi;   //!
    TBranch        *b_metpt;   //!
    TBranch        *b_metphi;   //!
+   TBranch        *b_metvar;   //!
    TBranch        *b_tid;   //!
    TBranch        *b_tpt;   //!
    TBranch        *b_teta;   //!

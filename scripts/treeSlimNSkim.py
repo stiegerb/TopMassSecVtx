@@ -36,7 +36,11 @@ def in_file (option, opt_str, value, parser):
 def outputtime():
 	print "-"*5,round(time.time()-STARTTIME,3),time.asctime(),"-"*5
 
-def slimAndSkim(files, cut, in_ex_branch, output, treeloc='dataAnalyzer/lxy'):
+def slimAndSkim(files,
+	            cut,
+	            in_ex_branch,
+	            output,
+	            treeloc='dataAnalyzer/lxy'):
 	print "-"*40
 	print "Using input files:"
 	print files
@@ -61,23 +65,27 @@ def slimAndSkim(files, cut, in_ex_branch, output, treeloc='dataAnalyzer/lxy'):
 		cutnumber = mainchain.Draw(">>cutlist",cut,"entrylist")
 		cutlist = ROOT.gDirectory.Get("cutlist")
 		mainchain.SetEntryList(cutlist)
-		print " Cut reduced number of events from", mainchain.GetEntries(),"to", cutnumber
+		print (" Cut reduced number of events from %d to %d" %
+			    (mainchain.GetEntries(), cutnumber))
 
 	outputtime()
 
 	## Get list of branches to activate
 	brancheslist = []
-	allbrancheslist = [br.GetName() for br in mainchain.GetListOfBranches()]
+	allbranches = [br.GetName() for br in mainchain.GetListOfBranches()]
 
 	if len(in_ex_branch)==0 or (in_ex_branch[0][-1])=="-":
-		brancheslist=allbrancheslist[:]
+		brancheslist=allbranches[:]
 
-	print " Starting with",len(brancheslist),"("+str(len(allbrancheslist))+")","branches"
+	print (" Starting with %d (%d) branches" %
+		     (len(brancheslist), len(allbranches)) )
 	for branch in in_ex_branch:
 		if branch[-1]=="+":
-			brancheslist += [b for b in allbrancheslist if re.match(branch[:-1],b)!=None]
+			brancheslist += [b for b in allbranches if
+			                         re.match(branch[:-1],b)!=None]
 		if branch[-1]=="-":
-			brancheslist = [b for b in brancheslist if re.match(branch[:-1],b)==None ]
+			brancheslist = [b for b in brancheslist if
+			                         re.match(branch[:-1],b)==None ]
 		print " ... after",branch,"have",len(brancheslist),"branches"
 
 	outputtime()
@@ -127,7 +135,8 @@ def main(options, args):
 
 def addOptions(parser):
 	parser.add_option("-t", "--maintree", action="store",
-	                  type="str", dest="maintree", default="dataAnalyzer/lxy",
+	                  type="str", dest="maintree",
+	                  default="dataAnalyzer/lxy",
 	                  help=("tree name whose branches are removed and on "
                             "which the cuts are applied, default=%default"))
 	parser.add_option("-i", "--include", action="callback", type="str",
@@ -140,20 +149,20 @@ def addOptions(parser):
 	parser.add_option("-F", "--fileexclude", action="callback", type="str",
                       callback=exclude_file,
                       help="file with branch names to exclude")
-	parser.add_option("-I", "--includefromfile", action="callback", type="str",
-                      callback=in_file,
-                      help=("file with branch name to in- and exclude, add + "
-                            "or - at the end of the name"))
+	parser.add_option("-I", "--includefromfile", action="callback",
+	                  type="str", callback=in_file,
+                      help=("file with branch name to in- and exclude, add "
+                      	    "+ or - at the end of the name"))
 	parser.add_option("-c", "--cut", action="store", type="str", dest="cut",
                       help="cut on tree")
-	parser.add_option("-o", "--output", action="store", type="str", dest="output",
-	                  default="output.root",
+	parser.add_option("-o", "--output", action="store", type="str",
+		              dest="output", default="output.root",
 	                  help="output filename, default=%default")
 
 if __name__ == '__main__':
 	usage = """
 	usage: %prog [options] input_filename
-	Use to slim and skim D3PDs on the command line.
+	Use to slim and skim trees on the command line.
 	Branches are included or excluded by using -i or -e.
 	The branch names are interpreted as regular expressions (python style),
 	i.e. -i \"jet\" means to include all branches starting with \"jet\".

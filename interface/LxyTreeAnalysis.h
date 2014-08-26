@@ -81,7 +81,7 @@ public:
    virtual void analyze();
    void fillJPsiHists(int, TH1D*&, TH1D*&, TH1D*&);
    void fillD0Hists(int, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&);//, TH1D*&);
-   void fillDplusminusHists(int, TH1D*&);
+   void fillDplusminusHists(int, TH1D*&, TH1D*&, TH1D*&, TH1D*&);
    void fillMuD0Hists(int, TH1D*&, TH1D*&, float=1., float=1.0, int=13);
 
    /////////////////////////////////////////////
@@ -159,18 +159,18 @@ public:
    TH1D *fHcheckMinvD0Trkchargeselection1;//Inv. mass of B-hadron 
    TH1D *fHcheckMinvD0Trkchargeselection2;//Inv. mass of B-hadron
    TH1D *fHcheckMinvD0Trkchargeselection12;//Inv. mass of B-hadron     
-   TH1D *fHMinvD0Trkchargeselectionmuon;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionmuon1;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionmuon2;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionmuon12;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionelectron;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionelectron1;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionelectron2;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionelectron12;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionlepton;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionlepton1;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionlepton2;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkchargeselectionlepton12;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkmuon;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkmuon1;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkmuon2;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkmuon12;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkelectron;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkelectron1;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkelectron2;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkelectron12;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trklepton;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trklepton1;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trklepton2;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trklepton12;//Inv. mass of B-hadron
    TH1D *fHMinvD0Trkdoublechargeselectionelectron;//Inv. mass of B-hadron
    TH1D *fHMinvD0Trkdoublechargeselectionelectron1;//Inv. mass of B-hadron
    TH1D *fHMinvD0Trkdoublechargeselectionelectron2;//Inv. mass of B-hadron
@@ -179,10 +179,10 @@ public:
    TH1D *fHMinvD0Trkdoublechargeselectionmuon1;//Inv. mass of B-hadron
    TH1D *fHMinvD0Trkdoublechargeselectionmuon2;//Inv. mass of B-hadron
    TH1D *fHMinvD0Trkdoublechargeselectionmuon12;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkdoublechargeselectionlepton;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkdoublechargeselectionlepton1;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkdoublechargeselectionlepton2;//Inv. mass of B-hadron
-   TH1D *fHMinvD0Trkdoublechargeselectionlepton12;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkdoublelepton;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkdoublelepton1;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkdoublelepton2;//Inv. mass of B-hadron
+   TH1D *fHMinvD0Trkdoublelepton12;//Inv. mass of B-hadron
    TH1D *fHMinvBTrkJPsiK;//Inv. mass of B-hadron 
    TH1D *fHMinvBTrkJPsiK1;//Inv. mass of B-hadron 
    TH1D *fHMinvBTrkJPsiK2;//Inv. mass of B-hadron 
@@ -209,6 +209,18 @@ public:
    TH1D *fHMinvDplusminusTrk1;//
    TH1D *fHMinvDplusminusTrk2;//
    TH1D *fHMinvDplusminusTrk12;//
+   TH1D *fHMinvDplusminusTrkelectron;//
+   TH1D *fHMinvDplusminusTrkelectron1;//
+   TH1D *fHMinvDplusminusTrkelectron2;//
+   TH1D *fHMinvDplusminusTrkelectron12;//
+   TH1D *fHMinvDplusminusTrkmuon;//
+   TH1D *fHMinvDplusminusTrkmuon1;//
+   TH1D *fHMinvDplusminusTrkmuon2;//
+   TH1D *fHMinvDplusminusTrkmuon12;//
+   TH1D *fHMinvDplusminusTrklepton;//
+   TH1D *fHMinvDplusminusTrklepton1;//
+   TH1D *fHMinvDplusminusTrklepton2;//
+   TH1D *fHMinvDplusminusTrklepton12;//
    TH1D *normal1;
    TH1D *normal2;
    TH1D *normal12;

@@ -4,12 +4,12 @@ import pprint
 
 PLOTS = [
 ##  ('name',  'branch', 'selection/weight', nbins, minx, maxx)
-    ('jpt',    'jpt[0]',
-        'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 30., 300.),
-    ('met',    'metpt',
-        'w[0]*(abs(evcat)==11*13&&nj>1)', 100, 0., 200.),
-    ('avpfpt', 'Sum$(pfpt)/Length$(pfpt)',
-        'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 0., 20.)
+    # ('jpt',    'jpt[0]',
+    #     'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 30., 300.),
+    # ('met',    'metpt',
+    #     'w[0]*(abs(evcat)==11*13&&nj>1)', 100, 0., 200.),
+    # ('avpfpt', 'Sum$(pfpt)/Length$(pfpt)',
+    #     'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 0., 20.)
 ]
 
 def makeDir(dirname):

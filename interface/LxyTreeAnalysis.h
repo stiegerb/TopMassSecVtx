@@ -5,6 +5,7 @@
 #include <TH1D.h>
 #include <TString.h>
 #include <TTreeFormula.h>
+#include <TLorentzVector.h>
 
 #include <iostream>
 
@@ -79,12 +80,19 @@ public:
     virtual void FillCharmTree(int type, int jetindex,
                                int trackind1, float mass1,
                                int trackind2, float mass2);
+    virtual void FillCharmTree(int type, int jetindex,
+                               int trackind1, float mass1,
+                               int trackind2, float mass2,
+                               int trackind3, float mass3);
+    virtual void FillCharmTree(int type, int jind,
+                               TLorentzVector p_cand, TLorentzVector p_jet);
 
     virtual void analyze();
-    void fillJPsiHists(int, TH1D*&, TH1D*&, TH1D*&);
-    void fillD0Hists(int, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&, TH1D*&);//, TH1D*&);
-    void fillDplusminusHists(int, TH1D*&, TH1D*&, TH1D*&, TH1D*&);
-    void fillMuD0Hists(int, TH1D*&, TH1D*&, float=1., float=1.0, int=13);
+    virtual bool selectEvent();
+    virtual int firstTrackIndex(int jetindex);
+    void fillJPsiHists(int jetindex);
+    void fillD0Hists(int jetindex);
+    void fillDpmHists(int jetindex);
 
     inline virtual void setMaxEvents(Long64_t max) {
         fMaxevents = max;
@@ -137,115 +145,21 @@ public:
     Long64_t fMaxevents;
 
     std::vector<TH1*> fHistos;
-    TH1D *fHMinv2LeadTrk;// Inv. mass of two leading tracks in b-jet (emu chan)
-    TH1D *fHMinvJPsiTrk;// Inv. mass of JPsi in b-jet (emu chan)
-    TH1D *fHMinvJPsiTrk1;// Inv. mass of JPsi in b-jet (emu chan)
-    TH1D *fHMinvJPsiTrk2;// Inv. mass of JPsi in b-jet (emu chan)
-    TH1D *fHMinvJPsiTrk12;// Inv. mass of JPsi in b-jet (emu chan
-    TH1D *fHMinvJPsiTrkmu;//
-    TH1D *fHMinvJPsiTrkmu1;//
-    TH1D *fHMinvJPsiTrkmu2;//
-    TH1D *fHMinvJPsiTrkmu12;//
-    TH1D *fHMinvJPsiTrke;//
-    TH1D *fHMinvJPsiTrke1;//
-    TH1D *fHMinvJPsiTrke2;//
-    TH1D *fHMinvJPsiTrke12;//
-    TH1D *fHMinvD0Trk;//
-    TH1D *fHMinvD0Trk1;// Inv. mass of D0 in b-jet (emu chan)
-    TH1D *fHMinvD0Trk2;// Inv. mass of D0 in b-jet (emu chan)
-    TH1D *fHMinvD0Trk12;// Inv. mass of D0 in b-jet (emu chan)
-    TH1D *fHcheckMinvD0Trk;//
-    TH1D *fHcheckMinvD0Trk1;// Inv. mass of D0 in b-jet (emu chan)
-    TH1D *fHcheckMinvD0Trk2;// Inv. mass of D0 in b-jet (emu chan)
-    TH1D *fHcheckMinvD0Trk12;// Inv. mass of D0 in b-jet (emu chan)
-    TH1D *fHMinvD0Trkchargeselection;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkchargeselection1;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkchargeselection2;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkchargeselection12;//Inv. mass of B-hadron
-    TH1D *fHcheckMinvD0Trkchargeselection;//Inv. mass of B-hadron
-    TH1D *fHcheckMinvD0Trkchargeselection1;//Inv. mass of B-hadron
-    TH1D *fHcheckMinvD0Trkchargeselection2;//Inv. mass of B-hadron
-    TH1D *fHcheckMinvD0Trkchargeselection12;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkmuon;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkmuon1;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkmuon2;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkmuon12;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkelectron;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkelectron1;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkelectron2;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkelectron12;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trklepton;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trklepton1;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trklepton2;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trklepton12;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublechargeselectionelectron;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublechargeselectionelectron1;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublechargeselectionelectron2;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublechargeselectionelectron12;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublechargeselectionmuon;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublechargeselectionmuon1;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublechargeselectionmuon2;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublechargeselectionmuon12;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublelepton;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublelepton1;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublelepton2;//Inv. mass of B-hadron
-    TH1D *fHMinvD0Trkdoublelepton12;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkJPsiK;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkJPsiK1;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkJPsiK2;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkJPsiK12;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkD0;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkD01;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkD02;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkD012;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkD0chargeselection;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkD0chargeselection1;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkD0chargeselection2;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrkD0chargeselection12;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrktotal;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrktotal1;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrktotal2;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrktotal12;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrktotalchargeselection;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrktotalchargeselection1;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrktotalchargeselection2;//Inv. mass of B-hadron
-    TH1D *fHMinvBTrktotalchargeselection12;//Inv. mass of B-hadron
-    TH1D *fHMinvDplusminusTrk;//
-    TH1D *fHMinvDplusminusTrk1;//
-    TH1D *fHMinvDplusminusTrk2;//
-    TH1D *fHMinvDplusminusTrk12;//
-    TH1D *fHMinvDplusminusTrkelectron;//
-    TH1D *fHMinvDplusminusTrkelectron1;//
-    TH1D *fHMinvDplusminusTrkelectron2;//
-    TH1D *fHMinvDplusminusTrkelectron12;//
-    TH1D *fHMinvDplusminusTrkmuon;//
-    TH1D *fHMinvDplusminusTrkmuon1;//
-    TH1D *fHMinvDplusminusTrkmuon2;//
-    TH1D *fHMinvDplusminusTrkmuon12;//
-    TH1D *fHMinvDplusminusTrklepton;//
-    TH1D *fHMinvDplusminusTrklepton1;//
-    TH1D *fHMinvDplusminusTrklepton2;//
-    TH1D *fHMinvDplusminusTrklepton12;//
-    TH1D *normal1;
-    TH1D *normal2;
-    TH1D *normal12;
-    TH1D *angle1;
-    TH1D *angle2;
-    TH1D *angle12;
-    TH1D *test1;
-    TH1D *test2;
-    TH1D *test12;
-
-    TH1D *fHDiTrkInvMass; // Inv. mass of and two opposite sign tracks in b-jet (emu chan) (between 1.7 and 2 GeV)
-    TH1D *fHDiMuInvMass; // Inv. mass of and two opposite sign muons in b-jet (emu chan) (between 2.0 and 4.0 GeV)
-    TH1D *fHJPsiKInvMass; // Inv. mass of J/Psi and third track in b-jet (emu chan) (between 2.0 and 4.0 GeV)
-    TH1D *fHEb1_emu; // Energy of first b-jet in emu channel
-    TH1D *fHmlSv_mu; // Inv. mass of lepton and secondary vertex (mu chan)
+    TH1D *fHMJPsi, *fHMJPsimu, *fHMJPsie, *fHMJPsiK;
+    TH1D *fHMD0Incl5TrkDR;
+    TH1D *fHMD0Incl3Trk;
+    TH1D *fHMD0mu, *fHMD0e, *fHMD0lep;
+    TH1D *fHMDs2010lep;
+    TH1D *fHDMDs2010D0lep;
+    TH1D *fHMDpm, *fHMDpmZO;
+    // TH1D *fHMDpmKKPi;
+    TH1D *fHMDpme, *fHMDpmmu, *fHMDpmlep;
 
     TTree *fCharmInfoTree;
-    Int_t    fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
-    Float_t  fTCandMass, fTCandPt, fTCandPtRel, fTCandDeltaR;
-    Float_t  fTJetPt, fTSumPtCharged;
+    Int_t   fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
+    Float_t fTCandMass, fTCandPt, fTCandPz, fTCandEta;
+    Float_t fTCandPtRel, fTCandDeltaR;
+    Float_t fTJetPt, fTJetEta, fTSumPtCharged, fTJetPz, fTSumPzCharged;
 
 };
 

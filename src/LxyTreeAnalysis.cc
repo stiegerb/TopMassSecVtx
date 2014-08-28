@@ -11,15 +11,12 @@
 #define LxyTreeAnalysis_cxx
 #include "UserCode/llvv_fwk/interface/LxyTreeAnalysis.h"
 
+#include "Math/VectorUtil.h"
+
 #include <TLorentzVector.h>
 #include <iostream>
 
 //plot with ./scripts/runPlotter.py lxyplots/ -j test/topss2014/samples_noqcd.json
-const float pionmass 			= 	0.1396;
-const float kaonmass 			= 	0.4937;
-const float electronmass		= 	0.00051;
-const float muonmass			=	0.10566;
-
 const float gMassK  = 0.4937;
 const float gMassPi = 0.1396;
 const float gMassMu = 0.1057;
@@ -60,380 +57,76 @@ void LxyTreeAnalysis::End(TFile *file) {
 
 void LxyTreeAnalysis::BookHistos() {
     // Book all the histograms here
-    fHMinv2LeadTrk = new TH1D("Minv2LeadTrk", "Minv2LeadTrk (All channels)",
-                              100, 0., 10.);
-    fHistos.push_back(fHMinv2LeadTrk);
-    fHMinv2LeadTrk->SetXTitle("Inv. Mass of in b-jet [GeV]");
+    fHMJPsi = new TH1D("JPsi", "JPsi", 100, 2., 4.);
+    fHistos.push_back(fHMJPsi);
+    fHMJPsi->SetXTitle("m(ll) [GeV]");
 
+    fHMJPsie = new TH1D("JPsie", "JPsie",100,2.,4.);
+    fHistos.push_back(fHMJPsie);
+    fHMJPsie->SetXTitle("m(ee) [GeV]");
 
-    normal1 = new TH1D("normal1", "normal1 (All channels)",
-                       100, 2., 4.);
-    fHistos.push_back(normal1);
-    normal1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV]");
+    fHMJPsimu = new TH1D("JPsimu", "JPsimu",100,2.,4.);
+    fHistos.push_back(fHMJPsimu);
+    fHMJPsimu->SetXTitle("m(#mu#mu) [GeV]");
 
+    fHMJPsiK = new TH1D("JPsiK", "JPsiK",100, 4.5, 6.);
+    fHistos.push_back(fHMJPsiK);
+    fHMJPsiK->SetXTitle("m(llK) [GeV]");
 
-    normal2 = new TH1D("normal2", "normal2 (All channels)",
-                       100, 2., 4.);
-    fHistos.push_back(normal2);
-    normal2->SetXTitle("Inv. Mass of J/Psi in second hardest b-jet [GeV]");
+    fHMD0Incl5TrkDR = new TH1D("D0Incl5TrkDR", "D0 Incl 5Trk DR<0.2",100, 1.6, 2.2);
+    fHistos.push_back(fHMD0Incl5TrkDR);
+    fHMD0Incl5TrkDR->SetXTitle("m(K#pi) [GeV]");
 
+    fHMD0Incl3Trk = new TH1D("D0Incl3Trk", "D0 Incl 3Trk",100, 1.6, 2.2);
+    fHistos.push_back(fHMD0Incl3Trk);
+    fHMD0Incl3Trk->SetXTitle("m(K#pi) [GeV]");
 
-    normal12 = new TH1D("normalqw", "normal12 (All channels)",
-                        100, 2., 4.);
-    fHistos.push_back(normal12);
-    normal12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV]");
+    fHMD0mu = new TH1D("D0mu", "D0mu",100, 1.6, 2.2);
+    fHistos.push_back(fHMD0mu);
+    fHMD0mu->SetXTitle("m(K#pi) [GeV]");
 
+    fHMD0e = new TH1D("D0e", "D0e",100, 1.6, 2.2);
+    fHistos.push_back(fHMD0e);
+    fHMD0e->SetXTitle("m(K#pi) [GeV]");
 
+    fHMD0lep = new TH1D("D0lep", "D0lep",100, 1.6, 2.2);
+    fHistos.push_back(fHMD0lep);
+    fHMD0lep->SetXTitle("m(K#pi) [GeV]");
 
 
-    test1 = new TH1D("test1", "test1 (All channels)",
-                     100, 2., 4.);
-    fHistos.push_back(test1);
-    test1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV]");
+    fHMDs2010lep = new TH1D("Ds2010lep", "Ds2010lep",100, 1.8, 2.4);
+    fHistos.push_back(fHMDs2010lep);
+    fHMDs2010lep->SetXTitle("m(K#pi#pi) [GeV]");
 
+    fHDMDs2010D0lep = new TH1D("DMDs2010D0lep", "DMDs2010D0lep",100, 0.14, 0.15);
+    fHistos.push_back(fHDMDs2010D0lep);
+    fHDMDs2010D0lep->SetXTitle("m(K#pi#pi) - m(K#pi) [GeV]");
 
-    test2 = new TH1D("test2", "test2 (All channels)",
-                     100, 2., 4.);
-    fHistos.push_back(test2);
-    test2->SetXTitle("Inv. Mass of J/Psi in second hardest b-jet [GeV]");
 
+    fHMDpmZO = new TH1D("DpmZO", "Dpm Zoom Out",100, 1.0, 3.0);
+    fHistos.push_back(fHMDpmZO);
+    fHMDpmZO->SetXTitle("m(K#pi#pi) [GeV]");
 
-    test12 = new TH1D("test12", "test12 (All channels)",
-                      100, 2., 4.);
-    fHistos.push_back(test12);
-    test12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV]");
+    // fHMDpmKKPi = new TH1D("DpmKKPi", "Dpm KKpi",100, 1.0, 3.0);
+    // fHistos.push_back(fHMDpmKKPi);
+    // fHMDpmKKPi->SetXTitle("m(KK#pi) [GeV]");
 
+    fHMDpm = new TH1D("Dpm", "Dpm",100, 1.6, 2.2);
+    fHistos.push_back(fHMDpm);
+    fHMDpm->SetXTitle("m(K#pi#pi) [GeV]");
 
+    fHMDpme = new TH1D("Dpme", "Dpme",60, 1.6, 2.2);
+    fHistos.push_back(fHMDpme);
+    fHMDpme->SetXTitle("m(K#pi#pi) [GeV]");
 
+    fHMDpmmu = new TH1D("Dpmmu", "Dpmmu",60, 1.6, 2.2);
+    fHistos.push_back(fHMDpmmu);
+    fHMDpmmu->SetXTitle("m(K#pi#pi) [GeV]");
 
-    angle1 = new TH1D("angle1", "angle1 (All channels)",
-                      100, 0., 2.);
-    fHistos.push_back(angle1);
-    angle1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV]");
+    fHMDpmlep = new TH1D("Dpmlep", "Dpmlep",60, 1.6, 2.2);
+    fHistos.push_back(fHMDpmlep);
+    fHMDpmlep->SetXTitle("m(K#pi#pi) [GeV]");
 
-
-    angle2 = new TH1D("angle2", "angle2 (All channels)",
-                      100, 0., 2.);
-    fHistos.push_back(angle2);
-    angle2->SetXTitle("Inv. Mass of J/Psi in second hardest b-jet [GeV]");
-
-
-    angle12 = new TH1D("angle12", "angle12 (All channels)",
-                       100, 0., 2.);
-    fHistos.push_back(angle12);
-    angle12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV]");
-
-
-
-
-    fHMinvJPsiTrk1 = new TH1D("MinvJPsiTrk1", "MinvJPsiTrk1 (All channels)",
-                              100, 2., 4.);
-    fHistos.push_back(fHMinvJPsiTrk1);
-    fHMinvJPsiTrk1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV]");
-
-
-    fHMinvJPsiTrk2 = new TH1D("MinvJPsiTrk2", "MinvJPsiTrk2 (All channels)",
-                              100, 2., 4.);
-    fHistos.push_back(fHMinvJPsiTrk2);
-    fHMinvJPsiTrk2->SetXTitle("Inv. Mass of J/Psi in second hardest b-jet [GeV]");
-
-
-    fHMinvJPsiTrk12 = new TH1D("MinvJPsiTrk12", "MinvJPsiTrk12 (All channels)",
-                               100, 2., 4.);
-    fHistos.push_back(fHMinvJPsiTrk12);
-    fHMinvJPsiTrk12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV]");
-
-
-
-
-    fHMinvJPsiTrke1 = new TH1D("MinvJPsiTrke1", "MinvJPsiTrke1 (All channels)",
-                               100,2.,4.);
-    fHistos.push_back(fHMinvJPsiTrke1);
-    fHMinvJPsiTrke1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV], only electrons");
-
-
-    fHMinvJPsiTrke2 = new TH1D("MinvJPsiTrke2", "MinvJPsiTrke2 (All channels)",
-                               100,2.,4.);
-    fHistos.push_back(fHMinvJPsiTrke2);
-    fHMinvJPsiTrke2->SetXTitle("Inv. Mass of J/Psi in second hardest b-jet [GeV], only electrons");
-
-
-    fHMinvJPsiTrke12 = new TH1D("MinvJPsiTrke12", "MinvJPsiTrke12 (All channels)",
-                                100,2.,4.);
-    fHistos.push_back(fHMinvJPsiTrke12);
-    fHMinvJPsiTrke12->SetXTitle("Inv. Mass of J/Psi in two hardest b-jets [GeV], only electrons");
-
-
-
-
-
-    fHMinvJPsiTrkmu1 = new TH1D("MinvJPsiTrkmu1", "MinvJPsiTrkmu1 (All channels)",
-                                100,2.,4.);
-    fHistos.push_back(fHMinvJPsiTrkmu1);
-    fHMinvJPsiTrkmu1->SetXTitle("Inv. Mass of J/Psi in hardest b-jet [GeV], only muons");
-
-
-    fHMinvJPsiTrkmu2 = new TH1D("MinvJPsiTrkmu2", "MinvJPsiTrkmu2 (All channels)",
-                                100,2.,4.);
-    fHistos.push_back(fHMinvJPsiTrkmu2);
-    fHMinvJPsiTrkmu2->SetXTitle("Inv. Mass of J/Psi in second hardest b-jet [GeV], only muons");
-
-
-    fHMinvJPsiTrkmu12 = new TH1D("MinvJPsiTrkmu12", "MinvJPsiTrkmu12 (All channels)",
-                                 100,2.,4.);
-    fHistos.push_back(fHMinvJPsiTrkmu12);
-    fHMinvJPsiTrkmu12->SetXTitle("Inv. Mass of J/Psi in hardest two b-jets [GeV], only muons");
-
-
-
-
-
-    fHMinvD0Trk1 = new TH1D("MinvD0Trk1", "MinvD0Trk1 (EMu channel)",
-                            100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trk1);
-    fHMinvD0Trk1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV]");
-
-
-    fHMinvD0Trk2 = new TH1D("MinvD0Trk2", "MinvD0Trk2 (EMu channel)",
-                            100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trk2);
-    fHMinvD0Trk2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV]");
-
-
-    fHMinvD0Trk12 = new TH1D("MinvD0Trk12", "MinvD0Trk12 (EMu channel)",
-                             100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trk12);
-    fHMinvD0Trk12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV]");
-
-
-
-
-
-    fHMinvD0Trkchargeselection1 = new TH1D("MinvD0Trkchargeselection1", "MinvD0Trkchargeselection1 (EMu channel)",
-                                           100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trkchargeselection1);
-    fHMinvD0Trkchargeselection1->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
-
-
-    fHMinvD0Trkchargeselection2 = new TH1D("MinvD0Trkchargeselection2", "MinvD0Trkchargeselection2 (EMu channel)",
-                                           100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trkchargeselection2);
-    fHMinvD0Trkchargeselection2->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
-
-
-    fHMinvD0Trkchargeselection12 = new TH1D("MinvD0Trkchargeselection12", "MinvD0Trkchargeselection12 (EMu channel)",
-                                            100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trkchargeselection12);
-    fHMinvD0Trkchargeselection12->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
-
-
-
-
-
-    fHcheckMinvD0Trk1 = new TH1D("checkMinvD0Trk1", "checkMinvD0Trk1 (EMu channel)",
-                                 100, 1.6, 2.2);
-    fHistos.push_back(fHcheckMinvD0Trk1);
-    fHcheckMinvD0Trk1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV]");
-
-
-    fHcheckMinvD0Trk2 = new TH1D("checkMinvD0Trk2", "checkMinvD0Trk2 (EMu channel)",
-                                 100, 1.6, 2.2);
-    fHistos.push_back(fHcheckMinvD0Trk2);
-    fHcheckMinvD0Trk2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV]");
-
-
-    fHcheckMinvD0Trk12 = new TH1D("checkMinvD0Trk12", "checkMinvD0Trk12 (EMu channel)",
-                                  100, 1.6, 2.2);
-    fHistos.push_back(fHcheckMinvD0Trk12);
-    fHcheckMinvD0Trk12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV]");
-
-
-
-
-
-    fHcheckMinvD0Trkchargeselection1 = new TH1D("checkMinvD0Trkchargeselection1", "checkMinvD0Trkchargeselection1 (EMu channel)",
-            100, 1.6, 2.2);
-    fHistos.push_back(fHcheckMinvD0Trkchargeselection1);
-    fHcheckMinvD0Trkchargeselection1->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
-
-
-    fHcheckMinvD0Trkchargeselection2 = new TH1D("checkMinvD0Trkchargeselection2", "checkMinvD0Trkchargeselection2 (EMu channel)",
-            100, 1.6, 2.2);
-    fHistos.push_back(fHcheckMinvD0Trkchargeselection2);
-    fHcheckMinvD0Trkchargeselection2->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
-
-
-    fHcheckMinvD0Trkchargeselection12 = new TH1D("checkMinvD0Trkchargeselection12", "checkMinvD0Trkchargeselection12 (EMu channel)",
-            100, 1.6, 2.2);
-    fHistos.push_back(fHcheckMinvD0Trkchargeselection12);
-    fHcheckMinvD0Trkchargeselection12->SetXTitle("Inv. Mass of D0 in b-jet [GeV], CS");
-
-
-
-
-
-    fHMinvD0Trkmuon1 = new TH1D("MinvD0Trkmuon1", "MinvD0Trkmuon1 (EMu channel)",
-                                100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trkmuon1);
-    fHMinvD0Trkmuon1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV], CWL");
-
-
-    fHMinvD0Trkmuon2 = new TH1D("MinvD0Trkmuon2", "MinvD0Trkmuon2 (EMu channel)",
-                                100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trkmuon2);
-    fHMinvD0Trkmuon2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV], CWL");
-
-
-    fHMinvD0Trkmuon12 = new TH1D("MinvD0Trkmuon12", "MinvD0Trkmuon12 (EMu channel)",
-                                 100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trkmuon12);
-    fHMinvD0Trkmuon12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV], CWL");
-
-
-
-
-
-    fHMinvD0Trkelectron1 = new TH1D("MinvD0Trkelectron1", "MinvD0Trkelectron1 (EMu channel)",
-                                    100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trkelectron1);
-    fHMinvD0Trkelectron1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV], CWL");
-
-
-    fHMinvD0Trkelectron2 = new TH1D("MinvD0Trkelectron2", "MinvD0Trkelectron2 (EMu channel)",
-                                    100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trkelectron2);
-    fHMinvD0Trkelectron2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV], CWL");
-
-
-    fHMinvD0Trkelectron12 = new TH1D("MinvD0Trkelectron12", "MinvD0Trkelectron12 (EMu channel)",
-                                     100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trkelectron12);
-    fHMinvD0Trkelectron12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV], CWL");
-
-
-
-
-    fHMinvD0Trklepton1 = new TH1D("MinvD0Trklepton1", "MinvD0Trklepton1 (EMu channel)",
-                                  100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trklepton1);
-    fHMinvD0Trklepton1->SetXTitle("Inv. Mass of D0 in hardest b-jet [GeV], CWL, e mu");
-
-
-    fHMinvD0Trklepton2 = new TH1D("MinvD0Trklepton2", "MinvD0Trklepton2 (EMu channel)",
-                                  100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trklepton2);
-    fHMinvD0Trklepton2->SetXTitle("Inv. Mass of D0 in second hardest b-jet [GeV], CWL, e mu");
-
-
-    fHMinvD0Trklepton12 = new TH1D("MinvD0Trklepton12", "MinvD0Trklepton12 (EMu channel)",
-                                   100, 1.6, 2.2);
-    fHistos.push_back(fHMinvD0Trklepton12);
-    fHMinvD0Trklepton12->SetXTitle("Inv. Mass of D0 in two hardest b-jets [GeV], CWL, e mu");
-
-
-
-
-    fHMinvDplusminusTrk1 = new TH1D("MinvDplusminusTrk1", "MinvDplusminusTrk1 (EMu channel)",
-                                    100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrk1);
-    fHMinvDplusminusTrk1->SetXTitle("Inv. Mass of D+- in hardest b-jet [GeV]");
-
-
-    fHMinvDplusminusTrk2 = new TH1D("MinvDplusminusTrk2", "MinvDplusminusTrk2 (EMu channel)",
-                                    100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrk2);
-    fHMinvDplusminusTrk2->SetXTitle("Inv. Mass of D+- in second hardest b-jet [GeV]");
-
-
-    fHMinvDplusminusTrk12 = new TH1D("MinvDplusminusTrk12", "MinvDplusminusTrk12 (EMu channel)",
-                                     100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrk12);
-    fHMinvDplusminusTrk12->SetXTitle("Inv. Mass of D+- in two hardest b-jets [GeV]");
-
-
-
-    fHMinvDplusminusTrkelectron1 = new TH1D("MinvDplusminusTrkelectron1", "MinvDplusminusTrkelectron1 (EMu channel)",
-                                            100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrkelectron1);
-    fHMinvDplusminusTrkelectron1->SetXTitle("Inv. Mass of D+- in hardest b-jet [GeV]");
-
-
-    fHMinvDplusminusTrkelectron2 = new TH1D("MinvDplusminusTrkelectron2", "MinvDplusminusTrkelectron2 (EMu channel)",
-                                            100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrkelectron2);
-    fHMinvDplusminusTrkelectron2->SetXTitle("Inv. Mass of D+- in second hardest b-jet [GeV]");
-
-
-    fHMinvDplusminusTrkelectron12 = new TH1D("MinvDplusminusTrkelectron12", "MinvDplusminusTrkelectron12 (EMu channel)",
-            100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrkelectron12);
-    fHMinvDplusminusTrkelectron12->SetXTitle("Inv. Mass of D+- in two hardest b-jets [GeV]");
-
-
-
-    fHMinvDplusminusTrkmuon1 = new TH1D("MinvDplusminusTrkmuon1", "MinvDplusminusTrkmuon1 (EMu channel)",
-                                        100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrkmuon1);
-    fHMinvDplusminusTrkmuon1->SetXTitle("Inv. Mass of D+- in hardest b-jet [GeV]");
-
-
-    fHMinvDplusminusTrkmuon2 = new TH1D("MinvDplusminusTrkmuon2", "MinvDplusminusTrkmuon2 (EMu channel)",
-                                        100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrkmuon2);
-    fHMinvDplusminusTrkmuon2->SetXTitle("Inv. Mass of D+- in second hardest b-jet [GeV]");
-
-
-    fHMinvDplusminusTrkmuon12 = new TH1D("MinvDplusminusTrkmuon12", "MinvDplusminusTrkmuon12 (EMu channel)",
-                                         100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrkmuon12);
-    fHMinvDplusminusTrkmuon12->SetXTitle("Inv. Mass of D+- in two hardest b-jets [GeV]");
-
-
-    fHMinvDplusminusTrklepton1 = new TH1D("MinvDplusminusTrklepton1", "MinvDplusminusTrklepton1 (EMu channel)",
-                                          100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrklepton1);
-    fHMinvDplusminusTrklepton1->SetXTitle("Inv. Mass of D+- in hardest b-jet [GeV]");
-
-
-    fHMinvDplusminusTrklepton2 = new TH1D("MinvDplusminusTrklepton2", "MinvDplusminusTrklepton2 (EMu channel)",
-                                          100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrklepton2);
-    fHMinvDplusminusTrklepton2->SetXTitle("Inv. Mass of D+- in second hardest b-jet [GeV]");
-
-
-    fHMinvDplusminusTrklepton12 = new TH1D("MinvDplusminusTrklepton12", "MinvDplusminusTrklepton12 (EMu channel)",
-                                           100, 1.6, 2.2);
-    fHistos.push_back(fHMinvDplusminusTrklepton12);
-    fHMinvDplusminusTrklepton12->SetXTitle("Inv. Mass of D+- in two hardest b-jets [GeV]");
-
-
-    fHDiTrkInvMass = new TH1D("DiTrkInvMass", "DiTrkInvMass (EMu channel)",
-                              100, 1.7, 2.);
-    fHistos.push_back(fHDiTrkInvMass);
-    fHDiTrkInvMass->SetXTitle("Track-track inv. Mass in b-jet [GeV]");
-
-    fHDiMuInvMass = new TH1D("DiMuInvMass", "DiMuInvMass (EMu channel)",
-                             100, 2., 4.);
-    fHistos.push_back(fHDiMuInvMass);
-    fHDiMuInvMass->SetXTitle("Mu/mu inv. Mass in b-jet [GeV]");
-
-    fHJPsiKInvMass = new TH1D("JPsiKInvMass", "JPsiKInvMass (EMu channel)",
-                              100, 4.5, 6.);
-    fHistos.push_back(fHJPsiKInvMass);
-    fHJPsiKInvMass->SetXTitle("Mu/mu/K inv. Mass in b-jet [GeV]");
-
-
-    fHEb1_emu = new TH1D("Eb1_emu", "E_b1 in EMu channel",
-                         100, 30., 500.);
-    fHistos.push_back(fHEb1_emu);
-    fHEb1_emu->SetXTitle("Energy of first b-jet [GeV]");
-
-
-
-    fHmlSv_mu = new TH1D("mlSv_mu", "Lepton/SecVtx Mass in Mu channel",
-                         100, 0., 150.);
-    fHistos.push_back(fHmlSv_mu);
-    fHmlSv_mu->SetXTitle("Lepton/SecVtx mass [GeV]");
 
     // Call Sumw2() for all of them
     std::vector<TH1*>::iterator h;
@@ -447,58 +140,112 @@ void LxyTreeAnalysis::BookCharmTree() {
     fCharmInfoTree->Branch("CandType",     &fTCandType,     "CandType/I");
     fCharmInfoTree->Branch("CandMass",     &fTCandMass,     "CandMass/F");
     fCharmInfoTree->Branch("CandPt",       &fTCandPt,       "CandPt/F");
+    fCharmInfoTree->Branch("CandEta",      &fTCandEta,      "CandEta/F");
+    fCharmInfoTree->Branch("CandPz",       &fTCandPz,       "CandPz/F");
     fCharmInfoTree->Branch("CandPtRel",    &fTCandPtRel,    "CandPtRel/F");
     fCharmInfoTree->Branch("CandDeltaR",   &fTCandDeltaR,   "CandDeltaR/F");
     fCharmInfoTree->Branch("JetPt",        &fTJetPt,        "JetPt/F");
+    fCharmInfoTree->Branch("JetEta",       &fTJetEta,       "JetEta/F");
+    fCharmInfoTree->Branch("JetPz",        &fTJetPz,        "JetPz/F");
     fCharmInfoTree->Branch("SumPtCharged", &fTSumPtCharged, "SumPtCharged/F");
+    fCharmInfoTree->Branch("SumPzCharged", &fTSumPzCharged, "SumPzCharged/F");
 }
 
 void LxyTreeAnalysis::ResetCharmTree() {
     fTCandType     = -99;
     fTCandMass     = -99.99;
     fTCandPt       = -99.99;
+    fTCandEta      = -99.99;
+    fTCandPz       = -99.99;
     fTCandPtRel    = -99.99;
     fTCandDeltaR   = -99.99;
     fTJetPt        = -99.99;
+    fTJetEta       = -99.99;
+    fTJetPz        = -99.99;
     fTSumPtCharged = -99.99;
+    fTSumPzCharged = -99.99;
 }
 
-void LxyTreeAnalysis::FillCharmTree(int type, int jetindex,
+int LxyTreeAnalysis::firstTrackIndex(int jetindex){
+    // Find index of the first track in this jet
+    int result = 0;
+    for (result = 0; result < npf; ++result){
+        if (pfjetidx[result]==jetindex){
+            break; // at this point, result is correct
+        }
+    }
+    return result;
+}
+
+void LxyTreeAnalysis::FillCharmTree(int type, int jind,
                                     int ind1, float mass1,
                                     int ind2, float mass2) {
     // Check that indices make sense
-    if(jetindex < 0 || ind1 < 0 || ind2 < 0) return;
-    if(jetindex >= nj || ind1 >= npf || ind2 >= npf) return;
+    if(jind < 0 || ind1 < 0 || ind2 < 0) return;
+    if(jind >= nj || ind1 >= npf || ind2 >= npf) return;
 
-    fTCandType = type;
     TLorentzVector p_track1, p_track2, p_cand, p_jet;
     p_track1.SetPtEtaPhiM(pfpt[ind1], pfeta[ind1], pfphi[ind1], mass1);
     p_track2.SetPtEtaPhiM(pfpt[ind2], pfeta[ind2], pfphi[ind2], mass2);
     p_cand = p_track1+p_track2;
-    p_jet.SetPtEtaPhiM(jpt[jetindex], jeta[jetindex], jphi[jetindex], 0.);
+    p_jet.SetPtEtaPhiM(jpt[jind], jeta[jind], jphi[jind], 0.);
 
-    fTCandMass     = p_cand.M();
-    fTCandPt       = p_cand.Pt();
-
-    //ptrel
-    float jet2=pow(p_jet.P(),2);
-    float candXjet2=pow(p_cand*p_jet,2);
-    float pLrel2=candXjet2/jet2;
-    float cand2=pow(p_cand.P(),2);
-    float pTrel2=cand2-pLrel2;
-    fTCandPtRel    = (pTrel2 > 0) ? std::sqrt(pTrel2) : 0.0;
-
-    fTCandDeltaR   = p_cand.DeltaR(p_jet);
-    fTJetPt        = jpt[jetindex];
-    fTSumPtCharged = 0.;
-    for (int i = 0; i < npf; ++i) {
-        if (pfjetidx[i] != jetindex) continue;
-        fTSumPtCharged += pfpt[i];
-    }
-
-    fCharmInfoTree->Fill();
+    FillCharmTree(type, jind, p_cand, p_jet);
     return;
 }
+
+void LxyTreeAnalysis::FillCharmTree(int type, int jind,
+                                    int ind1, float mass1,
+                                    int ind2, float mass2,
+                                    int ind3, float mass3) {
+    // Check that indices make sense
+    if(jind<0 || ind1<0 || ind2<0 || ind3<0) return;
+    if(jind>=nj || ind1>=npf || ind2>=npf || ind3>=npf) return;
+
+    TLorentzVector p_track1, p_track2, p_track3;
+    p_track1.SetPtEtaPhiM(pfpt[ind1], pfeta[ind1], pfphi[ind1], mass1);
+    p_track2.SetPtEtaPhiM(pfpt[ind2], pfeta[ind2], pfphi[ind2], mass2);
+    p_track3.SetPtEtaPhiM(pfpt[ind3], pfeta[ind3], pfphi[ind3], mass3);
+
+    TLorentzVector p_cand, p_jet;
+    p_cand = p_track1+p_track2+p_track3;
+    p_jet.SetPtEtaPhiM(jpt[jind], jeta[jind], jphi[jind], 0.);
+
+    FillCharmTree(type, jind, p_cand, p_jet);
+    return;
+}
+
+void LxyTreeAnalysis::FillCharmTree(int type, int jind,
+                                    TLorentzVector p_cand,
+                                    TLorentzVector p_jet){
+    fTCandType = type;
+    fTCandMass  = p_cand.M();
+    fTCandPt    = p_cand.Pt();
+    fTCandEta   = p_cand.Eta();
+    fTCandPz    = p_cand.Pz();
+    fTCandPtRel = ROOT::Math::VectorUtil::Perp(p_cand.Vect(), p_jet.Vect());
+    fTCandDeltaR = p_cand.DeltaR(p_jet);
+
+    fTJetPt  = p_jet.Pt();
+    fTJetEta = p_jet.Eta();
+    fTJetPz  = p_jet.Pz();
+    fTSumPtCharged = 0.;
+    fTSumPzCharged = 0.;
+    TLorentzVector p_trks(0.,0.,0.,0.);
+    for (int i = 0; i < npf; ++i) {
+        if (pfjetidx[i] != jind) continue;
+        TLorentzVector p_tk;
+        p_tk.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], gMassPi);
+        p_trks = p_trks + p_tk;
+    }
+
+    fTSumPtCharged = p_trks.Pt();
+    fTSumPzCharged = p_trks.Pz();
+    fCharmInfoTree->Fill();
+    return;
+
+}
+
 
 void LxyTreeAnalysis::WriteHistos() {
     // Write all histos to file, then delete them
@@ -509,467 +256,246 @@ void LxyTreeAnalysis::WriteHistos() {
     }
 }
 
-void LxyTreeAnalysis::fillJPsiHists(int jetindex, TH1D*& a, TH1D*& b, TH1D*& c//, TH1D*& d, TH1D*& e, TH1D*& f
-                                   ) {
-
-    float maxcsv = -1.;
-    int maxind=-1;
-    float second_max=-1.0;
-    int second_maxind=-1;
-
-    for(int k = 0; k < nj; k++) {
-        // use >= n not just > as max and second_max can hav same value. Ex:{1,2,3,3}
-        if(jcsv[k] >= maxcsv) {
-            second_max=maxcsv;
-            maxcsv=jcsv[k];
-            maxind=k;
-            second_maxind=maxind;
-        }
-        else if(jcsv[k] > second_max) {
-            second_max=jcsv[k];
-            second_maxind=k;
-        }
-    }
-
-
+void LxyTreeAnalysis::fillJPsiHists(int jetindex) {
     TLorentzVector p_track1, p_track2;
 
     for (int i = 0; i < npf; ++i)
     {
-        if (pfjetidx[i]!= jetindex) {
-            continue;    //select the most probable b-jet
-        }
-        if (abs(pfid[i])!=13 && abs(pfid[i]) != 11 ) {
-            continue;    //select a muon or electron
-        }
+        if (pfjetidx[i]!= jetindex) continue; //select the most probable b-jet
+        if (abs(pfid[i])!=13 && abs(pfid[i]) != 11 ) continue;    //select a muon or electron
         for (int j = 0; j < npf; ++j) //find another muon or electron
         {
-            if(pfjetidx[j]!=pfjetidx[i]) {
-                continue;    //select the most probable b-jet
-            }
-            if(pfid[j]*pfid[i]!=-169 && pfid[j]*pfid[i]!=-121) {
-                continue;    // let both electrons or muons have opposite charge
-            }
+            if(pfjetidx[j]!=pfjetidx[i]) continue; // select the most probable b-jet
+            if(pfid[j]*pfid[i]!=-169 && pfid[j]*pfid[i]!=-121) continue; // let both electrons or muons have opposite charge
 
-            float trackmass = 0.105;
-            if(abs(pfid[j]*pfid[i]) == 121) {
-                trackmass = 0.;
-            }
-            p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], trackmass);			 // Calculate four vector
+            float trackmass = gMassMu;
+            if(abs(pfid[j]*pfid[i]) == 121) trackmass = 0.;
+            p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], trackmass);
             p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], trackmass);
 
-            if (abs(pfid[i])==11) {
-                a->	Fill((p_track1+p_track2).M(), w[0]);
-                if ((p_track1+p_track2).M()>2.5 && (p_track1+p_track2).M()<3.5) {
+            float mass12 = (p_track1+p_track2).M();
+            if (abs(pfid[i])==11) { // ee
+                fHMJPsie->Fill(mass12, w[0]);
+                if (mass12>2.5 && mass12<3.5) {
                     FillCharmTree(443, jetindex, i, trackmass, j, trackmass);
                 }
             }
-            if (abs(pfid[i])==13) {
-                b->	Fill((p_track1+p_track2).M(), w[0]);
-                if ((p_track1+p_track2).M()>2.5 && (p_track1+p_track2).M()<3.5) {
+            if (abs(pfid[i])==13) { // mm
+                fHMJPsimu->Fill(mass12, w[0]);
+                if (mass12>2.5 && mass12<3.5) {
                     FillCharmTree(443*100, jetindex, i, trackmass, j, trackmass);
                 }
             }
-            //leptonindex1=i;
-            //leptonindex2=j;
-            c->Fill((p_track1+p_track2).M(), w[0]);
+            fHMJPsi->Fill(mass12, w[0]);
 
+            // Mass window cut
+            if(mass12 > 3.2 || mass12 < 3.0) continue;
 
-            //---------------------------------------------------------------------------------------------------------- J/Psi + K
-            // TLorentzVector p_track3;
+            for (int tk3 = 0; tk3 < npf; ++tk3){ // look for a third track
+                if (pfjetidx[tk3]!=jetindex) continue;
+                if (tk3 == i) continue;
+                if (tk3 == j) continue;
 
-            // if (fabs((p_track1+p_track2).M() - 3.1) < 0.1 )
-            // {
-            // 	for (int k = 0; k < npf; ++k) // look for the K
-            // 	{
-            // 		if (pfjetidx[k]!=pfjetidx[j]){continue; }
-            // 		if (abs(pfid[k])!=211){continue; }
-            // 		if (pfpt[k]<2){continue; }
-
-            // 		//if (k==leptonindex1 or k==leptonindex2 ){continue; }
-            // 		p_track3.SetPtEtaPhiM(pfpt[k], pfeta[k], pfphi[k], kaonmass);
-            // 		d->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-            // 		e->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-            // 		f->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-            // 	}
-            // }
-        }
-    }
-}
-
-
-
-
-
-void LxyTreeAnalysis::fillMuD0Hists(int jetindex, TH1D*& histo, TH1D*& histo2, float ptmin, float maxdr, int lepflav) {
-    TLorentzVector p_track1, p_track2, p_track3;
-
-    for (int i = 0; i < npf; ++i)
-    {
-        if(pfjetidx[i] != jetindex) continue;
-        if(pfpt[i] < ptmin) continue;
-        if(abs(pfid[i]) < 211) continue;
-
-        for (int j = i+1; j < npf; ++j)
-        {
-            if(pfjetidx[j] != jetindex) continue;
-            if(pfpt[j] < ptmin) continue;
-            if(abs(pfid[j]) < 211) continue;
-
-            if(pfid[i]*pfid[j] > 0) continue;
-
-            // found a pair of opposite sign pions
-            p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], pionmass);	// Calculate four vector
-            p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], kaonmass);
-
-            if(p_track1.DeltaR(p_track2) > maxdr) continue;
-
-
-            histo->Fill((p_track1+p_track2).M());
-            //FillCharmTree(421, jetindex, i, pionmass, j, kaonmass);
-
-            for (int k = 0; k < npf; ++k)
-            {
-                if(pfjetidx[k] != jetindex) continue;
-                if(pfpt[k] < ptmin) continue;
-                if(abs(pfid[k]) != lepflav) continue; // will exclude i and j also
-
-                if( ( pfid[k] == lepflav && pfid[j] == -211 )  || ( pfid[k] == -lepflav && pfid[j] == 211 ) ) // mu- K-
-                {
-                    histo2->Fill((p_track1+p_track2).M());
-                }
-                else {
-                    p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], kaonmass);	// Calculate four vector
-                    p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], pionmass);
-                    histo2->Fill((p_track1+p_track2).M());
-                }
+                if( abs(pfid[tk3]) != 211) continue;
+                TLorentzVector p_track3;
+                p_track3.SetPtEtaPhiM(pfpt[tk3], pfeta[tk3], pfphi[tk3], gMassK);
+                fHMJPsiK->Fill((p_track1+p_track2+p_track3).M(), w[0]);
+                FillCharmTree(521, jetindex, i, trackmass, j, trackmass, tk3, gMassK);
             }
         }
     }
 }
 
+void LxyTreeAnalysis::fillD0Hists(int jetindex){
+    TLorentzVector p_track1, p_track2;
+    int nstart = firstTrackIndex(jetindex);
 
+    for (int i = nstart; i < nstart+5; ++i){
+        if (pfjetidx[i]!= jetindex) continue; // select the jet
+        // (in case less then 5 tracks in this jet)
+        if (abs(pfid[i])!=211) continue; // not a lepton
 
-// g=fHMinvD0Trk
-// l=fHMinvD0Trk
-// o=fHMinvD0Trkchargeselection
+        for (int j = i+1; j < nstart+5; ++j){ //find another kaon or pion
+            if(pfjetidx[j]!=jetindex) continue; // select the jet
+            if(pfid[j]*pfid[i]!=-211*211) continue; // opposite sign, not a lepton
 
+            p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], gMassPi);
+            p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], gMassK);
 
-void LxyTreeAnalysis::fillD0Hists(int jetindex, TH1D*& g, TH1D*& o, TH1D*& q, TH1D*& s, TH1D*& v, TH1D*& normal, TH1D*& c)//, TH1D*& test)
-{
+            if (p_track1.DeltaR(p_track2)>0.2) continue;
 
-    float maxcsv = -1.;
-    int maxind=-1;
-    float second_max=-1.0;
-    int second_maxind=-1;
+            fHMD0Incl5TrkDR->Fill((p_track1+p_track2).M(), w[0]);
 
-    for(int k = 0; k < nj; k++) {
-        // use >= n not just > as max and second_max can hav same value. Ex:{1,2,3,3}
-        if(jcsv[k] >= maxcsv) {
-            second_max=maxcsv;
-            maxcsv=jcsv[k];
-            maxind=k;
-            second_maxind=maxind;
-        }
-        else if(jcsv[k] > second_max) {
-            second_max=jcsv[k];
-            second_maxind=k;
+            p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], gMassK);
+            p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], gMassPi);
+
+            fHMD0Incl5TrkDR->Fill((p_track1+p_track2).M(), w[0]);
         }
     }
 
+    // less than three tracks for this jet
+    if (pfjetidx[nstart+2]!=jetindex ) return;
 
-    TLorentzVector p_track1, p_track2, p_track3;
-    int ev=0;
-    int r = 0;
-    for (r = 0; r < npf; ++r)
-    {
-        if (pfjetidx[r]==jetindex)
-        {
-            break;
+    // permutations of hardest three trackmass
+    // including interchanging them!
+    int p1[] = {nstart,   nstart,   nstart+1, nstart+1, nstart+2, nstart+2};
+    int p2[] = {nstart+1, nstart+2, nstart+2, nstart,   nstart,   nstart+1};
+
+    for (int p = 0; p < 6; ++p){
+        int tk1=p1[p];
+        int tk2=p2[p];
+
+        // Opposite sign
+        if (pfid[tk1]*pfid[tk2] != -211*211) continue;
+
+        p_track1.SetPtEtaPhiM(pfpt[tk1], pfeta[tk1], pfphi[tk1], gMassPi);
+        p_track2.SetPtEtaPhiM(pfpt[tk2], pfeta[tk2], pfphi[tk2], gMassK);
+        float mass12 = (p_track1+p_track2).M();
+
+        // Fill both mass assumptions
+        fHMD0Incl3Trk->Fill(mass12, w[0]);
+        if (mass12>1.65 && mass12<2.0)
+            FillCharmTree(421, jetindex, tk1, gMassPi, tk2, gMassK);
+
+        for (int tk3 = 0; tk3 < npf; ++tk3){ // look for a lepton
+            if (pfjetidx[tk3]!=jetindex) continue;
+            if (tk3 == tk1) continue;
+            if (tk3 == tk2) continue;
+
+            if( abs(pfid[tk3]) != 13 && abs(pfid[tk3]) != 11) continue;
+
+            if( pfid[tk2]/abs(pfid[tk2]) == -pfid[tk3]/abs(pfid[tk3]) ){
+                // Kaon and lepton have same charge
+                // I.e. correct mass assumption
+                fHMD0lep->Fill(mass12, w[0]);
+
+                if (abs(pfid[tk3]) == 13){
+                    fHMD0mu->Fill(mass12, w[0]);
+                    if (mass12>1.6 && mass12<2.5)
+                        FillCharmTree(421013, jetindex, tk1, gMassPi, tk2, gMassK);
+                }
+
+                if (abs(pfid[tk3]) == 11){
+                    fHMD0e->Fill(mass12, w[0]);
+                    if (mass12>1.6 && mass12<2.5)
+                        FillCharmTree(421011, jetindex, tk1, gMassPi, tk2, gMassK);
+                }
+
+                if(abs(mass12-1.864) < 0.05){ // mass window cut
+                    for(int tk4 = 0; tk4 < npf; ++tk4){ // look for a pion
+                        if (pfjetidx[tk4]!=jetindex) continue;
+                        if (tk4==tk1 || tk4==tk2 || tk4==tk3) continue;
+                        if (abs(pfid[tk4]) != 211) continue;
+
+                        // same charge as first pion
+                        if (pfid[tk4]*pfid[tk1] != 211*211) continue;
+                        TLorentzVector p_track4;
+                        p_track4.SetPtEtaPhiM(pfpt[tk4], pfeta[tk4], pfphi[tk4], gMassPi);
+                        fHMDs2010lep->Fill((p_track1+p_track2+p_track4).M(), w[0]);
+                        FillCharmTree(413, jetindex, tk1, gMassPi, tk2, gMassK, tk4, gMassPi);
+
+                        fHDMDs2010D0lep->Fill((p_track1+p_track2+p_track4).M() - mass12, w[0]);
+                    }
+                }
+            }
         }
     }
+}
 
-    for (int i = r; i < r+5; ++i)
-    {
-        if (pfjetidx[i]!= jetindex) {
-            continue;    //select the first b-jet
-        }
-        if (abs(pfid[i])!=211) {
-            continue;    //select a kaon or pion
-        }
-        for (int j = i+1; j < r+5; ++j) //find another kaon or pion
-        {
-            if(pfjetidx[j]!=jetindex) {
-                continue;    //select most probable b-jet
-            }
-            if(pfid[j]*pfid[i]!=-211*211) {
-                continue;
-            }
-            //TLorentzVector p_track1, p_track2; // Calculate four vector
+void LxyTreeAnalysis::fillDpmHists(int jetindex){
+    int nstart = firstTrackIndex(jetindex);
+    int ntracks = 3;
 
-            p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], pionmass);// Calculate four vector
-            p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], kaonmass);
+    for (int tk1 = nstart; tk1 < nstart+ntracks; ++tk1){
+        if(pfjetidx[tk1] != jetindex) continue;
 
-            if (p_track1.DeltaR(p_track2)>0.2) {
-                continue;
-            }
+        for (int tk2 = tk1+1; tk2 < nstart+ntracks; ++tk2){
+            if(pfjetidx[tk2] != jetindex) continue;
 
-            normal->Fill((p_track1+p_track2).M(), w[0]);
+            for (int tk3 = tk2+1; tk3 < nstart+ntracks; ++tk3){
+                if(pfjetidx[tk3] != jetindex) continue;
 
-            p_track1.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], kaonmass);// Calculate four vector
-            p_track2.SetPtEtaPhiM(pfpt[j], pfeta[j], pfphi[j], pionmass);
+                int sumid = pfid[tk1]+pfid[tk2]+pfid[tk3];
+                if( abs(sumid) != 211 ) return;
 
-            if (p_track1.DeltaR(p_track2)>0.2) {
-                continue;
-            }
+                float tk1mass(gMassPi), tk2mass(gMassPi), tk3mass(gMassPi);
+                if( sumid == 211 ){ // +211+211-211 i.e. two positive tracks
+                    if(pfid[tk1] < 0) tk1mass = gMassK;
+                    if(pfid[tk2] < 0) tk2mass = gMassK;
+                    if(pfid[tk3] < 0) tk3mass = gMassK;
+                }
+                if( sumid == -211 ){ // +211-211-211 i.e. two negative tracks
+                    if(pfid[tk1] > 0) tk1mass = gMassK;
+                    if(pfid[tk2] > 0) tk2mass = gMassK;
+                    if(pfid[tk3] > 0) tk3mass = gMassK;
+                }
 
-            normal->Fill((p_track1+p_track2).M(), w[0]);
+                TLorentzVector p_track1, p_track2, p_track3;
+                p_track1.SetPtEtaPhiM(pfpt[tk1], pfeta[tk1], pfphi[tk1], tk1mass);
+                p_track2.SetPtEtaPhiM(pfpt[tk2], pfeta[tk2], pfphi[tk2], tk2mass);
+                p_track3.SetPtEtaPhiM(pfpt[tk3], pfeta[tk3], pfphi[tk3], tk3mass);
+                float mass123 = (p_track1+p_track2+p_track3).M();
 
-        }
-    }
+                fHMDpm->Fill(mass123, w[0]);
+                fHMDpmZO->Fill(mass123, w[0]);
+                FillCharmTree(411, jetindex, tk1, tk1mass, tk2, tk2mass, tk3, tk3mass);
 
-
-// permutations
-    int p1[] = {r+2, 	r+2, 	r+1};
-    int p2[] = {r+1, 	r, 		r};
-    int p3[] = {r, 		r+1, 	r+2};
-
-    if (pfjetidx[r+2]!=jetindex ) {
-        return;
-    }
-
-
-
-    for (int p = 0; p < 3; ++p)
-    {
-        int pf1id=p1[p];
-        int pf2id=p2[p];
-        int pf3id=p3[p];
-
-
-
-        if (pfid[pf1id]*pfid[pf2id]!=-44521) continue;
-
-        p_track1.SetPtEtaPhiM(pfpt[pf1id], pfeta[pf1id], pfphi[pf1id], pionmass);	// Calculate four vector
-        p_track2.SetPtEtaPhiM(pfpt[pf2id], pfeta[pf2id], pfphi[pf2id], kaonmass);
-
-        g->Fill((p_track1+p_track2).M(), w[0]);										// does not make sense can be ignored
-        if ((p_track1+p_track2).M()>1.65 && (p_track1+p_track2).M()<2) {
-            FillCharmTree(421*1000, jetindex, p1[p], pionmass, p2[p], kaonmass);
-        }
-
-
-
-        std::vector<int> event;
-        std::vector<int> instance;
-
-        if (abs(pfid[pf3id]+pfid[pf2id])==422) // second/third have same sign
-        {
-
-            // int i=0;
-
-            if ((p_track1+p_track2).M()>1.8 && (p_track1+p_track2).M()<1.92) {
-
-                c->Fill((p_track1.DeltaR(p_track2), w[0]));
-
-
-                // event.push_back(event);
-                // event.push_back(event);
-                // instance.push_back(pf1id);
-                // instance.push_back(pf2id);
-
-                // 	int peak[];
-
-                // 	peak[i]=r;
-                // 	peak[i+1]=r+1;
-                // 	i=i+2;
-                // 	peak
-
+                // // Switched mass hypotheses (Kpipi -> piKK)
+                // float tk1massS(gMassK), tk2massS(gMassK), tk3massS(gMassK);
+                // if( sumid == 211 ){ // +211+211-211 i.e. two positive tracks
+                //     if(pfid[tk1] < 0) tk1massS = gMassPi;
+                //     if(pfid[tk2] < 0) tk2massS = gMassPi;
+                //     if(pfid[tk3] < 0) tk3massS = gMassPi;
+                // }
+                // if( sumid == -211 ){ // +211-211-211 i.e. two negative tracks
+                //     if(pfid[tk1] > 0) tk1massS = gMassPi;
+                //     if(pfid[tk2] > 0) tk2massS = gMassPi;
+                //     if(pfid[tk3] > 0) tk3massS = gMassPi;
                 // }
 
-                // cout peak
-                // mass assumption was correct (second is Kaon)
+                // p_track1.SetPtEtaPhiM(pfpt[tk1], pfeta[tk1], pfphi[tk1], tk1massS);
+                // p_track2.SetPtEtaPhiM(pfpt[tk2], pfeta[tk2], pfphi[tk2], tk2massS);
+                // p_track3.SetPtEtaPhiM(pfpt[tk3], pfeta[tk3], pfphi[tk3], tk3massS);
+                // fHMDpmKKPi->Fill((p_track1+p_track2+p_track3).M());
 
-            }
+                for (int tk4 = 0; tk4 < npf; ++tk4){ // look for a lepton
+                    if (pfjetidx[tk4]!=jetindex) continue;
+                    if (tk4 == tk1) continue;
+                    if (tk4 == tk2) continue;
+                    if (tk4 == tk3) continue;
 
-            // for (size_t v = 0;  v < instance.size(); ++v)
-            // {
-            // int a = instance[v];
-            // int b = instance[v+1];
-            // p_track1.SetPtEtaPhiM(pfpt[a], 		[a], pfphi[a], pionmass);	// Calculate four vector
-            //p_track2.SetPtEtaPhiM(pfpt[b], pfeta[b], pfphi[b], kaonmass);
-            //test->Fill((p_track1+p_track2).M(), w[0]);
-            // 	}
+                    if( abs(pfid[tk4]) != 13 && abs(pfid[tk4]) != 11) continue;
 
-            o->Fill((p_track1+p_track2).M(), w[0]);
-            if ((p_track1+p_track2).M()>1.66 && (p_track1+p_track2).M()<2) {
-                FillCharmTree(421*2, jetindex, p1[p], pionmass, p2[p], kaonmass);
-            }																	// plots both mass combinations
-        }
+                    if( pfid[tk4] * sumid > 0 ){
+                        // both pos or neg, i.e. opposite sign between lep and had
+                        fHMDpmlep->Fill(mass123, w[0]);
 
-        for (int t = 0; t < npf; ++t)
-        {
-            if (pfjetidx[t]!=jetindex) continue;
-            if (t == pf1id) continue;
-            if (t == pf2id) continue;
+                        if (abs(pfid[tk4]) == 13){
+                            fHMDpmmu->Fill(mass123, w[0]);
+                            if (mass123>1.6 && mass123<2.5)
+                                FillCharmTree(411013, jetindex, tk1, tk1mass, tk2, tk2mass, tk3, tk3mass);
+                        }
 
-            if (abs(pfid[t]) != 13 && abs(pfid[t]) != 11) continue;
-
-            if (pfid[pf2id]/abs(pfid[pf2id])==pfid[t]/-13)
-            {
-                q->Fill((p_track1+p_track2).M(), w[0]);
-                if ((p_track1+p_track2).M()>1.6 && (p_track1+p_track2).M()<2.5) {
-                    FillCharmTree(421*2000, jetindex, p1[p], pionmass, p2[p], kaonmass);
+                        if (abs(pfid[tk4]) == 11){
+                            fHMDpme->Fill(mass123, w[0]);
+                            if (mass123>1.6 && mass123<2.5)
+                                FillCharmTree(411011, jetindex, tk1, tk1mass, tk2, tk2mass, tk3, tk3mass);
+                        }
+                    }
                 }
-                s->Fill((p_track1+p_track2).M(), w[0]);
             }
-
-            if (pfid[pf2id]/abs(pfid[pf2id])==pfid[t]/-11)
-            {
-                v->Fill((p_track1+p_track2).M(), w[0]);
-                if ((p_track1+p_track2).M()>1.6 && (p_track1+p_track2).M()<2.5) {
-                    FillCharmTree(421*3000, jetindex, p1[p], pionmass, p2[p], kaonmass);
-                }
-                s->Fill((p_track1+p_track2).M(), w[0]);
-            }
-
         }
     }
-    ev=ev+1;
 }
 
-
-
-void LxyTreeAnalysis::fillDplusminusHists(int jetindex, TH1D*& s, TH1D*& q, TH1D*& v, TH1D*& g) {
-    TLorentzVector p_track1, p_track2, p_track3;
-
-    float maxcsv = -1.;
-    int maxind=-1;
-    float second_max=-1.0;
-    int second_maxind=-1;
-
-    for(int k = 0; k < nj; k++) {
-        // use >= n not just > as max and second_max can hav same value. Ex:{1,2,3,3}
-        if(jcsv[k] >= maxcsv) {
-            second_max=maxcsv;
-            maxcsv=jcsv[k];
-            maxind=k;
-            second_maxind=maxind;
-        }
-        else if(jcsv[k] > second_max) {
-            second_max=jcsv[k];
-            second_maxind=k;
-        }
-    }
-
-    int r = 0;
-    for (r = 0; r < npf; ++r)
-    {
-        if (pfjetidx[r]==jetindex)
-        {
-            break;
-        }
-    }
-
-    // permutations
-    int p1[] = {r+2, r+2, r+1};
-    int p2[] = {r+1, r, r};
-    int p3[] = {r, r+1, r+2};
-
-
-    if (abs(pfid[r]+pfid[r+1]+pfid[r+2])!=211) {
-        return;    // not all the same charge
-    }
-
-    if (pfjetidx[r+2]!=jetindex ) {
-        return;
-    }
-
-    for (int p = 0; p < 3; ++p)
-    {
-        int pf1id=p1[p];
-        int pf2id=p2[p];
-        int pf3id=p3[p];
-
-        if (abs(pfid[pf1id]+pfid[pf2id])==0)		{
-            p_track1.SetPtEtaPhiM(pfpt[pf1id], pfeta[pf1id], pfphi[pf1id], kaonmass);	// Calculate four vector
-            p_track2.SetPtEtaPhiM(pfpt[pf2id], pfeta[pf2id], pfphi[pf2id], pionmass);
-
-
-            if (abs(pfid[pf3id]+pfid[pf2id])==422)
-            {
-                p_track3.SetPtEtaPhiM(pfpt[pf3id], pfeta[pf3id], pfphi[pf3id], pionmass);
-
-                s->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-
-                if ((p_track1+p_track2).M()>1.6 && (p_track1+p_track2).M()<2.5) {
-                    FillCharmTree(411, jetindex, p1[p], kaonmass, p2[p], pionmass);
-                }
-            }
-
-
-
-            p_track1.SetPtEtaPhiM(pfpt[pf1id], pfeta[pf1id], pfphi[pf1id], pionmass);
-            p_track2.SetPtEtaPhiM(pfpt[pf2id], pfeta[pf2id], pfphi[pf2id], kaonmass);
-
-            if (pfid[pf3id]+pfid[pf2id]==0)
-            {
-
-                p_track3.SetPtEtaPhiM(pfpt[pf3id], pfeta[pf3id], pfphi[pf3id], pionmass);
-
-                s->Fill((p_track1+p_track2+p_track3).M(), w[0]);
-                if ((p_track1+p_track2).M()>1.6 && (p_track1+p_track2).M()<2.5) {
-                    FillCharmTree(411, second_maxind, p1[p], pionmass, p2[p], kaonmass);
-                }
-            }
-
-
-        }
-
-        for (int t = 0; t < npf; ++t)
-        {
-            if (pfjetidx[t]!=jetindex) continue;
-            if (t == pf1id) continue;
-            if (t == pf2id) continue;
-
-
-            if (abs(pfid[t]) != 13 && abs(pfid[t]) != 11) continue;
-
-            if (pfid[pf2id]/abs(pfid[pf2id])==pfid[t]/13)
-            {
-                q->Fill((p_track1+p_track2).M(), w[0]);
-                if ((p_track1+p_track2).M()>1.6 && (p_track1+p_track2).M()<2.5) {
-                    FillCharmTree(421*5000, jetindex, p1[p], pionmass, p2[p], kaonmass);
-                }
-                g->Fill((p_track1+p_track2).M(), w[0]);
-            }
-
-            if (pfid[pf2id]/abs(pfid[pf2id])==pfid[t]/11)
-            {
-                v->Fill((p_track1+p_track2).M(), w[0]);
-                if ((p_track1+p_track2).M()>1.6 && (p_track1+p_track2).M()<2.5) {
-                    FillCharmTree(421*8000, jetindex, p1[p], pionmass, p2[p], kaonmass);
-                }
-                g->Fill((p_track1+p_track2).M(), w[0]);
-            }
-
-        }
-
-
-
-
-
-
-
-    }
-
-
+bool LxyTreeAnalysis::selectEvent(){
+    if (abs(evcat) == 11*13) return true;                // emu
+    if (abs(evcat) == 11*11 && metpt > 40.) return true; // ee
+    if (abs(evcat) == 13*13 && metpt > 40.) return true; // mumu
+    if (abs(evcat) == 11 && nj > 3) return true;         // e
+    if (abs(evcat) == 13 && nj > 3) return true;         // mu
+    return false;
 }
-
-
-
-
-
 
 void LxyTreeAnalysis::analyze() {
     // Called once per event
@@ -979,69 +505,36 @@ void LxyTreeAnalysis::analyze() {
     float maxcsv = -1.;
     int maxind=-1;
     float second_max=-1.0;
-    int second_maxind=-1;
+    int maxind2=-1;
 
     for(int k = 0; k < nj; k++) {
-        // use >= n not just > as max and second_max can hav same value. Ex:{1,2,3,3}
+        // use >= n not just > as max and max2 can have same value. Ex:{1,2,3,3}
         if(jcsv[k] >= maxcsv) {
             second_max=maxcsv;
             maxcsv=jcsv[k];
             maxind=k;
-            second_maxind=maxind;
+            maxind2=maxind;
         }
         else if(jcsv[k] > second_max) {
             second_max=jcsv[k];
-            second_maxind=k;
+            maxind2=k;
         }
     }
 
+    if(selectEvent()){
+        // J/Psi ( + K)
+        fillJPsiHists(maxind);
+        fillJPsiHists(maxind2);
 
+        // D0
+        fillD0Hists(maxind);
+        fillD0Hists(maxind2);
 
+        // D+
+        fillDpmHists(maxind);
+        fillDpmHists(maxind2);
 
-
-    TLorentzVector p_track1, p_track2, p_track3;
-
-
-
-    if 		(abs(evcat) == 11*13 || // emu
-             (abs(evcat) == 11*11 && metpt > 40.) || // ee
-             (abs(evcat) == 13*13 && metpt > 40.) || // mumu
-             (abs(evcat) == 11 && nj > 3) ||			// singleelectron
-             (abs(evcat) == 13 && nj > 3)  ) {		// singlemuon
-//---------------------------------------------------------------------------------------------------------- J/Psi ( + K)
-//int leptonindex1;
-//int leptonindex2;
-        fillJPsiHists(maxind,        fHMinvJPsiTrke1, 	fHMinvJPsiTrkmu1, 	fHMinvJPsiTrk1);
-        fillJPsiHists(second_maxind, fHMinvJPsiTrke2, 	fHMinvJPsiTrkmu2, 	fHMinvJPsiTrk2);
-        fillJPsiHists(maxind,        fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12);
-        fillJPsiHists(second_maxind, fHMinvJPsiTrke12, 	fHMinvJPsiTrkmu12, 	fHMinvJPsiTrk12);
-
-
-
-
-//---------------------------------------------------------------------------------------------------------- D0
-        fillD0Hists(maxind, 		fHMinvD0Trk1, 	 	fHMinvD0Trkchargeselection1, 	fHMinvD0Trkmuon1, 	fHMinvD0Trklepton1, 	fHMinvD0Trkelectron1, 	normal1,	angle1);//, 	test1);
-        fillD0Hists(second_maxind, 	fHMinvD0Trk2, 		fHMinvD0Trkchargeselection2, 	fHMinvD0Trkmuon2,	fHMinvD0Trklepton2,		fHMinvD0Trkelectron2, 	normal2,	angle2);//, 	test2);
-        fillD0Hists(maxind, 		fHMinvD0Trk12,	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkmuon12,	fHMinvD0Trklepton12,	fHMinvD0Trkelectron12, 	normal12,	angle12);//,	test12);
-        fillD0Hists(second_maxind, 	fHMinvD0Trk12, 	 	fHMinvD0Trkchargeselection12, 	fHMinvD0Trkmuon12,	fHMinvD0Trklepton12,	fHMinvD0Trkelectron12, 	normal12, 	angle12);//,	test12);
-
-
-// fillMuD0Hists(maxind,        fHcheckMinvD0Trk1, 		fHcheckMinvD0Trkchargeselection1, 	1.0, 	0.5);
-// fillMuD0Hists(second_maxind, fHcheckMinvD0Trk2, 		fHcheckMinvD0Trkchargeselection2, 	1.0, 	0.5);
-// fillMuD0Hists(maxind,        fHcheckMinvD0Trk12, 		fHcheckMinvD0Trkchargeselection12, 	1.0, 	0.5);
-// fillMuD0Hists(second_maxind, fHcheckMinvD0Trk12, 		fHcheckMinvD0Trkchargeselection12, 	1.0, 	0.5);
-
-//------------------------------------------------------------------------------------------------------------------------- B+
-
-        fillDplusminusHists(maxind,fHMinvDplusminusTrk1, fHMinvDplusminusTrkelectron1, fHMinvDplusminusTrkmuon1, fHMinvDplusminusTrklepton1);
-        fillDplusminusHists(second_maxind,fHMinvDplusminusTrk2, fHMinvDplusminusTrkelectron2, fHMinvDplusminusTrkmuon2, fHMinvDplusminusTrklepton2);
-        fillDplusminusHists(maxind,fHMinvDplusminusTrk12, fHMinvDplusminusTrkelectron12, fHMinvDplusminusTrkmuon12, fHMinvDplusminusTrklepton12);
-        fillDplusminusHists(second_maxind,fHMinvDplusminusTrk12, fHMinvDplusminusTrkelectron12, fHMinvDplusminusTrkmuon12, fHMinvDplusminusTrklepton12);
-
-
-        //----------------------------------------------------------------------------------------------------------  Lead ions
-
-   }
+    }
 }
 
 void LxyTreeAnalysis::Loop() {

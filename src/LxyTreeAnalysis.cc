@@ -539,7 +539,6 @@ void LxyTreeAnalysis::analyze() {
 
 void LxyTreeAnalysis::Loop() {
     if (fChain == 0) return;
-
     Long64_t nentries = fChain->GetEntriesFast();
     if( fMaxevents > 0) nentries = TMath::Min(fMaxevents,nentries);
 

@@ -5,6 +5,11 @@ import os,sys
 import optparse
 
 VARIABLES = ["mass", "pt", "eta", "ptfrac", "pzfrac", "ptrel", "pfrac", "ptchfrac", "pzchfrac", "dr", "wgt"]
+XAXIS = {
+	"D0":   "m(K^{+}#pi^{-}) [GeV]",
+	"Dpm":  "m(K^{+}#pi^{-}#pi^{-}) [GeV]",
+	"JPsi": "m(#mu^{+}#mu^{-}) [GeV]"
+}
 
 """
 returns a normalized distribution
@@ -126,14 +131,12 @@ def doTheMassFit(ws,data=None,
    nbkgErr  = ws.var("nbkg").getError()
    mass     = ws.var("sig_mu").getVal()
    massErr  = ws.var("sig_mu").getError()
-   if 443 not in CandTypes and 44300 not in CandTypes:
+   try:
       width    = ws.var("sig_sigma").getVal()
       widthErr = ws.var("sig_sigma").getError()
-   else: # more sophisticated model for J/Psi
+   except:
       width    = ws.var("sig_Gauss1_sigma").getVal()
       widthErr = ws.var("sig_Gauss1_sigma").getError()
-      # width    = ws.var("sig_CB_sigma").getVal()
-      # widthErr = ws.var("sig_CB_sigma").getError()
 
 
    #show result of the fit
@@ -155,7 +158,12 @@ def doTheMassFit(ws,data=None,
    frame.GetYaxis().SetRangeUser(frame.GetMinimum(),1.4*frame.GetMaximum())
    frame.GetYaxis().SetTitle("Candidates")
    frame.GetYaxis().SetTitleOffset(1.6)
-   frame.GetXaxis().SetTitle("Mass [GeV]")
+   if '411' in str(CandTypes):
+	   frame.GetXaxis().SetTitle(XAXIS['Dpm'])
+   if '421' in str(CandTypes):
+	   frame.GetXaxis().SetTitle(XAXIS['D0'])
+   if '443' in str(CandTypes):
+	   frame.GetXaxis().SetTitle(XAXIS['JPsi'])
    frame.GetXaxis().SetTitleOffset(1.0)
    cfit.Modified()
    cfit.Update()
@@ -201,11 +209,11 @@ def generateWorkspace(CandTypes,inputUrl,outputDir,postfixForOutputs):
 
    #create the data set
    variables=ROOT.RooArgSet()
-   if 421 in CandTypes or 421011 in CandTypes or 421013 in CandTypes: ## D0
+   if '421' in str(CandTypes): ## D0 #note: str([1,2,3]) = '[1,2,3]'
       variables.add( ws.factory("mass[1.85,1.70,2.0]") )
-   elif 411 in CandTypes or 411011 in CandTypes or 411013 in CandTypes: ## D+
-      variables.add( ws.factory("mass[1.85,1.70,2.0]") )
-   elif 433 in CandTypes or 443*100 in CandTypes: ## J/Psi
+   elif '411' in str(CandTypes): ## D+
+      variables.add( ws.factory("mass[1.87,1.75,1.98]") )
+   elif '443' in str(CandTypes): ## J/Psi
       variables.add( ws.factory("mass[3.1,2.50,3.40]") )
 
    variables.add( ws.factory("pt[0,0,100]") )
@@ -267,15 +275,16 @@ def generateWorkspace(CandTypes,inputUrl,outputDir,postfixForOutputs):
 
    #specialization by candidate type may be needed
    ## D+-
-   if 411 in CandTypes or 411011 in CandTypes or 411013 in CandTypes:
-      ws.factory("RooCBShape::sig_model(mass,sig_mu[1.867,1.84,1.9],sig_sigma[0.001,0,0.02],sig_alpha[1,0.5,2],sig_n[5,0,10])")
+   if '411' in str(CandTypes):
+      ws.factory("RooGaussian::sig_model(mass,sig_mu[1.87,1.86,1.88],sig_sigma[0.01,0.001,0.05])")
+      #ws.factory("RooCBShape::sig_model(mass,sig_mu[1.87,1.86,1.88],sig_sigma[0.001,0,0.025],sig_alpha[1,0.5,2],sig_n[5,0,10])")
       ws.factory("RooExponential::bkg_model(mass,bkg_lambda[-0.5,-4,0])")
    ## D0
-   elif 421 in CandTypes or 421011 in CandTypes or 421013 in CandTypes:
+   elif '421' in str(CandTypes):
       ws.factory("RooCBShape::sig_model(mass,sig_mu[1.87,1.86,1.88],sig_sigma[0.001,0,0.025],sig_alpha[1,0.5,2],sig_n[5,0,10])")
       ws.factory("RooExponential::bkg_model(mass,bkg_lambda[-0.5,-4,0])")
    ## J/Psi
-   elif 443 in CandTypes or 443*100 in CandTypes :
+   elif '443' in str(CandTypes):
       # ws.factory("RooCBShape::sig_CB(mass,sig_mu[3.1,3.05,3.15],sig_CB_sigma[0.07,0.01,0.5],sig_CB_alpha[1,0.5,2],sig_CB_n[5,0,10])")
       # ws.factory("RooGaussian::sig_Gauss(mass,sig_mu,sig_Gauss_sigma[0.1,0,0.2])")
       # getattr(ws,'import')( ROOT.RooRealVar("frac_CB","CB Fraction", 1., 0.9, 1.) )
@@ -370,9 +379,12 @@ def runDifferentialMeasurement(ws,vname,ranges,outF):
       nbkgErr  = ws.var("nbkg").getError()
       mass     = ws.var("sig_mu").getVal()
       massErr  = ws.var("sig_mu").getError()
-      print mass,massErr
-      width    = ws.var("sig_sigma").getVal()
-      widthErr = ws.var("sig_sigma").getError()
+      try:
+         width    = ws.var("sig_sigma").getVal()
+         widthErr = ws.var("sig_sigma").getError()
+      except:
+         width    = ws.var("sig_Gauss1_sigma").getVal()
+         widthErr = ws.var("sig_Gauss1_sigma").getError()
 
       np=dsigma["S"].GetN()
       binWidth=vmax-vmin

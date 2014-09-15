@@ -92,6 +92,7 @@ def showUnfolded(sigData,bkgData,var=None,outD='unfolded',outF=None,postfixForOu
 
    #save plot
    c.SaveAs(os.path.join(outD,name+"_unfolded%s.pdf"%postfixForOutputs))
+   c.SaveAs(os.path.join(outD,name+"_unfolded%s.png"%postfixForOutputs))
 
    #save also distributions if output file is given
    if outF is None: return
@@ -186,7 +187,8 @@ def doTheMassFit(ws,data=None,
    pt.SetTextFont(42)
    pt.SetTextAlign(12)
    pt.SetTextSize(0.03)
-   pt.AddText("CMS work in progress")
+   # pt.AddText("CMS work in progress")
+   pt.AddText("CMS Preliminary, #sqrt{s}=7 TeV, 19.7 fb^{-1}")
    pt.AddText("m=%3.4f #pm %3.4f"%(mass,massErr))
    pt.AddText("#sigma=%3.4f #pm %3.4f"%(width,widthErr))
    pt.AddText("N_{signal}=%3.0f #pm %3.0f"%(nsig,nsigErr))
@@ -196,6 +198,7 @@ def doTheMassFit(ws,data=None,
    #save to file
    outF='cfit%s'%postfixForOutputs
    cfit.SaveAs(os.path.join(outD,outF+'.pdf'))
+   cfit.SaveAs(os.path.join(outD,outF+'.png'))
 
 
 """
@@ -420,6 +423,7 @@ def runDifferentialMeasurement(ws,vname,ranges,outF):
       dsigma[ds].GetXaxis().SetTitle( xtitle )
       dsigma[ds].GetYaxis().SetTitle( ytitle )
       cdiff.SaveAs(os.path.join(outdir,'diff_%s_%s.pdf'%(vname,ds)))
+      cdiff.SaveAs(os.path.join(outdir,'diff_%s_%s.png'%(vname,ds)))
 
       #write to file
       outF.cd()

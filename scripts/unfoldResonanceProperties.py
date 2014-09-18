@@ -3,6 +3,7 @@
 import ROOT
 import os,sys
 import optparse
+import math
 
 VARIABLES = ["mass", "pt", "eta", "ptfrac", "pzfrac", "ptrel", "pfrac", "ptchfrac", "pzchfrac", "dr", "wgt"]
 XAXIS = {
@@ -93,6 +94,7 @@ def showUnfolded(sigData,bkgData,var=None,outD='unfolded',outF=None,postfixForOu
    #save plot
    c.SaveAs(os.path.join(outD,name+"_unfolded%s.pdf"%postfixForOutputs))
    c.SaveAs(os.path.join(outD,name+"_unfolded%s.png"%postfixForOutputs))
+   c.SaveAs(os.path.join(outD,name+"_unfolded%s.C"%postfixForOutputs))
 
    #save also distributions if output file is given
    if outF is None: return
@@ -138,8 +140,8 @@ def doTheMassFit(ws,data=None,
    except:
       width    = ws.var("sig_Gauss1_sigma").getVal()
       widthErr = ws.var("sig_Gauss1_sigma").getError()
-
-
+   bkg_lambda=ws.var('bkg_lambda').getVal()
+      
    #show result of the fit
    cfit=ROOT.TCanvas("cfit","cfit",500,500)
    cfit.cd()
@@ -156,21 +158,23 @@ def doTheMassFit(ws,data=None,
 			  ROOT.RooFit.Name("bkg"))
    ws.pdf("model").plotOn(frame, ROOT.RooFit.FillStyle(0), ROOT.RooFit.MoveToBack(), ROOT.RooFit.Name("total"))
    frame.Draw()
-   frame.GetYaxis().SetRangeUser(frame.GetMinimum(),1.4*frame.GetMaximum())
+   ymin=nbkg*math.exp(frame.GetXaxis().GetXmax()*bkg_lambda)*0.2;
+   ymax=1.4*frame.GetMaximum()
+   frame.GetYaxis().SetRangeUser(ymin,ymax)
    frame.GetYaxis().SetTitle("Candidates")
    frame.GetYaxis().SetTitleOffset(1.6)
    if '411' in str(CandTypes):
-	   frame.GetXaxis().SetTitle(XAXIS['Dpm'])
+      frame.GetXaxis().SetTitle(XAXIS['Dpm'])
    if '421' in str(CandTypes):
-	   frame.GetXaxis().SetTitle(XAXIS['D0'])
+      frame.GetXaxis().SetTitle(XAXIS['D0'])
    if '443' in str(CandTypes):
-	   frame.GetXaxis().SetTitle(XAXIS['JPsi'])
+      frame.GetXaxis().SetTitle(XAXIS['JPsi'])
    frame.GetXaxis().SetTitleOffset(1.0)
    cfit.Modified()
    cfit.Update()
 
    #build a legend
-   leg=ROOT.TLegend(0.7,0.8,0.9,0.95,"","brNDC")
+   leg=ROOT.TLegend(0.7,0.75,0.9,0.9,"","brNDC")
    leg.SetFillStyle(0)
    leg.SetBorderSize(0)
    leg.SetTextFont(42)
@@ -181,7 +185,7 @@ def doTheMassFit(ws,data=None,
    leg.Draw()
 
    #display fit results on the canvas
-   pt=ROOT.TPaveText(0.16,0.95,0.5,0.75,"brNDC")
+   pt=ROOT.TPaveText(0.2,0.9,0.5,0.65,"brNDC")
    pt.SetFillStyle(0)
    pt.SetBorderSize(0)
    pt.SetTextFont(42)
@@ -199,6 +203,7 @@ def doTheMassFit(ws,data=None,
    outF='cfit%s'%postfixForOutputs
    cfit.SaveAs(os.path.join(outD,outF+'.pdf'))
    cfit.SaveAs(os.path.join(outD,outF+'.png'))
+   cfit.SaveAs(os.path.join(outD,outF+'.C'))
 
 
 """
@@ -372,6 +377,8 @@ def runDifferentialMeasurement(ws,vname,ranges,outF):
 
       avgVar, sigmaVar = redData.mean( ws.var( vname ) ), redData.sigma( ws.var( vname ) )
 
+      #ws.var('sig_sigma').setRange(0.001,0.02)
+
       doTheMassFit(ws=ws,data=redData,
                    showResult=True,
                    outD=outdir,
@@ -424,6 +431,7 @@ def runDifferentialMeasurement(ws,vname,ranges,outF):
       dsigma[ds].GetYaxis().SetTitle( ytitle )
       cdiff.SaveAs(os.path.join(outdir,'diff_%s_%s.pdf'%(vname,ds)))
       cdiff.SaveAs(os.path.join(outdir,'diff_%s_%s.png'%(vname,ds)))
+      cdiff.SaveAs(os.path.join(outdir,'diff_%s_%s.C'%(vname,ds)))
 
       #write to file
       outF.cd()
@@ -476,8 +484,8 @@ def main():
 
       outUrl=os.path.join(opt.output, os.path.basename(wsUrl).replace('workspace','diff'))
       outF=ROOT.TFile(outUrl,'RECREATE')
-      varRanges={"pt":[10,20,30,50,75],
-                 "eta":[0,0.45,0.9,1.1,1.5,2.5]}
+      varRanges={"pt":[10,25,50,75],
+                 "eta":[0,0.9,1.5,2.5]}
       for vname in varRanges:
          runDifferentialMeasurement(ws,vname,varRanges[vname],outF)
       outF.Close()
@@ -535,13 +543,13 @@ def main():
       outFurl=os.path.join(opt.output,'UnfoldedDistributions%s.root'%postfixForOutputs)
       outF=ROOT.TFile.Open(outFurl,'RECREATE')
       varsToUnfold=[
-         ['ptrel',    'p_{T,rel} [GeV]',           10],
-         ['pfrac',    'p / p^{Jet} [GeV]',         10],
-         ['ptfrac',   'p_{T} / p_{T}^{jet}',       10],
-         ['pzfrac',   'p_{z} / p_{z}^{jet}',       10],
-         ['ptchfrac', 'p_{T} / #Sigma_{ch} p_{T}', 10],
-         ['pzchfrac', 'p_{z} / #Sigma_{ch} p_{z}', 10],
-         ['dr',       '#DeltaR to jet',            10]
+         ['ptrel',    'p_{T,rel} [GeV]',           8],
+         ['pfrac',    'p / p^{Jet} [GeV]',         8],
+         ['ptfrac',   'p_{T} / p_{T}^{jet}',       8],
+         ['pzfrac',   'p_{z} / p_{z}^{jet}',       8],
+         ['ptchfrac', 'p_{T} / #Sigma_{ch} p_{T}', 8],
+         ['pzchfrac', 'p_{z} / #Sigma_{ch} p_{z}', 8],
+         ['dr',       '#DeltaR to jet',            8]
          ]
       for var,varTitle,nBins in varsToUnfold:
          ws.var(var).SetTitle(varTitle)

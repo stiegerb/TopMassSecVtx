@@ -7,7 +7,11 @@ treedir=/data/stiegerb/topss2014/hidde/lxyplots_${tag}/
 
 # cands=("421")
 # cands=("411")
+# cands=("44300")
+# cands=("421013,421011")
 cands=("44300" "411" "421013,421011")
+
+echo "Running on "${treedir}
 
 case $WHAT in
 	TREES )

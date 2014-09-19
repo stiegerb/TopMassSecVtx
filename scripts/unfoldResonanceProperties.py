@@ -141,7 +141,7 @@ def doTheMassFit(ws,data=None,
       width    = ws.var("sig_Gauss1_sigma").getVal()
       widthErr = ws.var("sig_Gauss1_sigma").getError()
    bkg_lambda=ws.var('bkg_lambda').getVal()
-      
+
    #show result of the fit
    cfit=ROOT.TCanvas("cfit","cfit",500,500)
    cfit.cd()
@@ -192,7 +192,7 @@ def doTheMassFit(ws,data=None,
    pt.SetTextAlign(12)
    pt.SetTextSize(0.03)
    # pt.AddText("CMS work in progress")
-   pt.AddText("CMS Preliminary, #sqrt{s}=7 TeV, 19.7 fb^{-1}")
+   pt.AddText("CMS Preliminary, #sqrt{s}=8 TeV, 19.7 fb^{-1}")
    pt.AddText("m=%3.4f #pm %3.4f"%(mass,massErr))
    pt.AddText("#sigma=%3.4f #pm %3.4f"%(width,widthErr))
    pt.AddText("N_{signal}=%3.0f #pm %3.0f"%(nsig,nsigErr))

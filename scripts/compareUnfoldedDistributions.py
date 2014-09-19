@@ -124,7 +124,7 @@ def main():
    pt.SetTextAlign(12)
    pt.SetTextFont(42)
    pt.SetTextSize(0.03)
-   pt.AddText("CMS Preliminary, #sqrt{s}=7 TeV, 19.7 fb^{-1}")
+   pt.AddText("CMS Preliminary, #sqrt{s}=8 TeV, 19.7 fb^{-1}")
    # pt.AddText('CMS work in progress')
    pt.Draw()
 

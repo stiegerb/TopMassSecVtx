@@ -404,7 +404,7 @@ void LxyTreeAnalysis::fillD0Hists(int jetindex){
 
 void LxyTreeAnalysis::fillDpmHists(int jetindex){
     int nstart = firstTrackIndex(jetindex);
-    int ntracks = 5;
+    int ntracks = 3;
 
     for (int tk1 = nstart; tk1 < nstart+ntracks; ++tk1){
         if(pfjetidx[tk1] != jetindex) continue;

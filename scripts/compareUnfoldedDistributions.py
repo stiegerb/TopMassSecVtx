@@ -5,6 +5,7 @@ import os,sys
 import optparse
 import glob
 import math
+from CMS_lumi import CMS_lumi
 
 COLORS=[862,800,1,922]
 FILLS=[1001,3001,3004,3002]
@@ -118,31 +119,32 @@ def main():
    if dataIdx>=0 : allGr[dataIdx].Draw('p')
 
    #caption
-   pt=ROOT.TPaveText(0.18,0.9,0.9,0.93,'brNDC')
-   pt.SetFillStyle(0)
-   pt.SetBorderSize(0)
-   pt.SetTextAlign(12)
-   pt.SetTextFont(42)
-   pt.SetTextSize(0.03)
-   pt.AddText("CMS Preliminary, #sqrt{s}=8 TeV, 19.7 fb^{-1}")
+   CMS_lumi(c,2,10)
+   #pt=ROOT.TPaveText(0.18,0.9,0.9,0.93,'brNDC')
+   #pt.SetFillStyle(0)
+   #pt.SetBorderSize(0)
+   #pt.SetTextAlign(12)
+   #pt.SetTextFont(42)
+   #pt.SetTextSize(0.03)
+   #pt.AddText("CMS Preliminary, #sqrt{s}=8 TeV, 19.7 fb^{-1}")
    # pt.AddText('CMS work in progress')
-   pt.Draw()
+   #pt.Draw()
 
    #tag
    if opt.Tag:
-	   tl=ROOT.TLatex()
-	   tl.SetNDC()
-	   tl.SetTextFont(42)
-	   tl.SetTextSize(0.04)
-	   tl.DrawLatex(0.75, 0.75, TAGS[opt.Tag])
+      tl=ROOT.TLatex()
+      tl.SetNDC()
+      tl.SetTextFont(42)
+      tl.SetTextSize(0.04)
+      tl.DrawLatex(0.18, 0.8, TAGS[opt.Tag])
 
    #build a legend
-   leg=ROOT.TLegend(0.2,0.78,0.9,0.9,"","brNDC")
+   leg=ROOT.TLegend(0.55,0.75,0.95,0.95,"","brNDC")
    leg.SetFillStyle(0)
    leg.SetBorderSize(0)
    leg.SetTextFont(42)
    leg.SetTextSize(0.025)
-   leg.SetNColumns(2)
+   #leg.SetNColumns(2)
    if dataIdx>=0 : leg.AddEntry(allGr[dataIdx],allGr[dataIdx].GetTitle(),'lp')
    for i in xrange(0, len(allGr)):
       if i==dataIdx: continue
@@ -151,6 +153,7 @@ def main():
 
    c.SaveAs('%s.pdf'%opt.Dist)
    c.SaveAs('%s.png'%opt.Dist)
+   c.SaveAs('%s.C'%opt.Dist)
    #raw_input()
 
 """

@@ -4,6 +4,7 @@ import ROOT
 import os,sys
 import optparse
 import math
+from CMS_lumi import CMS_lumi
 
 VARIABLES = ["mass", "pt", "eta", "ptfrac", "pzfrac", "ptrel", "pfrac", "ptchfrac", "pzchfrac", "dr", "wgt"]
 XAXIS = {
@@ -141,12 +142,13 @@ def doTheMassFit(ws,data=None,
       width    = ws.var("sig_Gauss1_sigma").getVal()
       widthErr = ws.var("sig_Gauss1_sigma").getError()
    bkg_lambda=ws.var('bkg_lambda').getVal()
-
+      
    #show result of the fit
    cfit=ROOT.TCanvas("cfit","cfit",500,500)
    cfit.cd()
    frame=ws.var("mass").frame()#ROOT.RooFit.Bins(50))
    data.plotOn(frame,ROOT.RooFit.DrawOption("p"),ROOT.RooFit.MarkerStyle(20),ROOT.RooFit.Name("data"))
+   ws.pdf("model").plotOn(frame, ROOT.RooFit.FillStyle(0), ROOT.RooFit.MoveToBack(), ROOT.RooFit.Name("total"))
    ws.pdf("model").plotOn(frame,
 			  ROOT.RooFit.Components('bkg_model'),
                           ROOT.RooFit.LineColor(1),
@@ -156,7 +158,6 @@ def doTheMassFit(ws,data=None,
 			  ROOT.RooFit.DrawOption("LF"),
                           ROOT.RooFit.MoveToBack(),
 			  ROOT.RooFit.Name("bkg"))
-   ws.pdf("model").plotOn(frame, ROOT.RooFit.FillStyle(0), ROOT.RooFit.MoveToBack(), ROOT.RooFit.Name("total"))
    frame.Draw()
    ymin=nbkg*math.exp(frame.GetXaxis().GetXmax()*bkg_lambda)*0.2;
    ymax=1.4*frame.GetMaximum()
@@ -185,14 +186,13 @@ def doTheMassFit(ws,data=None,
    leg.Draw()
 
    #display fit results on the canvas
-   pt=ROOT.TPaveText(0.2,0.9,0.5,0.65,"brNDC")
+   CMS_lumi(cfit,2,10)
+   pt=ROOT.TPaveText(0.17,0.85,0.5,0.6,"brNDC")
    pt.SetFillStyle(0)
    pt.SetBorderSize(0)
    pt.SetTextFont(42)
    pt.SetTextAlign(12)
    pt.SetTextSize(0.03)
-   # pt.AddText("CMS work in progress")
-   pt.AddText("CMS Preliminary, #sqrt{s}=8 TeV, 19.7 fb^{-1}")
    pt.AddText("m=%3.4f #pm %3.4f"%(mass,massErr))
    pt.AddText("#sigma=%3.4f #pm %3.4f"%(width,widthErr))
    pt.AddText("N_{signal}=%3.0f #pm %3.0f"%(nsig,nsigErr))

@@ -73,10 +73,12 @@ case $WHAT in
 		    python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -b CharmInfo_diff -d norm_eta_dS -m 0.5 --tag ${a};
 		    mv norm_eta_dS.pdf ${plotdir}/c_${ctag}_diffeta.pdf;
 		    mv norm_eta_dS.png ${plotdir}/c_${ctag}_diffeta.png;
+		    mv norm_eta_dS.C ${plotdir}/c_${ctag}_diffeta.C;
 
 		    python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -b CharmInfo_diff -d norm_pt_dS -m 0.75 --tag ${a};
 		    mv norm_pt_dS.pdf ${plotdir}/c_${ctag}_diffpt.pdf;
 		    mv norm_pt_dS.png ${plotdir}/c_${ctag}_diffpt.png;
+		    mv norm_pt_dS.C ${plotdir}/c_${ctag}_diffpt.C;
 
 		    #unfolded
 		    mcs="${outdir}/c_${ctag}/MC8TeV_TTJets_MSDecays_172v5/,${outdir}/c_${ctag}/MC8TeV_TTJets_TuneP11/,${outdir}/c_${ctag}/MC8TeV_TT_AUET2_powheg_herwig/,${outdir}/c_${ctag}/MC8TeV_TT_Z2star_powheg_pythia/,${outdir}/c_${ctag}/Data8TeV_merged/";
@@ -84,30 +86,37 @@ case $WHAT in
 		    python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -b UnfoldedDistributions -d norm_ptrel_signal -m 0.35 --tag ${a}
 		    mv norm_ptrel_signal.pdf ${plotdir}/c_${ctag}_ptrel.pdf
 		    mv norm_ptrel_signal.png ${plotdir}/c_${ctag}_ptrel.png
+		    mv norm_ptrel_signal.C ${plotdir}/c_${ctag}_ptrel.C
 
 		    python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -b UnfoldedDistributions -d norm_pfrac_signal -m 0.45 --tag ${a}
 		    mv norm_pfrac_signal.pdf ${plotdir}/c_${ctag}_pfrac.pdf
 		    mv norm_pfrac_signal.png ${plotdir}/c_${ctag}_pfrac.png
+		    mv norm_pfrac_signal.C ${plotdir}/c_${ctag}_pfrac.C
 
 		    python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -b UnfoldedDistributions -d norm_ptfrac_signal -m 0.45 --tag ${a}
 		    mv norm_ptfrac_signal.pdf ${plotdir}/c_${ctag}_ptfrac.pdf
 		    mv norm_ptfrac_signal.png ${plotdir}/c_${ctag}_ptfrac.png
+		    mv norm_ptfrac_signal.C ${plotdir}/c_${ctag}_ptfrac.C
 
 		    python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -b UnfoldedDistributions -d norm_pzfrac_signal -m 0.45 --tag ${a}
 		    mv norm_pzfrac_signal.pdf ${plotdir}/c_${ctag}_pzfrac.pdf
 		    mv norm_pzfrac_signal.png ${plotdir}/c_${ctag}_pzfrac.png
+		    mv norm_pzfrac_signal.C ${plotdir}/c_${ctag}_pzfrac.C
 
 		    python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -b UnfoldedDistributions -d norm_ptchfrac_signal -m 0.4 --tag ${a}
 		    mv norm_ptchfrac_signal.pdf ${plotdir}/c_${ctag}_ptchfrac.pdf
 		    mv norm_ptchfrac_signal.png ${plotdir}/c_${ctag}_ptchfrac.png
+		    mv norm_ptchfrac_signal.C ${plotdir}/c_${ctag}_ptchfrac.C
 
 		    python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -b UnfoldedDistributions -d norm_pzchfrac_signal -m 0.4 --tag ${a}
 		    mv norm_pzchfrac_signal.pdf ${plotdir}/c_${ctag}_pzchfrac.pdf
 		    mv norm_pzchfrac_signal.png ${plotdir}/c_${ctag}_pzchfrac.png
+		    mv norm_pzchfrac_signal.C ${plotdir}/c_${ctag}_pzchfrac.C
 
 		    python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -b UnfoldedDistributions -d norm_dr_signal -m 0.5 --tag ${a}
 		    mv norm_dr_signal.pdf ${plotdir}/c_${ctag}_deltar.pdf
 		    mv norm_dr_signal.png ${plotdir}/c_${ctag}_deltar.png
+		    mv norm_dr_signal.C ${plotdir}/c_${ctag}_deltar.C
 		done
 
 		;;

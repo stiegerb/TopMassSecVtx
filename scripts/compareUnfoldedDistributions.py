@@ -60,12 +60,12 @@ def main():
        title=titles[idx]
        allGr[idx].SetName(name)
        allGr[idx].SetTitle(title)
-       allGr[idx].GetYaxis().SetTitleSize(0.04)
-       allGr[idx].GetXaxis().SetTitleSize(0.04)
-       allGr[idx].GetYaxis().SetLabelSize(0.03)
-       allGr[idx].GetXaxis().SetLabelSize(0.03)
-
-       allGr[idx].GetYaxis().SetTitleOffset(1.5);
+       allGr[idx].GetYaxis().SetTitleSize(0.05)
+       allGr[idx].GetXaxis().SetTitleSize(0.05)
+       allGr[idx].GetYaxis().SetLabelSize(0.04)
+       allGr[idx].GetXaxis().SetLabelSize(0.04)
+       allGr[idx].GetXaxis().SetTitleOffset(0.9)
+       allGr[idx].GetYaxis().SetTitleOffset(1.4)
        if 'pt_dS' in opt.Dist:
           allGr[idx].GetXaxis().SetTitle("Transverse momentum [GeV]")
           allGr[idx].GetYaxis().SetTitle("1/#sigma d#sigma/dp_{T} [GeV^{-1}]")
@@ -110,6 +110,7 @@ def main():
 
    #show plots in a canvas
    c=ROOT.TCanvas('c','c',600,600)
+   c.SetBottomMargin(0.13)
    drawOpt='a2'
    for i in xrange(0,len(allGr)):
        if i==dataIdx : continue
@@ -135,15 +136,15 @@ def main():
       tl=ROOT.TLatex()
       tl.SetNDC()
       tl.SetTextFont(42)
-      tl.SetTextSize(0.04)
-      tl.DrawLatex(0.18, 0.8, TAGS[opt.Tag])
+      tl.SetTextSize(0.05)
+      tl.DrawLatex(0.19, 0.76, TAGS[opt.Tag])
 
    #build a legend
-   leg=ROOT.TLegend(0.55,0.75,0.95,0.95,"","brNDC")
+   leg=ROOT.TLegend(0.45,0.75,0.95,0.95,"","brNDC")
    leg.SetFillStyle(0)
    leg.SetBorderSize(0)
    leg.SetTextFont(42)
-   leg.SetTextSize(0.025)
+   leg.SetTextSize(0.03)
    #leg.SetNColumns(2)
    if dataIdx>=0 : leg.AddEntry(allGr[dataIdx],allGr[dataIdx].GetTitle(),'lp')
    for i in xrange(0, len(allGr)):

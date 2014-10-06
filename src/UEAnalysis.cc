@@ -37,15 +37,15 @@ UEAnalysis::UEAnalysis(SmartSelectionMonitor &mon)
       mon_->addHistogram( new TH1F("nch"+ueReg_[ireg],";Particles;Events",200,0,200));
       mon_->addHistogram( new TH1F("ngench"+ueReg_[ireg],";Particles;Events",200,0,200));
       mon_->addHistogram( new TH2F("nchvsngench"+ueReg_[ireg],";Particles;Generated particles;Events",200,0,200,200,0,200));
-      
+
       mon_->addHistogram( new TH1F("ptflux"+ueReg_[ireg],";p_{T} flux [GeV];Events",50,0,500));
       mon_->addHistogram( new TH1F("avgptflux"+ueReg_[ireg],";Average p_{T} flux [GeV];Events",25,0,25));
-      
+
       mon_->addHistogram( new TH2F("nchprofpt"+ueReg_[ireg],";t#bar{t} transverse momentum [GeV];Particles;"+distStr,nptttBins,ptttaxis, 200,0.,200.));
       mon_->addHistogram( new TH2F("nchprofavgptflux"+ueReg_[ireg],";Average p_{T} flux [GeV];Particles;"+distStr,25,0.,25., 200,0.,200.));
       mon_->addHistogram( new TH2F("ptfluxprofpt"+ueReg_[ireg],";t#bar{t} transverse momentum [GeV];p_{T} flux [GeV];"+distStr,nptttBins,ptttaxis,50,0.,500.));
       mon_->addHistogram( new TH2F("avgptfluxprofpt"+ueReg_[ireg],";t#bar{t} transverse momentum [GeV];Average p_{T} flux [GeV];"+distStr,nptttBins,ptttaxis,25,0.,25.));
-      
+
       if(ireg==0) {
 	mon_->addHistogram( new TH1F("nchlt15",";Particles;Events",200,0,200));
 	mon_->addHistogram( new TH1F("nchgt15",";Particles;Events",200,0,200));
@@ -126,7 +126,7 @@ UEAnalysis::UEAnalysis(SmartSelectionMonitor &mon)
 
 
 //
-void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons, 
+void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
 			 data::PhysicsObjectCollection_t &jets,
 			 LorentzVector &met,
 			 data::PhysicsObjectCollection_t &pf,
@@ -136,12 +136,12 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
 {
   float minPFpt(0.5), maxPFeta(2.1);
   float acceptance( 2*TMath::Pi() * maxPFeta );
-  
+
   //check the event category
   int lid1(leptons[0].get("id")), lid2(leptons[1].get("id"));
   std::vector<TString> ch;
   int chIdx(abs(lid1)*abs(lid2));
-  if     (chIdx==11*11 || chIdx==13*13) ch.push_back("ll"); 
+  if     (chIdx==11*11 || chIdx==13*13) ch.push_back("ll");
   else if(chIdx==11*13) ch.push_back("emu");
   else return;
   ch.push_back("");
@@ -175,7 +175,7 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
     if(fabs(jets[ijet].eta())>2.5 ) continue;
 
     if(jets[ijet].pt()>15 && jets[ijet].pt()<20) nExtraJets10to20++;
-    if(jets[ijet].pt()>=20 && jets[ijet].pt()<30) nExtraJets20to30++;  
+    if(jets[ijet].pt()>=20 && jets[ijet].pt()<30) nExtraJets20to30++;
     if(jets[ijet].pt()>=30) nExtraJetsgt30++;
 
     if(jets[ijet].pt()<20) continue;
@@ -213,7 +213,7 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
       if(fabs(gen[igen].get("id"))==12||fabs(gen[igen].get("id"))==14||fabs(gen[igen].get("id"))==16) genMet+=gen[igen];
     }
   LorentzVector gen_ttbar=top+antitop;
-  
+
   float const_rec_ttbar_pt( rec_ttbar.pt()>500 ? 500. : rec_ttbar.pt() );
   Int_t ptbin(mon_->getHisto("ptttbar","emu")->GetXaxis()->FindBin(const_rec_ttbar_pt) );
   float ptbinWidth(mon_->getHisto("ptttbar","emu")->GetXaxis()->GetBinWidth(ptbin));
@@ -235,8 +235,8 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
       if(gen[igen].get("status") !=1 || gen[igen].get("charge")==0) continue;
 
       //do not consider if matching the leptons or the charged pf candidates associated to the b-tagged jets
-      if( fabs(deltaR(gen[igen],chLepton))<0.1 )     continue; 
-      if( fabs(deltaPhi(gen[igen],antiChLepton))<0.1 ) continue; 
+      if( fabs(deltaR(gen[igen],chLepton))<0.1 )     continue;
+      if( fabs(deltaPhi(gen[igen],antiChLepton))<0.1 ) continue;
       bool belongsToTagJet(false);
       for(size_t ijet=0; (ijet<2 && !belongsToTagJet); ijet++)
 	{
@@ -250,10 +250,10 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
 	    }
 	}
       if(belongsToTagJet) continue;
-      
+
       //check if in acceptance
       if(gen[igen].pt()<minPFpt || fabs(gen[igen].eta())>maxPFeta) continue;
- 
+
       //count this particle
       float dphi=fabs(deltaPhi(gen[igen].phi(),gen_ttbar.phi())*180/TMath::Pi());
       size_t regIdx=3;
@@ -262,8 +262,8 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
       genChCount[0]++;                  genChCount[regIdx]++;
       genChFlux[0] += gen[igen].pt();   genChFlux[regIdx] += gen[igen].pt();
     }
-  
-  
+
+
   //
   //RECONSTRUCTED LEVEL ANALYSIS: study UE with charged PF
   //
@@ -279,7 +279,7 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
   for(size_t ipfn=0; ipfn<pf.size(); ipfn++)
     {
       if(pf[ipfn].get("charge")==0) continue;
-      
+
       //remove if it belongs to a tag jet
       bool belongsToTagJet(false);
       for(size_t ijet=0; ijet<2; ijet++)
@@ -292,13 +292,13 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
 
       //fiducial cut
       if(pf[ipfn].pt()<minPFpt || fabs(pf[ipfn].eta())>maxPFeta) continue;
-      
+
       //remove if matching a selected lepton
       double minDRpfl(9999.);
       for(size_t ilep=0; ilep<2; ilep++)
 	minDRpfl = TMath::Min( minDRpfl, deltaR(pf[ipfn],leptons[ilep]) );
       if(minDRpfl<0.05) continue;
-     
+
       float dz(pf[ipfn].getVal("dz")), sdz(pf[ipfn].getVal("sdz"));
       float d0(pf[ipfn].getVal("d0")), sd0(pf[ipfn].getVal("sd0"));
       std::vector<TString> matchCats(1,"");
@@ -322,10 +322,10 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
 	}
 
       rawChCount++;
-      rawChFlux += pf[ipfn].pt(); 
+      rawChFlux += pf[ipfn].pt();
       //if(fabs(dz)>1 || fabs(sdz)>3 || fabs(d0)>1 || fabs(sd0)>10) continue;
       if(fabs(sdz)>10 || fabs(sd0)>10) continue;
-      
+
       if(fabs(pf[ipfn].get("id"))==13 && pf[ipfn].pt()>3) softMuonsIdx.push_back( ipfn );
 
       //do the counting respectively to the ttbar estimate
@@ -334,20 +334,20 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
       size_t regIdx=3;
       if(dphi>120) regIdx=1;
       if(dphi<60)  regIdx=2;
-      chCount[0]++;                  chCount[regIdx]++;                
-      chFlux[0] += pf[ipfn].pt();    chFlux[regIdx] += pf[ipfn].pt();  
+      chCount[0]++;                  chCount[regIdx]++;
+      chFlux[0] += pf[ipfn].pt();    chFlux[regIdx] += pf[ipfn].pt();
       int iphibin=nchprofphiH->GetXaxis()->FindBin(sigdphi)-1;
       if(iphibin>=0 && iphibin<nphibins) { chCountPhi[iphibin]++; chFluxPhi[iphibin]+= pf[ipfn].pt(); }
     }
 
-  int totalaway(0); 
+  int totalaway(0);
   for(int ibin=nchprofphiH->GetXaxis()->FindBin(120); ibin<nphibins; ibin++) totalaway += chCountPhi[ibin];
 
   //n vertex profiles
-  mon_->fillHisto("rawnchprofnvtx",    ch, nvtx, rawChCount,  weight/acceptance);	
-  mon_->fillHisto("nchprofnvtx",       ch, nvtx, chCount[0],  weight/acceptance);	
-  mon_->fillHisto("matchednchprofnvtx",ch, nvtx, matchedChCount,  weight/acceptance);	
-  
+  mon_->fillHisto("rawnchprofnvtx",    ch, nvtx, rawChCount,  weight/acceptance);
+  mon_->fillHisto("nchprofnvtx",       ch, nvtx, chCount[0],  weight/acceptance);
+  mon_->fillHisto("matchednchprofnvtx",ch, nvtx, matchedChCount,  weight/acceptance);
+
   //phi profiles
   float phiProfAcceptance=acceptance*2*TMath::Pi()*nchprofphiH->GetXaxis()->GetBinWidth(1);
   std::vector<TString> phiPFcats(1,"");
@@ -365,14 +365,14 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
 	}
       }
     }
-  
+
   //fill profiles
   for(size_t ireg=0; ireg<4; ireg++)
     {
       float cts( chCount[ireg] ), gencts( genChCount[ireg] );
-      float flux( chFlux[ireg] ), genflux( genChFlux[ireg] );
-      float normFlux(cts>0?flux/cts:0), genNormFlux( gencts>0 ? genflux/gencts : 0);
-      
+      float flux( chFlux[ireg] ); // genflux( genChFlux[ireg] );
+      float normFlux(cts>0?flux/cts:0); // genNormFlux( gencts>0 ? genflux/gencts : 0);
+
       if(ireg==0){
 	TString pf("lt15");
 	if(nvtx>15) pf="gt15";
@@ -384,7 +384,7 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
 
       mon_->fillHisto("ptflux"+ueReg_[ireg],          ch, flux ,                    weight/acceptance);
       if(cts>0) mon_->fillHisto("avgptflux"+ueReg_[ireg],       ch, normFlux,       weight/acceptance);
-      
+
       mon_->fillHisto("nchprofpt"+ueReg_[ireg],       ch, const_rec_ttbar_pt, cts,      weight/(acceptance*ptbinWidth));
       mon_->fillHisto("ptfluxprofpt"+ueReg_[ireg],    ch, const_rec_ttbar_pt, flux,     weight/(acceptance*ptbinWidth));
 
@@ -428,7 +428,7 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
 	  int softBtags( (softj1->getVal("csv")>0.405)+(softj2->getVal("csv")>0.405) );
 	  if(softBtags>2) softBtags=2;
 	  TString nbtags(""); nbtags += softBtags;
-	  
+
 	  mon_->fillHisto("softdeltaptrel"+nbtags+"t", ch, deltarel, weight);
 	  mon_->fillHisto("softdphijj"+nbtags+"t", ch, fabs(dphijj), weight);
 	}

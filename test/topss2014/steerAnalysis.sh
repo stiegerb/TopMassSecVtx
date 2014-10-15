@@ -7,10 +7,10 @@
 
 step=$1
 optim_step=$2
-outdir="${CMSSW_BASE}/src/UserCode/llvv_fwk/test/topss2014"
+outdir="${CMSSW_BASE}/src/UserCode/TopMassSecVtx/test/topss2014"
 indir="/store/cmst3/user/psilva/5311_ntuples"
 synchdir="/store/cmst3/group/top/summer2014/synchEx"
-cfg="$CMSSW_BASE/src/UserCode/llvv_fwk/test/runAnalysis_cfg.py.templ"
+cfg="$CMSSW_BASE/src/UserCode/TopMassSecVtx/test/runAnalysis_cfg.py.templ"
 queue=8nh
 hash=62dc494
 

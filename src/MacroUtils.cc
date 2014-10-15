@@ -1,4 +1,4 @@
-#include "UserCode/llvv_fwk/interface/MacroUtils.h"
+#include "UserCode/TopMassSecVtx/interface/MacroUtils.h"
 #include "TH1F.h"
 #include "TSystem.h"
 
@@ -194,17 +194,6 @@ namespace utils
       return Aeff;
     }
 
-
-   double relIso(llvvLepton lep, double rho){
-      if(abs(lep.id)==11){
-          return (TMath::Max(lep.nhIso03+lep.gIso03-rho*utils::cmssw::getEffectiveArea(11,lep.electronInfoRef->sceta),double(0.))+lep.chIso03)/lep.pt();
-      }else if(abs(lep.id)==13){
-          return (TMath::Max(lep.nhIso04+lep.gIso04-0.5*lep.puchIso04,double(0.))+lep.chIso04)/lep.pt();
-      }else{
-          return -1;
-      }
-   }
-    
     
     void getSingleMuTrigEff(const double& pt, const double& abseta, double& muontriggerefficiency){
       // Muon trigger/ID/Iso scale factors for efficiency are taken from https://twiki.cern.ch/twiki/bin/viewauth/CMS/MuonReferenceEffs                                                                                                                                           
@@ -238,56 +227,6 @@ namespace utils
 	if(pt>=60.  && pt<90.)      muontriggerefficiency=0.98829374192885855;
 	if(pt>=90.  && pt<140.)     muontriggerefficiency=0.98187598993908232;
       }
-    }
-  
-  }
-	// loop on all the lumi blocks for an EDM file in order to count the number of events that are in a sample
-	// this is useful to determine how to normalize the events (compute weight)
-	unsigned long getMergeableCounterValue(const std::vector<std::string>& urls, std::string counter)
-	{
-	   unsigned long Total = 0;
-	   for(unsigned int f=0;f<urls.size();f++){
-	      TFile *file = TFile::Open(urls[f].c_str());      
-	      fwlite::LuminosityBlock ls( file );
-	      for(ls.toBegin(); !ls.atEnd(); ++ls){
-		 fwlite::Handle<edm::MergeableCounter> nEventsTotalCounter;
-		 nEventsTotalCounter.getByLabel(ls,counter.c_str());
-		 if(!nEventsTotalCounter.isValid()){printf("Invalid nEventsTotalCounterH\n");continue;}
-		 Total+= nEventsTotalCounter->value;
-	      }
-	   }
-	   return Total;
-	}
-
-  void getMCPileupDistribution(fwlite::ChainEvent& ev, unsigned int Npu, std::vector<float>& mcpileup)
-  {
-    mcpileup.clear();
-    mcpileup.resize(Npu);
-    for(Long64_t ientry=0;ientry<ev.size();ientry++){
-      ev.to(ientry);
-      
-      fwlite::Handle< llvvGenEvent > genEventHandle;
-      genEventHandle.getByLabel(ev, "llvvObjectProducersUsed");
-//      if(!genEventHandle.isValid()){printf("llvvGenEvent Object NotFound\n");continue;}
-      if(!genEventHandle.isValid()){continue;} //remove the warning... CAREFULL!
-      unsigned int ngenITpu = (int)genEventHandle->ngenITpu;
-      if(ngenITpu>=Npu){printf("ngenITpu is larger than vector size... vector is being resized, but you should check that all is ok!"); mcpileup.resize(ngenITpu+1);}
-      mcpileup[ngenITpu]++;
-    }
-  }
-  
-  void getPileupNormalization(std::vector<float>& mcpileup, double* PUNorm, edm::LumiReWeighting* LumiWeights, utils::cmssw::PuShifter_t PuShifters){
-    PUNorm[0]=0; PUNorm[1]=0; PUNorm[2]=0;
-    double NEvents=0;
-    for(unsigned int i=0;i<mcpileup.size();i++){
-      NEvents+=mcpileup[i];
-      double puWeight = LumiWeights->weight((int)i);
-      PUNorm[0]+=mcpileup[i]*puWeight;
-      PUNorm[1]+=mcpileup[i]*puWeight*PuShifters[utils::cmssw::PUDOWN]->Eval(i);
-      PUNorm[2]+=mcpileup[i]*puWeight*PuShifters[utils::cmssw::PUUP  ]->Eval(i);
-    }
-    PUNorm[0]/=NEvents;
-    PUNorm[1]/=NEvents;
-    PUNorm[2]/=NEvents;
+    }  
   }
 }

@@ -151,8 +151,8 @@ data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,fl
 	if( ele.getFlag("isconv") )              passIdBaseQualityCuts=false;
 	if( fabs(ele.getVal("tk_d0"))>0.02 )     passIdBaseQualityCuts=false;
 	if( ele.getVal("tk_lostInnerHits") > 0 ) passIdBaseQualityCuts=false;
-	bool passLLid( ele.getVal("mvatrig")>0.5 && passIdBaseQualityCuts);
-	bool passLJid( ele.getVal("mvatrig")>0.5 && passIdBaseQualityCuts);
+	bool passLLid( ele.getVal("mvatrig")>0.9 && passIdBaseQualityCuts);
+	bool passLJid( ele.getVal("mvatrig")>0.9 && passIdBaseQualityCuts);
 	bool passLJvetoid( ele.getVal("mvatrig")>0 );
 
 	// Isolation
@@ -160,9 +160,9 @@ data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,fl
 	Float_t chIso = ele.getVal("chIso03");
 	Float_t nhIso = ele.getVal("nhIso03");
 	float relIso = (TMath::Max(nhIso+gIso-rho*utils::cmssw::getEffectiveArea(11,sceta,3),Float_t(0.))+chIso)/ele.pt();
-	bool passLLiso( relIso<0.15 );
+	bool passLLiso( relIso<0.10 );
 	bool passLJiso( relIso<0.10 );
-	bool passLJvetoiso( relIso<0.10 );
+	bool passLJvetoiso( relIso<0.15 );
 
 	//set the flags
 	ele.setFlag("passLL",    (passLLkin && passLLid && passLLiso));
@@ -192,9 +192,9 @@ data::PhysicsObject_t getTopSelectionTaggedMuon(data::PhysicsObject_t mu, float 
   // ID
   Int_t idbits = mu.get("idbits");
   bool isPF((idbits >> 7) & 0x1);
-  bool passLLid( ((idbits >> 8) & 0x1) && isPF );
+  bool passLLid( ((idbits >> 10) & 0x1) && isPF );
   bool passLJid( ((idbits >> 10) & 0x1) && isPF );
-  bool passLJvetoid( ((idbits >> 5) & 0x1) && ((idbits >> 6) & 0x1) && isPF );
+  bool passLJvetoid( ((idbits >> 8) & 0x1) && isPF );
   
   // Isolation
   Float_t gIso = mu.getVal("gIso04");
@@ -306,7 +306,7 @@ int main(int argc, char* argv[])
   TString jecDir      = runProcess.getParameter<std::string>("jecDir");
   bool isMC           = runProcess.getParameter<bool>("isMC");
   double xsec         = runProcess.getParameter<double>("xsec");
-  bool isV0JetsMC(isMC && (url.Contains("DYJetsToLL_50toInf") || url.Contains("_WJets")));
+  bool isV0JetsMC(isMC && (url.Contains("DYJetsToLL_50toInf") || url.Contains("TeV_WJets")));
   bool isTTbarMC(isMC && (url.Contains("TTJets") || url.Contains("_TT_") || url.Contains("TT2l_R")));
   TString out          = runProcess.getParameter<std::string>("outdir");
   bool saveSummaryTree = runProcess.getParameter<bool>("saveSummaryTree");
@@ -472,8 +472,8 @@ int main(int argc, char* argv[])
       if(inum%500==0) { printf("\r [ %d/100 ]",int(100*float(inum)/float(totalEntries))); cout << flush; }
       evSummary.getEntry(inum);
       DataEventSummary &ev = evSummary.getEvent();
-      if(!isMC && duplicatesChecker.isDuplicate( ev.run, ev.lumi, ev.event) ) { nDuplicates++; continue; }
-
+      //if(!isMC && duplicatesChecker.isDuplicate( ev.run, ev.lumi, ev.event) ) { nDuplicates++; continue; }
+      
       //
       // OBJECT SELECTION
       //
@@ -490,11 +490,25 @@ int main(int argc, char* argv[])
 	mumuTrigger &= (!isDoubleElePD && !isMuEGPD &&  isDoubleMuPD && !isSingleMuPD && !isSingleElePD);
 	muTrigger   &= (!isDoubleElePD && !isMuEGPD && !isDoubleMuPD &&  isSingleMuPD && !isSingleElePD);
 	eTrigger    &= (!isDoubleElePD && !isMuEGPD && !isDoubleMuPD && !isSingleMuPD &&  isSingleElePD);
+	
+	//dismiss data event if trigger is not there
+	if(isDoubleElePD && !eeTrigger)   continue;
+	if(isMuEGPD      && !emuTrigger)  continue;
+	if(isDoubleMuPD  && !mumuTrigger) continue;
+	if(isSingleMuPD  && !muTrigger)   continue;
+	if(isSingleElePD && !eTrigger)    continue;
       }
 
       //leptons
       data::PhysicsObjectCollection_t leptons( evSummary.getPhysicsObject(DataEventSummaryHandler::LEPTONS) );
       data::PhysicsObjectCollection_t selLeptons=selectLeptons(leptons, ev.rho, isMC);
+      if(!isMC)
+	{
+	  //dismiss data event if lepton multiplicity is not ok
+	  if((eTrigger || muTrigger) && selLeptons.size()==0) continue;
+	  if((mumuTrigger || emuTrigger || eeTrigger) && selLeptons.size()<2) continue;
+	}
+
 
       //jet/met
       data::PhysicsObjectCollection_t jets(evSummary.getPhysicsObject(DataEventSummaryHandler::JETS));
@@ -534,8 +548,8 @@ int main(int argc, char* argv[])
       //
       // MC CORRECTIONS
       //
-      if(isV0JetsMC && ev.nup>5) continue;
       Hhepup->Fill(ev.nup,1);
+      if(isV0JetsMC && ev.nup>5) continue;
 
       //pileup weight
       float puWeight(1.0);// puWeightUp(1.0), puWeightDown(1.0);
@@ -599,12 +613,12 @@ int main(int argc, char* argv[])
       
       
       //control plots for the event selection
-      controlHistos.fillHisto("nvertices", box.chCat, ev.nvtx,         puWeight*lepSelectionWeight);
-
       if(box.leptons.size()>=2) controlHistos.fillHisto("mll",       box.chCat+"inc",            ll.mass(),  puWeight*lepSelectionWeight);
       else                      controlHistos.fillHisto("mt",        box.chCat+"inc",            mt,         puWeight*lepSelectionWeight);
       if(passLeptonSelection)
 	{
+	  controlHistos.fillHisto("nvertices", box.chCat, ev.nvtx,         puWeight*lepSelectionWeight);
+
 	  controlHistos.fillHisto("evtflow", box.chCat, 0,               puWeight*lepSelectionWeight);
 	  if(passMetSelection) controlHistos.fillHisto("njets",   box.chCat, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
 	  if(jetBin) 

@@ -4,6 +4,7 @@ import math
 import ROOT
 from ROOT import THStack, TLatex
 from ROOT import TCanvas, TPad, TLegend
+from UserCode.TopMassSecVtx.CMS_lumi import *
 
 class Plot:
     """
@@ -13,9 +14,9 @@ class Plot:
     def __init__(self,name):
         self.name = name
         self.mc = []
+        self.dataH = None
         self.data = None
         self.garbageList = []
-        self.loadedBaseTools=False
 
     def info(self):
         print self.name
@@ -37,7 +38,8 @@ class Plot:
             h.SetLineWidth(2)
             h.SetFillColor(0)
             h.SetFillStyle(0)
-            self.data = h
+            self.dataH=h
+            self.data=convertToPoissonErrorGr(h)
         else:
             h.SetMarkerStyle(1)
             h.SetMarkerColor(color)
@@ -47,6 +49,20 @@ class Plot:
             h.SetFillStyle(1001)
             self.mc.append(h)
 
+    def appendTo(self,outUrl):
+        #if file does not exist it is created
+        outF=ROOT.TFile.Open(outUrl,'UPDATE')
+        outDir=outF.mkdir(self.name)
+        outDir.cd()
+        for m in self.mc : 
+            if m :
+                m.Write()
+        if self.data : 
+            self.data.Write()
+            self.dataH.Write()
+        outF.Close()
+
+
     def reset(self):
         for o in self.garbageList: o.Delete()
 
@@ -54,10 +70,6 @@ class Plot:
         if len(self.mc)==0:
             print '%s is empty' % self.name
             return
-
-        if not self.loadedBaseTools:
-            ROOT.gSystem.Load("libUserCodellvv_fwk.so")
-            self.loadedBaseTools=True
 
         if firstBin<1: firstBin = 1
 
@@ -88,7 +100,8 @@ class Plot:
             for xbin in xrange(1,h.GetXaxis().GetNbins()+1):
                 itot=h.GetBinContent(xbin)
                 ierr=h.GetBinError(xbin)
-                pval=' & %s'%ROOT.toLatexRounded(itot,ierr,-1,True)
+                #pval=' & %s'%ROOT.toLatexRounded(itot,ierr,-1,True)
+                pval=' & %f$\pm$%f'%(itot,ierr)
                 f.write(pval.ljust(40),)
                 tot[xbin] = tot[xbin]+itot
                 err[xbin] = err[xbin]+ierr*ierr
@@ -97,7 +110,8 @@ class Plot:
         f.write('------------------------------------------\n')
         f.write('Total'.ljust(20),)
         for xbin in tot:
-            pval=' & %s'%ROOT.toLatexRounded(tot[xbin],math.sqrt(err[xbin]),-1,True)
+            #pval=' & %s'%ROOT.toLatexRounded(tot[xbin],math.sqrt(err[xbin]),-1,True)
+            pval=' & %f$\pm$%f'%(tot[xbin],math.sqrt(err[xbin]))
             f.write(pval.ljust(40),)
         f.write('\n')
 
@@ -105,7 +119,7 @@ class Plot:
         f.write('------------------------------------------\n')
         f.write('Data'.ljust(20),)
         for xbin in xrange(1,self.data.GetXaxis().GetNbins()+1):
-            itot=self.data.GetBinContent(xbin)
+            itot=self.dataH.GetBinContent(xbin)
             pval=' & %d'%itot
             f.write(pval.ljust(40))
         f.write('\n')
@@ -127,7 +141,7 @@ class Plot:
 
         frame = None
         # leg = TLegend(0.15,0.9,0.9,0.95)
-        leg = TLegend(0.6,0.7,0.92,0.89)
+        leg = TLegend(0.5,0.7,0.9,0.89)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
         leg.SetTextFont(42)
@@ -137,7 +151,7 @@ class Plot:
         maxY = 1.0
         if self.data is not None:
             leg.AddEntry( self.data, self.data.GetTitle(),'p')
-            frame = self.data.Clone('frame')
+            frame = self.dataH.Clone('frame')
             self.garbageList.append(frame)
             maxY = self.data.GetMaximum()*1.1
             frame.Reset('ICE')
@@ -167,7 +181,9 @@ class Plot:
             print '%s is empty'%self.name
             return 
 
-        frame.GetYaxis().SetRangeUser(1e-2,1.2*maxY)
+        frame.GetYaxis().SetTitleSize(0.045)
+        frame.GetYaxis().SetLabelSize(0.04)
+        frame.GetYaxis().SetRangeUser(0.5,1.3*maxY)
         frame.SetDirectory(0)
         frame.Draw()
         frame.GetYaxis().SetTitleOffset(1.6)
@@ -178,14 +194,7 @@ class Plot:
         leg.Draw()
 
         ## Draw CMS Preliminary label
-        tlat = TLatex()
-        tlat.SetNDC()
-        tlat.SetTextFont(62)
-        tlat.SetTextSize(0.04)
-        tlat.SetTextAlign(31)
-        prelim_text = 'CMS work in progress, #sqrt{s} = 8 TeV'
-        tlat.DrawLatex(0.92, 0.92, prelim_text)
-
+        CMS_lumi(t1,2,0)
 
         if totalMC is None or self.data is None:
             t1.SetPad(0,0,1,1)
@@ -199,31 +208,222 @@ class Plot:
             t2.SetGridy()
             t2.Draw()
             t2.cd()
-            ratio = self.data.Clone('ratio')
-            self.garbageList.append(ratio)
-            ratio.Divide(totalMC)
-            ratio.SetDirectory(0)
-            ratio.Draw('e1')
-            ratio.GetYaxis().SetRangeUser(0.62,1.38)
-            ratio.GetYaxis().SetTitle('Data/#SigmaBkg')
-            ratio.GetYaxis().SetNdivisions(5)
-            ratio.GetYaxis().SetLabelSize(0.15)
-            ratio.GetYaxis().SetTitleSize(0.18)
-            ratio.GetXaxis().SetLabelSize(0.18)
-            ratio.GetXaxis().SetTitleSize(0.2)
-            ratio.GetYaxis().SetTitleOffset(0.3)
-            ratio.GetXaxis().SetTitleOffset(0.8)
+            
+            ratioframe=self.dataH.Clone('ratioframe')
+            ratioframe.Draw()
+            ratioframe.GetYaxis().SetRangeUser(0.62,1.36)
+            ratioframe.GetYaxis().SetTitle('Data/#SigmaBkg')
+            ratioframe.GetYaxis().SetNdivisions(5)
+            ratioframe.GetYaxis().SetLabelSize(0.15)
+            ratioframe.GetXaxis().SetLabelSize(0.15)
+            ratioframe.GetYaxis().SetTitleSize(0.18)
+            ratioframe.GetXaxis().SetLabelSize(0.18)
+            ratioframe.GetXaxis().SetTitleSize(0.18)
+            ratioframe.GetYaxis().SetTitleOffset(0.3)
+            ratioframe.GetXaxis().SetTitleOffset(0.9)
+
+            gr=ROOT.TGraphAsymmErrors()
+            gr.SetName("data2bkg")
+            gr.SetMarkerStyle(20)
+            gr.SetMarkerColor(1)
+            gr.SetLineColor(1)
+            gr.SetLineWidth(2)
+            bkgUncGr=ROOT.TGraphErrors()
+            bkgUncGr.SetName('bkgunc')
+            bkgUncGr.SetMarkerColor(920)
+            bkgUncGr.SetMarkerStyle(1)
+            bkgUncGr.SetLineColor(920)
+            bkgUncGr.SetFillColor(920)
+            bkgUncGr.SetFillStyle(3001)
+            for xbin in xrange(1,self.dataH.GetXaxis().GetNbins()+1):
+                x            = self.dataH.GetXaxis().GetBinCenter(xbin)
+                dx           = self.dataH.GetXaxis().GetBinWidth(xbin)
+                dataCts      = self.dataH.GetBinContent(xbin)
+                data_err_low = self.data.GetErrorYlow(xbin-1) #get errors from the graph
+                data_err_up  = self.data.GetErrorYhigh(xbin-1)
+                bkgCts       = totalMC.GetBinContent(xbin);
+                bkgCts_err   = totalMC.GetBinError(xbin);
+                if bkgCts==0 : continue
+                errLo=math.sqrt(math.pow(data_err_low*bkgCts,2) + math.pow(dataCts*bkgCts_err,2))/math.pow(bkgCts,2)
+                errHi=math.sqrt(math.pow(data_err_up*bkgCts,2)  + math.pow(dataCts*bkgCts_err,2))/math.pow(bkgCts,2)
+                np=gr.GetN()
+                gr.SetPoint(np,x,dataCts/bkgCts)
+                gr.SetPointError(np,0,0,errLo,errHi)
+                bkgUncGr.SetPoint(np,x,1)
+                bkgUncGr.SetPointError(np,dx,bkgCts_err/bkgCts)
+            bkgUncGr.Draw('p2')
+            gr.Draw('p')
+
 
         canvas.cd()
         canvas.Modified()
         canvas.Update()
         for ext in ['pdf','png'] : canvas.SaveAs(outDir+'/'+self.name+'.'+ext)
+        t1.cd()
+        t1.SetLogy()
+        frame.GetYaxis().SetRangeUser(0.5,4*maxY)
+        canvas.cd()
+        for ext in ['pdf','png'] : canvas.SaveAs(outDir+'/'+self.name+'_log.'+ext)
 
 
-def customROOTstyle():
+
+"""
+converts an histogram to a graph with Poisson error bars
+"""
+def convertToPoissonErrorGr(h):
+    #check https://twiki.cern.ch/twiki/bin/view/CMS/PoissonErrorBars
+    alpha = 1 - 0.6827;
+    grpois = ROOT.TGraphAsymmErrors(h);
+    for i in xrange(0,grpois.GetN()+1) :
+        N = grpois.GetY()[i]
+        if N<200 :
+            L = 0
+            if N>0 : L = ROOT.Math.gamma_quantile(alpha/2,N,1.)
+            U = ROOT.Math.gamma_quantile_c(alpha/2,N+1,1)
+            grpois.SetPointEYlow(i, N-L)
+            grpois.SetPointEYhigh(i, U-N)
+        else:
+            grpois.SetPointEYlow(i, math.sqrt(N))
+            grpois.SetPointEYhigh(i,math.sqrt(N))
+    return grpois
+
+
+def setTDRStyle():
     """
     Loads TDR style
     """
-    ROOT.gSystem.Load("libUserCodellvv_fwk.so")
-    ROOT.setTDRStyle()
+    tdrStyle = ROOT.TStyle("tdrStyle","Style for P-TDR")
+    # For the canvas:
+    tdrStyle.SetCanvasBorderMode(0)
+    tdrStyle.SetCanvasColor(ROOT.kWhite)
+    tdrStyle.SetCanvasDefH(928) #Height of canvas
+    tdrStyle.SetCanvasDefW(904) #Width of canvas
+    tdrStyle.SetCanvasDefX(1320)   #POsition on screen
+    tdrStyle.SetCanvasDefY(0)
+    
+    # For the Pad:
+    tdrStyle.SetPadBorderMode(0)
+    # tdrStyle.SetPadBorderSize(Width_t size = 1)
+    tdrStyle.SetPadColor(ROOT.kWhite)
+    tdrStyle.SetPadGridX(False)
+    tdrStyle.SetPadGridY(False)
+    tdrStyle.SetGridColor(0)
+    tdrStyle.SetGridStyle(3)
+    tdrStyle.SetGridWidth(1)
+    
+    # For the frame:
+    tdrStyle.SetFrameBorderMode(0)
+    tdrStyle.SetFrameBorderSize(1)
+    tdrStyle.SetFrameFillColor(0)
+    tdrStyle.SetFrameFillStyle(0)
+    tdrStyle.SetFrameLineColor(1)
+    tdrStyle.SetFrameLineStyle(1)
+    tdrStyle.SetFrameLineWidth(1)
+    
+    # For the histo:
+    # tdrStyle.SetHistFillColor(1)
+    # tdrStyle.SetHistFillStyle(0)
+    tdrStyle.SetHistLineColor(1)
+    tdrStyle.SetHistLineStyle(0)
+    tdrStyle.SetHistLineWidth(1)
+    # tdrStyle.SetLegoInnerR(Float_t rad = 0.5)
+    # tdrStyle.SetNumberContours(Int_t number = 20)
+    
+    tdrStyle.SetEndErrorSize(2)
+    #  tdrStyle.SetErrorMarker(20)
+    tdrStyle.SetErrorX(0.)
+    
+    tdrStyle.SetMarkerStyle(20)
+    
+    # For the fit/function:
+    tdrStyle.SetOptFit(1)
+    tdrStyle.SetFitFormat("5.4g")
+    tdrStyle.SetFuncColor(2)
+    tdrStyle.SetFuncStyle(1)
+    tdrStyle.SetFuncWidth(1)
+    
+    #For the date:
+    tdrStyle.SetOptDate(0)
+    # tdrStyle.SetDateX(Float_t x = 0.01)
+    # tdrStyle.SetDateY(Float_t y = 0.01)
+    
+    # For the statistics box:
+    tdrStyle.SetOptFile(0)
+    tdrStyle.SetOptStat(0) # To display the mean and RMS:   SetOptStat("mr")
+    tdrStyle.SetStatColor(ROOT.kWhite)
+    tdrStyle.SetStatFont(42)
+    tdrStyle.SetStatFontSize(0.025)
+    tdrStyle.SetStatTextColor(1)
+    tdrStyle.SetStatFormat("6.4g")
+    tdrStyle.SetStatBorderSize(1)
+    tdrStyle.SetStatH(0.1)
+    tdrStyle.SetStatW(0.15)
+    # tdrStyle.SetStatStyle(Style_t style = 1001)
+    # tdrStyle.SetStatX(Float_t x = 0)
+    # tdrStyle.SetStatY(Float_t y = 0)
+    
+    # Margins:
+    tdrStyle.SetPadTopMargin(0.07)
+    tdrStyle.SetPadBottomMargin(0.13)
+    tdrStyle.SetPadLeftMargin(0.17)
+    tdrStyle.SetPadRightMargin(0.03)
+    
+    # For the Global title:
+    tdrStyle.SetOptTitle(0)
+    tdrStyle.SetTitleFont(42)
+    tdrStyle.SetTitleColor(1)
+    tdrStyle.SetTitleTextColor(1)
+    tdrStyle.SetTitleFillColor(10)
+    tdrStyle.SetTitleFontSize(0.065)
+    tdrStyle.SetTitleH(0.07) # Set the height of the title box
+    tdrStyle.SetTitleW(0.80) # Set the width of the title box
+    tdrStyle.SetTitleX(0.15) # Set the position of the title box
+    tdrStyle.SetTitleY(1.00) # Set the position of the title box
+    # tdrStyle.SetTitleStyle(Style_t style = 1001)
+    tdrStyle.SetTitleBorderSize(1)
+
+    # For the axis titles:
+    tdrStyle.SetTitleColor(1, "XYZ")
+    tdrStyle.SetTitleFont(42, "XYZ")
+    tdrStyle.SetTitleSize(0.06, "XYZ")
+    # tdrStyle.SetTitleXSize(Float_t size = 0.02) # Another way to set the size?
+    # tdrStyle.SetTitleYSize(Float_t size = 0.02)
+    tdrStyle.SetTitleXOffset(0.95)
+    tdrStyle.SetTitleYOffset(1.3)
+    # tdrStyle.SetTitleOffset(1.1, "Y") # Another way to set the Offset
+    
+    # For the axis labels:
+    tdrStyle.SetLabelColor(1, "XYZ")
+    tdrStyle.SetLabelFont(42, "XYZ")
+    tdrStyle.SetLabelOffset(0.007, "XYZ")
+    tdrStyle.SetLabelSize(0.044, "XYZ")
+
+    # For the axis:
+    tdrStyle.SetAxisColor(1, "XYZ")
+    tdrStyle.SetStripDecimals(True)
+    tdrStyle.SetTickLength(0.03, "XYZ")
+    tdrStyle.SetNdivisions(510, "XYZ")
+    tdrStyle.SetPadTickX(1)  # To get tick marks on the opposite side of the frame
+    tdrStyle.SetPadTickY(1)
+    
+    # Change for log plots:
+    tdrStyle.SetOptLogx(0)
+    tdrStyle.SetOptLogy(0)
+    tdrStyle.SetOptLogz(0)
+    
+    # Postscript options:
+    tdrStyle.SetPaperSize(20.,20.)
+    # tdrStyle.SetLineScalePS(Float_t scale = 3)
+    # tdrStyle.SetLineStyleString(Int_t i, const char* text)
+    # tdrStyle.SetHeaderPS(const char* header)
+    # tdrStyle.SetTitlePS(const char* pstitle)
+    
+    # tdrStyle.SetBarOffset(Float_t baroff = 0.5)
+    # tdrStyle.SetBarWidth(Float_t barwidth = 0.5)
+    # tdrStyle.SetPaintTextFormat(const char* format = "g")
+    # tdrStyle.SetPalette(Int_t ncolors = 0, Int_t* colors = 0)
+    # tdrStyle.SetTimeOffset(Double_t toffset)
+    # tdrStyle.SetHistMinimumZero(True)
+    
+    tdrStyle.cd()
 

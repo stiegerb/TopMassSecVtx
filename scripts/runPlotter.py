@@ -145,8 +145,9 @@ def checkMissingFiles(inDir, jsonUrl):
 def makePlotPacked(packedargs):
     key, inDir, procList, xsecweights, options = packedargs
     return makePlot(key, inDir, procList, xsecweights, options)
+
 def makePlot(key, inDir, procList, xsecweights, options):
-    from UserCode.llvv_fwk.PlotUtils import Plot
+    from UserCode.TopMassSecVtx.PlotUtils import Plot
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
@@ -217,6 +218,7 @@ def makePlot(key, inDir, procList, xsecweights, options):
 
     newPlot.show(options.outDir)
     if(options.debug or newPlot.name.find('flow')>=0 ) : newPlot.showTable(options.outDir)
+    newPlot.appendTo(options.outDir+'/plotter.root')
     newPlot.reset()
 
 def runPlotter(inDir, options):
@@ -368,21 +370,15 @@ if __name__ == "__main__":
             checkMissingFiles(inDir=args[0], jsonUrl=opt.json)
             exit(0)
 
-        from UserCode.llvv_fwk.PlotUtils import customROOTstyle
-        customROOTstyle()
+        from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
+        setTDRStyle()
         gROOT.SetBatch(True)
         gStyle.SetOptTitle(0)
         gStyle.SetOptStat(0)
 
         os.system('mkdir -p %s'%opt.outDir)
+        os.system('rm %s/plotter.root'%opt.outDir)
         runPlotter(inDir=args[0], options=opt)
-        # runPlotter(inDir=args[0],
-        #            jsonUrl=opt.json,
-        #            lumi=opt.lumi,
-        #            debug=opt.debug,
-        #            outDir=opt.outDir,
-        #            mask=opt.plotMask,
-        #            verbose=opt.verbose)
         print 'Plots have been saved to %s' % opt.outDir
         exit(0)
 

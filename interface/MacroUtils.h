@@ -1,7 +1,6 @@
 #ifndef macroutils_h
 #define macroutils_h
 
-
 #include "DataFormats/FWLite/interface/Handle.h"
 #include "DataFormats/FWLite/interface/Event.h"
 #include "DataFormats/FWLite/interface/ChainEvent.h"
@@ -11,7 +10,6 @@
 #include "FWCore/PythonParameterSet/interface/MakeParameterSets.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
-
 
 #include "DataFormats/Math/interface/deltaPhi.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
@@ -25,13 +23,14 @@
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 
-#include "UserCode/llvv_fwk/interface/llvvObjects.h"
-
 #include <vector>
 #include "TVector3.h"
 #include "TMath.h"
 #include "TGraph.h"
 #include <Math/VectorUtil.h>
+
+#include "Math/LorentzVector.h"
+typedef ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double> > LorentzVector;
 
 namespace utils
 {
@@ -105,7 +104,6 @@ namespace utils
     utils::cmssw::PuShifter_t getPUshifters(std::vector< float > &Lumi_distr, float puUnc);
 
     Float_t getEffectiveArea(int id, float eta,int cone=3,TString isoSum="");
-    double relIso(llvvLepton lep, double rho);
 
     // Single muon trigger efficiency
     void getSingleMuTrigEff(const double&, const double&, double& );
@@ -114,14 +112,6 @@ namespace utils
     FactorizedJetCorrector *getJetCorrector(TString baseDir, bool isMC);
   }
 
-
-// FWLITE CODE
-
-  // loop on all the lumi blocks for an EDM file in order to count the number of events that are in a sample
-  // this is useful to determine how to normalize the events (compute weight)
-  unsigned long getMergeableCounterValue(const std::vector<std::string>& urls, std::string counter);
-  void getMCPileupDistribution(fwlite::ChainEvent& ev, unsigned int Npu, std::vector<float>& mcpileup);
-  void getPileupNormalization(std::vector<float>& mcpileup, double* PUNorm, edm::LumiReWeighting* LumiWeights, utils::cmssw::PuShifter_t PuShifters);
 }
 
 // CODE FOR DUPLICATE EVENTS CHECKING

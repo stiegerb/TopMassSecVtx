@@ -2,9 +2,8 @@
 <use name="roottmva"/>
 <use name="roofit"/>
 <use name="roostats"/>
-<use name="HiggsAnalysis/CombinedLimit"/>
 <use name="PhysicsTools/FWLite"/>
-<use name="UserCode/llvv_fwk"/>
+<use name="UserCode/TopMassSecVtx"/>
 <environment>
   <bin name="runTopAnalysis" file="runTopAnalysis.cc"></bin>
 </environment>

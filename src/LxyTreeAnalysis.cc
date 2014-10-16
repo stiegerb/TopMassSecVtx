@@ -1,6 +1,4 @@
-#ifndef LxyTreeAnalysis_cxx
-#define LxyTreeAnalysis_cxx
-#include "UserCode/llvv_fwk/interface/LxyTreeAnalysis.h"
+#include "UserCode/TopMassSecVtx/interface/LxyTreeAnalysis.h"
 
 #include <TLorentzVector.h>
 #include <iostream>
@@ -1097,6 +1095,3 @@ void LxyTreeAnalysis::Loop(){
 	std::cout << "\r [   done  ]" << std::endl;
 }
 
-
-
-#endif

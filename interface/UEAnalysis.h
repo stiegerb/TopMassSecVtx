@@ -1,8 +1,8 @@
 #ifndef _ueanalysis_
 #define _ueanalysis_
 
-#include "UserCode/llvv_fwk/interface/SmartSelectionMonitor.h"
-#include "UserCode/llvv_fwk/interface/DataEventSummaryHandler.h"
+#include "UserCode/TopMassSecVtx/interface/SmartSelectionMonitor.h"
+#include "UserCode/TopMassSecVtx/interface/DataEventSummaryHandler.h"
 
 #include <vector>
 

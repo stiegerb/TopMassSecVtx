@@ -718,7 +718,7 @@ int main(int argc, char* argv[])
       bev.w[0]=puWeight;           bev.w[1]=puWeightUp;          bev.w[2]=puWeightDown;
       bev.w[3]=lepSelectionWeight; bev.w[4]=lepSelectionWeightUp; bev.w[5]=lepSelectionWeightDown;
       bev.w[6]=topPtWgt;           bev.w[7]=topPtWgtUp;           bev.w[8]=topPtWgtDown;
-      bev.qscale=ev.qscale;        bev.x1=ev.x1; bev.x2=ev.x2; bev.id1=bev.id1; bev.id2=bev.id2;
+      bev.qscale=ev.qscale;        bev.x1=ev.x1; bev.x2=ev.x2; bev.id1=ev.id1; bev.id2=ev.id2;
       data::PhysicsObjectCollection_t pf = evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
       lxyAn.analyze( box.leptons, box.jets, met, pf, gen);
       lxyAn.save();

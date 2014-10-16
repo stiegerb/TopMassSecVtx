@@ -160,8 +160,8 @@ data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,fl
 	Float_t chIso = ele.getVal("chIso03");
 	Float_t nhIso = ele.getVal("nhIso03");
 	float relIso = (TMath::Max(nhIso+gIso-rho*utils::cmssw::getEffectiveArea(11,sceta,3),Float_t(0.))+chIso)/ele.pt();
-	bool passLLiso( relIso<0.10 );
-	bool passLJiso( relIso<0.10 );
+	bool passLLiso( relIso<0.12 );
+	bool passLJiso( relIso<0.12 );
 	bool passLJvetoiso( relIso<0.15 );
 
 	//set the flags
@@ -202,9 +202,9 @@ data::PhysicsObject_t getTopSelectionTaggedMuon(data::PhysicsObject_t mu, float 
   Float_t puchIso = mu.getVal("puchIso04");
   Float_t nhIso = mu.getVal("nhIso04");
   Float_t relIso = ( TMath::Max(nhIso+gIso-0.5*puchIso,0.)+chIso ) / mu.pt();
-  bool passLLiso( relIso<0.2 );
+  bool passLLiso( relIso<0.12 );
   bool passLJiso( relIso<0.12 );
-  bool passLJvetoiso( relIso<0.2 );
+  bool passLJvetoiso( relIso<0.15 );
   
   //set the flags
   mu.setFlag("passLL",    (passLLkin     && passLLid     && passLLiso));
@@ -405,7 +405,7 @@ int main(int argc, char* argv[])
       baseSecVtxMult->GetXaxis()->SetBinLabel(i+1,label);
     }
   controlHistos.addHistogram( new TH1F("met",     ";PF E_{T}^{miss} [GeV]; Events",50,0,250) );
-  controlHistos.addHistogram( new TH1F("mt",      ";Transverse mass [GeV];Events",50,0,500) );
+  controlHistos.addHistogram( new TH1F("mt",      ";Transverse mass [GeV];Events",50,0,300) );
   controlHistos.addHistogram( new TH1F("mll",     ";Dilepton mass [GeV];Events",50,10,260) );
   controlHistos.addHistogram( new TH1F("charge", ";Charge; Events",3,-1.5,1.5) );
 

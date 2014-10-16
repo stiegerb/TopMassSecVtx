@@ -799,18 +799,18 @@ void utils::cmssw::updateJEC(data::PhysicsObjectCollection_t &jets, FactorizedJe
 		    //set the JER up/down alternatives
 		    jets[ijet].setVal("jerup",   smearJER[1] );
 		    jets[ijet].setVal("jerdown", smearJER[2] );
-		  }
-
-		//set the JES up/down pT alternatives
-		jets[ijet].set("nJetUncs",jesUnc.size());
-		for(size_t iunc=0; iunc<jesUnc.size(); iunc++)
-		  {
-		    //get alternative pt's up and down
-		    std::vector<float> altPt=utils::cmssw::smearJES(jets[ijet].pt(),jets[ijet].eta(), jesUnc[iunc]);
-		    TString altName("unc"); altName += iunc;
-		    jets[ijet].setVal(altName+"_up",    altPt[0] );
-		    jets[ijet].setVal(altName+"_down",  altPt[1] );
-		    
+		  
+		    //set the JES up/down pT alternatives
+		    jets[ijet].set("nJetUncs",jesUnc.size());
+		    for(size_t iunc=0; iunc<jesUnc.size(); iunc++)
+		      {
+			//get alternative pt's up and down
+			std::vector<float> altPt=utils::cmssw::smearJES(jets[ijet].pt(),jets[ijet].eta(), jesUnc[iunc]);
+			TString altName("unc"); altName += iunc;
+			jets[ijet].setVal(altName+"_up",    altPt[0] );
+			jets[ijet].setVal(altName+"_down",  altPt[1] );
+			
+		      }
 		  }
 		
 		//to get the raw jet again
@@ -825,54 +825,54 @@ std::vector<LorentzVector> utils::cmssw::getMETvariations(data::PhysicsObject_t 
 	if(!isMC) return newMetsP4;
 
 	LorentzVector nullP4(0,0,0,0);
-
-  //recompute the clustered and unclustered fluxes with energy variations
+	
+	//recompute the clustered and unclustered fluxes with energy variations
 	for(size_t ivar=1; ivar<=8; ivar++)
-	{
-
-	  //leptonic flux
-		LorentzVector leptonFlux(nullP4), lepDiff(nullP4);
-		for(size_t ilep=0; ilep<leptons.size(); ilep++) {
-			float varSign( (ivar==LESUP ? 1.0 : (ivar==LESDOWN ? -1.0 : 0.0) ) );
-			int id( abs(leptons[ilep].get("id")) );
-			float sf(1.0);
-			if(id==13) sf=(1.0+varSign*0.01);
-			if(id==11) {
-				if(fabs(leptons[ilep].eta())<1.442) sf=(1.0+varSign*0.02);
-				else                                sf=(1.0-varSign*0.05);
-			}
-			leptonFlux += leptons[ilep];
-			lepDiff += (sf-1)*leptons[ilep];
-		}
-
-	  //clustered flux
-		LorentzVector jetDiff(nullP4), clusteredFlux(nullP4);
-		for(size_t ijet=0; ijet<jets.size(); ijet++)
-		{
-			if(jets[ijet].pt()==0) continue;
-			float jetsf(1.0);
-			if(ivar==JERUP)   jetsf=jets[ijet].getVal("jerup")/jets[ijet].pt();
-			if(ivar==JERDOWN) jetsf=jets[ijet].getVal("jerdown")/jets[ijet].pt();
-			if(ivar==JESUP)   jetsf=jets[ijet].getVal("jesup")/jets[ijet].pt();
-			if(ivar==JESDOWN) jetsf=jets[ijet].getVal("jesdown")/jets[ijet].pt();
-			LorentzVector newJet( jets[ijet] ); newJet *= jetsf;
-			jetDiff       += (newJet-jets[ijet]);
-			clusteredFlux += jets[ijet];
-		}
-		LorentzVector iMet=rawMETP4-jetDiff-lepDiff;
-
-	  //unclustered flux
-		if(ivar==UMETUP || ivar==UMETDOWN)
-		{
-			LorentzVector unclusteredFlux=-(iMet+clusteredFlux+leptonFlux);
-			unclusteredFlux *= (ivar==UMETUP ? 1.1 : 0.9);
-			iMet = -clusteredFlux -leptonFlux - unclusteredFlux;
-		}
-
-	  //save new met
-		newMetsP4[ivar]=iMet;
-	}
-
-  //all done here
+	  {
+	    
+	    //leptonic flux
+	    LorentzVector leptonFlux(nullP4), lepDiff(nullP4);
+	    for(size_t ilep=0; ilep<leptons.size(); ilep++) {
+	      float varSign( (ivar==LESUP ? 1.0 : (ivar==LESDOWN ? -1.0 : 0.0) ) );
+	      int id( abs(leptons[ilep].get("id")) );
+	      float sf(1.0);
+	      if(id==13) sf=(1.0+varSign*0.01);
+	      if(id==11) {
+		if(fabs(leptons[ilep].eta())<1.442) sf=(1.0+varSign*0.02);
+		else                                sf=(1.0-varSign*0.05);
+	      }
+	      leptonFlux += leptons[ilep];
+	      lepDiff += (sf-1)*leptons[ilep];
+	    }
+	    
+	    //clustered flux
+	    LorentzVector jetDiff(nullP4), clusteredFlux(nullP4);
+	    for(size_t ijet=0; ijet<jets.size(); ijet++)
+	      {
+		if(jets[ijet].pt()==0) continue;
+		float jetsf(1.0);
+		if(ivar==JERUP)   jetsf=jets[ijet].getVal("jerup")/jets[ijet].pt();
+		if(ivar==JERDOWN) jetsf=jets[ijet].getVal("jerdown")/jets[ijet].pt();
+		if(ivar==JESUP)   jetsf=jets[ijet].getVal("unc0_up")/jets[ijet].pt();
+		if(ivar==JESDOWN) jetsf=jets[ijet].getVal("unc0_down")/jets[ijet].pt();
+		LorentzVector newJet( jets[ijet] ); newJet *= jetsf;
+		jetDiff       += (newJet-jets[ijet]);
+		clusteredFlux += jets[ijet];
+	      }
+	    LorentzVector iMet=rawMETP4-jetDiff-lepDiff;
+	    
+	    //unclustered flux
+	    if(ivar==UMETUP || ivar==UMETDOWN)
+	      {
+		LorentzVector unclusteredFlux=-(iMet+clusteredFlux+leptonFlux);
+		unclusteredFlux *= (ivar==UMETUP ? 1.1 : 0.9);
+		iMet = -clusteredFlux -leptonFlux - unclusteredFlux;
+	      }
+	    
+	    //save new met
+	    newMetsP4[ivar]=iMet;
+	  }
+	
+	//all done here
 	return newMetsP4;
 }

@@ -5,6 +5,7 @@ import ROOT
 from ROOT import THStack, TLatex
 from ROOT import TCanvas, TPad, TLegend
 from UserCode.TopMassSecVtx.CMS_lumi import *
+from UserCode.TopMassSecVtx.rounding import *
 
 class Plot:
     """
@@ -64,7 +65,11 @@ class Plot:
 
 
     def reset(self):
-        for o in self.garbageList: o.Delete()
+        for o in self.garbageList: 
+            try:
+                o.Delete()
+            except:
+                pass
 
     def showTable(self, outDir, firstBin=1, lastBin=-1):
         if len(self.mc)==0:
@@ -100,8 +105,7 @@ class Plot:
             for xbin in xrange(1,h.GetXaxis().GetNbins()+1):
                 itot=h.GetBinContent(xbin)
                 ierr=h.GetBinError(xbin)
-                #pval=' & %s'%ROOT.toLatexRounded(itot,ierr,-1,True)
-                pval=' & %f$\pm$%f'%(itot,ierr)
+                pval=' & %s'%toLatexRounded(itot,ierr)
                 f.write(pval.ljust(40),)
                 tot[xbin] = tot[xbin]+itot
                 err[xbin] = err[xbin]+ierr*ierr
@@ -110,8 +114,7 @@ class Plot:
         f.write('------------------------------------------\n')
         f.write('Total'.ljust(20),)
         for xbin in tot:
-            #pval=' & %s'%ROOT.toLatexRounded(tot[xbin],math.sqrt(err[xbin]),-1,True)
-            pval=' & %f$\pm$%f'%(tot[xbin],math.sqrt(err[xbin]))
+            pval=' & %s'%toLatexRounded(tot[xbin],math.sqrt(err[xbin]))
             f.write(pval.ljust(40),)
         f.write('\n')
 

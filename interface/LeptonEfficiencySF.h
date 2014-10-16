@@ -14,7 +14,8 @@ class LeptonEfficiencySF
   //
   ~LeptonEfficiencySF() {}
 
-  //
+  //electrons : id+iso from Table 6, trigger from Table 9 (leptonic leg) in AN 2012/218
+  //muons : inclusive scale factors from AN 2013/248 (averaged for positive/negative eta), a conservative 1% uncertainty is assigned
   std::pair<float,float> getSingleLeptonEfficiencySF(float eta,int id)
   {
     std::pair<float, float> sf(1,0);
@@ -24,16 +25,12 @@ class LeptonEfficiencySF
       {
       case 11:
 	{
-	  //id+iso from Table 6, trigger from Table 9 (leptonic leg) in AN 2012/218
-	  //trigger
 	  sf.first=1.005*0.988;
 	  sf.second=sqrt(pow(0.05*0.988,2)+pow(0.05*1.005,2));
 	  break;
 	}
       case 13:
 	{
-	  //inclusive scale factors from AN 2013/248 (averaged for positive/negative eta)
-	  //a conservative 1% uncertainty is assigned
 	  sf.second=0.01;
 	  if(eta<0.12) sf.first=0.97;
 	  if(eta<0.35) sf.first=0.94;
@@ -48,30 +45,77 @@ class LeptonEfficiencySF
     return sf;
   }
   
-  //AN-2012/389, table 11
-  std::pair<float,float> getDileptonEfficiencySF(int id)
+  //AN-2012/389, Figures 26, 27,28
+  //assumes eta1,eta2 are the leading, trailer lepton eta
+  //for emu eta1=eta_e, eta2=eta_mu
+  //the selection efficiency is assumed to be perfect (SF=1) which is ok, and a 2% unc. is assigned to it
+  std::pair<float,float> getDileptonEfficiencySF(float eta1,float eta2,int id)
   {
-    float trigSF(1.0), trigSFUnc(0.0);
-    float selSF(1.0), selSFUnc(0.0);
+    float trigSF,trigSFUNC,selSF,selSFUnc;
     id=abs(id);
     switch(id)
       {
       case 11*11:
 	{
-	  selSF=0.982;  selSFUnc=0.006;
-	  trigSF=0.979; trigSFUnc=0.012;
+	  selSF=1.0; selSFUnc=0.02;
+	  if( fabs(eta1)<1.442 )
+	    {
+	      if(fabs(eta2)<1.4442) {trigSF=0.993; trigSFUnc=0.011;}
+	      else                  {trigSF=1.007; trigSFUnc=0.014;}
+	    }
+	  else
+	    {
+	      if(fabs(eta2)<1.4442) {trigSF=0.987; trigSFUnc=0.015;}
+	      else                  {trigSF=0.998; trigSFUnc=0.024;}
+	    }
 	  break;
 	}
       case 11*13:
 	{
-	  selSF=0.990;  selSFUnc=0.004;
-	  trigSF=0.948; trigSFUnc=0.010;
+	  selSF=1.0; selSFUnc=0.02;
+	  if( fabs(eta1)<1.442 )
+	    {
+	      if(fabs(eta2)<1.2) {trigSF=0.984; trigSFUnc=0.010;}
+	      else               {trigSF=0.940; trigSFUnc=0.012;}
+	    }
+	  else
+	    {
+	      if(fabs(eta2)<1.2) {trigSF=0.978; trigSFUnc=0.013;}
+	      else               {trigSF=0.937; trigSFUnc=0.020;}
+	    }
 	  break;
 	}
       case 13*13:
 	{
-	  selSF=0.999;  selSFUnc=0.006;
-	  trigSF=0.966; trigSFUnc=0.011;
+	  selSF=1.0; selSFUnc=0.02;
+	  if( fabs(eta1)<0.9 )
+	    {
+	      if( fabs(eta2)<0.9 )     { trigSF=0.968; trigSFUnc=0.010; }
+	      else if (fabs(eta2)<1.2) { trigSF=0.976; trigSFUnc=0.010; }
+	      else if (fabs(eta2)<2.1) { trigSF=0.976; trigSFUnc=0.010; }
+	      else                     { trigSF=0.975; trigSFUnc=0.021; }
+	    }
+	  else if (fabs(eta1)<1.2)
+	    {
+	      if( fabs(eta2)<0.9 )     { trigSF=0.980; trigSFUnc=0.010; }
+	      else if (fabs(eta2)<1.2) { trigSF=0.980; trigSFUnc=0.012; }
+	      else if (fabs(eta2)<2.1) { trigSF=0.979; trigSFUnc=0.011; }
+	      else                     { trigSF=0.980; trigSFUnc=0.023; }
+	    }
+	  else if (fabs(eta1)<2.1)
+	    {
+	      if( fabs(eta2)<0.9 )     { trigSF=0.976; trigSFUnc=0.010; }
+	      else if (fabs(eta2)<1.2) { trigSF=0.983; trigSFUnc=0.011; }
+	      else if (fabs(eta2)<2.1) { trigSF=0.962; trigSFUnc=0.010; }
+	      else                     { trigSF=0.957; trigSFUnc=0.015; }
+	    }
+	  else
+	    {
+	      if( fabs(eta2)<0.9 )     { trigSF=0.988; trigSFUnc=0.020; }
+	      else if (fabs(eta2)<1.2) { trigSF=1.009; trigSFUnc=0.023; }
+	      else if (fabs(eta2)<2.1) { trigSF=0.959; trigSFUnc=0.015; }
+	      else                     { trigSF=0.961; trigSFUnc=0.032; }
+	    }
 	  break;
 	}
       }

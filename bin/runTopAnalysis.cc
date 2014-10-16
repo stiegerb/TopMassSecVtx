@@ -51,7 +51,6 @@ MuScleFitCorrector *fMuCor=0;
 std::map<std::pair<TString,TString>, std::pair<TGraphErrors *,TGraphErrors *> > fBtagEffCorr;
 edm::LumiReWeighting *fLumiWeights=0;
 utils::cmssw::PuShifter_t fPUshifters;
-DuplicatesChecker duplicatesChecker;
 
 using namespace std;
 
@@ -243,11 +242,11 @@ data::PhysicsObject_t getTopSelectionTaggedJet(data::PhysicsObject_t jet, data::
 	//cross-clean with selected leptons
 	double minDRlj(9999.);
 	for( size_t ilep=0; ilep<leptons.size(); ilep++ )
-	{
-		if( !(leptons[ilep].get("passLL")) ) continue;
-		minDRlj = TMath::Min( minDRlj, deltaR(jet, leptons[ilep]) );
-	}
-
+	  {
+	    if( !(leptons[ilep].getFlag("passLJ")) && !(leptons[ilep].getFlag("passLL")) ) continue;
+	    minDRlj = TMath::Min( minDRlj, deltaR(jet, leptons[ilep]) );
+	  }
+	
 	// Require to pass the loose id
 	Int_t idbits = jet.get("idbits");
 	bool passPFloose( ((idbits>>0) & 0x1) );
@@ -264,7 +263,7 @@ data::PhysicsObjectCollection_t selectJets(data::PhysicsObjectCollection_t &jets
   data::PhysicsObjectCollection_t selJets;
   for(size_t ijet=0; ijet<jets.size(); ijet++)
     {
-      data::PhysicsObject_t selJet = getTopSelectionTaggedJet(jets[ijet], leptons, 30., 2.5);
+      data::PhysicsObject_t selJet = getTopSelectionTaggedJet(jets[ijet], leptons, 20., 2.5);
       
       if(!selJet.get("passGoodJet")) continue;
       
@@ -404,10 +403,11 @@ int main(int argc, char* argv[])
       label.ReplaceAll("jet","SecVtx");
       baseSecVtxMult->GetXaxis()->SetBinLabel(i+1,label);
     }
-  controlHistos.addHistogram( new TH1F("met",     ";PF E_{T}^{miss} [GeV]; Events",50,0,250) );
-  controlHistos.addHistogram( new TH1F("mt",      ";Transverse mass [GeV];Events",50,0,300) );
-  controlHistos.addHistogram( new TH1F("mll",     ";Dilepton mass [GeV];Events",50,10,260) );
-  controlHistos.addHistogram( new TH1F("charge", ";Charge; Events",3,-1.5,1.5) );
+  controlHistos.addHistogram( new TH1F("met",          ";Missing transverse energy [GeV]; Events",50,0,250) );
+  controlHistos.addHistogram( new TH1F("mindphijmet",  ";#Delta#phi(jet,E_{T}^{miss}) [rad]; Events",50,0,TMath::Pi()) );
+  controlHistos.addHistogram( new TH1F("mt",           ";Transverse mass [GeV];Events",50,0,300) );
+  controlHistos.addHistogram( new TH1F("mll",          ";Dilepton mass [GeV];Events",50,10,260) );
+  controlHistos.addHistogram( new TH1F("charge",       ";Lepton charge; Events",3,-1.5,1.5) );
 
   ///
   // process events file
@@ -466,13 +466,11 @@ int main(int argc, char* argv[])
   //
   // analyze (puf...)
   //
-  int nDuplicates(0);
   for (int inum=0; inum < totalEntries; ++inum)
     {
       if(inum%500==0) { printf("\r [ %d/100 ]",int(100*float(inum)/float(totalEntries))); cout << flush; }
       evSummary.getEntry(inum);
       DataEventSummary &ev = evSummary.getEvent();
-      //if(!isMC && duplicatesChecker.isDuplicate( ev.run, ev.lumi, ev.event) ) { nDuplicates++; continue; }
       
       //
       // OBJECT SELECTION
@@ -516,6 +514,19 @@ int main(int argc, char* argv[])
       data::PhysicsObjectCollection_t selJets = selectJets(jets,selLeptons);
       data::PhysicsObjectCollection_t recoMet = evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
       std::vector<LorentzVector> met = utils::cmssw::getMETvariations(recoMet[0], selJets, selLeptons, isMC);
+      
+      //check if a reconstructed jet (pT>20, passing loose PU id, in the "full" detector) is correlated MET
+      float mindphijmet(99999.);
+      for(data::PhysicsObjectCollection_t::iterator it = jets.begin(); it != jets.end(); it++)
+	{
+	  if(it->pt()<20 || fabs(it->eta)>4.7) continue;
+	  Int_t idbits=it->get("idbits");
+	  int simplePuId( ( idbits >>7 ) & 0xf );
+	  bool passLooseSimplePuId(  ( simplePuId >> 2) & 0x1);
+	  if(!passLooseSimplePuId) continue;
+	  mindphijmet=TMath::Min(mindphijmet,fabs(deltaPhi(*it,met[0])));
+	}
+      
 
       //get the category and check if trigger is consistent
       AnalysisBox box = assignBox(selLeptons, selJets, met[0],
@@ -534,7 +545,14 @@ int main(int argc, char* argv[])
 	{
 	  std::pair<float,float> lepSF(1.0,0.0); 
 	  if(abs(box.cat)==13 || abs(box.cat)==11) lepSF=fLepEff.getSingleLeptonEfficiencySF(selLeptons[0].eta(),box.cat);
-	  else                                     lepSF=fLepEff.getDileptonEfficiencySF(box.cat);
+	  else                                     
+	    {
+	      float eta1(selLeptons[0].eta()),eta2(selLeptons[1].eta());
+	      if(abs(box.cat)==11*13) {
+		if(abs(selLeptons[0].id())==13) { eta2=eselLeptons[0].eta(); eta1=selLeptons[1].eta(); }
+	      }
+	      lepSF=fLepEff.getDileptonEfficiencySF(eta1,eta2,box.cat);
+	    }
 	  lepSelectionWeight=lepSF.first;
 	  // lepSelectionWeightUp=lepSelectionWeight+lepSF.second;		    
 	  // lepSelectionWeightDown=lepSelectionWeight-lepSF.second;
@@ -578,7 +596,8 @@ int main(int argc, char* argv[])
 	  genCat *= gen[igen].get("id");
 	}
 	
-	if(pttop>0 && ptantitop>0 && fTopPtWgt)
+	//top-pt re-weighting only for TTbar!
+	if(pttop>0 && ptantitop>0 && fTopPtWgt && isTTbarMC)
 	  {
 	    fTopPtWgt->computeWeight(pttop,ptantitop);
 	    fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );
@@ -600,7 +619,6 @@ int main(int argc, char* argv[])
       LorentzVector ll(*(box.leptons[0]));
       if(box.leptons.size()>=2)
 	{
-	  mt     += utils::cmssw::getMT<LorentzVector>( *(box.leptons[1]), box.met );
 	  thetall = utils::cmssw::getArcCos<LorentzVector>( *(box.leptons[0]), *(box.leptons[1]) );
 	  ll     += *(box.leptons[1]);
 	}
@@ -618,15 +636,17 @@ int main(int argc, char* argv[])
       if(passLeptonSelection)
 	{
 	  controlHistos.fillHisto("nvertices", box.chCat, ev.nvtx,         puWeight*lepSelectionWeight);
-
 	  controlHistos.fillHisto("evtflow", box.chCat, 0,               puWeight*lepSelectionWeight);
+
 	  if(passMetSelection) controlHistos.fillHisto("njets",   box.chCat, box.jets.size(), puWeight*lepSelectionWeight);      //N-1 plot
 	  if(jetBin) 
 	    {
 	      controlHistos.fillHisto("evtflow", box.chCat, jetBin, puWeight*lepSelectionWeight);
 	      if(passJetSelection)
 		{
-		  controlHistos.fillHisto("met",     box.chCat, box.met.pt(), puWeight*lepSelectionWeight); //N-1 plot
+		  controlHistos.fillHisto("met",          box.chCat, box.met.pt(), puWeight*lepSelectionWeight); //N-1 plot
+		  if(box.leptons.size()==1) 
+		    controlHistos.fillHisto("mindphijmet",  box.chCat, mindphijmet,  puWeight*lepSelectionWeight); //N-1 plot, only for l+jets
 		  controlHistos.fillHisto("evtflow", box.chCat, 5,            puWeight*lepSelectionWeight);
 		  if(passMetSelection)
 		    {
@@ -635,6 +655,7 @@ int main(int argc, char* argv[])
 			{
 			  controlHistos.fillHisto("mll", box.chCat, ll.mass(), puWeight*lepSelectionWeight);
 			  controlHistos.fillHisto("thetall", box.chCat, thetall,   puWeight*lepSelectionWeight);
+			  controlHistos.fillHisto("mindphijmet",  box.chCat, mindphijmet,  puWeight*lepSelectionWeight); //N-1 plot
 			}
 		      else 
 			{
@@ -654,9 +675,10 @@ int main(int argc, char* argv[])
 	      else if(passMetSelection)
 		{
 		  //for QCD and W estimation cross check in a jet multiplicity control region
-		  controlHistos.fillHisto("met",    box.chCat+box.jetCat, box.met.pt(), puWeight*lepSelectionWeight); 
-		  controlHistos.fillHisto("mt",     box.chCat+box.jetCat, mt,           puWeight*lepSelectionWeight);
-		  controlHistos.fillHisto("charge", box.chCat+box.jetCat, lepcharge,    puWeight*lepSelectionWeight);
+		  controlHistos.fillHisto("met",          box.chCat+box.jetCat, box.met.pt(), puWeight*lepSelectionWeight); 
+		  controlHistos.fillHisto("mindphijmet",  box.chCat+box.jetCat, mindphijmet,  puWeight*lepSelectionWeight); //N-1 plot
+		  controlHistos.fillHisto("mt",           box.chCat+box.jetCat, mt,           puWeight*lepSelectionWeight);
+		  controlHistos.fillHisto("charge",       box.chCat+box.jetCat, lepcharge,    puWeight*lepSelectionWeight);
 		}
 	    }
 	}
@@ -688,7 +710,6 @@ int main(int argc, char* argv[])
     }
 
   std::cout << std::endl;
-  if(nDuplicates) cout << "[Warning] found " << nDuplicates << " duplicate events in this ntuple" << endl;
 
   //
   // close opened files

@@ -217,6 +217,7 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
       bev_.jcsv[bev_.nj]  = jets[i]->getVal("csv");
       bev_.jarea[bev_.nj]  = jets[i]->getVal("area");
       bev_.jtoraw[bev_.nj] = jets[i]->getVal("torawsf");
+      
       for(int iunc=0; iunc<jets[i]->get("nJetUncs"); iunc++)
 	{
 	  TString altName("unc"); altName += iunc;
@@ -309,7 +310,7 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
 	  bev_.jbhadmatchdr[i] = deltar;
 	}
     }
-  
+
   //met
   bev_.metpt  = mets[0].pt();
   bev_.metphi = mets[0].phi();

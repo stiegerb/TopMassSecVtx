@@ -63,72 +63,76 @@ using namespace std;
 //cat identifies the category: 11-electron 13-muon 11*11,11*13,13*13-dilepton events
 class AnalysisBox{
 public:
-	AnalysisBox() : cat(0), chCat(""), lCat(""), jetCat(""), metCat("") { }
-	~AnalysisBox() { }
-	Int_t cat;
-	TString chCat, lCat, jetCat, metCat;
-	std::vector<data::PhysicsObject_t *> leptons,jets;
-	LorentzVector met;
+  AnalysisBox() : cat(0), chCat(""), lCat(""), jetCat(""), metCat("") { }
+  ~AnalysisBox() { }
+  Int_t cat;
+  TString chCat, lCat, jetCat, metCat;
+  std::vector<data::PhysicsObject_t *> leptons,jets;
+  LorentzVector met;
 };
 
 //
-AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons, data::PhysicsObjectCollection_t &jets, LorentzVector &met, bool hasDileptonTrigger, bool hasLJetsTrigger)
+AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons, 
+		      data::PhysicsObjectCollection_t &jets, 
+		      LorentzVector &met, 
+		      bool hasDileptonTrigger, 
+		      bool hasLJetsTrigger)
 {
-	AnalysisBox box;
-	box.cat=0;
-	for(size_t i=0; i<jets.size(); i++) { box.jets.push_back( &(jets[i]) ); }
-	box.met=met;
+  AnalysisBox box;
+  box.cat=0;
+  for(size_t i=0; i<jets.size(); i++) { box.jets.push_back( &(jets[i]) ); }
+  box.met=met;
 
-	std::vector<int> dilCands, ljCands, vetoCands;
-	for(size_t i=0; i<leptons.size(); i++){
-		if(leptons[i].get("passLL"))     dilCands.push_back(i);
-		if(leptons[i].get("passLJ"))     ljCands.push_back(i);
-		else {
-			if(leptons[i].get("passLJveto")) vetoCands.push_back(i);
-		}
-	}
+  std::vector<int> dilCands, ljCands, vetoCands;
+  for(size_t i=0; i<leptons.size(); i++){
+    if(leptons[i].get("passLL"))     dilCands.push_back(i);
+    if(leptons[i].get("passLJ"))     ljCands.push_back(i);
+    else {
+      if(leptons[i].get("passLJveto")) vetoCands.push_back(i);
+    }
+  }
 
 
-	//
-	// ASSIGN THE BOX
-	// 1. >=2 tight leptons: OS, pt>20,20 GeV -> ll, Mll>20, |Mll-MZ|>15
-	// 2. =1 tight lepton: pt(e)>30  or pt(mu)>26 GeV and =0 vetoLeptons
-	//
-	box.lCat="";
-	if(dilCands.size()>=2 && hasDileptonTrigger)
+  //
+  // ASSIGN THE BOX
+  // 1. >=2 tight leptons: OS, pt>20,20 GeV -> ll, Mll>20, |Mll-MZ|>15
+  // 2. =1 tight lepton: pt(e)>30  or pt(mu)>26 GeV and =0 vetoLeptons
+  //
+  box.lCat="";
+  if(dilCands.size()>=2 && hasDileptonTrigger)
+    {
+      for(size_t i=0; i<dilCands.size(); i++) { box.leptons.push_back( &(leptons[ dilCands[i] ]) ); }
+
+      int dilId(box.leptons[0]->get("id")*box.leptons[1]->get("id"));
+      LorentzVector dilepton( *(box.leptons[0]) );
+      dilepton += *(box.leptons[1]);
+      if(dilepton.mass()>20 && dilId<0)
 	{
-		for(size_t i=0; i<dilCands.size(); i++) { box.leptons.push_back( &(leptons[ dilCands[i] ]) ); }
-
-		int dilId(box.leptons[0]->get("id")*box.leptons[1]->get("id"));
-		LorentzVector dilepton( *(box.leptons[0]) );
-		dilepton += *(box.leptons[1]);
-		if(dilepton.mass()>20 && dilId<0)
-		{
-			if(abs(dilId)==11*11 || abs(dilId)==13*13 || abs(dilId)==11*13 )              box.cat=dilId;
-			if( (abs(dilId)==11*11 || abs(dilId)==13*13) && fabs(dilepton.mass()-91)<15)  box.lCat="z";
-		}
+	  if(abs(dilId)==11*11 || abs(dilId)==13*13 || abs(dilId)==11*13 )              box.cat=dilId;
+	  if( (abs(dilId)==11*11 || abs(dilId)==13*13) && fabs(dilepton.mass()-91)<15)  box.lCat="z";
 	}
-	else if(ljCands.size()==1 && vetoCands.size()==0 && hasLJetsTrigger)
-	{
-		box.leptons.push_back( &(leptons[ ljCands[0] ]) );
-		box.cat=box.leptons[0]->get("id");
-	}
+    }
+  else if(ljCands.size()==1 && vetoCands.size()==0 && hasLJetsTrigger)
+    {
+      box.leptons.push_back( &(leptons[ ljCands[0] ]) );
+      box.cat=box.leptons[0]->get("id");
+    }
 
-	int njetsBin( box.jets.size()>6 ? 6  : box.jets.size() );
-	box.jetCat="jet"; box.jetCat += njetsBin;
+  int njetsBin( box.jets.size()>6 ? 6  : box.jets.size() );
+  box.jetCat="jet"; box.jetCat += njetsBin;
 
-	box.metCat="";
-	if( (abs(box.cat)==11*11 || abs(box.cat)==13*13) && met.pt()<40 ) box.metCat="lowmet";
+  box.metCat="";
+  if( (abs(box.cat)==11*11 || abs(box.cat)==13*13) && met.pt()<40 ) box.metCat="lowmet";
 
-	box.chCat="";
-	if(abs(box.cat)==11)    box.chCat="e";
-	if(abs(box.cat)==13)    box.chCat="mu";
-	if(abs(box.cat)==11*11) box.chCat="ee";
-	if(abs(box.cat)==11*13) box.chCat="emu";
-	if(abs(box.cat)==13*13) box.chCat="mumu";
+  box.chCat="";
+  if(abs(box.cat)==11)    box.chCat="e";
+  if(abs(box.cat)==13)    box.chCat="mu";
+  if(abs(box.cat)==11*11) box.chCat="ee";
+  if(abs(box.cat)==11*13) box.chCat="emu";
+  if(abs(box.cat)==13*13) box.chCat="mumu";
 
-	//all done here
-	return box;
+  //all done here
+  return box;
 }
 
 //
@@ -138,37 +142,37 @@ AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons, data::PhysicsObj
 //sets the selection flags on the electron
 data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,float rho)
 {
-	// Kinematic cuts
-	float sceta = ele.getVal("sceta");
-	bool isInEB2EE    ( fabs(sceta) > 1.4442 && fabs(sceta) < 1.5660 );
-	bool passLLkin    ( ele.pt()>20 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
-	bool passLJkin    ( ele.pt()>30 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
-	bool passLJvetokin( ele.pt()>20 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
+  // Kinematic cuts
+  float sceta = ele.getVal("sceta");
+  bool isInEB2EE    ( fabs(sceta) > 1.4442 && fabs(sceta) < 1.5660 );
+  bool passLLkin    ( ele.pt()>20 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
+  bool passLJkin    ( ele.pt()>30 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
+  bool passLJvetokin( ele.pt()>20 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
 
-	//id
-	bool passIdBaseQualityCuts(true);
-	if( ele.getFlag("isconv") )              passIdBaseQualityCuts=false;
-	if( fabs(ele.getVal("tk_d0"))>0.02 )     passIdBaseQualityCuts=false;
-	if( ele.getVal("tk_lostInnerHits") > 0 ) passIdBaseQualityCuts=false;
-	bool passLLid( ele.getVal("mvatrig")>0.9 && passIdBaseQualityCuts);
-	bool passLJid( ele.getVal("mvatrig")>0.9 && passIdBaseQualityCuts);
-	bool passLJvetoid( ele.getVal("mvatrig")>0 );
+  //id
+  bool passIdBaseQualityCuts(true);
+  if( ele.getFlag("isconv") )              passIdBaseQualityCuts=false;
+  if( fabs(ele.getVal("tk_d0"))>0.02 )     passIdBaseQualityCuts=false;
+  if( ele.getVal("tk_lostInnerHits") > 0 ) passIdBaseQualityCuts=false;
+  bool passLLid( ele.getVal("mvatrig")>0.9 && passIdBaseQualityCuts);
+  bool passLJid( ele.getVal("mvatrig")>0.9 && passIdBaseQualityCuts);
+  bool passLJvetoid( ele.getVal("mvatrig")>0 );
 
-	// Isolation
-	Float_t gIso = ele.getVal("gIso03");
-	Float_t chIso = ele.getVal("chIso03");
-	Float_t nhIso = ele.getVal("nhIso03");
-	float relIso = (TMath::Max(nhIso+gIso-rho*utils::cmssw::getEffectiveArea(11,sceta,3),Float_t(0.))+chIso)/ele.pt();
-	bool passLLiso( relIso<0.12 );
-	bool passLJiso( relIso<0.12 );
-	bool passLJvetoiso( relIso<0.15 );
+  // Isolation
+  Float_t gIso = ele.getVal("gIso03");
+  Float_t chIso = ele.getVal("chIso03");
+  Float_t nhIso = ele.getVal("nhIso03");
+  float relIso = (TMath::Max(nhIso+gIso-rho*utils::cmssw::getEffectiveArea(11,sceta,3),Float_t(0.))+chIso)/ele.pt();
+  bool passLLiso( relIso<0.12 );
+  bool passLJiso( relIso<0.12 );
+  bool passLJvetoiso( relIso<0.15 );
 
-	//set the flags
-	ele.setFlag("passLL",    (passLLkin && passLLid && passLLiso));
-	ele.setFlag("passLJ",    (passLJkin && passLJid && passLJiso));
-	ele.setFlag("passLJveto",(passLJvetokin && passLJvetoid && passLJvetoiso));
+  //set the flags
+  ele.setFlag("passLL",    (passLLkin && passLLid && passLLiso));
+  ele.setFlag("passLJ",    (passLJkin && passLJid && passLJiso));
+  ele.setFlag("passLJveto",(passLJvetokin && passLJvetoid && passLJvetoiso));
 
-	return ele;
+  return ele;
 }
 
 //sets the selection flags on the muon
@@ -234,27 +238,27 @@ data::PhysicsObjectCollection_t selectLeptons(data::PhysicsObjectCollection_t &l
 //
 data::PhysicsObject_t getTopSelectionTaggedJet(data::PhysicsObject_t jet, data::PhysicsObjectCollection_t &leptons,float minpt, float maxeta)
 {
-	// kin cuts
-	bool passKin(true);
-	if( jet.pt() < minpt )         passKin=false;
-	if( fabs(jet.eta()) > maxeta ) passKin=false;
+  // kin cuts
+  bool passKin(true);
+  if( jet.pt() < minpt )         passKin=false;
+  if( fabs(jet.eta()) > maxeta ) passKin=false;
 
-	//cross-clean with selected leptons
-	double minDRlj(9999.);
-	for( size_t ilep=0; ilep<leptons.size(); ilep++ )
-	  {
-	    if( !(leptons[ilep].getFlag("passLJ")) && !(leptons[ilep].getFlag("passLL")) ) continue;
-	    minDRlj = TMath::Min( minDRlj, deltaR(jet, leptons[ilep]) );
-	  }
+  //cross-clean with selected leptons
+  double minDRlj(9999.);
+  for( size_t ilep=0; ilep<leptons.size(); ilep++ )
+    {
+      if( !(leptons[ilep].getFlag("passLJ")) && !(leptons[ilep].getFlag("passLL")) ) continue;
+      minDRlj = TMath::Min( minDRlj, deltaR(jet, leptons[ilep]) );
+    }
 	
-	// Require to pass the loose id
-	Int_t idbits = jet.get("idbits");
-	bool passPFloose( ((idbits>>0) & 0x1) );
+  // Require to pass the loose id
+  Int_t idbits = jet.get("idbits");
+  bool passPFloose( ((idbits>>0) & 0x1) );
 
-	jet.set("passGoodJet", (passKin && minDRlj>0.4 && passPFloose) );
+  jet.set("passGoodJet", (passKin && minDRlj>0.4 && passPFloose) );
 
 
-	return jet;
+  return jet;
 }
 
 //select jets
@@ -470,7 +474,7 @@ int main(int argc, char* argv[])
       spyFile->rmdir(proctag);
       spyDir = spyFile->mkdir("dataAnalyzer");
       spyDir->cd();
-      //lxyAn.attachToDir(spyDir);
+      lxyAn.attachToDir(spyDir);
     }
 
 

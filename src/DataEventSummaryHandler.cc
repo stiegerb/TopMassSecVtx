@@ -788,6 +788,7 @@ void utils::cmssw::updateJEC(data::PhysicsObjectCollection_t &jets, FactorizedJe
 		
 		//smear JER
 		float newJERSF(1.0);
+		jets[ijet].set("nJetUncs",0);
 		if(isMC)
 		  {
 		    const data::PhysicsObject_t &genJet=jets[ijet].getObject("genJet");

@@ -516,15 +516,15 @@ int main(int argc, char* argv[])
       std::vector<LorentzVector> met = utils::cmssw::getMETvariations(recoMet[0], selJets, selLeptons, isMC);
       
       //check if a reconstructed jet (pT>20, passing loose PU id, in the "full" detector) is correlated MET
-      float mindphijmet(99999.);
+      Double_t mindphijmet(99999.);
       for(data::PhysicsObjectCollection_t::iterator it = jets.begin(); it != jets.end(); it++)
 	{
-	  if(it->pt()<20 || fabs(it->eta)>4.7) continue;
+	  if(it->pt()<20 || fabs(it->eta())>4.7) continue;
 	  Int_t idbits=it->get("idbits");
 	  int simplePuId( ( idbits >>7 ) & 0xf );
 	  bool passLooseSimplePuId(  ( simplePuId >> 2) & 0x1);
 	  if(!passLooseSimplePuId) continue;
-	  mindphijmet=TMath::Min(mindphijmet,fabs(deltaPhi(*it,met[0])));
+	  mindphijmet=TMath::Min(mindphijmet,fabs(deltaPhi(it->phi(),met[0].phi())));
 	}
       
 
@@ -549,7 +549,7 @@ int main(int argc, char* argv[])
 	    {
 	      float eta1(selLeptons[0].eta()),eta2(selLeptons[1].eta());
 	      if(abs(box.cat)==11*13) {
-		if(abs(selLeptons[0].id())==13) { eta2=eselLeptons[0].eta(); eta1=selLeptons[1].eta(); }
+		if(abs(selLeptons[0].get("id"))==13) { eta2=selLeptons[0].eta(); eta1=selLeptons[1].eta(); }
 	      }
 	      lepSF=fLepEff.getDileptonEfficiencySF(eta1,eta2,box.cat);
 	    }

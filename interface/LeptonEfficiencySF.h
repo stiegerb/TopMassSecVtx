@@ -51,7 +51,7 @@ class LeptonEfficiencySF
   //the selection efficiency is assumed to be perfect (SF=1) which is ok, and a 2% unc. is assigned to it
   std::pair<float,float> getDileptonEfficiencySF(float eta1,float eta2,int id)
   {
-    float trigSF,trigSFUNC,selSF,selSFUnc;
+    float trigSF(1.0),trigSFUnc(0.0),selSF(1.0),selSFUnc(0.0);
     id=abs(id);
     switch(id)
       {

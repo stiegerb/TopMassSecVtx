@@ -770,7 +770,7 @@ std::vector<float> utils::cmssw::pullDeltaTheta(data::PhysicsObject_t &jet1, dat
 
 
 //
-void utils::cmssw::updateJEC(data::PhysicsObjectCollection_t &jets, FactorizedJetCorrector *jesCor, JetCorrectionUncertainty *totalJESUnc, float rho, int nvtx,bool isMC)
+void utils::cmssw::updateJEC(data::PhysicsObjectCollection_t &jets, FactorizedJetCorrector *jesCor, std::vector<JetCorrectionUncertainty *> &jesUnc, float rho, int nvtx,bool isMC)
 {
 	for(size_t ijet=0; ijet<jets.size(); ijet++)
 	{
@@ -785,28 +785,35 @@ void utils::cmssw::updateJEC(data::PhysicsObjectCollection_t &jets, FactorizedJe
 		float newJECSF=jesCor->getCorrection();
 		rawJet *= newJECSF;
 		jets[ijet].SetPxPyPzE(rawJet.px(),rawJet.py(),rawJet.pz(),rawJet.energy());
-
-	  //smear JER
+		
+		//smear JER
 		float newJERSF(1.0);
 		if(isMC)
-		{
-			const data::PhysicsObject_t &genJet=jets[ijet].getObject("genJet");
-			std::vector<float> smearJER=utils::cmssw::smearJER(jets[ijet].pt(),jets[ijet].eta(),genJet.pt());
-			newJERSF=smearJER[0]/jets[ijet].pt();
-			rawJet *= newJERSF;
-			jets[ijet].SetPxPyPzE(rawJet.px(),rawJet.py(),rawJet.pz(),rawJet.energy());
+		  {
+		    const data::PhysicsObject_t &genJet=jets[ijet].getObject("genJet");
+		    std::vector<float> smearJER=utils::cmssw::smearJER(jets[ijet].pt(),jets[ijet].eta(),genJet.pt());
+		    newJERSF=smearJER[0]/jets[ijet].pt();
+		    rawJet *= newJERSF;
+		    jets[ijet].SetPxPyPzE(rawJet.px(),rawJet.py(),rawJet.pz(),rawJet.energy());
+		    
+		    //set the JER up/down alternatives
+		    jets[ijet].setVal("jerup",   smearJER[1] );
+		    jets[ijet].setVal("jerdown", smearJER[2] );
+		  }
 
-	  //set the JER up/down alternatives
-			jets[ijet].setVal("jerup",   smearJER[1] );
-			jets[ijet].setVal("jerdown", smearJER[2] );
-		}
-
-	  //set the JES up/down pT alternatives
-		std::vector<float> ptUnc=utils::cmssw::smearJES(jets[ijet].pt(),jets[ijet].eta(), totalJESUnc);
-		jets[ijet].setVal("jesup",    ptUnc[0] );
-		jets[ijet].setVal("jesdown",  ptUnc[1] );
-
-	  //to get the raw jet again
+		//set the JES up/down pT alternatives
+		jets[ijet].set("nJetUncs",jesUnc.size());
+		for(size_t iunc=0; iunc<jesUnc.size(); iunc++)
+		  {
+		    //get alternative pt's up and down
+		    std::vector<float> altPt=utils::cmssw::smearJES(jets[ijet].pt(),jets[ijet].eta(), jesUnc[iunc]);
+		    TString altName("unc"); altName += iunc;
+		    jets[ijet].setVal(altName+"_up",    altPt[0] );
+		    jets[ijet].setVal(altName+"_down",  altPt[1] );
+		    
+		  }
+		
+		//to get the raw jet again
 		jets[ijet].setVal("torawsf",1./(newJECSF*newJERSF));
 	}
 }

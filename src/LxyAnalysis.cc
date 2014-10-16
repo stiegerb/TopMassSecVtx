@@ -49,8 +49,11 @@ void LxyAnalysis::resetBeautyEvent()
 		bev_.jcsv[i]   = -999.99;
 		bev_.jarea[i]  = -999.99;
 		bev_.jtoraw[i] = -999.99;
-		bev_.jjesup[i] = -999.99;
-		bev_.jjesdn[i] = -999.99;
+		for(size_t iunc=0; iunc<30; iunc++)
+		  {
+		    bev_.jjesup[i][iunc] = -999.99;
+		    bev_.jjesdn[i][iunc] = -999.99;
+		  }
 		bev_.jbhadmatchdr[i] = 999.99;
 	}
 	for(size_t i=0; i<bev_.gMaxNSV; i++){
@@ -130,8 +133,8 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 	outT_->Branch("jcsv",         bev_.jcsv,         "jcsv[nj]/F");
 	outT_->Branch("jarea",        bev_.jarea,        "jarea[nj]/F");
 	outT_->Branch("jtoraw",       bev_.jtoraw,       "jtoraw[nj]/F");
-	outT_->Branch("jjesup",       bev_.jjesup,       "jjesup[nj]/F");
-	outT_->Branch("jjesdn",       bev_.jjesdn,       "jjesdn[nj]/F");
+	outT_->Branch("jjesup",       bev_.jjesup,       "jjesup[nj][30]/F");
+	outT_->Branch("jjesdn",       bev_.jjesdn,       "jjesdn[nj][30]/F");
 	outT_->Branch("jbhadmatchdr", bev_.jbhadmatchdr, "jbhadmatchdr[nj]/F");
 	outT_->Branch("gjpt",         bev_.gjpt,         "gjpt[nj]/F");
 	outT_->Branch("gjeta",        bev_.gjeta,        "gjeta[nj]/F");
@@ -231,9 +234,12 @@ bool LxyAnalysis::analyze(Int_t run, Int_t event, Int_t lumi,
 		hasCSVtag |= (jets[i]->getVal("csv")>btagCut);
 		bev_.jarea[bev_.nj]  = jets[i]->getVal("area");
 		bev_.jtoraw[bev_.nj] = jets[i]->getVal("torawsf");
-		bev_.jjesup[bev_.nj] = jets[i]->getVal("jesup");
-		bev_.jjesdn[bev_.nj] = jets[i]->getVal("jesdown");
-
+		for(int iunc=0; iunc<jets[i]->get("nJetUncs"); iunc++)
+		  {
+		    TString altName("unc"); altName += iunc;
+		    bev_.jjesup[bev_.nj][iunc] = jets[i]->getVal(altName+"_up");
+		    bev_.jjesdn[bev_.nj][iunc] = jets[i]->getVal(altName+"_down");
+		  }
 		const data::PhysicsObject_t &genParton=jets[i]->getObject("gen");
 		if(genParton.pt()>0){
 			bev_.bid[bev_.nj]  = genParton.info.find("id")->second;

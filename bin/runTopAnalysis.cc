@@ -46,7 +46,7 @@
 TopPtWeighter *fTopPtWgt=0;
 LeptonEfficiencySF fLepEff;
 FactorizedJetCorrector *fJesCor=0;
-JetCorrectionUncertainty *fTotalJESUnc=0;
+std::vector<JetCorrectionUncertainty *> fTotalJESUnc;
 MuScleFitCorrector *fMuCor=0;
 std::map<std::pair<TString,TString>, std::pair<TGraphErrors *,TGraphErrors *> > fBtagEffCorr;
 edm::LumiReWeighting *fLumiWeights=0;
@@ -315,7 +315,19 @@ int main(int argc, char* argv[])
   //jet energy scale uncertainties
   gSystem->ExpandPathName(jecDir);
   fJesCor = utils::cmssw::getJetCorrector(jecDir,isMC);
-  fTotalJESUnc = new JetCorrectionUncertainty((jecDir+"/MC_Uncertainty_AK5PFchs.txt").Data());
+  TString srcnames[]={
+    "Total",
+    "AbsoluteMPFBias", //in-situ correlation group
+    "RelativeFSR",     //JEC inter-calibration
+    "PileUpDataMC", "PileUpPtBB", "PileUpPtEC", "PileUpPtHF",      //Pileup
+    "AbsoluteStat", "AbsoluteScale","HighPtExtra", "SinglePionECAL", "SinglePionHCAL", "RelativeJEREC1", "RelativeJEREC2", "RelativeJERHF", "RelativePtBB", "RelativePtEC1",  "RelativePtEC2", "RelativePtHF", "RelativeStatEC2", "RelativeStatHF", //JEC uncorrelated
+    "FlavorPureGluon", "FlavorPureQuark", "FlavorPureCharm", "FlavorPureBottom" //flavor JES
+  };
+  const int nsrc = sizeof(srcnames)/sizeof(TString);
+  for (int isrc = 0; isrc < nsrc; isrc++) {
+    JetCorrectorParameters *p = new JetCorrectorParameters((jecDir+"/DATA_UncertaintySources_AK5PFchs.txt").Data(), srcnames[isrc].Data());
+    fTotalJESUnc.push_back( new JetCorrectionUncertainty(*p) );
+  }
 
   //muon energy corrector
   fMuCor = getMuonCorrector(jecDir,url);

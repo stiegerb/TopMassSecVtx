@@ -49,7 +49,7 @@ def openTFile(url):
         return None
     return rootFile
 
-def getAllPlotsFrom(tdir, chopPrefix=False):
+def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[]):
     """
     Return a list of all keys deriving from TH1 in a file
     """
@@ -57,6 +57,11 @@ def getAllPlotsFrom(tdir, chopPrefix=False):
     allKeys = tdir.GetListOfKeys()
     for tkey in allKeys:
         key = tkey.GetName()
+        keepPlot=False
+        for tag in tagsToFilter:
+            if key.find(tag)>=0 : 
+                keepPlot=True
+        if not keepPlot : continue
         obj = tdir.Get(key)
         if obj.InheritsFrom('TDirectory') :
             allKeysInSubdir = getAllPlotsFrom(obj,chopPrefix)
@@ -236,9 +241,10 @@ def runPlotter(inDir, options):
     tot_ngen = {}
     missing_files = []
     baseRootFile = None
+    tagsToFilter=opt.filter.split(',')
     if inDir.endswith('.root'):
         baseRootFile = TFile.Open(inDir)
-        plots = list(set(getAllPlotsFrom(tdir=baseRootFile,chopPrefix=True)))
+        plots = list(set(getAllPlotsFrom(tdir=baseRootFile,chopPrefix=True,tagsToFilter=tagsToFilter)))
     else:
         for proc_tag in procList:
             for desc in proc_tag[1]:
@@ -267,7 +273,7 @@ def runPlotter(inDir, options):
                             missing_files.append(eventsFile+'.root')
                             continue
 
-                        iplots = getAllPlotsFrom(tdir=rootFile)
+                        iplots = getAllPlotsFrom(tdir=rootFile,tagsToFilter=tagsToFilter)
                         if not isData:
                             ngen_seg,_ = getNormalization(rootFile)
                             ngen += ngen_seg
@@ -346,6 +352,8 @@ if __name__ == "__main__":
                             'expected from the json file) and exit.'))
     parser.add_option('-d', '--debug', dest='debug', action="store_true",
                       help='Dump the event yields table for each plot')
+    parser.add_option('-f', '--filter', dest='filter', default="",
+                      help='csv list of plots to produce')
     parser.add_option('-v', '--verbose', dest='verbose', action="store",
                       type='int', default=1,
                       help='Verbose mode [default: %default (semi-quiet)]')

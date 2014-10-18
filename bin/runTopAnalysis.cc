@@ -535,10 +535,15 @@ int main(int argc, char* argv[])
 
       //jet/met
       data::PhysicsObjectCollection_t jets(evSummary.getPhysicsObject(DataEventSummaryHandler::JETS));
-      utils::cmssw::updateJEC(jets, fJesCor, fTotalJESUnc, ev.rho, ev.nvtx, isMC);      
+      LorentzVector jetDiff=utils::cmssw::updateJEC(jets, fJesCor, fTotalJESUnc, ev.rho, ev.nvtx, isMC);      
       data::PhysicsObjectCollection_t selJets = selectJets(jets,selLeptons);
       data::PhysicsObjectCollection_t recoMet = evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
       //0,1 - raw pfmet, 2 - type1 pfmet, 3 - type1p2 corrected met
+      recoMet[2].SetPxPyPzE(recoMet[2].px()-jetDiff.px(),
+			    recoMet[2].py()-jetDiff.py(),
+			    0.,
+			    sqrt(pow(recoMet[2].px()-jetDiff.px(),2)+pow(recoMet[2].py()-jetDiff.py(),2))
+			    );
       std::vector<LorentzVector> met = utils::cmssw::getMETvariations(recoMet[2], selJets, selLeptons, isMC);
       
       //get the category and check if trigger is consistent

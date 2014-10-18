@@ -95,8 +95,8 @@ namespace utils
     void setJetPulls(data::PhysicsObject_t &jet, data::PhysicsObjectCollection_t &pf);
     void setJetDirections(data::PhysicsObject_t &jet, data::PhysicsObjectCollection_t &pf);
 
-    //set new jet energy corrections
-    void updateJEC(data::PhysicsObjectCollection_t &jets, FactorizedJetCorrector *jesCor, std::vector<JetCorrectionUncertainty *> &jesUnc, float rho, int nvtx,bool isMC);
+    //set new jet energy corrections: the sum (newP4-oldP4) is returned to correct type I MET
+    LorentzVector updateJEC(data::PhysicsObjectCollection_t &jets, FactorizedJetCorrector *jesCor, std::vector<JetCorrectionUncertainty *> &jesUnc, float rho, int nvtx,bool isMC);
     
     //apply MET variations
     enum METvariations { NOMINAL, JERUP, JERDOWN, JESUP, JESDOWN, UMETUP, UMETDOWN, LESUP, LESDOWN };

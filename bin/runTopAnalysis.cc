@@ -427,7 +427,6 @@ int main(int argc, char* argv[])
   controlHistos.addHistogram( new TH1F("metoverht",    ";E_{T}^{miss}/#sqrt{H_{T}} [GeV^{1/2}]",50,0,15));
   controlHistos.addHistogram( new TH1F("mt",           ";Transverse mass [GeV];Events",50,0,300) );
   controlHistos.addHistogram( new TH1F("mll",          ";Dilepton mass [GeV];Events",50,10,260) );
-  controlHistos.addHistogram( new TH1F("charge",       ";Lepton charge; Events",3,-1.5,1.5) );
 
   //control plots for the leptons selected
   controlHistos.addHistogram( new TH1F("pt",       ";Transverse momentum; Leptons",25,0,200) );
@@ -539,7 +538,8 @@ int main(int argc, char* argv[])
       utils::cmssw::updateJEC(jets, fJesCor, fTotalJESUnc, ev.rho, ev.nvtx, isMC);      
       data::PhysicsObjectCollection_t selJets = selectJets(jets,selLeptons);
       data::PhysicsObjectCollection_t recoMet = evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
-      std::vector<LorentzVector> met = utils::cmssw::getMETvariations(recoMet[0], selJets, selLeptons, isMC);
+      //0,1 - raw pfmet, 2 - type1 pfmet, 3 - type1p2 corrected met
+      std::vector<LorentzVector> met = utils::cmssw::getMETvariations(recoMet[2], selJets, selLeptons, isMC);
       
       //get the category and check if trigger is consistent
       AnalysisBox box = assignBox(selLeptons, selJets, met[0],
@@ -686,22 +686,20 @@ int main(int argc, char* argv[])
 	      if(passJetSelection)
 		{
 		  controlHistos.fillHisto("met",          box.chCat, box.met.pt(), evWeight); //N-1 plot
+		  controlHistos.fillHisto("met",  box.chCat + (( lepcharge>0 ) ? "plus" : "minus"),  box.met.pt() ,  evWeight);
 		  controlHistos.fillHisto("evtflow", box.chCat, 5,            evWeight);
 		  if(passMetSelection)
 		    {
 		      controlHistos.fillHisto("evtflow", box.chCat, 6,         evWeight);
 		      controlHistos.fillHisto("metoverht",  box.chCat, box.metsig,  evWeight);
-		      controlHistos.fillHisto("metoverht",  box.chCat + (( lepcharge>0 ) ? "plus" : "minus"),  box.metsig ,  evWeight);
 		      if(box.leptons.size()>=2) 
 			{
 			  controlHistos.fillHisto("mll", box.chCat, ll.mass(), evWeight);
 			  controlHistos.fillHisto("thetall", box.chCat, thetall,   evWeight);
-			  controlHistos.fillHisto("metoverht",  box.chCat, box.metsig,  evWeight); //N-1 plot
 			}
 		      else 
 			{
 			  controlHistos.fillHisto("mt",         box.chCat, mt,           evWeight);
-			  controlHistos.fillHisto("charge",     box.chCat, lepcharge,    evWeight);
 			}
 		      
 		      controlHistos.fillHisto("nsvtx",     box.chCat, nSecVtx, evWeight); //N-1
@@ -716,11 +714,9 @@ int main(int argc, char* argv[])
 	      else if(passMetSelection)
 		{
 		  //for QCD and W estimation cross check in a jet multiplicity control region
-		  controlHistos.fillHisto("met",        box.chCat+box.jetCat, box.met.pt(), evWeight); 
+		  controlHistos.fillHisto("met",        box.chCat+box.jetCat, box.met.pt(), evWeight);
+		  controlHistos.fillHisto("met",        box.chCat+box.jetCat+(( lepcharge>0 ) ? "plus" : "minus"), box.met.pt(),  evWeight); 
 		  controlHistos.fillHisto("metoverht",  box.chCat+box.jetCat, box.metsig,  evWeight); 
-		  controlHistos.fillHisto("metoverht",  box.chCat+box.jetCat+(( lepcharge>0 ) ? "plus" : "minus"), box.metsig,  evWeight);
-		  controlHistos.fillHisto("mt",         box.chCat+box.jetCat, mt,           evWeight);
-		  controlHistos.fillHisto("charge",     box.chCat+box.jetCat, lepcharge,    evWeight);
 		}
 	    }
 	}

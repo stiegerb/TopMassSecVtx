@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle,fixExtremities,Plot
 
 sys.path.append('/afs/cern.ch/cms/caf/python/')
 from cmsIO import cmsFile
@@ -152,7 +153,6 @@ def makePlotPacked(packedargs):
     return makePlot(key, inDir, procList, xsecweights, options)
 
 def makePlot(key, inDir, procList, xsecweights, options):
-    from UserCode.TopMassSecVtx.PlotUtils import Plot
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
@@ -191,8 +191,8 @@ def makePlot(key, inDir, procList, xsecweights, options):
                             rootFile.Close()
                             continue
 
+                        fixExtremities(ihist,True,True)
                         ihist.Scale(xsecweights[dtag])
-                        # print dtag,xsecweights[dtag]
 
                         if hist is None :
                             hist = ihist.Clone(dtag+'_'+pName)
@@ -208,6 +208,7 @@ def makePlot(key, inDir, procList, xsecweights, options):
                     except AttributeError:
                         continue
 
+                    fixExtremities(ihist,True,True)
                     ihist.Scale(xsecweights[dtag])
 
                     if hist is None: ## Check if it is found
@@ -378,7 +379,6 @@ if __name__ == "__main__":
             checkMissingFiles(inDir=args[0], jsonUrl=opt.json)
             exit(0)
 
-        from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
         setTDRStyle()
         gROOT.SetBatch(True)
         gStyle.SetOptTitle(0)

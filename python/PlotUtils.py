@@ -292,6 +292,27 @@ def convertToPoissonErrorGr(h):
     return grpois
 
 
+"""
+increments the first and the last bin to show the under- and over-flows
+"""
+def fixExtremities(h,addOverflow=True,addUnderflow=True):
+    if addUnderflow :
+        fbin  = h.GetBinContent(0) + h.GetBinContent(1)
+	fbine = ROOT.TMath.Sqrt(h.GetBinError(0)*h.GetBinError(0) + h.GetBinError(1)*h.GetBinError(1))
+	h.SetBinContent(1,fbin)
+	h.SetBinError(1,fbine)
+	h.SetBinContent(0,0)
+	h.SetBinError(0,0)
+    if addOverflow:
+        nbins = h.GetNbinsX();
+	fbin  = h.GetBinContent(nbins) + h.GetBinContent(nbins+1)
+	fbine = ROOT.TMath.Sqrt(h.GetBinError(nbins)*h.GetBinError(nbins)  + h.GetBinError(nbins+1)*h.GetBinError(nbins+1))
+	h.SetBinContent(nbins,fbin)
+	h.SetBinError(nbins,fbine)
+	h.SetBinContent(nbins+1,0)
+	h.SetBinError(nbins+1,0)
+
+
 def setTDRStyle():
     """
     Loads TDR style

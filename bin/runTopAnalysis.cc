@@ -425,7 +425,6 @@ int main(int argc, char* argv[])
     }
   controlHistos.addHistogram( new TH1F("met",          ";Missing transverse energy [GeV]; Events",50,0,250) );
   controlHistos.addHistogram( new TH1F("metoverht",    ";E_{T}^{miss}/#sqrt{H_{T}} [GeV^{1/2}]",50,0,15));
-  controlHistos.addHistogram( new TH1F("dphilmet",     ";#delta#phi(E_{T}^{miss},l) [rad]",50,0,TMath::Pi()));
   controlHistos.addHistogram( new TH1F("mt",           ";Transverse mass [GeV];Events",50,0,300) );
   controlHistos.addHistogram( new TH1F("mll",          ";Dilepton mass [GeV];Events",50,10,260) );
   controlHistos.addHistogram( new TH1F("charge",       ";Lepton charge; Events",3,-1.5,1.5) );
@@ -433,10 +432,8 @@ int main(int argc, char* argv[])
   //control plots for the leptons selected
   controlHistos.addHistogram( new TH1F("pt",       ";Transverse momentum; Leptons",25,0,200) );
   controlHistos.addHistogram( new TH1F("eta",      ";Pseudo-rapidity; Leptons",20,0,2.5) );
-  controlHistos.addHistogram( new TH1F("mvatrig",  ";ID mva; Electrons",20,0.75,1.0) );
   controlHistos.addHistogram( new TH1F("reliso",   ";Relative isolation; Leptons",20,0.,0.25) );
-  controlHistos.addHistogram( new TH1F("tk_d0",    ";d_{0} [cm]; Leptons",20,0.,0.05) );
-  controlHistos.addHistogram( new TH1F("tk_lostInnerHits",    ";Lost inner hits; Electrons",10,0.,10) );
+
 
   ///
   // process events file
@@ -653,7 +650,6 @@ int main(int argc, char* argv[])
       int lepcharge = -1.*lepid/abs(lepid);
       if( isMC && !url.Contains("QCDMuPt20") ) lepcharge *= -1.;
       if( url.Contains("SingleMu2012B"))       lepcharge *= -1.;
-      float dphilmet( fabs(deltaPhi(box.leptons[0]->phi(),box.met.phi())) );
       
       float evWeight( genWeight*puWeight*lepSelectionWeight );
 
@@ -672,15 +668,11 @@ int main(int argc, char* argv[])
 		{
 		  controlHistos.fillHisto("pt",               box.chCat+"_e", box.leptons[ilep]->pt(),                       evWeight);
 		  controlHistos.fillHisto("eta",              box.chCat+"_e", fabs(box.leptons[ilep]->eta()),                evWeight);
-		  controlHistos.fillHisto("tk_d0",            box.chCat+"_e", fabs(box.leptons[ilep]->getVal("tk_d0")),      evWeight);
-		  controlHistos.fillHisto("tk_lostInnerHits", box.chCat+"_e", box.leptons[ilep]->getVal("tk_lostInnerHits"), evWeight);
-		  controlHistos.fillHisto("mvatrig",          box.chCat+"_e", box.leptons[ilep]->getVal("mvatrig"),          evWeight);
 		  controlHistos.fillHisto("reliso",           box.chCat+"_e", box.leptons[ilep]->getVal("reliso"),           evWeight);
 		}
 	      else
 		{
 		  controlHistos.fillHisto("pt",               box.chCat+"_mu", box.leptons[ilep]->pt(),                      evWeight);
-		  controlHistos.fillHisto("tk_d0",            box.chCat+"_mu", fabs(box.leptons[ilep]->getVal("tk_d0")),     evWeight);
 		  controlHistos.fillHisto("eta",              box.chCat+"_mu", fabs(box.leptons[ilep]->eta()),               evWeight);
 		  controlHistos.fillHisto("reliso",           box.chCat+"_mu", box.leptons[ilep]->getVal("reliso"),          evWeight);
 		}
@@ -698,8 +690,6 @@ int main(int argc, char* argv[])
 		  if(passMetSelection)
 		    {
 		      controlHistos.fillHisto("evtflow", box.chCat, 6,         evWeight);
-		      controlHistos.fillHisto("dphilmet",   box.chCat, dphilmet,  evWeight);
-		      controlHistos.fillHisto("dphilmet",   box.chCat + (( lepcharge>0 ) ? "plus" : "minus"),  dphilmet ,  evWeight);
 		      controlHistos.fillHisto("metoverht",  box.chCat, box.metsig,  evWeight);
 		      controlHistos.fillHisto("metoverht",  box.chCat + (( lepcharge>0 ) ? "plus" : "minus"),  box.metsig ,  evWeight);
 		      if(box.leptons.size()>=2) 
@@ -729,8 +719,6 @@ int main(int argc, char* argv[])
 		  controlHistos.fillHisto("met",        box.chCat+box.jetCat, box.met.pt(), evWeight); 
 		  controlHistos.fillHisto("metoverht",  box.chCat+box.jetCat, box.metsig,  evWeight); 
 		  controlHistos.fillHisto("metoverht",  box.chCat+box.jetCat+(( lepcharge>0 ) ? "plus" : "minus"), box.metsig,  evWeight);
-		  controlHistos.fillHisto("dphilmet",   box.chCat+box.jetCat, dphilmet,  evWeight);
-		  controlHistos.fillHisto("dphilmet",   box.chCat+box.jetCat + (( lepcharge>0 ) ? "plus" : "minus"),  dphilmet ,  evWeight);
 		  controlHistos.fillHisto("mt",         box.chCat+box.jetCat, mt,           evWeight);
 		  controlHistos.fillHisto("charge",     box.chCat+box.jetCat, lepcharge,    evWeight);
 		}
@@ -738,7 +726,6 @@ int main(int argc, char* argv[])
 	}
 		
       //save selected event
-      continue;
       if(!saveSummaryTree || !passPreSelection) continue;
       lxyAn.resetBeautyEvent();
       BeautyEvent_t &bev=lxyAn.getBeautyEvent();

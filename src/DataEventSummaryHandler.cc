@@ -770,53 +770,58 @@ std::vector<float> utils::cmssw::pullDeltaTheta(data::PhysicsObject_t &jet1, dat
 
 
 //
-void utils::cmssw::updateJEC(data::PhysicsObjectCollection_t &jets, FactorizedJetCorrector *jesCor, std::vector<JetCorrectionUncertainty *> &jesUnc, float rho, int nvtx,bool isMC)
+LorentzVector utils::cmssw::updateJEC(data::PhysicsObjectCollection_t &jets, FactorizedJetCorrector *jesCor, std::vector<JetCorrectionUncertainty *> &jesUnc, float rho, int nvtx,bool isMC)
 {
-	for(size_t ijet=0; ijet<jets.size(); ijet++)
+  LorentzVector jetDiff(0,0,0,0);
+  for(size_t ijet=0; ijet<jets.size(); ijet++)
+    {
+      //correct JES
+      float toRawSF=jets[ijet].getVal("torawsf");
+      LorentzVector rawJet(jets[ijet]*toRawSF);
+      jesCor->setJetEta(rawJet.eta());
+      jesCor->setJetPt(rawJet.pt());
+      jesCor->setJetA(jets[ijet].getVal("area"));
+      jesCor->setRho(rho);
+      jesCor->setNPV(nvtx);
+      float newJECSF=jesCor->getCorrection();
+      rawJet *= newJECSF;
+      jetDiff -= jets[ijet];
+      jets[ijet].SetPxPyPzE(rawJet.px(),rawJet.py(),rawJet.pz(),rawJet.energy());
+      jetDiff += jets[ijet];
+
+      //smear JER
+      float newJERSF(1.0);
+      jets[ijet].set("nJetUncs",0);
+      if(isMC)
 	{
-		//correct JES
-		float toRawSF=jets[ijet].getVal("torawsf");
-		LorentzVector rawJet(jets[ijet]*toRawSF);
-		jesCor->setJetEta(rawJet.eta());
-		jesCor->setJetPt(rawJet.pt());
-		jesCor->setJetA(jets[ijet].getVal("area"));
-		jesCor->setRho(rho);
-		jesCor->setNPV(nvtx);
-		float newJECSF=jesCor->getCorrection();
-		rawJet *= newJECSF;
-		jets[ijet].SetPxPyPzE(rawJet.px(),rawJet.py(),rawJet.pz(),rawJet.energy());
-		
-		//smear JER
-		float newJERSF(1.0);
-		jets[ijet].set("nJetUncs",0);
-		if(isMC)
-		  {
-		    const data::PhysicsObject_t &genJet=jets[ijet].getObject("genJet");
-		    std::vector<float> smearJER=utils::cmssw::smearJER(jets[ijet].pt(),jets[ijet].eta(),genJet.pt());
-		    newJERSF=smearJER[0]/jets[ijet].pt();
-		    rawJet *= newJERSF;
-		    jets[ijet].SetPxPyPzE(rawJet.px(),rawJet.py(),rawJet.pz(),rawJet.energy());
-		    
-		    //set the JER up/down alternatives
-		    jets[ijet].setVal("jerup",   smearJER[1] );
-		    jets[ijet].setVal("jerdown", smearJER[2] );
-		  
-		    //set the JES up/down pT alternatives
-		    jets[ijet].set("nJetUncs",jesUnc.size());
-		    for(size_t iunc=0; iunc<jesUnc.size(); iunc++)
-		      {
-			//get alternative pt's up and down
-			std::vector<float> altPt=utils::cmssw::smearJES(jets[ijet].pt(),jets[ijet].eta(), jesUnc[iunc]);
-			TString altName("unc"); altName += iunc;
-			jets[ijet].setVal(altName+"_up",    altPt[0] );
-			jets[ijet].setVal(altName+"_down",  altPt[1] );
-			
-		      }
-		  }
-		
-		//to get the raw jet again
-		jets[ijet].setVal("torawsf",1./(newJECSF*newJERSF));
+	  const data::PhysicsObject_t &genJet=jets[ijet].getObject("genJet");
+	  std::vector<float> smearJER=utils::cmssw::smearJER(jets[ijet].pt(),jets[ijet].eta(),genJet.pt());
+	  newJERSF=smearJER[0]/jets[ijet].pt();
+	  rawJet *= newJERSF;
+	  jets[ijet].SetPxPyPzE(rawJet.px(),rawJet.py(),rawJet.pz(),rawJet.energy());
+	  
+	  //set the JER up/down alternatives
+	  jets[ijet].setVal("jerup",   smearJER[1] );
+	  jets[ijet].setVal("jerdown", smearJER[2] );
+	  
+	  //set the JES up/down pT alternatives
+	  jets[ijet].set("nJetUncs",jesUnc.size());
+	  for(size_t iunc=0; iunc<jesUnc.size(); iunc++)
+	    {
+	      //get alternative pt's up and down
+	      std::vector<float> altPt=utils::cmssw::smearJES(jets[ijet].pt(),jets[ijet].eta(), jesUnc[iunc]);
+	      TString altName("unc"); altName += iunc;
+	      jets[ijet].setVal(altName+"_up",    altPt[0] );
+	      jets[ijet].setVal(altName+"_down",  altPt[1] );
+	      
+	    }
 	}
+      
+      //to get the raw jet again
+      jets[ijet].setVal("torawsf",1./(newJECSF*newJERSF));
+    }
+
+  return jetDiff;
 }
 
 //

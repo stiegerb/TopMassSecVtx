@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle,fixExtremities,Plot
 
 sys.path.append('/afs/cern.ch/cms/caf/python/')
 from cmsIO import cmsFile
@@ -49,7 +50,7 @@ def openTFile(url):
         return None
     return rootFile
 
-def getAllPlotsFrom(tdir, chopPrefix=False):
+def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[]):
     """
     Return a list of all keys deriving from TH1 in a file
     """
@@ -57,6 +58,11 @@ def getAllPlotsFrom(tdir, chopPrefix=False):
     allKeys = tdir.GetListOfKeys()
     for tkey in allKeys:
         key = tkey.GetName()
+        keepPlot=False
+        for tag in tagsToFilter:
+            if key.find(tag)>=0 : 
+                keepPlot=True
+        if not keepPlot : continue
         obj = tdir.Get(key)
         if obj.InheritsFrom('TDirectory') :
             allKeysInSubdir = getAllPlotsFrom(obj,chopPrefix)
@@ -147,7 +153,6 @@ def makePlotPacked(packedargs):
     return makePlot(key, inDir, procList, xsecweights, options)
 
 def makePlot(key, inDir, procList, xsecweights, options):
-    from UserCode.TopMassSecVtx.PlotUtils import Plot
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
@@ -186,8 +191,8 @@ def makePlot(key, inDir, procList, xsecweights, options):
                             rootFile.Close()
                             continue
 
+                        fixExtremities(ihist,True,True)
                         ihist.Scale(xsecweights[dtag])
-                        # print dtag,xsecweights[dtag]
 
                         if hist is None :
                             hist = ihist.Clone(dtag+'_'+pName)
@@ -203,6 +208,7 @@ def makePlot(key, inDir, procList, xsecweights, options):
                     except AttributeError:
                         continue
 
+                    fixExtremities(ihist,True,True)
                     ihist.Scale(xsecweights[dtag])
 
                     if hist is None: ## Check if it is found
@@ -236,9 +242,10 @@ def runPlotter(inDir, options):
     tot_ngen = {}
     missing_files = []
     baseRootFile = None
+    tagsToFilter=opt.filter.split(',')
     if inDir.endswith('.root'):
         baseRootFile = TFile.Open(inDir)
-        plots = list(set(getAllPlotsFrom(tdir=baseRootFile,chopPrefix=True)))
+        plots = list(set(getAllPlotsFrom(tdir=baseRootFile,chopPrefix=True,tagsToFilter=tagsToFilter)))
     else:
         for proc_tag in procList:
             for desc in proc_tag[1]:
@@ -267,7 +274,7 @@ def runPlotter(inDir, options):
                             missing_files.append(eventsFile+'.root')
                             continue
 
-                        iplots = getAllPlotsFrom(tdir=rootFile)
+                        iplots = getAllPlotsFrom(tdir=rootFile,tagsToFilter=tagsToFilter)
                         if not isData:
                             ngen_seg,_ = getNormalization(rootFile)
                             ngen += ngen_seg
@@ -346,6 +353,8 @@ if __name__ == "__main__":
                             'expected from the json file) and exit.'))
     parser.add_option('-d', '--debug', dest='debug', action="store_true",
                       help='Dump the event yields table for each plot')
+    parser.add_option('-f', '--filter', dest='filter', default="",
+                      help='csv list of plots to produce')
     parser.add_option('-v', '--verbose', dest='verbose', action="store",
                       type='int', default=1,
                       help='Verbose mode [default: %default (semi-quiet)]')
@@ -370,7 +379,6 @@ if __name__ == "__main__":
             checkMissingFiles(inDir=args[0], jsonUrl=opt.json)
             exit(0)
 
-        from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
         setTDRStyle()
         gROOT.SetBatch(True)
         gStyle.SetOptTitle(0)

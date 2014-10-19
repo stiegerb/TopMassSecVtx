@@ -25,8 +25,8 @@ class LeptonEfficiencySF
       {
       case 11:
 	{
-	  sf.first=1.005*0.988;
-	  sf.second=sqrt(pow(0.05*0.988,2)+pow(0.05*1.005,2));
+	  sf.first=1.00*0.988;
+	  sf.second=sqrt(pow(0.02*0.988,2)+pow(0.02*1.00,2));
 	  break;
 	}
       case 13:
@@ -38,14 +38,14 @@ class LeptonEfficiencySF
 	  if(eta<0.89) sf.first=0.98;
 	  if(eta<1.22) sf.first=0.96;
 	  if(eta<1.62) sf.first=0.98;
-	  else sf.first=1.0;
+	  else         sf.first=1.0;
 	  break;
 	}
       }
     return sf;
   }
   
-  //AN-2012/389, Figures 26, 27,28
+  //AN-2012/389, Figures 4,5,6
   //assumes eta1,eta2 are the leading, trailer lepton eta
   //for emu eta1=eta_e, eta2=eta_mu
   //the selection efficiency is assumed to be perfect (SF=1) which is ok, and a 2% unc. is assigned to it
@@ -57,64 +57,64 @@ class LeptonEfficiencySF
       {
       case 11*11:
 	{
-	  selSF=1.0; selSFUnc=0.02;
+	  selSF=1.0; selSFUnc=0.01;
 	  if( fabs(eta1)<1.442 )
 	    {
-	      if(fabs(eta2)<1.4442) {trigSF=0.993; trigSFUnc=0.011;}
-	      else                  {trigSF=1.007; trigSFUnc=0.014;}
+	      if(fabs(eta2)<1.4442) {trigSF=0.978; trigSFUnc=0.012;}
+	      else                  {trigSF=0.991; trigSFUnc=0.023;}
 	    }
 	  else
 	    {
-	      if(fabs(eta2)<1.4442) {trigSF=0.987; trigSFUnc=0.015;}
-	      else                  {trigSF=0.998; trigSFUnc=0.024;}
+	      if(fabs(eta2)<1.4442) {trigSF=0.990; trigSFUnc=0.023;}
+	      else                  {trigSF=0.908; trigSFUnc=0.051;}
 	    }
 	  break;
 	}
       case 11*13:
 	{
-	  selSF=1.0; selSFUnc=0.02;
+	  selSF=1.0; selSFUnc=0.01;
 	  if( fabs(eta1)<1.442 )
 	    {
-	      if(fabs(eta2)<1.2) {trigSF=0.984; trigSFUnc=0.010;}
-	      else               {trigSF=0.940; trigSFUnc=0.012;}
+	      if(fabs(eta2)<1.2) {trigSF=0.961; trigSFUnc=0.011;}
+	      else               {trigSF=0.930; trigSFUnc=0.015;}
 	    }
 	  else
 	    {
-	      if(fabs(eta2)<1.2) {trigSF=0.978; trigSFUnc=0.013;}
-	      else               {trigSF=0.937; trigSFUnc=0.020;}
+	      if(fabs(eta2)<1.2) {trigSF=0.972; trigSFUnc=0.018;}
+	      else               {trigSF=0.922; trigSFUnc=0.032;}
 	    }
 	  break;
 	}
       case 13*13:
 	{
-	  selSF=1.0; selSFUnc=0.02;
+	  selSF=1.0; selSFUnc=0.01;
 	  if( fabs(eta1)<0.9 )
 	    {
-	      if( fabs(eta2)<0.9 )     { trigSF=0.968; trigSFUnc=0.010; }
-	      else if (fabs(eta2)<1.2) { trigSF=0.976; trigSFUnc=0.010; }
-	      else if (fabs(eta2)<2.1) { trigSF=0.976; trigSFUnc=0.010; }
-	      else                     { trigSF=0.975; trigSFUnc=0.021; }
+	      if( fabs(eta2)<0.9 )     { trigSF=0.969; trigSFUnc=0.010; }
+	      else if (fabs(eta2)<1.2) { trigSF=0.977; trigSFUnc=0.025; }
+	      else if (fabs(eta2)<2.1) { trigSF=0.975; trigSFUnc=0.011; }
+	      else                     { trigSF=0.982; trigSFUnc=0.026; }
 	    }
 	  else if (fabs(eta1)<1.2)
 	    {
-	      if( fabs(eta2)<0.9 )     { trigSF=0.980; trigSFUnc=0.010; }
-	      else if (fabs(eta2)<1.2) { trigSF=0.980; trigSFUnc=0.012; }
-	      else if (fabs(eta2)<2.1) { trigSF=0.979; trigSFUnc=0.011; }
-	      else                     { trigSF=0.980; trigSFUnc=0.023; }
+	      if( fabs(eta2)<0.9 )     { trigSF=0.978; trigSFUnc=0.011; }
+	      else if (fabs(eta2)<1.2) { trigSF=0.972; trigSFUnc=0.015; }
+	      else if (fabs(eta2)<2.1) { trigSF=0.963; trigSFUnc=0.014; }
+	      else                     { trigSF=0.928; trigSFUnc=0.035; }
 	    }
 	  else if (fabs(eta1)<2.1)
 	    {
-	      if( fabs(eta2)<0.9 )     { trigSF=0.976; trigSFUnc=0.010; }
-	      else if (fabs(eta2)<1.2) { trigSF=0.983; trigSFUnc=0.011; }
-	      else if (fabs(eta2)<2.1) { trigSF=0.962; trigSFUnc=0.010; }
-	      else                     { trigSF=0.957; trigSFUnc=0.015; }
+	      if( fabs(eta2)<0.9 )     { trigSF=0.968; trigSFUnc=0.011; }
+	      else if (fabs(eta2)<1.2) { trigSF=0.978; trigSFUnc=0.014; }
+	      else if (fabs(eta2)<2.1) { trigSF=0.969; trigSFUnc=0.012; }
+	      else                     { trigSF=0.975; trigSFUnc=0.023; }
 	    }
 	  else
 	    {
-	      if( fabs(eta2)<0.9 )     { trigSF=0.988; trigSFUnc=0.020; }
-	      else if (fabs(eta2)<1.2) { trigSF=1.009; trigSFUnc=0.023; }
-	      else if (fabs(eta2)<2.1) { trigSF=0.959; trigSFUnc=0.015; }
-	      else                     { trigSF=0.961; trigSFUnc=0.032; }
+	      if( fabs(eta2)<0.9 )     { trigSF=0.960; trigSFUnc=0.028; }
+	      else if (fabs(eta2)<1.2) { trigSF=0.949; trigSFUnc=0.035; }
+	      else if (fabs(eta2)<2.1) { trigSF=0.973; trigSFUnc=0.026; }
+	      else                     { trigSF=1.075; trigSFUnc=0.093; }
 	    }
 	  break;
 	}

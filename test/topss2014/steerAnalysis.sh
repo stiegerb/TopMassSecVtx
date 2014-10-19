@@ -33,6 +33,6 @@ fi
 
 if [ "$step" == "2" ]; then
     echo "Making pre-selection plots"
-    runPlotter.py -l 19736  -j ${outdir}/samples.json -o ${outdir}/summary/${hash}/plots ${outdir}/summary/${hash};
+    runPlotter.py -l 19701  -j ${outdir}/samples.json -o ${outdir}/summary/${hash}/plots ${outdir}/summary/${hash};
     echo "You can find the summary plots @ ${outdir}/summary/${hash}/plots"
 fi

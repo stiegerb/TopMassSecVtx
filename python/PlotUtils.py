@@ -121,7 +121,7 @@ class Plot:
         if self.data is None: return
         f.write('------------------------------------------\n')
         f.write('Data'.ljust(20),)
-        for xbin in xrange(1,self.data.GetXaxis().GetNbins()+1):
+        for xbin in xrange(1,self.dataH.GetXaxis().GetNbins()+1):
             itot=self.dataH.GetBinContent(xbin)
             pval=' & %d'%itot
             f.write(pval.ljust(40))
@@ -215,6 +215,7 @@ class Plot:
             ratioframe=self.dataH.Clone('ratioframe')
             ratioframe.Draw()
             ratioframe.GetYaxis().SetRangeUser(0.62,1.36)
+            #ratioframe.GetYaxis().SetRangeUser(0.36,1.64)
             ratioframe.GetYaxis().SetTitle('Data/#SigmaBkg')
             ratioframe.GetYaxis().SetNdivisions(5)
             ratioframe.GetYaxis().SetLabelSize(0.15)
@@ -289,6 +290,27 @@ def convertToPoissonErrorGr(h):
             grpois.SetPointEYlow(i, math.sqrt(N))
             grpois.SetPointEYhigh(i,math.sqrt(N))
     return grpois
+
+
+"""
+increments the first and the last bin to show the under- and over-flows
+"""
+def fixExtremities(h,addOverflow=True,addUnderflow=True):
+    if addUnderflow :
+        fbin  = h.GetBinContent(0) + h.GetBinContent(1)
+	fbine = ROOT.TMath.Sqrt(h.GetBinError(0)*h.GetBinError(0) + h.GetBinError(1)*h.GetBinError(1))
+	h.SetBinContent(1,fbin)
+	h.SetBinError(1,fbine)
+	h.SetBinContent(0,0)
+	h.SetBinError(0,0)
+    if addOverflow:
+        nbins = h.GetNbinsX();
+	fbin  = h.GetBinContent(nbins) + h.GetBinContent(nbins+1)
+	fbine = ROOT.TMath.Sqrt(h.GetBinError(nbins)*h.GetBinError(nbins)  + h.GetBinError(nbins+1)*h.GetBinError(nbins+1))
+	h.SetBinContent(nbins,fbin)
+	h.SetBinError(nbins,fbine)
+	h.SetBinContent(nbins+1,0)
+	h.SetBinError(nbins+1,0)
 
 
 def setTDRStyle():

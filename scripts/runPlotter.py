@@ -27,6 +27,7 @@ def getNormalization(tfile):
     try:
         nevents, xsec = int(constVals[0]), float(constVals[1])
     except:
+        print '\033[91m Unable to retrieve const vals \033[0m - check run for............ %s'%tfile.GetName()
         nevents, xsec = 0, 0
     return nevents, xsec
 
@@ -275,9 +276,8 @@ def runPlotter(inDir, options):
                             continue
 
                         iplots = getAllPlotsFrom(tdir=rootFile,tagsToFilter=tagsToFilter)
-                        if not isData:
-                            ngen_seg,_ = getNormalization(rootFile)
-                            ngen += ngen_seg
+                        ngen_seg,_=getNormalization(rootFile)
+                        if not isData: ngen += ngen_seg
 
                         rootFile.Close()
                         plots = list(set(plots+iplots))

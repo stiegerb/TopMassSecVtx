@@ -223,11 +223,11 @@ bool DataEventSummaryHandler::init(TTree *t, bool needsToRecreate)
 	t_->Branch("jn_genjpz",      evSummary_.jn_genjpz,          "jn_genjpz[jn]/F");
 	t_->Branch("jn_genjen",      evSummary_.jn_genjen,          "jn_genjen[jn]/F");
   // unfolding jets
-	t_->Branch("jnUnf",            &evSummary_.jnUnf,                "jnUnf/I");
-	t_->Branch("jn_genUnfjpx",      evSummary_.jn_genUnfjpx,          "jn_genUnfjpx[jnUnf]/F");
-	t_->Branch("jn_genUnfjpy",      evSummary_.jn_genUnfjpy,          "jn_genUnfjpy[jnUnf]/F");
-	t_->Branch("jn_genUnfjpz",      evSummary_.jn_genUnfjpz,          "jn_genUnfjpz[jnUnf]/F");
-	t_->Branch("jn_genUnfjen",      evSummary_.jn_genUnfjen,          "jn_genUnfjen[jnUnf]/F");
+	//	t_->Branch("jnUnf",            &evSummary_.jnUnf,                "jnUnf/I");
+	// t_->Branch("jn_genUnfjpx",      evSummary_.jn_genUnfjpx,          "jn_genUnfjpx[jnUnf]/F");
+	// t_->Branch("jn_genUnfjpy",      evSummary_.jn_genUnfjpy,          "jn_genUnfjpy[jnUnf]/F");
+	// t_->Branch("jn_genUnfjpz",      evSummary_.jn_genUnfjpz,          "jn_genUnfjpz[jnUnf]/F");
+	// t_->Branch("jn_genUnfjen",      evSummary_.jn_genUnfjen,          "jn_genUnfjen[jnUnf]/F");
 
   //MET
 	t_->Branch("metn",        &evSummary_.metn,       "metn/I");
@@ -461,11 +461,11 @@ bool DataEventSummaryHandler::attach(TTree *t,bool readPFbranch)
 	t_->SetBranchAddress("jn_genjpz",      evSummary_.jn_genjpz);
 	t_->SetBranchAddress("jn_genjen",      evSummary_.jn_genjen);
   // unfolding jets
-	t_->SetBranchAddress("jnUnf",             &evSummary_.jnUnf);
-	t_->SetBranchAddress("jn_genUnfjpx",      evSummary_.jn_genUnfjpx);
-	t_->SetBranchAddress("jn_genUnfjpy",      evSummary_.jn_genUnfjpy);
-	t_->SetBranchAddress("jn_genUnfjpz",      evSummary_.jn_genUnfjpz);
-	t_->SetBranchAddress("jn_genUnfjen",      evSummary_.jn_genUnfjen);
+	// t_->SetBranchAddress("jnUnf",             &evSummary_.jnUnf);
+	// t_->SetBranchAddress("jn_genUnfjpx",      evSummary_.jn_genUnfjpx);
+	// t_->SetBranchAddress("jn_genUnfjpy",      evSummary_.jn_genUnfjpy);
+	// t_->SetBranchAddress("jn_genUnfjpz",      evSummary_.jn_genUnfjpz);
+	// t_->SetBranchAddress("jn_genUnfjen",      evSummary_.jn_genUnfjen);
 
   //MET
 	t_->SetBranchAddress("metn",     &evSummary_.metn);
@@ -592,7 +592,7 @@ data::PhysicsObjectCollection_t DataEventSummaryHandler::getPhysicsObject(int co
 			genParton.set("id",evSummary_.jn_genid[ijet]);
 			jet.setObject("gen",genParton);
 			data::PhysicsObject_t genJet(evSummary_.jn_genjpx[ijet],evSummary_.jn_genjpy[ijet],evSummary_.jn_genjpz[ijet],evSummary_.jn_genjen[ijet]);
-			data::PhysicsObject_t genJetUnf(evSummary_.jn_genUnfjpx[ijet],evSummary_.jn_genUnfjpy[ijet],evSummary_.jn_genUnfjpz[ijet],evSummary_.jn_genUnfjen[ijet]);
+			//			data::PhysicsObject_t genJetUnf(evSummary_.jn_genUnfjpx[ijet],evSummary_.jn_genUnfjpy[ijet],evSummary_.jn_genUnfjpz[ijet],evSummary_.jn_genUnfjen[ijet]);
 			genJet.set("id",evSummary_.jn_genflav[ijet]);
 			jet.setObject("genJet",genJet);
 			coll.push_back(jet);

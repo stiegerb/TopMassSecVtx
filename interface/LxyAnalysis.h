@@ -12,7 +12,7 @@ struct BeautyEvent_t
   static const unsigned gMaxNLeps = 5;
   static const unsigned gMaxNJets = 50;
   static const unsigned gMaxNSV = 50;
-  static const unsigned gMaxNPFCands = 500;
+  static const unsigned gMaxNPFCands = 1000;
   
   Int_t run, lumi, event, evcat, gevcat, nvtx;
   Float_t rho;

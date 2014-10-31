@@ -281,7 +281,7 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
 	      bev_.pfphi[bev_.npf] = pf[ipfn].phi();
 	      bev_.pfjetidx[bev_.npf]=i;
 	      bev_.npf++;
-	      if(bev_.npf > int(bev_.gMaxNPFCands)+1){
+	      if(bev_.npf > int(bev_.gMaxNPFCands)-1){
 		cout << "Over " << bev_.gMaxNPFCands << " PF candidates associated to the jets in event with " << jets.size() << " jets!" << endl; 
 		break;
 	      }

@@ -691,12 +691,13 @@ int main(int argc, char* argv[])
 	      if(passJetSelection)
 		{
 		  controlHistos.fillHisto("met",          box.chCat, box.met.pt(), evWeight); //N-1 plot
-		  controlHistos.fillHisto("met",  box.chCat + (( lepcharge>0 ) ? "plus" : "minus"),  box.met.pt() ,  evWeight);
 		  controlHistos.fillHisto("evtflow", box.chCat, 5,            evWeight);
 		  if(passMetSelection)
 		    {
 		      controlHistos.fillHisto("evtflow", box.chCat, 6,         evWeight);
 		      controlHistos.fillHisto("metoverht",  box.chCat, box.metsig,  evWeight);
+		      controlHistos.fillHisto("eta",         box.chCat , fabs(box.leptons[0]->eta()),                evWeight);
+		      controlHistos.fillHisto("eta",         box.chCat + (( lepcharge>0 ) ? "plus" : "minus"), fabs(box.leptons[0]->eta()),                evWeight);
 		      if(box.leptons.size()>=2) 
 			{
 			  controlHistos.fillHisto("mll", box.chCat, ll.mass(), evWeight);
@@ -719,9 +720,8 @@ int main(int argc, char* argv[])
 	      else if(passMetSelection)
 		{
 		  //for QCD and W estimation cross check in a jet multiplicity control region
-		  controlHistos.fillHisto("met",        box.chCat+box.jetCat, box.met.pt(), evWeight);
-		  controlHistos.fillHisto("met",        box.chCat+box.jetCat+(( lepcharge>0 ) ? "plus" : "minus"), box.met.pt(),  evWeight); 
-		  controlHistos.fillHisto("metoverht",  box.chCat+box.jetCat, box.metsig,  evWeight); 
+		  controlHistos.fillHisto("eta",        box.chCat+box.jetCat, fabs(box.leptons[0]->eta()),                evWeight);
+		  controlHistos.fillHisto("eta",        box.chCat+box.jetCat+(( lepcharge>0 ) ? "plus" : "minus"), fabs(box.leptons[0]->eta()),                evWeight);
 		}
 	    }
 	}
@@ -747,6 +747,7 @@ int main(int argc, char* argv[])
       bev.qscale=ev.qscale;        bev.x1=ev.x1; bev.x2=ev.x2; bev.id1=ev.id1; bev.id2=ev.id2;
       data::PhysicsObjectCollection_t pf = evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
       lxyAn.analyze( box.leptons, box.jets, met, pf, gen);
+      spyDir->cd();
       lxyAn.save();
     }
   std::cout << std::endl;

@@ -5,6 +5,7 @@
 #include "UserCode/TopMassSecVtx/interface/MacroUtils.h"
 #include "UserCode/TopMassSecVtx/interface/SmartSelectionMonitor.h"
 #include "UserCode/TopMassSecVtx/interface/DataEventSummaryHandler.h"
+#include "UserCode/TopMassSecVtx/interface/TopSelectionTools.h"
 #include "UserCode/TopMassSecVtx/interface/LxyAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/TopPtWeighter.h"
 #include "UserCode/TopMassSecVtx/interface/LeptonEfficiencySF.h"
@@ -48,7 +49,6 @@ LeptonEfficiencySF fLepEff;
 FactorizedJetCorrector *fJesCor=0;
 std::vector<JetCorrectionUncertainty *> fTotalJESUnc;
 MuScleFitCorrector *fMuCor=0;
-std::map<std::pair<TString,TString>, std::pair<TGraphErrors *,TGraphErrors *> > fBtagEffCorr;
 edm::LumiReWeighting *fLumiWeights=0;
 utils::cmssw::PuShifter_t fPUshifters;
 
@@ -139,153 +139,6 @@ AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons,
   return box;
 }
 
-//
-// PARTICLE SELECTORS
-//
-
-//sets the selection flags on the electron
-data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,float rho)
-{
-  // Kinematic cuts
-  float sceta = ele.getVal("sceta");
-  bool isInEB2EE    ( fabs(sceta) > 1.4442 && fabs(sceta) < 1.5660 );
-  bool passLLkin    ( ele.pt()>20 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
-  bool passLJkin    ( ele.pt()>30 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
-  bool passLJvetokin( ele.pt()>20 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
-
-  //id
-  bool passIdBaseQualityCuts(true);
-  if( ele.getFlag("isconv") )              passIdBaseQualityCuts=false;
-  if( fabs(ele.getVal("tk_d0"))>0.04 )     passIdBaseQualityCuts=false;
-  if( ele.getVal("tk_lostInnerHits") > 0 ) passIdBaseQualityCuts=false;
-  bool passLLid( ele.getVal("mvatrig")>0.5 && passIdBaseQualityCuts);
-  bool passLJid( ele.getVal("mvatrig")>0.5 && passIdBaseQualityCuts);
-  bool passLJvetoid( ele.getVal("mvatrig")>0.5 );
-
-  // Isolation
-  Float_t gIso = ele.getVal("gIso03");
-  Float_t chIso = ele.getVal("chIso03");
-  Float_t nhIso = ele.getVal("nhIso03");
-  float relIso = (TMath::Max(nhIso+gIso-rho*utils::cmssw::getEffectiveArea(11,sceta,3),Float_t(0.))+chIso)/ele.pt();
-  bool passLLiso( relIso<0.15 );
-  bool passLJiso( relIso<0.15 );
-  bool passLJvetoiso( relIso<0.15 );
-
-  //set the flags
-  ele.setFlag("passLL",    (passLLkin && passLLid && passLLiso));
-  ele.setFlag("passLJ",    (passLJkin && passLJid && passLJiso));
-  ele.setFlag("passLJveto",(passLJvetokin && passLJvetoid && passLJvetoiso));
-  ele.setVal("reliso",relIso);
-  return ele;
-}
-
-//sets the selection flags on the muon
-data::PhysicsObject_t getTopSelectionTaggedMuon(data::PhysicsObject_t mu, float isMC)
-{
-  // Muon energy scale and uncertainties
-  Int_t id = mu.get("id");
-  if( fMuCor ){
-    TLorentzVector p4(mu.px(),mu.py(),mu.pz(),mu.energy());
-    fMuCor->applyPtCorrection(p4 , id<0 ? -1 : 1 );
-    if( isMC ) fMuCor->applyPtSmearing(p4, id<0 ? -1 : 1, false);
-    mu.SetPxPyPzE(p4.Px(),p4.Py(),p4.Pz(),p4.E());
-  }
-  
-  // Kinematic cuts
-  bool passLLkin( mu.pt()>20     && fabs(mu.eta())<2.4 );
-  bool passLJkin( mu.pt()>26     && fabs(mu.eta())<2.1 );
-  bool passLJvetokin( mu.pt()>20 && fabs(mu.eta())<2.4 );
-  
-  // ID
-  Int_t idbits = mu.get("idbits");
-  bool isPF((idbits >> 7) & 0x1);
-  bool passLLid( ((idbits >> 10) & 0x1) && isPF );
-  bool passLJid( ((idbits >> 10) & 0x1) && isPF );
-  bool passLJvetoid( ((idbits >> 10) & 0x1) && isPF );
-  
-  // Isolation
-  Float_t gIso = mu.getVal("gIso04");
-  Float_t chIso = mu.getVal("chIso04");
-  Float_t puchIso = mu.getVal("puchIso04");
-  Float_t nhIso = mu.getVal("nhIso04");
-  Float_t relIso = ( TMath::Max(nhIso+gIso-0.5*puchIso,0.)+chIso ) / mu.pt();
-  bool passLLiso( relIso<0.12 );
-  bool passLJiso( relIso<0.12 );
-  bool passLJvetoiso( relIso<0.12 );
-  
-  //set the flags
-  mu.setVal("reliso",relIso);
-  mu.setFlag("passLL",    (passLLkin     && passLLid     && passLLiso));
-  mu.setFlag("passLJ",    (passLJkin     && passLJid     && passLJiso));
-  mu.setFlag("passLJveto",(passLJvetokin && passLJvetoid && passLJvetoiso));
-  
-  return mu;
-}
-
-//
-data::PhysicsObjectCollection_t selectLeptons(data::PhysicsObjectCollection_t &leptons,float rho, bool isMC)
-{
-  data::PhysicsObjectCollection_t selLeptons;
-  for(size_t ilep=0; ilep<leptons.size(); ilep++){
-    Int_t id=leptons[ilep].get("id");
-    data::PhysicsObject_t selLepton(abs(id)==11 ?
-				    getTopSelectionTaggedElectron(leptons[ilep], rho) :
-				    getTopSelectionTaggedMuon    (leptons[ilep], isMC) );
-    if( !selLepton.getFlag("passLL") && !selLepton.getFlag("passLJ") && !selLepton.getFlag("passLJveto") ) continue;
-    selLeptons.push_back(selLepton);
-  }
-  
-  sort(selLeptons.begin(), selLeptons.end(), data::PhysicsObject_t::sortByPt);
-  
-  return selLeptons;
-}
-
-//
-data::PhysicsObject_t getTopSelectionTaggedJet(data::PhysicsObject_t jet, data::PhysicsObjectCollection_t &leptons,float minpt, float maxeta)
-{
-  // kin cuts
-  bool passKin(true);
-  if( jet.pt() < minpt )         passKin=false;
-  if( fabs(jet.eta()) > maxeta ) passKin=false;
-
-  //cross-clean with selected leptons
-  double minDRlj(9999.);
-  for( size_t ilep=0; ilep<leptons.size(); ilep++ )
-    {
-      if( !(leptons[ilep].getFlag("passLJ")) && !(leptons[ilep].getFlag("passLL")) ) continue;
-      minDRlj = TMath::Min( minDRlj, deltaR(jet, leptons[ilep]) );
-    }
-	
-  // Require to pass the loose id
-  Int_t idbits = jet.get("idbits");
-  bool passPFloose( ((idbits>>0) & 0x1) );
-
-  jet.setFlag("passGoodJet", (passKin && minDRlj>0.4 && passPFloose) );
-
-
-  return jet;
-}
-
-//select jets
-data::PhysicsObjectCollection_t selectJets(data::PhysicsObjectCollection_t &jets, data::PhysicsObjectCollection_t &leptons)
-{
-  data::PhysicsObjectCollection_t selJets;
-  for(size_t ijet=0; ijet<jets.size(); ijet++)
-    {
-      data::PhysicsObject_t selJet = getTopSelectionTaggedJet(jets[ijet], leptons, 30., 2.5);
-      
-      if(!selJet.getFlag("passGoodJet")) continue;
-      
-      //here is a trick just to get the leading lxy jet first
-      const data::PhysicsObject_t &svx=selJet.getObject("svx");
-      selJet.setVal("lxy",svx.vals.find("lxy")->second);
-      selJets.push_back(selJet);
-    }
-  
-  sort(selJets.begin(), selJets.end(), data::PhysicsObject_t::sortByPt);
-  
-  return selJets;
-}
 
 
 //
@@ -339,29 +192,6 @@ int main(int argc, char* argv[])
 
   //muon energy corrector
   fMuCor = getMuonCorrector(jecDir,url);
-
-  //b-tag efficiencies read b-tag efficiency map
-  if(weightsFile.size() && isMC)
-    {
-      TString btagEffCorrUrl(weightsFile[0].c_str()); btagEffCorrUrl += "/btagEff.root";
-      gSystem->ExpandPathName(btagEffCorrUrl);
-      TFile *btagF=TFile::Open(btagEffCorrUrl);
-      if(btagF!=0 && !btagF->IsZombie())
-	{
-	  TList *dirs=btagF->GetListOfKeys();
-	  for(int itagger=0; itagger<dirs->GetEntries(); itagger++)
-	    {
-	      TString iDir(dirs->At(itagger)->GetName());
-	      fBtagEffCorr[ std::pair<TString,TString>(iDir,"b") ]
-		= std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/beff"),(TGraphErrors *) btagF->Get(iDir+"/sfb") );
-	      fBtagEffCorr[ std::pair<TString,TString>(iDir,"c") ]
-		= std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/ceff"),(TGraphErrors *) btagF->Get(iDir+"/sfc") );
-	      fBtagEffCorr[ std::pair<TString,TString>(iDir,"udsg") ]
-		= std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/udsgeff"),(TGraphErrors *) btagF->Get(iDir+"/sfudsg") );
-	    }
-	}
-      cout << fBtagEffCorr.size() << " b-tag correction factors have been read" << endl;
-    }
 
   //
   // check input file

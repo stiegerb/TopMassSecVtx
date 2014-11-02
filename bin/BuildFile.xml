@@ -5,7 +5,9 @@
 <use name="PhysicsTools/FWLite"/>
 <use name="UserCode/TopMassSecVtx"/>
 <environment>
-  <bin name="runTopAnalysis" file="runTopAnalysis.cc"></bin>
+  <bin name="runTopAnalysis"       file="runTopAnalysis.cc"></bin>
+  <bin name="computePDFvariations" file="computePDFvariations.cc"></bin>
+  <bin name="runControlAnalysis"   file="runControlAnalysis.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>

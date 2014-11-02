@@ -1,6 +1,7 @@
-#include "UserCode/llvv_fwk/interface/MacroUtils.h"
-#include "UserCode/llvv_fwk/interface/SmartSelectionMonitor.h"
-#include "UserCode/llvv_fwk/interface/DataEventSummaryHandler.h"
+#include "UserCode/TopMassSecVtx/interface/MacroUtils.h"
+#include "UserCode/TopMassSecVtx/interface/SmartSelectionMonitor.h"
+#include "UserCode/TopMassSecVtx/interface/DataEventSummaryHandler.h"
+#include "UserCode/TopMassSecVtx/interface/LxyAnalysis.h"
 
 #include "FWCore/FWLite/interface/AutoLibraryLoader.h"
 #include "FWCore/PythonParameterSet/interface/MakeParameterSets.h"
@@ -8,6 +9,7 @@
 
 #include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
 
+#include "TVectorD.h"
 #include "TSystem.h"
 #include "TFile.h"
 #include "TTree.h" 
@@ -17,6 +19,9 @@
 #include <iostream>
 
 using namespace std;
+
+FactorizedJetCorrector *fJesCor=0;
+std::vector<JetCorrectionUncertainty *> fTotalJESUnc;
 
 //
 int main(int argc, char* argv[])
@@ -42,22 +47,58 @@ int main(int argc, char* argv[])
   bool isMC           = runProcess.getParameter<bool>("isMC");
   double xsec         = runProcess.getParameter<double>("xsec");
   TString out          = runProcess.getParameter<std::string>("outdir");
+  bool saveSummaryTree = runProcess.getParameter<bool>("saveSummaryTree");
   std::vector<string>  weightsFile = runProcess.getParameter<std::vector<string> >("weightsFile");
 
  //jet energy scale uncertainties
   gSystem->ExpandPathName(jecDir);
-  FactorizedJetCorrector *jesCor        = utils::cmssw::getJetCorrector(jecDir,isMC);
-  JetCorrectionUncertainty *totalJESUnc = new JetCorrectionUncertainty((jecDir+"/MC_Uncertainty_AK5PFchs.txt").Data());
-  
+  fJesCor = utils::cmssw::getJetCorrector(jecDir,isMC);
+  TString srcnames[]={
+    "Total",
+    "AbsoluteMPFBias", //in-situ correlation group
+    "RelativeFSR",     //JEC inter-calibration
+    "PileUpDataMC", "PileUpPtBB", "PileUpPtEC", "PileUpPtHF",      //Pileup
+    "AbsoluteStat", "AbsoluteScale","HighPtExtra", "SinglePionECAL", "SinglePionHCAL", "RelativeJEREC1", "RelativeJEREC2", "RelativeJERHF", "RelativePtBB", "RelativePtEC1",  "RelativePtEC2", "RelativePtHF", "RelativeStatEC2", "RelativeStatHF", //JEC uncorrelated
+    "FlavorPureGluon", "FlavorPureQuark", "FlavorPureCharm", "FlavorPureBottom" //flavor JES
+  };
+  const int nsrc = sizeof(srcnames)/sizeof(TString);
+  for (int isrc = 0; isrc < nsrc; isrc++) {
+    JetCorrectorParameters *p = new JetCorrectorParameters((jecDir+"/DATA_UncertaintySources_AK5PFchs.txt").Data(), srcnames[isrc].Data());
+    fTotalJESUnc.push_back( new JetCorrectionUncertainty(*p) );
+  }
+
+  //control the sec vtx analysis  
+  LxyAnalysis lxyAn;
+
+  //prepare the output file
+  TString proctag=gSystem->BaseName(url);
+  Ssiz_t pos=proctag.Index(".root");
+  proctag.Remove(pos,proctag.Length());
+  TString outUrl(out);
+  gSystem->ExpandPathName(outUrl);
+  gSystem->Exec("mkdir -p " + outUrl);
+  outUrl += "/";
+  outUrl += proctag;
+  outUrl += ".root";
+  TFile *spyFile=TFile::Open(outUrl, "recreate");
+  spyFile->cd();
+  TDirectory *spyDir=0;
+  if(saveSummaryTree)
+    {
+      gSystem->Exec("mkdir -p " + out);
+      gDirectory->SaveSelf();
+      spyFile->rmdir(proctag);
+      spyDir = spyFile->mkdir("dataAnalyzer");
+      spyDir->cd();
+      lxyAn.attachToDir(spyDir);
+    }
+
   //
   // check input file
   //
   TFile *inF = TFile::Open(url);
   if(inF==0) return -1;
   if(inF->IsZombie()) return -1;
-  TString proctag=gSystem->BaseName(url);
-  Ssiz_t pos=proctag.Index(".root");
-  proctag.Remove(pos,proctag.Length());
 
   //
   // pileup reweighter
@@ -193,7 +234,7 @@ int main(int argc, char* argv[])
 
       //require 2 jets in the event
       data::PhysicsObjectCollection_t jets=evSummary.getPhysicsObject(DataEventSummaryHandler::JETS);
-      utils::cmssw::updateJEC(jets,jesCor,totalJESUnc,ev.rho,ev.nvtx,isMC);
+      LorentzVector jetDiff=utils::cmssw::updateJEC(jets, fJesCor, fTotalJESUnc, ev.rho, ev.nvtx, isMC);      
       data::PhysicsObjectCollection_t selJets;
       for(size_t ijet=0; ijet<jets.size(); ijet++)
 	{
@@ -358,18 +399,49 @@ int main(int argc, char* argv[])
 	     controlHistos.fillHisto(prefix+"recoil"+svxAlgos[ialgo]+"mufrac",  catsToFill, selJets[probeJetIdx].getVal("muFrac"),           recoilPtNorm, iweight);
 	   }
        }
+
+     //save selected event
+     if(!saveSummaryTree) continue;
+     lxyAn.resetBeautyEvent();
+     BeautyEvent_t &bev=lxyAn.getBeautyEvent();
+     bev.evcat=1;
+     bev.gevcat=1;
+     bev.run=ev.run;
+     bev.event=ev.event;
+     bev.lumi=ev.lumi;
+     bev.nvtx=ev.nvtx;
+     bev.rho=ev.rho;
+     bev.nw=1;
+     bev.w[0]=weight;
+     bev.qscale=ev.qscale;        bev.x1=ev.x1; bev.x2=ev.x2; bev.id1=ev.id1; bev.id2=ev.id2;
+     std::vector<data::PhysicsObject_t *> boxtag,boxprobe;
+     boxtag.push_back( &(selJets[tagJetIdx]) );
+     boxprobe.push_back( &(selJets[probeJetIdx]) );
+     data::PhysicsObjectCollection_t recoMet = evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
+     recoMet[2].SetPxPyPzE(recoMet[2].px()-jetDiff.px(),
+			   recoMet[2].py()-jetDiff.py(),
+			   0.,
+			   sqrt(pow(recoMet[2].px()-jetDiff.px(),2)+pow(recoMet[2].py()-jetDiff.py(),2))
+			   );
+     data::PhysicsObjectCollection_t selLeptons;
+     std::vector<LorentzVector> boxmet = utils::cmssw::getMETvariations(recoMet[2], selJets, selLeptons, isMC);
+     data::PhysicsObjectCollection_t gen=evSummary.getPhysicsObject(DataEventSummaryHandler::GENPARTICLES);
+     lxyAn.analyze( boxtag, boxprobe, boxmet, pf, gen);
+     spyDir->cd();
+     lxyAn.save();
     }
+  
   inF->Close();
   
   //
   // save histos to local file
   //
-  TString outUrl(out);
-  gSystem->ExpandPathName(outUrl);
-  gSystem->Exec("mkdir -p " + outUrl);
-  outUrl += "/";
-  outUrl += proctag + ".root";
-  TFile *file=TFile::Open(outUrl, "recreate");
+  spyFile->cd();
+  spyFile->Write();
+  TVectorD constVals(2);
+  constVals[0] = isMC ? cnorm : 1.0;
+  constVals[1] = isMC ? xsec  : 1.0;
+  constVals.Write("constVals");
   controlHistos.Write();
-  file->Close();
+  spyFile->Close();
  }

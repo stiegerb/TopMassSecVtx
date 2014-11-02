@@ -271,20 +271,23 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
       size_t pfend = jets[i]->get("pfend");
       if(pfstart<pf.size() && pfend<pf.size())
 	{
-	  for(size_t ipfn=pfstart; ipfn<=pfend; ipfn++)
+	  if(bev_.npf < int(bev_.gMaxNPFCands))
 	    {
-	      if(pf[ipfn].get("charge")==0) continue;
-	      
-	      bev_.pfid[bev_.npf]  = pf[ipfn].get("id");
-	      bev_.pfpt[bev_.npf]  = pf[ipfn].pt();
-	      bev_.pfeta[bev_.npf] = pf[ipfn].eta();
-	      bev_.pfphi[bev_.npf] = pf[ipfn].phi();
-	      bev_.pfjetidx[bev_.npf]=i;
-	      bev_.npf++;
-	      if(bev_.npf > int(bev_.gMaxNPFCands)-1){
-		cout << "Over " << bev_.gMaxNPFCands << " PF candidates associated to the jets in event with " << jets.size() << " jets!" << endl; 
-		break;
-	      }
+	      for(size_t ipfn=pfstart; ipfn<=pfend; ipfn++)
+		{
+		  if(pf[ipfn].get("charge")==0) continue;
+		  
+		  bev_.pfid[bev_.npf]  = pf[ipfn].get("id");
+		  bev_.pfpt[bev_.npf]  = pf[ipfn].pt();
+		  bev_.pfeta[bev_.npf] = pf[ipfn].eta();
+		  bev_.pfphi[bev_.npf] = pf[ipfn].phi();
+		  bev_.pfjetidx[bev_.npf]=i;
+		  bev_.npf++;
+		  if(bev_.npf > int(bev_.gMaxNPFCands)-1){
+		    cout << "Over " << bev_.gMaxNPFCands << " PF candidates associated to the jets in event with " << jets.size() << " jets!" << endl; 
+		    break;
+		  }
+		}
 	    }
 	}
       bev_.nj++;

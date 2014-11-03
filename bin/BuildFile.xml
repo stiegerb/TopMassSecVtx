@@ -4,6 +4,7 @@
 <use name="roostats"/>
 <use name="PhysicsTools/FWLite"/>
 <use name="UserCode/TopMassSecVtx"/>
+<use name="TopQuarkAnalysis/TopTools"/>
 <environment>
   <bin name="runTopAnalysis"       file="runTopAnalysis.cc"></bin>
   <bin name="computePDFvariations" file="computePDFvariations.cc"></bin>

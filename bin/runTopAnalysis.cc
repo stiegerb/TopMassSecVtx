@@ -354,7 +354,7 @@ int main(int argc, char* argv[])
 
       //leptons
       data::PhysicsObjectCollection_t leptons( evSummary.getPhysicsObject(DataEventSummaryHandler::LEPTONS) );
-      data::PhysicsObjectCollection_t selLeptons=selectLeptons(leptons, ev.rho, isMC);
+      data::PhysicsObjectCollection_t selLeptons=top::selectLeptons(leptons,fMuCor, ev.rho, isMC);
       if(!isMC)
 	{
 	  //dismiss data event if lepton multiplicity is not ok
@@ -366,7 +366,7 @@ int main(int argc, char* argv[])
       //jet/met
       data::PhysicsObjectCollection_t jets(evSummary.getPhysicsObject(DataEventSummaryHandler::JETS));
       LorentzVector jetDiff=utils::cmssw::updateJEC(jets, fJesCor, fTotalJESUnc, ev.rho, ev.nvtx, isMC);      
-      data::PhysicsObjectCollection_t selJets = selectJets(jets,selLeptons);
+      data::PhysicsObjectCollection_t selJets = top::selectJets(jets,selLeptons);
       data::PhysicsObjectCollection_t recoMet = evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
       //0,1 - raw pfmet, 2 - type1 pfmet, 3 - type1p2 corrected met
       recoMet[2].SetPxPyPzE(recoMet[2].px()-jetDiff.px(),

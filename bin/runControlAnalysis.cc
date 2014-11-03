@@ -1,5 +1,6 @@
 #include "UserCode/TopMassSecVtx/interface/MacroUtils.h"
 #include "UserCode/TopMassSecVtx/interface/SmartSelectionMonitor.h"
+#include "UserCode/TopMassSecVtx/interface/TopSelectionTools.h"
 #include "UserCode/TopMassSecVtx/interface/DataEventSummaryHandler.h"
 #include "UserCode/TopMassSecVtx/interface/LxyAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/MuScleFitCorrector.h"
@@ -26,7 +27,7 @@ std::vector<JetCorrectionUncertainty *> fTotalJESUnc;
 MuScleFitCorrector *fMuCor=0;
 
 //aggregates all the objects needed for the analysis
-enum ControlBoxType { DIJETBOX=1, GAMMABOX=22, WBOX=23, ZBOX=24};
+enum ControlBoxType { DIJETBOX=1, GAMMABOX=22, WBOX=24, ZBOX=23};
 class ControlBox{
 public:
   ControlBox() : cat(0), probeFlav(0), probeXb(0), probeFlavStr(""), probe(0), tag(0) { }
@@ -75,7 +76,7 @@ ControlBox assignBox(int reqControlType,
 		     data::PhysicsObjectCollection_t &leptons, 
 		     data::PhysicsObjectCollection_t &photons, 
 		     data::PhysicsObjectCollection_t &jets, 
-		     data::PhysicsObjectCollection_t &met, 
+		     std::vector<LorentzVector> &met, 
 		     data::PhysicsObjectCollection_t &pf)
 {
   ControlBox box;
@@ -96,10 +97,10 @@ ControlBox assignBox(int reqControlType,
 	  {
 	    int id=pf[ipfn].get("id");
 	    if(abs(id)!=13) continue;
-		 if(pf[ipfn].pt()<1) continue;
-		 nSoftMuons[ijet]++;
-		 if(pf[ipfn].pt()<5) continue;
-		 nTriggerSoftMuons[ijet]++;
+	    if(pf[ipfn].pt()<1) continue;
+	    nSoftMuons[ijet]++;
+	    if(pf[ipfn].pt()<5) continue;
+	    nTriggerSoftMuons[ijet]++;
 	  }
       }
       if(nTriggerSoftMuons[0]+nTriggerSoftMuons[1]) return box;
@@ -117,7 +118,7 @@ ControlBox assignBox(int reqControlType,
       if( nTriggerSoftMuons[0]==0 ) { tagJetIdx=1; probeJetIdx=0; }
 	   
       //require a tag on the tag jet
-      bool tagHasCSVL(selJets[tagJetIdx].getVal("csv")>0.405);
+      bool tagHasCSVL(jets[tagJetIdx].getVal("csv")>0.405);
       if(!tagHasCSVL) return box;
 	   
       //all done here
@@ -134,8 +135,8 @@ ControlBox assignBox(int reqControlType,
       if(fabs(dphijj)<2.7) return box;
      
       //balancing variable
-      float balance=jets[0].pt()/photons[0].pt();
-      if(balance<0.8) return box;
+      //float balance=jets[0].pt()/photons[0].pt();
+      //if(balance<0.8) return box;
 
       //all done here
       box.assignBox(reqControlType, &(photons[0]), &(jets[0]));
@@ -147,7 +148,7 @@ ControlBox assignBox(int reqControlType,
       if(jets.size()!=1) return box;
       
       //require significant MET
-      float metsig=met[0].pt()/sqrt(jet[0].pt());
+      float metsig=met[0].pt()/sqrt(jets[0].pt());
       if(metsig<3.5) return box;
 
       //require minimun transverse mass
@@ -164,7 +165,7 @@ ControlBox assignBox(int reqControlType,
       //if(balance<0.8) return box;
       
       data::PhysicsObject_t *w=new data::PhysicsObject_t(lv.px(),lv.py(),lv.pz(),lv.energy());
-      w->set("id",22);
+      w->set("id",24);
       box.assignBox(reqControlType, w, &(jets[0]));
     }
   else if(reqControlType==ZBOX)
@@ -186,7 +187,7 @@ ControlBox assignBox(int reqControlType,
       if(balance<0.8) return box;
       
       data::PhysicsObject_t *z=new data::PhysicsObject_t(ll.px(),ll.py(),ll.pz(),ll.energy());
-      z->set("id",24);
+      z->set("id",23);
       box.assignBox(reqControlType, z, &(jets[0]));
     }
 
@@ -213,15 +214,23 @@ int main(int argc, char* argv[])
   const edm::ParameterSet &runProcess       = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("runProcess");
   std::vector<std::string> urls=runProcess.getParameter<std::vector<std::string> >("input");
   TString url = TString(urls[0]);
-  TString baseDir     = runProcess.getParameter<std::string>("dirName");
-  TString jecDir      = runProcess.getParameter<std::string>("jecDir");
-  bool isMC           = runProcess.getParameter<bool>("isMC");
-  double xsec         = runProcess.getParameter<double>("xsec");
+  TString baseDir      = runProcess.getParameter<std::string>("dirName");
+  TString jecDir       = runProcess.getParameter<std::string>("jecDir");
+  bool isMC            = runProcess.getParameter<bool>("isMC");
+  int reqControlType   = runProcess.getParameter<bool>("mctruthmode");
+  double xsec          = runProcess.getParameter<double>("xsec");
   TString out          = runProcess.getParameter<std::string>("outdir");
   bool saveSummaryTree = runProcess.getParameter<bool>("saveSummaryTree");
   std::vector<string>  weightsFile = runProcess.getParameter<std::vector<string> >("weightsFile");
+  
+  //check running mode
+  bool runDijetControl(reqControlType==DIJETBOX);
+  bool runGammaControl(reqControlType==GAMMABOX);
+  bool runWControl(reqControlType==WBOX);
+  bool runZControl(reqControlType==ZBOX);
+  
 
- //jet energy scale uncertainties
+  //jet energy scale uncertainties
   gSystem->ExpandPathName(jecDir);
   fJesCor = utils::cmssw::getJetCorrector(jecDir,isMC);
   TString srcnames[]={
@@ -299,6 +308,15 @@ int main(int argc, char* argv[])
   controlHistos.addHistogram( new TH1F("pthat", ";#hat{p}_{T} [GeV]; Events",100,0,1500) );
   controlHistos.addHistogram( new TH1F ("nvertices", "; Vertex multiplicity; Events", 50, 0.,50.) );
 
+  
+  controlHistos.addHistogram( new TH1F ("balance", ";Balance p_{T}(probe)/p_{T}(tag); Events", 50,0.,2.) );
+  for(size_t i=0; i<2; i++)
+    {
+      TString pf(i==0 ? "tag" : "probe");
+      controlHistos.addHistogram( new TH1F (pf+"pt", "; Transverse momentum [GeV]; Events", 50,0.,300.) );
+      controlHistos.addHistogram( new TH1F (pf+"eta", "; Pseudo-rapidity; Events", 50, 0.,2.5) );
+    }
+
   //jet control
   TString jetFlavors[]={"","b","udsg","c","unmatched"};
   size_t nJetFlavors=sizeof(jetFlavors)/sizeof(TString);
@@ -318,24 +336,18 @@ int main(int argc, char* argv[])
   // TString svxAlgo="ivf";
   for(size_t iflav=0; iflav<nJetFlavors; iflav++)
     {
-      size_t nVars(1);
-      if(jetFlavors[iflav]=="b") nVars=systVars.size();
-      for(size_t ivar=0; ivar<nVars; ivar++)
-	{
-	  TString prefix(systVars[ivar]+jetFlavors[iflav]);
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"mass",       "; SecVtx Mass [GeV]; Jets",                 50, 0.,10.,  nPtbins,ptBins) );
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"lxy",        "; SecVtx L_{xy} [cm]; Jets",                100, 0.,10., nPtbins,ptBins) );	 
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"lxysig",     "; L_{xy}/sigma;  Jets",                     50, 0.,50.,  nPtbins,ptBins) );	 
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"dr",         "; #Delta R(jet,SecVtx L_{xy}); Jets",       50, 0.,1.0,  nPtbins,ptBins) );	 
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"ptfrac",     "; p_{T}(SecVtx L_{xy})/p_{T}(jet); Jets",   50, 0.,2.0,  nPtbins,ptBins) );	 
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"neutemfrac", "; Neutral EM fraction; Jets",               50, 0.,1.0,  nPtbins,ptBins) );	 
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"chfrac",     "; Charged fraction; Jets",                  50, 0.,1.0,  nPtbins,ptBins) );	 
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"neuthadfrac","; Neutral Had fraction; Jets",              50, 0.,1.0,  nPtbins,ptBins) );	 
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"mufrac",     "; Muon fraction; Jets",                     50, 0.,1.0,  nPtbins,ptBins) );	 
-	  controlHistos.addHistogram( new TH2F (prefix+"recoil"+svxAlgo+"ntracks", "; SecVtx track multiplicity; Jets",            10, 0.,10,   nPtbins,ptBins) );	 
-	}
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"mass",       "; SecVtx Mass [GeV]; Jets",                 50, 0.,10.,  nPtbins,ptBins) );
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"lxy",        "; SecVtx L_{xy} [cm]; Jets",                100, 0.,10., nPtbins,ptBins) );	 
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"lxysig",     "; L_{xy}/sigma;  Jets",                     50, 0.,50.,  nPtbins,ptBins) );	 
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"dr",         "; #Delta R(jet,SecVtx L_{xy}); Jets",       50, 0.,1.0,  nPtbins,ptBins) );	 
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"ptfrac",     "; p_{T}(SecVtx L_{xy})/p_{T}(jet); Jets",   50, 0.,2.0,  nPtbins,ptBins) );	 
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"neutemfrac", "; Neutral EM fraction; Jets",               50, 0.,1.0,  nPtbins,ptBins) );	 
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"chfrac",     "; Charged fraction; Jets",                  50, 0.,1.0,  nPtbins,ptBins) );	 
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"neuthadfrac","; Neutral Had fraction; Jets",              50, 0.,1.0,  nPtbins,ptBins) );	 
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"mufrac",     "; Muon fraction; Jets",                     50, 0.,1.0,  nPtbins,ptBins) );	 
+      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"ntracks", "; SecVtx track multiplicity; Jets",            10, 0.,10,   nPtbins,ptBins) );	 
     }
-
+    
   ///
   // process events file
   //
@@ -400,13 +412,13 @@ int main(int argc, char* argv[])
 	  if(isMC) gammaTrigger=true;
 	  if(!gammaTrigger) continue;
 	}
-      else if(runWcontrol)
+      else if(runWControl)
 	{
 	  eTrigger  = ev.t_bits[13];
 	  muTrigger = ev.t_bits[6];
 	  if(!eTrigger && !muTrigger) continue;
 	}
-      else if(runZcontrol)
+      else if(runZControl)
 	{
 	  eeTrigger   = ev.t_bits[0];
 	  mumuTrigger = ev.t_bits[2] || ev.t_bits[3];
@@ -416,104 +428,100 @@ int main(int argc, char* argv[])
       
       //weight for the event
       float weight(weightNom*triggerPrescale);
-
+      
       //select the objects
-      data::PhysicsObjectCollection_t leptons    = selectLeptons(evSummary.getPhysicsObject(DataEventSummaryHandler::LEPTONS), ev.rho, isMC);
-      data::PhysicsObjectCollection_t photons    = selectPhotons(evSummary.getPhysicsObject(DataEventSummaryHandler::PHOTONS), triggerThresholds, ev.rho);
+      data::PhysicsObjectCollection_t rawLeptons = evSummary.getPhysicsObject(DataEventSummaryHandler::LEPTONS);
+      data::PhysicsObjectCollection_t leptons    = top::selectLeptons(rawLeptons, fMuCor, ev.rho, isMC);
+      data::PhysicsObjectCollection_t rawPhotons = evSummary.getPhysicsObject(DataEventSummaryHandler::PHOTONS);
+      data::PhysicsObjectCollection_t photons    = top::selectPhotons(rawPhotons, triggerThreshold, ev.rho);
       data::PhysicsObjectCollection_t rawJets    = evSummary.getPhysicsObject(DataEventSummaryHandler::JETS);
       LorentzVector jetDiff                      = utils::cmssw::updateJEC(rawJets, fJesCor, fTotalJESUnc, ev.rho, ev.nvtx, isMC);      
-      data::PhysicsObjectCollection_t jets       = selectJets(rawJets,leptons);
+      data::PhysicsObjectCollection_t jets       = top::selectJets(rawJets,leptons);
       data::PhysicsObjectCollection_t recoMet    = evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
       recoMet[2].SetPxPyPzE(recoMet[2].px()-jetDiff.px(),
 			    recoMet[2].py()-jetDiff.py(),
 			    0.,
 			    sqrt(pow(recoMet[2].px()-jetDiff.px(),2)+pow(recoMet[2].py()-jetDiff.py(),2))
 			    );
-     std::vector<LorentzVector> met              = utils::cmssw::getMETvariations(recoMet[2], selJets, selLeptons, isMC);
-     data::PhysicsObjectCollection_t pf          = evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES); 
+      std::vector<LorentzVector> met              = utils::cmssw::getMETvariations(recoMet[2], jets, leptons, isMC);
+      data::PhysicsObjectCollection_t pf          = evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES); 
       
-     //build the analysis box
-     ControlBox box = assignBox(reqControlType,leptons,photons,jets,met,pf);
-     if(box.cat==0) continue;
-     data::PhysicsObjectCollection_t gen;
-     if(isMC){
-       gen=evSummary.getPhysicsObject(DataEventSummaryHandler::GENPARTICLES);
-       box.assignProbeFlavour(gen);
-     }
+      //build the analysis box
+      ControlBox box = assignBox(reqControlType,leptons,photons,jets,met,pf);
+      if(box.cat==0) continue;
+      data::PhysicsObjectCollection_t gen;
+      if(isMC){
+	gen=evSummary.getPhysicsObject(DataEventSummaryHandler::GENPARTICLES);
+	box.assignProbeFlavour(gen);
+      }
 
-     //gen control
-     if(isMC) controlHistos.fillHisto("pthat",catsToFill,ev.pthat,weight);
+      //gen control
+      std::vector<TString> catsToFill(1,"");
+      if(isMC) controlHistos.fillHisto("pthat",catsToFill,ev.pthat,weight);
+      
+      //vertices control
+      controlHistos.fillHisto("nvertices",catsToFill,ev.nvtx,weight);
+      
+      //tag/probe kinematics
+      controlHistos.fillHisto("balance",   catsToFill, box.probe->pt(), box.tag->pt(), weight);
+      controlHistos.fillHisto("tagpt",     catsToFill, box.tag->pt(),                  weight);
+      controlHistos.fillHisto("tageta",    catsToFill, fabs(box.tag->eta()),           weight);
+      controlHistos.fillHisto("probept",   catsToFill, box.probe->pt(),                weight);
+      controlHistos.fillHisto("probeeta",  catsToFill, fabs(box.probe->eta()),         weight);
+      if(isMC) controlHistos.fillHisto("probeflav", catsToFill, box.probeFlav,         weight);
      
-     //vertices control
-     controlHistos.fillHisto("nvertices",catsToFill,ev.nvtx,weight);
+      //secondary vertex characteristics evaluated for the probe
+      float recoilPtNorm(TMath::Min(box.probe->pt(),ptBins[nPtbins-1]));
+      const data::PhysicsObject_t &svx = box.probe->getObject(svxAlgo);
+      float lxy=svx.vals.find("lxy")->second;
+      if(lxy)
+	{
+	  float lxyErr=svx.vals.find("lxyErr")->second;
+	  int ntrk=svx.info.find("ntrk")->second;
+	  catsToFill.clear();
+	  catsToFill.push_back("");
+	  if(ntrk==2)      catsToFill.push_back("ntrk2");
+	  else if(ntrk==3) catsToFill.push_back("ntrk3");
+	  else             catsToFill.push_back("ntrk4");
 
-     //tag/probe kinematics
-     controlHistos.fillHisto("tagpt",     catsToFill, box.tag->pt(),          weight);
-     controlHistos.fillHisto("tageta",    catsToFill, fabs(box.tag->eta()),   weight);
-     controlHistos.fillHisto("probept",   catsToFill, box.probe->pt(),        weight);
-     controlHistos.fillHisto("probeeta",  catsToFill, fabs(box.probe->eta()), weight);
-     if(isMC) controlHistos.fillHisto("probeflav", catsToFill, box.probeFlav,          weight);
-     
-     //secondary vertex characteristics evaluated for the probe
-     float recoilPtNorm(TMath::Min(box.probe[0]->pt(),ptBins[nPtbins-1]));
-     const data::PhysicsObject_t &svx = selJets[probeJetIdx].getObject(svxAlgo);
-     float lxy=svx.vals.find("lxy")->second;
-     if(lxy)
-       {
-	 float lxyErr=svx.vals.find("lxyErr")->second;
-	 int ntrk=svx.info.find("ntrk")->second;
-	 catsToFill.clear();
-	 catsToFill.push_back("");
-	 if(ntrk==2)      catsToFill.push_back("ntrk2");
-	 else if(ntrk==3) catsToFill.push_back("ntrk3");
-	 else             catsToFill.push_back("ntrk4");
-	 controlHistos.fillHisto("recoil"+svxAlgo+"mass",        catsToFill, svx.mass(),                                  recoilPtNorm, weight);
-	 controlHistos.fillHisto("recoil"+svxAlgo+"lxy",         catsToFill, lxy,                                         recoilPtNorm, weight);
-	 controlHistos.fillHisto("recoil"+svxAlgo+"lxysig",      catsToFill, lxy/lxyErr,                                  recoilPtNorm, weight);
-	 controlHistos.fillHisto("recoil"+svxAlgo+"dr",          catsToFill, deltaR(selJets[probeJetIdx],svx),            recoilPtNorm, weight);
-	 controlHistos.fillHisto("recoil"+svxAlgo+"ptfrac",      catsToFill, svx.pt()/selJets[probeJetIdx].pt(),          recoilPtNorm, weight);
-	 controlHistos.fillHisto("recoil"+svxAlgo+"neutemfrac",  catsToFill, selJets[probeJetIdx].getVal("neutEmFrac"),   recoilPtNorm, weight);
-	 controlHistos.fillHisto("recoil"+svxAlgo+"chfrac",      catsToFill, selJets[probeJetIdx].getVal("chHadFrac"),    recoilPtNorm, weight);
-	 controlHistos.fillHisto("recoil"+svxAlgo+"neuthadfrac", catsToFill, selJets[probeJetIdx].getVal("neutHadFrac"),  recoilPtNorm, weight);
-	 controlHistos.fillHisto("recoil"+svxAlgo+"mufrac",      catsToFill, selJets[probeJetIdx].getVal("muFrac"),       recoilPtNorm, weight);
-	 controlHistos.fillHisto("recoil"+svxAlgo+"ntracks",     catsToFill, ntrk,                                        recoilPtNorm, weight);
-	 if(isMC)
-	   {
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"mass",         catsToFill, svx.mass(),                                  recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"lxy",          catsToFill, lxy,                                         recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"lxysig",       catsToFill, lxy/lxyErr,                                  recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"dr",           catsToFill, deltaR(selJets[probeJetIdx],svx),            recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"ptfrac",       catsToFill, svx.pt()/selJets[probeJetIdx].pt(),          recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"ntracks",      catsToFill, ntrk,                                        recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"nmuons",       catsToFill, nmuons,                                      recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"neutemfrac",   catsToFill, selJets[probeJetIdx].getVal("neutEmFrac"),   recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"chfrac",       catsToFill, selJets[probeJetIdx].getVal("chHadFrac"),    recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"neuthadfrac",  catsToFill, selJets[probeJetIdx].getVal("neutHadFrac"),  recoilPtNorm, weight);
-	     controlHistos.fillHisto(box.probeFlavStr+"recoil"+svxAlgo+"mufrac",       catsToFill, selJets[probeJetIdx].getVal("muFrac"),       recoilPtNorm, weight);
-	   }
-       }
+	  std::vector<TString> prefixes(1,"");
+	  if(isMC) prefixes.push_back( box.probeFlavStr );
+	  for(size_t ipf=0; ipf<prefixes.size(); ipf++)
+	    {
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"mass",        catsToFill, svx.mass(),                                  recoilPtNorm, weight);
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"lxy",         catsToFill, lxy,                                         recoilPtNorm, weight);
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"lxysig",      catsToFill, lxy/lxyErr,                                  recoilPtNorm, weight);
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"dr",          catsToFill, deltaR(*(box.probe),svx),            recoilPtNorm, weight);
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"ptfrac",      catsToFill, svx.pt()/box.probe->pt(),          recoilPtNorm, weight);
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"neutemfrac",  catsToFill, box.probe->getVal("neutEmFrac"),   recoilPtNorm, weight);
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"chfrac",      catsToFill, box.probe->getVal("chHadFrac"),    recoilPtNorm, weight);
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"neuthadfrac", catsToFill, box.probe->getVal("neutHadFrac"),  recoilPtNorm, weight);
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"mufrac",      catsToFill, box.probe->getVal("muFrac"),       recoilPtNorm, weight);
+	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"ntracks",     catsToFill, ntrk,                                        recoilPtNorm, weight);
+	    }
+	}
      
      
-     //save selected event
-     if(!saveSummaryTree) continue;
-     lxyAn.resetBeautyEvent();
-     BeautyEvent_t &bev=lxyAn.getBeautyEvent();
-     bev.evcat=box.cat;
-     bev.gevcat=box.cat;
-     bev.run=ev.run;
-     bev.event=ev.event;
-     bev.lumi=ev.lumi;
-     bev.nvtx=ev.nvtx;
-     bev.rho=ev.rho;
-     bev.nw=1;
-     bev.w[0]=weight;
-     bev.qscale=ev.qscale;  bev.x1=ev.x1; bev.x2=ev.x2; bev.id1=ev.id1; bev.id2=ev.id2;
-     std::vector<data::PhysicsObject_t *> boxtag,boxprobe;
-     boxtag.push_back( box.tag );
-     boxprobe.push_back( box.probe );
-     lxyAn.analyze( boxtag, boxprobe, met, pf, gen);
-     spyDir->cd();
-     lxyAn.save();
+      //save selected event
+      if(!saveSummaryTree) continue;
+      lxyAn.resetBeautyEvent();
+      BeautyEvent_t &bev=lxyAn.getBeautyEvent();
+      bev.evcat=box.cat;
+      bev.gevcat=box.cat;
+      bev.run=ev.run;
+      bev.event=ev.event;
+      bev.lumi=ev.lumi;
+      bev.nvtx=ev.nvtx;
+      bev.rho=ev.rho;
+      bev.nw=1;
+      bev.w[0]=weight;
+      bev.qscale=ev.qscale;  bev.x1=ev.x1; bev.x2=ev.x2; bev.id1=ev.id1; bev.id2=ev.id2;
+      std::vector<data::PhysicsObject_t *> boxtag,boxprobe;
+      boxtag.push_back( box.tag );
+      boxprobe.push_back( box.probe );
+      lxyAn.analyze( boxtag, boxprobe, met, pf, gen);
+      spyDir->cd();
+      lxyAn.save();
     }
   
   inF->Close();

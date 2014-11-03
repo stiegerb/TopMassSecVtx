@@ -10,6 +10,7 @@ eosdir=$2
 outdir="${CMSSW_BASE}/src/UserCode/TopMassSecVtx/test/topss2014"
 indir="/store/cmst3/user/psilva/5311_ntuples"
 synchdir="/store/cmst3/group/top/summer2014/synchEx"
+plotsdir="~`whoami`/public/html/TopMassSecVtx/"
 cfg="$CMSSW_BASE/src/UserCode/TopMassSecVtx/test/runAnalysis_cfg.py.templ"
 queue=1nd
 hash=e1fa735
@@ -33,9 +34,9 @@ fi
 if [ "$step" == "2" ]; then
     echo "Making pre-selection plots"
     if [ -z $eosdir ]; then
-	runPlotter.py -l 19701  -j ${outdir}/samples.json -o ${outdir}/summary/${hash}/plots ${outdir}/summary/${hash};
+	runPlotter.py -l 19701  -j ${outdir}/samples.json -o ${plotsdir}/plots ${outdir}/summary/${hash};
     else
-	runPlotter.py -l 19701  -j ${outdir}/samples.json -o ${outdir}/summary/${hash}/plots ${eosdir};
+	runPlotter.py -l 19701  -j ${outdir}/samples.json -o ${plotsdir}/plots ${eosdir};
     fi
     echo "You can find the summary plots @ ${outdir}/summary/${hash}/plots"
 fi
@@ -55,15 +56,22 @@ fi
 if [ "$step" == "5" ]; then
     echo "Submitting control analysis"
 
-    #ctrlJsons=("qcd_samples")
-    #for ijson in ${ctrlJsons[@]}; do
-    #runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d /store/cmst3/user/psilva/5311_qcd_ntuples -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
-    #done
+    ctrlJsons=("qcd_samples")
+    for ijson in ${ctrlJsons[@]}; do
+	runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d /store/cmst3/user/psilva/5311_qcd_ntuples -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
+    done
 
-    #ctrlJsons=("z_samples" "w_samples" "photon_samples")
-    ctrlJsons=("photon_samples")
+    ctrlJsons=("z_samples" "w_samples" "photon_samples")
     for ijson in ${ctrlJsons[@]}; do
 	runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d ${indir} -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
     done
     echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
+fi
+
+if [ "$step" == "6" ]; then
+    ctrlJsons=("qcd_samples" "z_samples" "w_samples" "photon_samples")
+    for ijson in ${ctrlJsons[@]}; do
+	echo "Making pre-selection plots for ${ijson}"
+	runPlotter.py -l 19701  -j ${outdir}/${ijson}.json -o ${plotsdir}/${ijson}_plots ${outdir}/${ijson}/${hash};
+    done
 fi

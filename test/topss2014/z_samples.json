@@ -1,0 +1,44 @@
+{
+  "proc":[
+    {
+      "tag":"Dileptons",
+      "isdata":false,
+      "color":592,
+      "lcolor":1,
+      "marker":1,
+      "mctruthmode":23,
+      "data":[
+        { "dtag":"MC8TeV_WW", "split":2, "xsec":57.1097, "br":[ 0.104976 ], "dset":"/WWJetsTo2L2Nu_TuneZ2star_8TeV-madgraph-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
+        { "dtag":"MC8TeV_ZZ", "split":2, "xsec":0.380  , "br":[ 1.0 ]     , "dset":"/ZZJetsTo2L2Nu_TuneZ2star_8TeV-madgraph-tauola/Summer12_DR53X-PU_S10_START53_V7A-v3/AODSIM"},
+        { "dtag":"MC8TeV_WZ", "split":2, "xsec":1.057  , "br":[ 1.0 ]     , "dset":"/WZJetsTo3LNu_TuneZ2_8TeV-madgraph-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
+        { "dtag":"MC8TeV_TTJets_MSDecays_172v5"     , "split":5,  "xsec":245.8, "dset":"MC8TeV_TTJets_MSDecays" },
+        { "dtag":"MC8TeV_SingleTbar_tW", "split":1, "xsec":11.1, "br":[ 1.0 ], "dset":"/Tbar_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
+        { "dtag":"MC8TeV_SingleT_tW"   , "split":1, "xsec":11.1, "br":[ 1.0 ], "dset":"/T_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
+        { "dtag":"MC8TeV_DYJetsToLL_50toInf" , "split":10, "xsec":3503.71, "br":[ 1.0 ]         , "dset":"/DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
+        { "dtag":"MC8TeV_DY1JetsToLL_50toInf", "split":10, "xsec":3503.71, "br":[ 0.1901694915 ], "dset":"/DY1JetsToLL_M-50_TuneZ2Star_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
+        { "dtag":"MC8TeV_DY2JetsToLL_50toInf", "split":10, "xsec":3503.71, "br":[ 0.0613559322 ], "dset":"/DY2JetsToLL_M-50_TuneZ2Star_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7C-v1/AODSIM"},
+        { "dtag":"MC8TeV_DY3JetsToLL_50toInf", "split":10, "xsec":3503.71, "br":[ 0.0173220339 ], "dset":"/DY3JetsToLL_M-50_TuneZ2Star_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
+        { "dtag":"MC8TeV_DY4JetsToLL_50toInf", "split":10, "xsec":3503.71, "br":[ 0.0078101695 ], "dset":"/DY4JetsToLL_M-50_TuneZ2Star_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
+        { "dtag":"MC8TeV_DYJetsToLL_10to50"  , "split":5,  "xsec":860.5  , "br":[ 1.0 ]         , "dset":"/DYJetsToLL_M-10To50filter_8TeV-madgraph/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"}
+      ]
+    },
+    {
+      "tag":"Data",
+      "isdata":true,
+      "color":1,
+      "fill":0,
+      "marker":20,
+      "mctruthmode":23,
+      "data":[
+        { "dtag":"Data8TeV_DoubleElectron2012A"   , "split":2,  "xsec":1.0, "br":[ 1.0 ], "dset":"/DoubleElectron/Run2012A-22Jan2013-v1/AOD"},
+        { "dtag":"Data8TeV_DoubleMu2012A"         , "split":2,  "xsec":1.0, "br":[ 1.0 ], "dset":"/DoubleMu/Run2012A-22Jan2013-v1/AOD"},
+        { "dtag":"Data8TeV_DoubleElectron2012B"   , "split":5,  "xsec":1.0, "br":[ 1.0 ], "dset":"/DoubleElectron/Run2012B-22Jan2013-v1/AOD"},
+        { "dtag":"Data8TeV_DoubleMu2012B"         , "split":5,  "xsec":1.0, "br":[ 1.0 ], "dset":"/DoubleMuParked/Run2012B-22Jan2013-v1/AOD"},
+        { "dtag":"Data8TeV_DoubleElectron2012C"   , "split":6,  "xsec":1.0, "br":[ 1.0 ], "dset":"/DoubleElectron/Run2012C-22Jan2013-v1/AOD"},
+        { "dtag":"Data8TeV_DoubleMu2012C"         , "split":6,  "xsec":1.0, "br":[ 1.0 ], "dset":"/DoubleMuParked/Run2012C-22Jan2013-v1/AOD"},
+        { "dtag":"Data8TeV_DoubleElectron2012D"   , "split":6,  "xsec":1.0, "br":[ 1.0 ], "dset":"/DoubleElectron/Run2012D-22Jan2013-v1/AOD"},
+        { "dtag":"Data8TeV_DoubleMu2012D"         , "split":6,  "xsec":1.0, "br":[ 1.0 ], "dset":"/DoubleMuParked/Run2012D-22Jan2013-v1/AOD"}
+      ]
+    }
+  ]
+}

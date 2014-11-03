@@ -213,6 +213,7 @@ class Plot:
             t2.cd()
             
             ratioframe=self.dataH.Clone('ratioframe')
+            ratioframe.Reset('ICE')
             ratioframe.Draw()
             ratioframe.GetYaxis().SetRangeUser(0.62,1.36)
             #ratioframe.GetYaxis().SetRangeUser(0.36,1.64)
@@ -255,7 +256,7 @@ class Plot:
                 gr.SetPointError(np,0,0,errLo,errHi)
                 bkgUncGr.SetPoint(np,x,1)
                 bkgUncGr.SetPointError(np,dx,bkgCts_err/bkgCts)
-            bkgUncGr.Draw('p2')
+            bkgUncGr.Draw('2')
             gr.Draw('p')
 
 

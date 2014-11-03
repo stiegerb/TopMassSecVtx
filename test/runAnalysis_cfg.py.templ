@@ -19,6 +19,7 @@ runProcess = cms.PSet(
     weightsFile = cms.vstring(@weightsFile),
     dirName = cms.string("dataAnalyzer"),
     useMVA = cms.bool(@useMVA),
+    mctruthmode = cms.int32(@mctruthmode),
     tmvaInput = mySignalMVA,
     jecDir = cms.string('${CMSSW_BASE}/src/UserCode/TopMassSecVtx/data/jec'),
     datapileup = datapileup_70300_2012,

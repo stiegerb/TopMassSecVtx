@@ -396,7 +396,7 @@ int main(int argc, char* argv[])
   //
   // analyze (puf...)
   //
-  for (int inum=0; inum < 10000+0*totalEntries; ++inum)
+  for (int inum=0; inum < totalEntries; ++inum)
     {
       if(inum%500==0) { printf("\r [ %d/100 ]",int(100*float(inum)/float(totalEntries))); cout << flush; }
       evSummary.getEntry(inum);

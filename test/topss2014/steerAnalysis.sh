@@ -48,6 +48,15 @@ fi
 
 if [ "$step" == "4" ]; then
     echo "Submitting mass scan samples"
-    runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/mass_scan_samples.json  -d ${indir} -o ${outdir}/mass_scan/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash} -t 175;
+    runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/mass_scan_samples.json  -d ${indir} -o ${outdir}/mass_scan/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
+    echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
+fi
+
+if [ "$step" == "5" ]; then
+    echo "Submitting control analysis"
+    ctrlJsons=("photon_samples.json" "qcd_samples.json" "z_samples.json" "w_samples.json")
+    for ijson in ${ctrlJsons[@]}; do
+	runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}  -d ${indir} -o ${outdir}/mass_scan/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
+    done
     echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
 fi

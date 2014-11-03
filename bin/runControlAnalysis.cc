@@ -80,12 +80,20 @@ ControlBox assignBox(int reqControlType,
 		     data::PhysicsObjectCollection_t &pf)
 {
   ControlBox box;
-  
+
+  std::vector<int> dilCands, ljCands, vetoCands;
+  for(size_t i=0; i<leptons.size(); i++){
+    if(leptons[i].getFlag("passLL"))     dilCands.push_back(i);
+    if(leptons[i].getFlag("passLJ"))     ljCands.push_back(i);
+    else {
+      if(leptons[i].getFlag("passLJveto")) vetoCands.push_back(i);
+    }
+  }
   if(reqControlType==DIJETBOX)
     {
       //two jets and now leptons
       if(jets.size()!=2) return box;
-      if(leptons.size()) return box;
+      if(dilCands.size() || ljCands.size() || vetoCands.size()) return box;
 
       //require at least one soft muon
       std::vector<int> nTriggerSoftMuons(jets.size(),0), nSoftMuons(jets.size(),0);
@@ -128,7 +136,7 @@ ControlBox assignBox(int reqControlType,
     {
       //gamma+1 jet without leptons
       if(photons.size()!=1 || jets.size()!=1) return box;
-      if(leptons.size()) return box;
+      if(dilCands.size() || ljCands.size() || vetoCands.size()) return box;
 
       //back to back configuration
       float dphijj=deltaPhi(photons[0].phi(),jets[0].phi());
@@ -144,7 +152,7 @@ ControlBox assignBox(int reqControlType,
   else if(reqControlType==WBOX)
     {
       //1 lepton + 1 jet
-      if(leptons.size()!=1) return box;
+      if(ljCands.size()!=1 || vetoCands.size()) return box;
       if(jets.size()!=1) return box;
       
       //require significant MET
@@ -152,7 +160,7 @@ ControlBox assignBox(int reqControlType,
       if(metsig<3.5) return box;
 
       //require minimun transverse mass
-      float mt(utils::cmssw::getMT<LorentzVector>( leptons[0], met[0]));
+      float mt(utils::cmssw::getMT<LorentzVector>( leptons[ ljCands[0] ], met[0]));
       if(mt<50) return box;
       
       //back-to-back configuration
@@ -171,11 +179,11 @@ ControlBox assignBox(int reqControlType,
   else if(reqControlType==ZBOX)
     {
       //2 leptons + 1 jet
-      if(leptons.size()!=2) return box;
+      if(dilCands.size()<2) return box;
       if(jets.size()!=1) return box;
 
       //require z window
-      LorentzVector ll=leptons[0]+leptons[1];
+      LorentzVector ll=leptons[ dilCands[0] ]+leptons[ dilCands[1] ];
       if(fabs(ll.mass()-91)>15) return box;
 
       //back to back configuration 
@@ -217,8 +225,9 @@ int main(int argc, char* argv[])
   TString baseDir      = runProcess.getParameter<std::string>("dirName");
   TString jecDir       = runProcess.getParameter<std::string>("jecDir");
   bool isMC            = runProcess.getParameter<bool>("isMC");
-  int reqControlType   = runProcess.getParameter<bool>("mctruthmode");
+  int reqControlType   = runProcess.getParameter<int>("mctruthmode");
   double xsec          = runProcess.getParameter<double>("xsec");
+  bool isV0JetsMC(isMC && (url.Contains("DYJetsToLL_50toInf") || url.Contains("TeV_WJets")));
   TString out          = runProcess.getParameter<std::string>("outdir");
   bool saveSummaryTree = runProcess.getParameter<bool>("saveSummaryTree");
   std::vector<string>  weightsFile = runProcess.getParameter<std::vector<string> >("weightsFile");
@@ -375,6 +384,8 @@ int main(int argc, char* argv[])
       if(inum%500==0) { printf("\r [ %d/100 ]",int(100*float(inum)/float(totalEntries))); cout << flush; }
       evSummary.getEntry(inum);
       DataEventSummary &ev = evSummary.getEvent();
+
+      if(isV0JetsMC && ev.nup>5) continue;
   
       //pileup weight
       float weightNom(1.0);

@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Wed Jun 11 13:21:40 2014 by ROOT version 5.32/00
+// Wed Nov  5 00:02:54 2014 by ROOT version 5.32/00
 // from TTree lxy/lxy analysis tree
-// found on file: /afs/cern.ch/user/s/stiegerb/work/TopSummerStudents/summary/benjamin/MC8TeV_TTJets_MSDecays_173v5_0_filt2.root
+// found on file: root://eoscms//eos/cms/store/cmst3/group/top/summer2014/e1fa735/MC8TeV_TTJets_MSDecays_172v5_0.root
 //////////////////////////////////////////////////////////
 
 #ifndef LxyTreeAnalysisBase_h
@@ -29,6 +29,11 @@ public :
    Int_t           gevcat;
    Int_t           nvtx;
    Float_t         rho;
+   Float_t         qscale;
+   Float_t         x1;
+   Float_t         x2;
+   Int_t           id1;
+   Int_t           id2;
    Int_t           nw;
    Float_t         w[50];   //[nw]
    Int_t           nl;
@@ -48,8 +53,9 @@ public :
    Float_t         jcsv[50];   //[nj]
    Float_t         jarea[50];   //[nj]
    Float_t         jtoraw[50];   //[nj]
-   Float_t         jjesup[50];   //[nj]
-   Float_t         jjesdn[50];   //[nj]
+   Float_t         jjesup[50][26];   //[nj]
+   Float_t         jjesdn[50][26];   //[nj]
+   Float_t         jbhadmatchdr[50];   //[nj]
    Float_t         gjpt[50];   //[nj]
    Float_t         gjeta[50];   //[nj]
    Float_t         gjphi[50];   //[nj]
@@ -72,11 +78,11 @@ public :
    Float_t         bhadlxy[50];   //[nj]
    Int_t           npf;
    Int_t           npfb1;
-   Int_t           pfid[500];   //[npf]
-   Int_t           pfjetidx[500];   //[npf]
-   Float_t         pfpt[500];   //[npf]
-   Float_t         pfeta[500];   //[npf]
-   Float_t         pfphi[500];   //[npf]
+   Int_t           pfid[1000];   //[npf]
+   Int_t           pfjetidx[1000];   //[npf]
+   Float_t         pfpt[1000];   //[npf]
+   Float_t         pfeta[1000];   //[npf]
+   Float_t         pfphi[1000];   //[npf]
    Float_t         metpt;
    Float_t         metphi;
    Float_t         metvar[8];
@@ -94,6 +100,11 @@ public :
    TBranch        *b_gevcat;   //!
    TBranch        *b_nvtx;   //!
    TBranch        *b_rho;   //!
+   TBranch        *b_qscale;   //!
+   TBranch        *b_x1;   //!
+   TBranch        *b_x2;   //!
+   TBranch        *b_id1;   //!
+   TBranch        *b_id2;   //!
    TBranch        *b_nw;   //!
    TBranch        *b_w;   //!
    TBranch        *b_nl;   //!
@@ -115,6 +126,7 @@ public :
    TBranch        *b_jtoraw;   //!
    TBranch        *b_jjesup;   //!
    TBranch        *b_jjesdn;   //!
+   TBranch        *b_jbhadmatchdr;   //!
    TBranch        *b_gjpt;   //!
    TBranch        *b_gjeta;   //!
    TBranch        *b_gjphi;   //!
@@ -151,7 +163,6 @@ public :
    TBranch        *b_tphi;   //!
    TBranch        *b_tmass;   //!
 
-
    LxyTreeAnalysisBase(TTree *tree=0);
    virtual ~LxyTreeAnalysisBase();
    virtual Int_t    Cut(Long64_t entry);
@@ -164,3 +175,4 @@ public :
 };
 
 #endif
+

@@ -223,6 +223,7 @@ def makePlot(key, inDir, procList, xsecweights, options):
                 hist.Scale(options.lumi)
             newPlot.add(hist,title,color,isData)
 
+    if options.normToData : newPlot.normToData()
     newPlot.show(options.outDir)
     if(options.debug or newPlot.name.find('flow')>=0 ) : newPlot.showTable(options.outDir)
     newPlot.appendTo(options.outDir+'/plotter.root')
@@ -353,6 +354,8 @@ if __name__ == "__main__":
                             'expected from the json file) and exit.'))
     parser.add_option('-d', '--debug', dest='debug', action="store_true",
                       help='Dump the event yields table for each plot')
+    parser.add_option('--normToData', dest='normToData', action="store_true",
+                      help='Force normalization to data')
     parser.add_option('-f', '--filter', dest='filter', default="",
                       help='csv list of plots to produce')
     parser.add_option('-v', '--verbose', dest='verbose', action="store",

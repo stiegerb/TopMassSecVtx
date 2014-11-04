@@ -4,6 +4,7 @@
 #include "UserCode/TopMassSecVtx/interface/DataEventSummaryHandler.h"
 #include "UserCode/TopMassSecVtx/interface/LxyAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/MuScleFitCorrector.h"
+#include "UserCode/TopMassSecVtx/interface/LeptonEfficiencySF.h"
 
 #include "FWCore/FWLite/interface/AutoLibraryLoader.h"
 #include "FWCore/PythonParameterSet/interface/MakeParameterSets.h"
@@ -16,7 +17,7 @@
 #include "TSystem.h"
 #include "TFile.h"
 #include "TTree.h" 
-#include "TGraph2D.h"
+#include "TGraphErrors.h"
 
 #include <fstream>
 #include <iostream>
@@ -26,12 +27,13 @@ using namespace std;
 FactorizedJetCorrector *fJesCor=0;
 std::vector<JetCorrectionUncertainty *> fTotalJESUnc;
 MuScleFitCorrector *fMuCor=0;
+LeptonEfficiencySF fLepEff;
 
 //aggregates all the objects needed for the analysis
 enum ControlBoxType { DIJETBOX=1, GAMMABOX=22, WBOX=24, ZBOX=23};
 class ControlBox{
 public:
-  ControlBox() : cat(0), probeFlav(0), probeXb(0), probeFlavStr(""), probe(0), tag(0) { }
+  ControlBox() : cat(0), probeFlav(0), probeXb(0), probeFlavStr(""), selEffSF(1.0), probe(0), tag(0) { }
   
   void assignBox(Int_t evcat,data::PhysicsObject_t *itag, data::PhysicsObject_t *iprobe)
   {
@@ -70,6 +72,7 @@ public:
   Int_t probeFlav;
   Float_t probeXb;
   TString probeFlavStr;
+  Float_t selEffSF;
   data::PhysicsObject_t *probe, *tag;
 };
 
@@ -196,6 +199,7 @@ ControlBox assignBox(int reqControlType,
       data::PhysicsObject_t *w=new data::PhysicsObject_t(lv.px(),lv.py(),lv.pz(),lv.energy());
       w->set("id",24);
       box.assignBox(reqControlType, w, &(jets[0]));
+      box.selEffSF=fLepEff.getSingleLeptonEfficiencySF(leptons[ ljCands[0] ].eta(),abs(leptons[ ljCands[0] ].get("id"))).first;
     }
   else if(reqControlType==ZBOX)
     {
@@ -218,6 +222,10 @@ ControlBox assignBox(int reqControlType,
       data::PhysicsObject_t *z=new data::PhysicsObject_t(ll.px(),ll.py(),ll.pz(),ll.energy());
       z->set("id",23);
       box.assignBox(reqControlType, z, &(jets[0]));
+
+      float eta1(fabs(leptons[ dilCands[0] ].eta())), eta2(fabs(leptons[ dilCands[1] ].eta()));
+      float id1id2(abs(leptons[ dilCands[0] ].get("id"))*abs(leptons[ dilCands[1] ].get("id")));
+      box.selEffSF=fLepEff.getDileptonEfficiencySF(eta1,eta2,id1id2).first;
     }
 
   //all done
@@ -259,6 +267,21 @@ int main(int argc, char* argv[])
   bool runWControl(reqControlType==WBOX);
   bool runZControl(reqControlType==ZBOX);
   
+  //if given use weights to correct tag pt in MC
+  TGraphErrors *tagPtWeightGr=0;
+  float maxPtForTagWgt(450);
+  if(weightsFile.size() && isMC)
+    {
+      TFile *inWeightsF=TFile::Open((weightsFile[0]+"/ControlTagPtWeights.root").c_str());
+      TString key("qcd");
+      if(runWControl)     key="w";
+      if(runZControl)     key="z";
+      if(runGammaControl) key="photon";
+      tagPtWeightGr=(TGraphErrors *)inWeightsF->Get(key);
+      inWeightsF->Close();
+      if(tagPtWeightGr) std::cout << "Tag pT will be reweighted" << std::endl;
+    }
+
 
   //jet energy scale uncertainties
   gSystem->ExpandPathName(jecDir);
@@ -344,9 +367,13 @@ int main(int argc, char* argv[])
   controlHistos.addHistogram( new TH1F ("mass", ";Mass; Events", 50,0.,150.) );
   for(size_t i=0; i<2; i++)
     {
-      TString pf(i==0 ? "tag" : "probe");
-      controlHistos.addHistogram( new TH1F (pf+"pt", "; Transverse momentum [GeV]; Events", 50,0.,500.) );
-      controlHistos.addHistogram( new TH1F (pf+"eta", "; Pseudo-rapidity; Events", 50, 0.,5) );
+      for(size_t j=0; j<2; j++)
+	{
+	  TString pf(i==0 ? "" : "raw");
+	  pf+=(j==0 ? "tag" : "probe");
+	  controlHistos.addHistogram( new TH1F (pf+"pt", "; Transverse momentum [GeV]; Events", 50,0.,maxPtForTagWgt) );
+	  controlHistos.addHistogram( new TH1F (pf+"eta", "; Pseudo-rapidity; Events", 50, 0.,5) );
+	}
     }
 
   //jet control
@@ -483,6 +510,14 @@ int main(int argc, char* argv[])
 	box.assignProbeFlavour(gen);
       }
 
+      //efficiency weighting
+      if(isMC)          weight *= box.selEffSF;
+
+      //tag pT weighing
+      float tagWeight(1.0);
+      if(tagPtWeightGr) tagWeight=tagPtWeightGr->Eval(TMath::Min(box.tag->pt(),maxPtForTagWgt-5.0));
+      weight *= tagWeight;
+
       //gen control
       std::vector<TString> catsToFill(1,"all");
       if(isMC) controlHistos.fillHisto("pthat",catsToFill,ev.pthat,weight);
@@ -492,6 +527,14 @@ int main(int argc, char* argv[])
       
       //tag/probe kinematics
       controlHistos.fillHisto("balance",   catsToFill, box.probe->pt()/box.tag->pt(),  weight);
+      
+      //before tag pT weighting, for control
+      controlHistos.fillHisto("rawtagpt",     catsToFill, box.tag->pt(),               weight/tagWeight);
+      controlHistos.fillHisto("rawtageta",    catsToFill, fabs(box.tag->eta()),        weight/tagWeight);
+      controlHistos.fillHisto("rawprobept",   catsToFill, box.probe->pt(),             weight/tagWeight);
+      controlHistos.fillHisto("rawprobeeta",  catsToFill, fabs(box.probe->eta()),      weight/tagWeight);
+
+      //after tag pT weighting
       controlHistos.fillHisto("mass",      catsToFill, box.tag->mass(),                weight);
       controlHistos.fillHisto("tagpt",     catsToFill, box.tag->pt(),                  weight);
       controlHistos.fillHisto("tageta",    catsToFill, fabs(box.tag->eta()),           weight);
@@ -506,10 +549,14 @@ int main(int argc, char* argv[])
       float lxy=svx.vals.find("lxy")->second;
       if(lxy)
 	{
+	  catsToFill.clear();
+	  catsToFill.push_back("svx");
+
+	  controlHistos.fillHisto("probeflav", catsToFill, 0,                              weight);
+	  if(isMC) 	controlHistos.fillHisto("probeflav", catsToFill, box.probeFlav,        weight);
+
 	  float lxyErr=svx.vals.find("lxyErr")->second;
 	  int ntrk=svx.info.find("ntrk")->second;
-	  catsToFill.clear();
-	  catsToFill.push_back("all");
 	  if(ntrk==2)      catsToFill.push_back("ntrk2");
 	  else if(ntrk==3) catsToFill.push_back("ntrk3");
 	  else             catsToFill.push_back("ntrk4");

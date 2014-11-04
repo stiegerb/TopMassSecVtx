@@ -1,11 +1,11 @@
 #include "UserCode/llvv_fwk/interface/LxyTreeAnalysisBase.h"
 
-LxyTreeAnalysisBase::LxyTreeAnalysisBase(TTree *tree) : fChain(0)
+LxyTreeAnalysisBase::LxyTreeAnalysisBase(TTree *tree) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
-   if (tree == 0) return;
-   Init(tree);
+  if (tree == 0) return;
+  Init(tree);
 }
 
 LxyTreeAnalysisBase::~LxyTreeAnalysisBase()
@@ -56,6 +56,11 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("gevcat", &gevcat, &b_gevcat);
    fChain->SetBranchAddress("nvtx", &nvtx, &b_nvtx);
    fChain->SetBranchAddress("rho", &rho, &b_rho);
+   fChain->SetBranchAddress("qscale", &qscale, &b_qscale);
+   fChain->SetBranchAddress("x1", &x1, &b_x1);
+   fChain->SetBranchAddress("x2", &x2, &b_x2);
+   fChain->SetBranchAddress("id1", &id1, &b_id1);
+   fChain->SetBranchAddress("id2", &id2, &b_id2);
    fChain->SetBranchAddress("nw", &nw, &b_nw);
    fChain->SetBranchAddress("w", w, &b_w);
    fChain->SetBranchAddress("nl", &nl, &b_nl);
@@ -77,6 +82,7 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("jtoraw", jtoraw, &b_jtoraw);
    fChain->SetBranchAddress("jjesup", jjesup, &b_jjesup);
    fChain->SetBranchAddress("jjesdn", jjesdn, &b_jjesdn);
+   fChain->SetBranchAddress("jbhadmatchdr", jbhadmatchdr, &b_jbhadmatchdr);
    fChain->SetBranchAddress("gjpt", gjpt, &b_gjpt);
    fChain->SetBranchAddress("gjeta", gjeta, &b_gjeta);
    fChain->SetBranchAddress("gjphi", gjphi, &b_gjphi);
@@ -122,6 +128,7 @@ Bool_t LxyTreeAnalysisBase::Notify()
    // is started when using PROOF. It is normally not necessary to make changes
    // to the generated code, but the routine can be extended by the
    // user if needed. The return value is currently not used.
+
    return kTRUE;
 }
 

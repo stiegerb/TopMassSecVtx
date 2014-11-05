@@ -18,6 +18,7 @@ class Plot:
         self.dataH = None
         self.data = None
         self.garbageList = []
+        self.normalizedToData=False
 
     def info(self):
         print self.name
@@ -64,7 +65,21 @@ class Plot:
         outF.Close()
 
 
+    def normToData(self):
+        totalMC=0
+        for m in self.mc:
+            totalMC+=m.Integral()
+        if totalMC==0 : return
+        if self.dataH is None: return
+        totalData=self.dataH.Integral()
+        if totalData==0 : return
+        scaleFactor=totalData/totalMC
+        for m in self.mc:
+            m.Scale(scaleFactor)
+        self.normalizedToData=True
+            
     def reset(self):
+        self.normalizedToData=False
         for o in self.garbageList: 
             try:
                 o.Delete()
@@ -134,6 +149,12 @@ class Plot:
         if len(self.mc)==0:
             print '%s is empty' % self.name
             return
+
+        htype=self.mc[0].ClassName()
+        if htype.find('TH2')>=0:
+            print 'Skipping TH2'
+            return
+
         canvas = TCanvas('c_'+self.name,'C',600,600)
         canvas.cd()
         t1 = TPad("t1","t1", 0.0, 0.20, 1.0, 1.0)
@@ -199,6 +220,16 @@ class Plot:
         ## Draw CMS Preliminary label
         CMS_lumi(t1,2,0)
 
+        if self.normalizedToData:
+            txt=TLatex()
+            txt.SetNDC(True)
+            txt.SetTextFont(42)
+            txt.SetTextColor(ROOT.kGray+1)
+            txt.SetTextSize(0.035)
+            txt.SetTextAngle(90)
+            txt.SetTextAlign(12)
+            txt.DrawLatex(0.05,0.05,'#it{Normalized to data}')
+
         if totalMC is None or self.data is None:
             t1.SetPad(0,0,1,1)
             t1.SetBottomMargin(0.12)
@@ -216,7 +247,6 @@ class Plot:
             ratioframe.Reset('ICE')
             ratioframe.Draw()
             ratioframe.GetYaxis().SetRangeUser(0.62,1.36)
-            #ratioframe.GetYaxis().SetRangeUser(0.36,1.64)
             ratioframe.GetYaxis().SetTitle('Data/#SigmaBkg')
             ratioframe.GetYaxis().SetNdivisions(5)
             ratioframe.GetYaxis().SetLabelSize(0.15)
@@ -224,7 +254,7 @@ class Plot:
             ratioframe.GetYaxis().SetTitleSize(0.18)
             ratioframe.GetXaxis().SetLabelSize(0.18)
             ratioframe.GetXaxis().SetTitleSize(0.18)
-            ratioframe.GetYaxis().SetTitleOffset(0.3)
+            ratioframe.GetYaxis().SetTitleOffset(0.4)
             ratioframe.GetXaxis().SetTitleOffset(0.9)
 
             gr=ROOT.TGraphAsymmErrors()
@@ -276,6 +306,10 @@ class Plot:
 converts an histogram to a graph with Poisson error bars
 """
 def convertToPoissonErrorGr(h):
+
+    htype=h.ClassName()
+    if htype.find('TH1')<0 : return None
+
     #check https://twiki.cern.ch/twiki/bin/view/CMS/PoissonErrorBars
     alpha = 1 - 0.6827;
     grpois = ROOT.TGraphAsymmErrors(h);

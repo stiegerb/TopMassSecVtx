@@ -145,6 +145,6 @@ def CMS_lumi(pad,  iPeriod,  iPosX ):
         latex.SetTextFont(CMS_lumi_writeExtraTextFont)
         latex.SetTextSize(CMS_lumi_writeExtraTextSize*t)
         latex.SetTextAlign(align_)
-        latex.DrawLatex(posX_*1.2, posY_, CMS_lumi_extraText)      
+        latex.DrawLatex(posX_*1.3, posY_, CMS_lumi_extraText)      
 
     pad.Update()

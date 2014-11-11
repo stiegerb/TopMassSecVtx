@@ -4,12 +4,12 @@ import pprint
 
 PLOTS = [
 ##  ('name',  'branch', 'selection/weight', nbins, minx, maxx)
-    ('jpt',    'jpt[0]',
-        'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 30., 300.),
-    ('met',    'metpt',
-        'w[0]*(abs(evcat)==11*13&&nj>1)', 100, 0., 200.),
-    ('avpfpt', 'Sum$(pfpt)/Length$(pfpt)',
-        'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 0., 20.)
+    # ('jpt',    'jpt[0]',
+    #     'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 30., 300.),
+    # ('met',    'metpt',
+    #     'w[0]*(abs(evcat)==11*13&&nj>1)', 100, 0., 200.),
+    # ('avpfpt', 'Sum$(pfpt)/Length$(pfpt)',
+    #     'w[0]*(abs(evcat)==11&&metpt>30&&nj>3)', 100, 0., 20.)
 ]
 
 def makeDir(dirname):
@@ -142,16 +142,16 @@ def copyObject(keyname, from_here, to_here):
     infile.Close()
 
 def runLxyTreeAnalysisPacked(args):
-    name, location, treeloc = args
+    name, location, treeloc, maxevents = args
     try:
-        return runLxyTreeAnalysis(name, location, treeloc)
+        return runLxyTreeAnalysis(name, location, treeloc, maxevents)
     except ReferenceError:
         print 50*'<'
         print "  Problem with", name, "continuing without"
         print 50*'<'
         return False
 
-def runLxyTreeAnalysis(name, location, treeloc):
+def runLxyTreeAnalysis(name, location, treeloc, maxevents=-1):
     from ROOT import gSystem, TChain
 
     ## Load the previously compiled shared object library into ROOT
@@ -179,6 +179,8 @@ def runLxyTreeAnalysis(name, location, treeloc):
         return False
 
     ana = LxyTreeAnalysis(ch)
+    if maxevents > 0:
+        ana.setMaxEvents(maxevents)
 
     ## Add the plots to LxyTreeAnalysis
     for varname, branch, selection, nbins, minx, maxx in PLOTS:
@@ -227,6 +229,10 @@ if __name__ == "__main__":
                       action="store", type="int", dest="jobs",
                       help=("Run N jobs in parallel."
                             "[default: %default]"))
+    parser.add_option("-n", "--maxEvents", default=-1,
+                      action="store", type="int", dest="maxEvents",
+                      help=("Maximum number of events to process"
+                            "[default: %default (all)]"))
     (opt, args) = parser.parse_args()
 
     if len(args)>0:
@@ -239,12 +245,14 @@ if __name__ == "__main__":
             for name, task in tasks:
                 runLxyTreeAnalysis(name=name,
                                    location=task,
-                                   treeloc=opt.treeLoc)
+                                   treeloc=opt.treeLoc,
+                                   maxevents=opt.maxEvents)
         else:
             from multiprocessing import Pool
             pool = Pool(opt.jobs)
 
-            tasklist = [(name, task, opt.treeLoc) for name, task in tasks]
+            tasklist = [(name, task, opt.treeLoc, opt.maxEvents) for name,
+                                                                     task in tasks]
             pool.map(runLxyTreeAnalysisPacked, tasklist)
 
         exit(0)

@@ -21,7 +21,6 @@ bool isOppositeSign(int id1, int id2) {
     return false;
 }
 
-<<<<<<< HEAD
 void LxyTreeAnalysis::RunJob(TString filename){
 	TFile *file = TFile::Open(filename, "recreate");
 	Begin(file);
@@ -1061,3 +1060,4 @@ void LxyTreeAnalysis::Loop(){
 	std::cout << "\r [   done  ]" << std::endl;
 
 }
+#endif

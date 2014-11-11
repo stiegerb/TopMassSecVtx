@@ -99,35 +99,6 @@ public:
         fMaxevents = max;
     }
 
-    /////////////////////////////////////////////
-    // LxyTreeAnalysis interface:
-    virtual void AddPlot(TString name, TString var, TString sel,
-                         Int_t nbins, Float_t minx, Float_t maxx) {
-        // Add a plot through the external interface
-        Plot *plot = new Plot(name, var, sel, nbins, minx, maxx, fChain);
-        fPlotList.push_back(plot);
-    }
-
-    virtual void ListPlots() {
-        for (size_t i = 0; i < fPlotList.size(); ++i) {
-            fPlotList[i]->Print();
-        }
-    }
-
-    virtual void FillPlots() {
-        for (size_t i = 0; i < fPlotList.size(); ++i) {
-            fPlotList[i]->Fill();
-        }
-    }
-
-    virtual void WritePlots() {
-        for (size_t i = 0; i < fPlotList.size(); ++i) {
-            fPlotList[i]->fHisto->Write(fPlotList[i]->fHisto->GetName());
-            delete fPlotList[i];
-        }
-    }
-
-
     virtual Bool_t Notify() {
         // Called when a new tree is loaded in the chain
         // std::cout << "New tree (" << fCurrent

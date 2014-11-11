@@ -155,7 +155,7 @@ def runLxyTreeAnalysis(name, location, treeloc, maxevents=-1):
     from ROOT import gSystem, TChain
 
     ## Load the previously compiled shared object library into ROOT
-    gSystem.Load("libUserCodellvv_fwk.so")
+    gSystem.Load("libUserCodeTopMassSecVtx.so")
     ## Load it into PyROOT (this is where the magic happens)
     from ROOT import LxyTreeAnalysis
 
@@ -213,7 +213,7 @@ if __name__ == "__main__":
                       action="store", type="string", dest="outDir",
                       help=("Output directory for histogram files "
                             "[default: lxyplots/]"))
-    parser.add_option("-l", "--sharedLib", default="libUserCodellvv_fwk.so",
+    parser.add_option("-l", "--sharedLib", default="libUserCodeTopMassSecVtx.so",
                       action="store", type="string", dest="sharedLib",
                       help=("Shared library for LxyTreeAnalysis class "
                             "[default: %default]"))

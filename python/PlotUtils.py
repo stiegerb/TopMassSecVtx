@@ -61,6 +61,7 @@ class Plot:
                 m.Write()
         if self.data : 
             self.data.Write()
+        if self.dataH :
             self.dataH.Write()
         outF.Close()
 

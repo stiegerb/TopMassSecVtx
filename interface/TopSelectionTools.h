@@ -140,7 +140,7 @@ namespace top
       data::PhysicsObjectCollection_t selJets;
       for(size_t ijet=0; ijet<jets.size(); ijet++)
 	{
-	  data::PhysicsObject_t selJet = getTopSelectionTaggedJet(jets[ijet], leptons, 30., 2.5);
+	  data::PhysicsObject_t selJet = getTopSelectionTaggedJet(jets[ijet], leptons, 25., 2.5);
       
 	  if(!selJet.getFlag("passGoodJet")) continue;
       

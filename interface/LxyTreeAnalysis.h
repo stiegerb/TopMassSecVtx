@@ -95,6 +95,7 @@ public:
 
     virtual void analyze();
     virtual bool selectEvent();
+    virtual bool selectSVLEvent();
     virtual int firstTrackIndex(int jetindex);
     void fillJPsiHists(int jetindex);
     void fillD0Hists(int jetindex);
@@ -168,9 +169,9 @@ public:
     Float_t fTJetPt, fTJetEta, fTSumPtCharged, fTJetPz, fTSumPzCharged;
 
     TTree *fSVLInfoTree;
-    Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs;
+    Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
     Float_t fTWeight;
-    Float_t fTSVLMass, fTSVLDeltaR, fTLPt, fTSVPt, fTSVLxy;
+    Float_t fTSVLMass, fTSVLDeltaR, fTLPt, fTSVPt, fTSVLxy, fTJEta;
     Int_t fTSVLMinMassRank, fTSVLDeltaRRank;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
 

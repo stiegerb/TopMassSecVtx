@@ -721,11 +721,21 @@ bool LxyTreeAnalysis::selectEvent(){
     return false;
 }
 
+bool LxyTreeAnalysis::selectSVLEvent(){
+    if (abs(evcat) == 11*13) return true;                // emu
+    if (abs(evcat) == 11*11 && metpt > 40.) return true; // ee
+    if (abs(evcat) == 13*13 && metpt > 40.) return true; // mumu
+    if (abs(evcat) == 11 && nj > 3) return true;         // e
+    if (abs(evcat) == 13 && nj > 3) return true;         // mu
+    return false;
+}
+
 void LxyTreeAnalysis::BookSVLTree() {
     fSVLInfoTree = new TTree("SVLInfo", "SecVtx Lepton Tree");
     fSVLInfoTree->Branch("Event",     &fTEvent,     "Event/I");
     fSVLInfoTree->Branch("Run",       &fTRun,       "Run/I");
     fSVLInfoTree->Branch("Lumi",      &fTLumi,      "Lumi/I");
+    fSVLInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
     fSVLInfoTree->Branch("Weight",    &fTWeight,    "Weight/F");
     fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
     fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
@@ -734,6 +744,7 @@ void LxyTreeAnalysis::BookSVLTree() {
     fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
     fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
     fSVLInfoTree->Branch("SVLxy",     &fTSVLxy,     "SVLxy/F");
+    fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
     fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
     // CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
     fSVLInfoTree->Branch("CombCat",   &fTCombCat,   "CombCat/I");
@@ -750,7 +761,8 @@ void LxyTreeAnalysis::ResetSVLTree() {
     fTEvent     = event;
     fTRun       = run;
     fTLumi      = lumi;
-    fTWeight    = w[0];
+    fTEvCat     = evcat;
+    fTWeight    = w[0]*w[1]*w[4]; // w[0] is buggy?
     fTNPVtx     = nvtx;
     fTNCombs    = -99.99;
     fTSVLMass   = -99.99;
@@ -758,6 +770,7 @@ void LxyTreeAnalysis::ResetSVLTree() {
     fTLPt       = -99.99;
     fTSVPt      = -99.99;
     fTSVLxy     = -99.99;
+    fTJEta      = -99.99;
     fTSVNtrk    = -99;
     fTCombCat   = -99;
     fTCombInfo  = -99;
@@ -840,10 +853,10 @@ void LxyTreeAnalysis::analyze(){
 	bool check_secv = svindices.size()>0;
 
 
-	if(abs(evcat) == 11*13){ // emu channel
+	if(selectSVLEvent()){
 		// First find all pairs and get their ranking in mass and deltar
 		std::vector<SVLInfo> svl_pairs;
-		for (size_t il = 0; il < 2; ++il){
+		for (int il = 0; il < nl; ++il){
 			for (size_t ij = 0; ij < svindices.size(); ++ij){
 				int combcat = (il+1)*10 + (ij+1); // 10(20) + 1(2): 11, 21, 12, 22
 				SVLInfo svl_pairing;
@@ -888,6 +901,7 @@ void LxyTreeAnalysis::analyze(){
 			fTLPt = lpt[svl.lepindex];
 			fTSVPt = svpt[svl.svindex];
 			fTSVLxy = svlxy[svl.svindex];
+			fTJEta = jeta[svl.svindex];
 			fTSVNtrk = svntk[svl.svindex];
 
 			fTCombInfo = -1;

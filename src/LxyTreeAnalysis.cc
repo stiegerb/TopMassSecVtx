@@ -18,6 +18,7 @@ struct SVLInfo{ // needed for sorting...
 	int combcat;
 	float svlmass;
 	float svldeltar;
+	int jesweights[3];
 };
 bool compare_mass (SVLInfo svl1, SVLInfo svl2){
 	return (svl1.svlmass < svl2.svlmass);
@@ -736,7 +737,8 @@ void LxyTreeAnalysis::BookSVLTree() {
     fSVLInfoTree->Branch("Run",       &fTRun,       "Run/I");
     fSVLInfoTree->Branch("Lumi",      &fTLumi,      "Lumi/I");
     fSVLInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
-    fSVLInfoTree->Branch("Weight",    &fTWeight,    "Weight/F");
+    fSVLInfoTree->Branch("Weight",     fTWeight,    "Weight[10]/F");
+    fSVLInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[3]/F");
     fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
     fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
     fSVLInfoTree->Branch("SVLMass",   &fTSVLMass,   "SVLMass/F");
@@ -744,6 +746,7 @@ void LxyTreeAnalysis::BookSVLTree() {
     fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
     fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
     fSVLInfoTree->Branch("SVLxy",     &fTSVLxy,     "SVLxy/F");
+    fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
     fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
     fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
     // CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
@@ -751,9 +754,8 @@ void LxyTreeAnalysis::BookSVLTree() {
     // CombInfo = -1 for data or unmatched, 0 for wrong combs, 1 for correct combs
     fSVLInfoTree->Branch("CombInfo",  &fTCombInfo,  "CombInfo/I");
 
-    // Intra event ranking by mass
+    // Intra event rankings
     fSVLInfoTree->Branch("SVLMassRank",   &fTSVLMinMassRank, "SVLMassRank/I");
-    // Intra event ranking by deltar
     fSVLInfoTree->Branch("SVLDeltaRRank", &fTSVLDeltaRRank,  "SVLDeltaRRank/I");
 }
 
@@ -762,7 +764,12 @@ void LxyTreeAnalysis::ResetSVLTree() {
     fTRun       = run;
     fTLumi      = lumi;
     fTEvCat     = evcat;
-    fTWeight    = w[0]*w[1]*w[4]; // w[0] is buggy?
+    for (int i = 0; i < 10; ++i){
+    	fTWeight[i] = w[i];
+    }
+    for (int i = 0; i < 3; ++i){
+    	fTJESWeight[i] = -99.99;
+    }
     fTNPVtx     = nvtx;
     fTNCombs    = -99.99;
     fTSVLMass   = -99.99;
@@ -771,6 +778,7 @@ void LxyTreeAnalysis::ResetSVLTree() {
     fTSVPt      = -99.99;
     fTSVLxy     = -99.99;
     fTJEta      = -99.99;
+    fTJPt       = -99.99;
     fTSVNtrk    = -99;
     fTCombCat   = -99;
     fTCombInfo  = -99;
@@ -858,22 +866,33 @@ void LxyTreeAnalysis::analyze(){
 		std::vector<SVLInfo> svl_pairs;
 		for (int il = 0; il < nl; ++il){
 			for (size_t ij = 0; ij < svindices.size(); ++ij){
-				int combcat = (il+1)*10 + (ij+1); // 10(20) + 1(2): 11, 21, 12, 22
+				int svind = svindices[ij];
+				// Jet selection here
 				SVLInfo svl_pairing;
-				svl_pairing.counter = svl_pairs.size();
-				svl_pairing.lepindex = il;
-				svl_pairing.svindex = svindices[ij];
-				svl_pairing.combcat = combcat;
+				svl_pairing.jesweights[0] = 0;
+				svl_pairing.jesweights[1] = 0;
+				svl_pairing.jesweights[2] = 0;
+				if(jpt[svind]       > 30.) svl_pairing.jesweights[0] = 1; // nominal
+				if(jjesup[svind][0] > 30.) svl_pairing.jesweights[1] = 1; // jes up
+				if(jjesdn[svind][0] > 30.) svl_pairing.jesweights[2] = 1; // jes down
 
-				TLorentzVector p_lep, p_sv;
-				p_lep.SetPtEtaPhiM(lpt[il], leta[il], lphi[il], 0.);
-				p_sv.SetPtEtaPhiM(svpt[svindices[ij]], sveta[svindices[ij]],
-					              svphi[svindices[ij]], svmass[svindices[ij]]);
+				if(jjesup[svind][0] > 30.){ // if this doesn't pass, none of them will
+					int combcat = (il+1)*10 + (ij+1); // 10(20) + 1(2): 11, 21, 12, 22
+					svl_pairing.counter = svl_pairs.size();
+					svl_pairing.lepindex = il;
+					svl_pairing.svindex = svind;
+					svl_pairing.combcat = combcat;
 
-				svl_pairing.svlmass = (p_lep + p_sv).M();
-				svl_pairing.svldeltar = p_lep.DeltaR(p_sv);
+					TLorentzVector p_lep, p_sv;
+					p_lep.SetPtEtaPhiM(lpt[il], leta[il], lphi[il], 0.);
+					p_sv.SetPtEtaPhiM(svpt[svind], sveta[svind],
+						              svphi[svind], svmass[svind]);
 
-				svl_pairs.push_back(svl_pairing);
+					svl_pairing.svlmass = (p_lep + p_sv).M();
+					svl_pairing.svldeltar = p_lep.DeltaR(p_sv);
+
+					svl_pairs.push_back(svl_pairing);
+				}
 			}
 		}
 
@@ -901,8 +920,12 @@ void LxyTreeAnalysis::analyze(){
 			fTLPt = lpt[svl.lepindex];
 			fTSVPt = svpt[svl.svindex];
 			fTSVLxy = svlxy[svl.svindex];
+			fTJPt = jpt[svl.svindex];
 			fTJEta = jeta[svl.svindex];
 			fTSVNtrk = svntk[svl.svindex];
+			fTJESWeight[0] = svl.jesweights[0]; // nominal
+			fTJESWeight[1] = svl.jesweights[1]; // jes up
+			fTJESWeight[2] = svl.jesweights[2]; // jes down
 
 			fTCombInfo = -1;
 			if( (lid[svl.lepindex] > 0 && bid[svl.svindex] == -5 ) || // el-/mu- / tbar/bbar

@@ -170,8 +170,8 @@ public:
 
     TTree *fSVLInfoTree;
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
-    Float_t fTWeight;
-    Float_t fTSVLMass, fTSVLDeltaR, fTLPt, fTSVPt, fTSVLxy, fTJEta;
+    Float_t fTWeight[10], fTJESWeight[3];
+    Float_t fTSVLMass, fTSVLDeltaR, fTLPt, fTSVPt, fTSVLxy, fTJPt, fTJEta;
     Int_t fTSVLMinMassRank, fTSVLDeltaRRank;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
 

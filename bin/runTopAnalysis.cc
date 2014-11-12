@@ -442,10 +442,10 @@ int main(int argc, char* argv[])
 	  }
 	  if(absid!=11 && absid!=13 && absid!=15) continue;
 	  ngenLeptonsStatus3++;
-	  genCat *= gen[igen].get("id");
+	  genCat *= absid;
 	}
 	
-	//top-pt re-weighting only for TTbar!
+	//top-pt and BR re-weighting only for TTbar!
 	if(isTTbarMC)
 	  {
 	    //branching ratio correction for inclusive Madgraph samples: same approximation since 2010...
@@ -575,6 +575,7 @@ int main(int argc, char* argv[])
       bev.w[4]=lepSelectionWeight; bev.w[5]=lepSelectionWeightUp; bev.w[6]=lepSelectionWeightDown;
       bev.w[7]=topPtWgt;           bev.w[8]=topPtWgtUp;           bev.w[9]=topPtWgtDown;
       bev.qscale=ev.qscale;        bev.x1=ev.x1; bev.x2=ev.x2; bev.id1=ev.id1; bev.id2=ev.id2;
+      
       data::PhysicsObjectCollection_t pf = evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
       lxyAn.analyze( box.leptons, box.jets, met, pf, gen);
       spyDir->cd();

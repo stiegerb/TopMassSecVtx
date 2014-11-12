@@ -74,6 +74,8 @@ public:
     virtual void Loop();
 
     virtual void BookHistos();
+    virtual void BookCharmHistos();
+    virtual void BookSVLHistos();
     virtual void WriteHistos();
 
     virtual void BookCharmTree();
@@ -87,6 +89,9 @@ public:
                                int trackind3, float mass3);
     virtual void FillCharmTree(int type, int jind,
                                TLorentzVector p_cand, TLorentzVector p_jet);
+
+    virtual void BookSVLTree();
+    virtual void ResetSVLTree();
 
     virtual void analyze();
     virtual bool selectEvent();
@@ -161,6 +166,18 @@ public:
     Float_t fTCandMass, fTCandPt, fTCandPz, fTCandEta;
     Float_t fTCandPtRel, fTCandDeltaR;
     Float_t fTJetPt, fTJetEta, fTSumPtCharged, fTJetPz, fTSumPzCharged;
+
+    TTree *fSVLInfoTree;
+    Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs;
+    Float_t fTWeight;
+    Float_t fTSVLMass, fTSVLDeltaR, fTLPt, fTSVPt, fTSVLxy;
+    Int_t fTSVLMinMassRank, fTSVLDeltaRRank;
+    Int_t fTSVNtrk, fTCombCat, fTCombInfo;
+
+    // Int_t   fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
+    // Float_t fTCandMass, fTCandPt, fTCandPz, fTCandEta;
+    // Float_t fTCandPtRel, fTCandDeltaR;
+    // Float_t fTJetPt, fTJetEta, fTSumPtCharged, fTJetPz, fTSumPzCharged;
 
     // Lepton - secondary vertex histos
 // cut

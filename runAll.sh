@@ -1,9 +1,15 @@
 #!/bin/bash
-WHAT=$1; if [[ "$1" == "" ]]; then echo "runAll.sh <TREES/MERGE/UNFOLD/DIFF>"; exit 1; fi
+WHAT=$1; if [[ "$1" == "" ]]; then echo "runAll.sh <TREES/ALLTREES/MERGE/UNFOLD/DIFF>"; exit 1; fi
 
-tag=Aug28
+tag=Nov11
+# tag=Aug28
 # tag=Sep18
-treedir=/data/stiegerb/topss2014/hidde/lxyplots_${tag}/
+treedir=/afs/cern.ch/work/s/stiegerb/TopSecVtx/LxyTrees/${tag}/
+# treedir=/data/stiegerb/topss2014/hidde/lxyplots_${tag}/
+
+mkdir -p ${treedir}
+
+hash="e1fa735"
 
 # cands=("421")
 # cands=("411")
@@ -15,11 +21,16 @@ echo "Running on "${treedir}
 
 case $WHAT in
 	TREES )
-		./scripts/runLxyTreeAnalysis.py -p MC8TeV_TTJets_MSDecays_172v5 -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/62dc494/
-		./scripts/runLxyTreeAnalysis.py -p Data8TeV -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/62dc494/
-		./scripts/runLxyTreeAnalysis.py -p MC8TeV_TTJets_TuneP11_ -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/62dc494/syst/
-		./scripts/runLxyTreeAnalysis.py -p MC8TeV_TT_Z2star_powheg_pythia -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/62dc494/syst/
-		./scripts/runLxyTreeAnalysis.py -p MC8TeV_TT_AUET2_powheg_herwig -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/62dc494/syst/
+		./scripts/runLxyTreeAnalysis.py -p MC8TeV_TTJets_MSDecays_172v5 -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/${hash}/
+		./scripts/runLxyTreeAnalysis.py -p Data8TeV -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/${hash}/
+		./scripts/runLxyTreeAnalysis.py -p MC8TeV_TTJets_TuneP11_ -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/${hash}/syst/
+		./scripts/runLxyTreeAnalysis.py -p MC8TeV_TT_Z2star_powheg_pythia -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/${hash}/syst/
+		./scripts/runLxyTreeAnalysis.py -p MC8TeV_TT_AUET2_powheg_herwig -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/${hash}/syst/
+		;;
+	ALLTREES )
+		# ./scripts/runLxyTreeAnalysis.py -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/${hash}/
+		mkdir -p ${treedir}/mass_scan/
+		./scripts/runLxyTreeAnalysis.py -o ${treedir}/mass_scan/ -j 8 /store/cmst3/group/top/summer2014/${hash}/mass_scan/
 		;;
 	MERGE )
 		hadd ${treedir}/Data8TeV_merged.root ${treedir}/Data8TeV_*.root

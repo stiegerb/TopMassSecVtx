@@ -788,6 +788,11 @@ void LxyTreeAnalysis::ResetSVLTree() {
 }
 
 void LxyTreeAnalysis::analyze(){
+	///////////////////////////////////////////////////
+	// Remove events with spurious PF candidate information (npf == 1000)
+	if(npf > 999) return;
+	///////////////////////////////////////////////////
+
 	// Called once per event
 	FillPlots();
 

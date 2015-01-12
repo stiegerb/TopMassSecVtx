@@ -7,7 +7,21 @@ from ROOT import TCanvas, TPad, TLegend
 from UserCode.TopMassSecVtx.CMS_lumi import *
 from UserCode.TopMassSecVtx.rounding import *
 
-class Plot:
+def getRatio(hist, reference):
+    ratio = hist.Clone("%s_ratio"%hist.GetName())
+    ratio.SetDirectory(0)
+    ratio.SetLineColor(hist.GetLineColor())
+    for xbin in xrange(1,reference.GetNbinsX()+1):
+        ref = reference.GetBinContent(xbin)
+        val = hist.GetBinContent(xbin);
+        if ref==0:
+            ratio.SetBinContent(xbin, 1.0)
+            continue
+        ratio.SetBinContent(xbin, val/ref)
+    return ratio
+
+
+class Plot(object):
     """
     A wrapper to store data and MC histograms for comparison
     """
@@ -54,12 +68,17 @@ class Plot:
     def appendTo(self,outUrl):
         #if file does not exist it is created
         outF=ROOT.TFile.Open(outUrl,'UPDATE')
-        outDir=outF.mkdir(self.name)
-        outDir.cd()
-        for m in self.mc : 
+        try:
+            outF.cd(self.name)
+        except Exception, e:
+            outDir=outF.mkdir(self.name)
+            outDir.cd()
+            raise e
+
+        for m in self.mc :
             if m :
                 m.Write()
-        if self.data : 
+        if self.data :
             self.data.Write()
         if self.dataH :
             self.dataH.Write()
@@ -78,10 +97,10 @@ class Plot:
         for m in self.mc:
             m.Scale(scaleFactor)
         self.normalizedToData=True
-            
+
     def reset(self):
         self.normalizedToData=False
-        for o in self.garbageList: 
+        for o in self.garbageList:
             try:
                 o.Delete()
             except:
@@ -156,6 +175,9 @@ class Plot:
             print 'Skipping TH2'
             return
 
+        ROOT.gStyle.SetOptTitle(0)
+        ROOT.gStyle.SetOptStat(0)
+
         canvas = TCanvas('c_'+self.name,'C',600,600)
         canvas.cd()
         t1 = TPad("t1","t1", 0.0, 0.20, 1.0, 1.0)
@@ -204,7 +226,7 @@ class Plot:
         if self.data is not None: nlegCols = nlegCols+1
         if nlegCols == 0:
             print '%s is empty'%self.name
-            return 
+            return
 
         frame.GetYaxis().SetTitleSize(0.045)
         frame.GetYaxis().SetLabelSize(0.04)
@@ -243,7 +265,7 @@ class Plot:
             t2.SetGridy()
             t2.Draw()
             t2.cd()
-            
+
             ratioframe=self.dataH.Clone('ratioframe')
             ratioframe.Reset('ICE')
             ratioframe.Draw()
@@ -361,7 +383,7 @@ def setTDRStyle():
     tdrStyle.SetCanvasDefW(904) #Width of canvas
     tdrStyle.SetCanvasDefX(1320)   #POsition on screen
     tdrStyle.SetCanvasDefY(0)
-    
+
     # For the Pad:
     tdrStyle.SetPadBorderMode(0)
     # tdrStyle.SetPadBorderSize(Width_t size = 1)
@@ -371,7 +393,7 @@ def setTDRStyle():
     tdrStyle.SetGridColor(0)
     tdrStyle.SetGridStyle(3)
     tdrStyle.SetGridWidth(1)
-    
+
     # For the frame:
     tdrStyle.SetFrameBorderMode(0)
     tdrStyle.SetFrameBorderSize(1)
@@ -380,7 +402,7 @@ def setTDRStyle():
     tdrStyle.SetFrameLineColor(1)
     tdrStyle.SetFrameLineStyle(1)
     tdrStyle.SetFrameLineWidth(1)
-    
+
     # For the histo:
     # tdrStyle.SetHistFillColor(1)
     # tdrStyle.SetHistFillStyle(0)
@@ -389,25 +411,25 @@ def setTDRStyle():
     tdrStyle.SetHistLineWidth(1)
     # tdrStyle.SetLegoInnerR(Float_t rad = 0.5)
     # tdrStyle.SetNumberContours(Int_t number = 20)
-    
+
     tdrStyle.SetEndErrorSize(2)
     #  tdrStyle.SetErrorMarker(20)
     tdrStyle.SetErrorX(0.)
-    
+
     tdrStyle.SetMarkerStyle(20)
-    
+
     # For the fit/function:
     tdrStyle.SetOptFit(1)
     tdrStyle.SetFitFormat("5.4g")
     tdrStyle.SetFuncColor(2)
     tdrStyle.SetFuncStyle(1)
     tdrStyle.SetFuncWidth(1)
-    
+
     #For the date:
     tdrStyle.SetOptDate(0)
     # tdrStyle.SetDateX(Float_t x = 0.01)
     # tdrStyle.SetDateY(Float_t y = 0.01)
-    
+
     # For the statistics box:
     tdrStyle.SetOptFile(0)
     tdrStyle.SetOptStat(0) # To display the mean and RMS:   SetOptStat("mr")
@@ -422,13 +444,13 @@ def setTDRStyle():
     # tdrStyle.SetStatStyle(Style_t style = 1001)
     # tdrStyle.SetStatX(Float_t x = 0)
     # tdrStyle.SetStatY(Float_t y = 0)
-    
+
     # Margins:
     tdrStyle.SetPadTopMargin(0.07)
     tdrStyle.SetPadBottomMargin(0.13)
     tdrStyle.SetPadLeftMargin(0.17)
     tdrStyle.SetPadRightMargin(0.03)
-    
+
     # For the Global title:
     tdrStyle.SetOptTitle(0)
     tdrStyle.SetTitleFont(42)
@@ -452,7 +474,7 @@ def setTDRStyle():
     tdrStyle.SetTitleXOffset(0.95)
     tdrStyle.SetTitleYOffset(1.3)
     # tdrStyle.SetTitleOffset(1.1, "Y") # Another way to set the Offset
-    
+
     # For the axis labels:
     tdrStyle.SetLabelColor(1, "XYZ")
     tdrStyle.SetLabelFont(42, "XYZ")
@@ -466,25 +488,25 @@ def setTDRStyle():
     tdrStyle.SetNdivisions(510, "XYZ")
     tdrStyle.SetPadTickX(1)  # To get tick marks on the opposite side of the frame
     tdrStyle.SetPadTickY(1)
-    
+
     # Change for log plots:
     tdrStyle.SetOptLogx(0)
     tdrStyle.SetOptLogy(0)
     tdrStyle.SetOptLogz(0)
-    
+
     # Postscript options:
     tdrStyle.SetPaperSize(20.,20.)
     # tdrStyle.SetLineScalePS(Float_t scale = 3)
     # tdrStyle.SetLineStyleString(Int_t i, const char* text)
     # tdrStyle.SetHeaderPS(const char* header)
     # tdrStyle.SetTitlePS(const char* pstitle)
-    
+
     # tdrStyle.SetBarOffset(Float_t baroff = 0.5)
     # tdrStyle.SetBarWidth(Float_t barwidth = 0.5)
     # tdrStyle.SetPaintTextFormat(const char* format = "g")
     # tdrStyle.SetPalette(Int_t ncolors = 0, Int_t* colors = 0)
     # tdrStyle.SetTimeOffset(Double_t toffset)
     # tdrStyle.SetHistMinimumZero(True)
-    
+
     tdrStyle.cd()
 

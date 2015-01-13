@@ -20,6 +20,17 @@ def getRatio(hist, reference):
         ratio.SetBinContent(xbin, val/ref)
     return ratio
 
+def setMaximums(histos, margin=1.1, setminimum=None):
+    maxy = 0.
+    for hist in histos:
+        binmax = 0.
+        for binx in xrange(1,hist.GetNbinsX()+1):
+            binmax = max(binmax, hist.GetBinContent(binx))
+        maxy = max(maxy,margin*binmax)
+    for hist in histos: hist.SetMaximum(maxy)
+    if setminimum is not None:
+        for hist in histos: hist.SetMinimum(setminimum)
+
 
 class Plot(object):
     """

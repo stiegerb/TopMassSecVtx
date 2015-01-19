@@ -2,16 +2,24 @@
 import os, sys
 import ROOT
 import pickle
-from UserCode.TopMassSecVtx.PlotUtils import Plot, getRatio, setMaximums
+from UserCode.TopMassSecVtx.PlotUtils import RatioPlot, getRatio, setMaximums
 from UserCode.TopMassSecVtx.CMS_lumi import CMS_lumi
 from runPlotter import openTFile
 
 TREENAME = 'SVLInfo'
 SELECTIONS = [
-	('mrankinc',  'SVLMassRank==1'),
-	('mrank',     'SVLDeltaR<2.0&&SVLMassRank==1'),
-	('drrankinc', 'SVLDeltaRRank==1'),
-	('drrank',    'SVLDeltaR<2.0&&SVLDeltaRRank==1')
+	('mrankinc',  'SVLMassRank==1',
+	 'Minimum mass comb.'),
+	('mrank',     'SVLDeltaR<2.0&&SVLMassRank==1',
+	 'Minimum mass comb., #Delta R < 2.0'),
+	('drrankinc', 'SVLDeltaRRank==1',
+	 'Minimum #Delta R comb.'),
+	('drrank',    'SVLDeltaR<2.0&&SVLDeltaRRank==1',
+	 'Minimum #Delta R comb., #Delta R < 2.0'),
+	('mrank12',   'SVLDeltaR<2.0&&((NCombs<=2&&SVLMassRank==1)||(NCombs==4&&SVLMassRank<3))',
+	 'Two minimum mass comb., #Delta R < 2.0'),
+	('drrank12',  'SVLDeltaR<2.0&&((NCombs<=2&&SVLDeltaRRank==1)||(NCombs==4&&SVLDeltaRRank<3))',
+	 'Two minimum #Delta R comb., #Delta R < 2.0'),
 ]
 
 CONTROLVARS = [
@@ -21,20 +29,10 @@ CONTROLVARS = [
 	('JPt'       , 30 , 200 , 'Jet pt [GeV]'),
 ]
 
-# COLORS = [100, 91, 85, 78, 67, 61, 57, 51]
-COLORS = [
-	ROOT.kViolet-7,
-	ROOT.kViolet-6,
-	ROOT.kViolet+4,
-	ROOT.kViolet+9,
-	ROOT.kBlue,
-	ROOT.kBlue-7,
-	ROOT.kAzure+1,
-	ROOT.kAzure+8,
-]
-
 NBINS = 100
 XMAX = 200.
+
+NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
 
 def projectFromTree(hist, varname, sel, tree, option=''):
 	try:
@@ -73,6 +71,28 @@ def getSVLHistos(tree, sel,
 
 	return h_tot, h_cor, h_wro, h_unm
 
+def getNTrkHistos(tree, sel,
+	             var="SVLMass",
+	             tag='', xmin=0, xmax=XMAX,
+	             titlex=''):
+	hists = []
+	for ntk1,ntk2 in NTRKBINS:
+		title = "%d #leq N_{trk.} < %d" %(ntk1, ntk2)
+		if ntk2 > 100:
+			title = "%d #leq N_{trk.}" %(ntk1)
+		hist = ROOT.TH1D("%s_%d_%s"%(var,ntk1,tag), title, NBINS, xmin, xmax)
+		tksel = "(SVNtrk>=%d&&SVNtrk<%d)"%(ntk1,ntk2)
+		if sel=="": sel = "1"
+		projectFromTree(hist, var, sel+"&&"+tksel, tree)
+		hists.append(hist)
+
+	for x in hists:
+		x.SetLineWidth(2)
+		x.GetXaxis().SetTitle(titlex)
+		x.Sumw2()
+
+	return hists
+
 def makeControlPlot(hists, tag, opt):
 	h_tot, h_cor, h_wro, h_unm = hists
 
@@ -105,81 +125,9 @@ def makeControlPlot(hists, tag, opt):
 	h_unm.Draw("hist same")
 
 	tl.Draw()
+	CMS_lumi(pad=tc,iPeriod=2,iPosX=0,extraText='Simulation')
 
 	tc.SaveAs(os.path.join(opt.outDir,"control_%s.pdf"%tag))
-
-def makeSVLMassvsmtPlots(histos, tag, opt):
-	for n,mass in enumerate(sorted(histos.keys())):
-		histos[mass].SetLineColor(COLORS[n])
-
-	for hist in histos.values():
-		hist.Scale(1./hist.Integral())
-
-	setMaximums(histos.values(), setminimum=0)
-
-	tc = ROOT.TCanvas("massscan_%s"%tag, "massscan", 800, 800)
-	tc.cd()
-
-	tc.SetWindowSize(800 + (800 - tc.GetWw()), (800 + (800 - tc.GetWh())));
-	p2 = ROOT.TPad("pad2","pad2",0,0,1,0.31);
-	p2.SetTopMargin(0);
-	p2.SetBottomMargin(0.3);
-	p2.SetFillStyle(0);
-	p2.Draw();
-	p1 = ROOT.TPad("pad1","pad1",0,0.31,1,1);
-	p1.SetBottomMargin(0);
-	p1.Draw();
-	p1.cd();
-
-	tl = ROOT.TLegend(0.74, 0.75-0.035*max(len(histos)-3,0), .89, .89)
-	tl.SetBorderSize(0)
-	tl.SetFillColor(0)
-	tl.SetShadowColor(0)
-	tl.SetTextFont(42)
-	tl.SetTextSize(0.035)
-
-	histos.values()[0].Draw("axis")
-
-	for mass in sorted(histos.keys()):
-		tl.AddEntry(histos[mass], '%5.1f GeV'%mass, 'l')
-		histos[mass].Draw("hist same")
-
-	tl.Draw()
-
-
-	p2.cd()
-
-	ratioframe = histos[172.5].Clone('ratioframe')
-	ratioframe.Reset('ICE')
-	ratioframe.GetYaxis().SetRangeUser(0.50,1.50)
-	ratioframe.GetYaxis().SetTitle('Ratio wrt 172.5 GeV')
-	ratioframe.GetYaxis().SetNdivisions(5)
-	ratioframe.GetYaxis().SetLabelSize(0.10)
-	ratioframe.GetXaxis().SetLabelSize(0.10)
-	ratioframe.GetYaxis().SetTitleSize(0.10)
-	ratioframe.GetXaxis().SetTitleSize(0.12)
-	ratioframe.GetYaxis().SetTitleOffset(0.37)
-	ratioframe.GetXaxis().SetTitleOffset(1.0)
-	ratioframe.Draw()
-
-	ratios = {}
-	# f = ROOT.TFile(os.path.join(opt.outDir,"histos.root"), "RECREATE")
-	# f.cd()
-	for mass,hist in histos.iteritems():
-		ratios[mass] = getRatio(hist, histos[172.5])
-		# ratios[mass].Write(ratios[mass].GetName())
-	setMaximums(ratios.values())
-
-	for ratio in ratios.values():
-		ratio.Draw("hist same")
-
-	tc.cd()
-	tc.Modified()
-	tc.Update()
-	tc.SaveAs(os.path.join(opt.outDir,"masscan_%s.pdf"%tag))
-	tc.Close()
-	# f.Write()
-	# f.Close()
 
 
 def main(args, opt):
@@ -211,13 +159,18 @@ def main(args, opt):
 
 	if not opt.cache:
 		histos = {} # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
-		for mass, tree in masstrees.iteritems():
-			for tag,sel in SELECTIONS:
+		ntkhistos = {} # (tag) -> (h_ntk1, h_ntk2, h_ntk3, ..)
+		for tag,sel,_ in SELECTIONS:
+			for mass, tree in masstrees.iteritems():
 				print ' ... processing %5.1f GeV %s' % (mass, sel)
 				htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
 				histos[(tag, mass)] = getSVLHistos(tree, sel,
 					                               var="SVLMass", tag=htag,
 					                               titlex='m(SV,lepton) [GeV]')
+
+			ntkhistos[tag] = getNTrkHistos(masstrees[172.5], sel=sel, tag=tag,
+				                           var='SVLMass',
+				                           titlex='m(SV,lepton) [GeV]')
 
 		controlhistos = {} # (var) -> h_tot, h_cor, h_wro, h_unm
 		for var,xmin,xmax,titlex in CONTROLVARS:
@@ -226,14 +179,17 @@ def main(args, opt):
 				                              xmin=xmin, xmax=xmax,
 				                              titlex=titlex)
 
+
 		cachefile = open(".svlhistos.pck", 'w')
-		pickle.dump(histos, cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(histos,        cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(ntkhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(controlhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 
 	else:
 		cachefile = open(".svlhistos.pck", 'r')
-		histos = pickle.load(cachefile)
+		histos        = pickle.load(cachefile)
+		ntkhistos     = pickle.load(cachefile)
 		controlhistos = pickle.load(cachefile)
 		cachefile.close()
 
@@ -245,7 +201,7 @@ def main(args, opt):
 	for var,_,_,_ in CONTROLVARS:
 		makeControlPlot(controlhistos[var], var, opt)
 
-	for tag,sel in SELECTIONS:
+	for tag,sel,seltag in SELECTIONS:
 		print tag, sel
 		for mass in sorted(masstrees.keys()):
 			hists = histos[(tag, mass)]
@@ -259,18 +215,57 @@ def main(args, opt):
 
 		makeControlPlot(histos[(tag, 172.5)], tag, opt)
 
-		makeSVLMassvsmtPlots(dict((mass, histos[(tag, mass)][0])
-								   for mass in sorted(masstrees.keys())),
-							 "%s_tot"%tag, opt)
-		makeSVLMassvsmtPlots(dict((mass, histos[(tag, mass)][1])
-								   for mass in sorted(masstrees.keys())),
-							 "%s_cor"%tag, opt)
-		makeSVLMassvsmtPlots(dict((mass, histos[(tag, mass)][2])
-								   for mass in sorted(masstrees.keys())),
-							 "%s_wro"%tag, opt)
-		makeSVLMassvsmtPlots(dict((mass, histos[(tag, mass)][3])
-								   for mass in sorted(masstrees.keys())),
-							 "%s_unm"%tag, opt)
+		ratplot = RatioPlot('ratioplot')
+		ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
+		ratplot.ratiorange = (0.5, 1.5)
+		for mass in sorted(masstrees.keys()):
+			legentry = '%5.1f GeV' % mass
+			ratplot.add(histos[(tag,mass)][0], legentry)
+		ratplot.reference = histos[(tag,172.5)][0]
+		ratplot.tag = 'All combinations'
+		ratplot.subtag = seltag
+		ratplot.show("massscan_%s_tot"%tag, opt.outDir)
+		ratplot.reset()
+
+		for mass in sorted(masstrees.keys()):
+			legentry = '%5.1f GeV' % mass
+			ratplot.add(histos[(tag,mass)][1], legentry)
+		ratplot.reference = histos[(tag,172.5)][1]
+		ratplot.tag = 'Correct combinations'
+		ratplot.subtag = seltag
+		ratplot.show("massscan_%s_cor"%tag, opt.outDir)
+		ratplot.reset()
+
+		for mass in sorted(masstrees.keys()):
+			legentry = '%5.1f GeV' % mass
+			ratplot.add(histos[(tag,mass)][2], legentry)
+		ratplot.reference = histos[(tag,172.5)][2]
+		ratplot.tag = 'Wrong combinations'
+		ratplot.subtag = seltag
+		ratplot.show("massscan_%s_wro"%tag, opt.outDir)
+		ratplot.reset()
+
+		for mass in sorted(masstrees.keys()):
+			legentry = '%5.1f GeV' % mass
+			ratplot.add(histos[(tag,mass)][3], legentry)
+		ratplot.reference = histos[(tag,172.5)][3]
+		ratplot.tag = 'Unmatched combinations'
+		ratplot.subtag = seltag
+		ratplot.show("massscan_%s_unm"%tag, opt.outDir)
+		ratplot.reset()
+
+		ntkplot = RatioPlot('ntkplot_%s'%tag)
+		ntkplot.add(histos[(tag, 172.5)][0], 'Sum')
+		for hist in ntkhistos[tag]:
+			ntkplot.add(hist, hist.GetTitle())
+		ntkplot.colors = [ROOT.kOrange+10, ROOT.kGreen+4, ROOT.kGreen+2,
+		                  ROOT.kGreen, ROOT.kGreen-7, ROOT.kGreen-8]
+		ntkplot.ratiorange = (0,3.0)
+		ntkplot.ratiotitle = "Ratio wrt Sum"
+		ntkplot.tag = 'm_{t} = 172.5 GeV'
+		ntkplot.subtag = seltag
+		ntkplot.show("ntkscan_%s"%tag, opt.outDir)
+		ntkplot.reset()
 
 
 
@@ -292,18 +287,10 @@ if __name__ == "__main__":
 	parser.add_option('-v', '--verbose', dest='verbose', action="store",
 					  type='int', default=1,
 					  help='Verbose mode [default: %default (semi-quiet)]')
-	parser.add_option('-l', '--lumi', dest='lumi', default=17123,
-					  type='float',
-					  help='Re-scale to integrated luminosity [pb]'
-						   ' [default: %default]')
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",
 					  help='Read from cache')
-	parser.add_option("--jobs", default=0,
-					  action="store", type="int", dest="jobs",
-					  help=("Run N jobs in parallel."
-							"[default: %default]"))
 	(opt, args) = parser.parse_args()
 
 	main(args, opt)

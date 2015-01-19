@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 import math
 import ROOT
 from ROOT import THStack, TLatex
@@ -30,6 +30,173 @@ def setMaximums(histos, margin=1.1, setminimum=None):
     for hist in histos: hist.SetMaximum(maxy)
     if setminimum is not None:
         for hist in histos: hist.SetMinimum(setminimum)
+
+class RatioPlot(object):
+    """Wrapper class for making ratio plots"""
+
+    def __init__(self, name):
+        super(RatioPlot, self).__init__()
+        self.name = name
+        self.histos = []
+        self.legentries = []
+        self.reference = None
+        self.normalized = True
+        self.ratiotitle = None
+        self.garbageList = []
+        self.tag = None
+        self.subtag = None
+        self.colors = [
+            ROOT.kViolet-7,
+            ROOT.kViolet-6,
+            ROOT.kViolet+4,
+            ROOT.kViolet+9,
+            ROOT.kBlue,
+            ROOT.kBlue-7,
+            ROOT.kAzure+1,
+            ROOT.kAzure+8,
+        ]
+        self.ratiorange = None
+
+    def reset(self):
+        for o in self.garbageList:
+            try:
+                o.Delete()
+            except AttributeError:
+                pass
+            except Exception, e:
+                print e
+                raise e
+        self.histos = []
+        self.legentries = []
+        self.tag = None
+        self.subtag = None
+
+    def add(self, hist, tag):
+        if hist.GetEntries() == 0:
+            print "Skipping empty histogram", hist.GetName()
+            return
+        self.histos.append(hist)
+        self.legentries.append(tag)
+
+    def show(self, outname, outdir):
+        if not os.path.isdir(outdir):
+            os.system('mkdir -p %s' % outdir)
+        for hist,color in zip(self.histos, self.colors):
+            hist.SetLineColor(color)
+
+        if self.normalized:
+            for hist in self.histos:
+                hist.Scale(1./hist.Integral())
+
+        setMaximums(self.histos, setminimum=0)
+
+        tc = ROOT.TCanvas(outname, "ratioplots", 800, 800)
+        # self.garbageList.append(tc)
+        tc.cd()
+
+        tc.SetWindowSize(800 + (800 - tc.GetWw()), (800 + (800 - tc.GetWh())));
+        p2 = ROOT.TPad("pad2","pad2",0,0,1,0.31);
+        self.garbageList.append(p2)
+        p2.SetTopMargin(0);
+        p2.SetBottomMargin(0.3);
+        p2.SetFillStyle(0);
+        p2.Draw();
+        p1 = ROOT.TPad("pad1","pad1",0,0.31,1,1);
+        self.garbageList.append(p1)
+        p1.SetBottomMargin(0);
+        p1.Draw();
+        p1.cd();
+
+        # tl = ROOT.TLegend(0.66, 0.75-0.040*max(len(self.histos)-3,0), .89, .89)
+        tl = ROOT.TLegend(0.66, 0.15, .89, .30+0.040*max(len(self.histos)-3,0))
+        self.garbageList.append(tl)
+        tl.SetBorderSize(0)
+        tl.SetFillColor(0)
+        tl.SetShadowColor(0)
+        tl.SetTextFont(43)
+        tl.SetTextSize(20)
+
+
+        mainframe = self.histos[0].Clone('mainframe')
+        self.garbageList.append(mainframe)
+        mainframe.Reset('ICE')
+        mainframe.GetXaxis().SetTitleFont(43)
+        mainframe.GetXaxis().SetLabelFont(43)
+        mainframe.GetYaxis().SetTitleFont(43)
+        mainframe.GetYaxis().SetLabelFont(43)
+
+        mainframe.GetYaxis().SetTitle('a.u.')
+        mainframe.GetYaxis().SetLabelSize(22)
+        mainframe.GetXaxis().SetLabelSize(22)
+        mainframe.GetYaxis().SetTitleSize(26)
+        mainframe.GetXaxis().SetTitleSize(26)
+        mainframe.GetYaxis().SetTitleOffset(1.2)
+        mainframe.GetXaxis().SetTitleOffset(1.5)
+        mainframe.Draw()
+
+        # self.histos[0].GetYaxis().SetTitle('a.u.')
+        # self.histos[0].Draw("axis")
+
+        for hist,legentry in zip(self.histos,self.legentries):
+            tl.AddEntry(hist, legentry, 'l')
+            hist.Draw("hist same")
+
+        tl.Draw()
+
+        tlat = TLatex()
+        tlat.SetTextFont(43)
+        tlat.SetNDC(1)
+        tlat.SetTextAlign(33)
+        if self.tag:
+            tlat.SetTextSize(22)
+            tlat.DrawLatex(0.85, 0.85, self.tag)
+        if self.subtag:
+            tlat.SetTextSize(20)
+            tlat.DrawLatex(0.85, 0.78, self.subtag)
+
+        CMS_lumi(pad=p1,iPeriod=2,iPosX=0,extraText='Simulation')
+
+        p2.cd()
+
+        if not self.reference:
+            self.reference = self.histos[0]
+
+        ratioframe = mainframe.Clone('ratioframe')
+        self.garbageList.append(ratioframe)
+        ratioframe.Reset('ICE')
+        ratioframe.GetYaxis().SetRangeUser(0.50,1.50)
+        if not self.ratiotitle:
+            ratioframe.GetYaxis().SetTitle('Ratio')
+        else:
+            ratioframe.GetYaxis().SetTitle(self.ratiotitle)
+        ratioframe.GetYaxis().SetNdivisions(5)
+        ratioframe.GetYaxis().SetTitleOffset(1.2)
+        ratioframe.GetXaxis().SetTitleOffset(3.0)
+        ratioframe.Draw()
+
+        ratios = []
+        for hist in self.histos:
+            ratios.append(getRatio(hist, self.reference))
+        if self.ratiorange:
+            ratmin, ratmax = self.ratiorange
+            for ratio in ratios:
+                ratio.SetMinimum(ratmin)
+                ratio.SetMaximum(ratmax)
+                ratioframe.GetYaxis().SetRangeUser(ratmin, ratmax)
+
+        else:
+            setMaximums(ratios)
+
+        for ratio in ratios:
+            ratio.Draw("hist same")
+
+        p2.RedrawAxis()
+
+        tc.cd()
+        tc.Modified()
+        tc.Update()
+        tc.SaveAs(os.path.join(outdir,"%s.pdf"%outname))
+        tc.Close()
 
 
 class Plot(object):

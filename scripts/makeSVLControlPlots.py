@@ -8,6 +8,10 @@ from runPlotter import openTFile
 
 TREENAME = 'SVLInfo'
 SELECTIONS = [
+	('inclusive',  '',
+	 'Fully inclusive'),
+	('mrank1',    'SVLDeltaR<2.0&&SVLMassRank==1&&CombCat%2!=0',
+	 'Minimum mass comb., only SV in hardest b-jet, #Delta R < 2.0'),
 	('mrankinc',  'SVLMassRank==1',
 	 'Minimum mass comb.'),
 	('mrank',     'SVLDeltaR<2.0&&SVLMassRank==1',
@@ -16,10 +20,12 @@ SELECTIONS = [
 	 'Minimum #Delta R comb.'),
 	('drrank',    'SVLDeltaR<2.0&&SVLDeltaRRank==1',
 	 'Minimum #Delta R comb., #Delta R < 2.0'),
-	('mrank12',   'SVLDeltaR<2.0&&((NCombs<=2&&SVLMassRank==1)||(NCombs==4&&SVLMassRank<3))',
-	 'Two minimum mass comb., #Delta R < 2.0'),
-	('drrank12',  'SVLDeltaR<2.0&&((NCombs<=2&&SVLDeltaRRank==1)||(NCombs==4&&SVLDeltaRRank<3))',
-	 'Two minimum #Delta R comb., #Delta R < 2.0'),
+	('drrank1',    'SVLDeltaR<2.0&&SVLDeltaRRank==1&&CombCat%2!=0',
+	 'Minimum #Delta R comb., only SV in hardest b-jet, #Delta R < 2.0'),
+	# ('mrank12',   'SVLDeltaR<2.0&&((NCombs<=2&&SVLMassRank==1)||(NCombs==4&&SVLMassRank<3))',
+	#  'Two minimum mass comb., #Delta R < 2.0'),
+	# ('drrank12',  'SVLDeltaR<2.0&&((NCombs<=2&&SVLDeltaRRank==1)||(NCombs==4&&SVLDeltaRRank<3))',
+	#  'Two minimum #Delta R comb., #Delta R < 2.0'),
 ]
 
 CONTROLVARS = [
@@ -186,6 +192,17 @@ def main(args, opt):
 		pickle.dump(controlhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 
+		ofi = ROOT.TFile(os.path.join(opt.outDir,'histos.root'), 'recreate')
+		ofi.cd()
+		for hist in [h for hists in histos.values() for h in hists]:
+			hist.Write(hist.GetName())
+		for hist in [h for hists in controlhistos.values() for h in hists]:
+			hist.Write(hist.GetName())
+		for hist in [h for hists in ntkhistos.values() for h in hists]:
+			hist.Write(hist.GetName())
+		ofi.Write()
+		ofi.Close()
+
 	else:
 		cachefile = open(".svlhistos.pck", 'r')
 		histos        = pickle.load(cachefile)
@@ -202,17 +219,6 @@ def main(args, opt):
 		makeControlPlot(controlhistos[var], var, opt)
 
 	for tag,sel,seltag in SELECTIONS:
-		print tag, sel
-		for mass in sorted(masstrees.keys()):
-			hists = histos[(tag, mass)]
-			n_tot, n_cor, n_wro, n_unm = (x.GetEntries() for x in hists)
-			p_cor = 100.*(n_cor/float(n_tot))
-			p_wro = 100.*(n_wro/float(n_tot))
-			p_unm = 100.*(n_unm/float(n_tot))
-			print ('  %5.1f GeV: %7d entries '
-				   '(%2.0f%% corr, %2.0f%% wrong, %2.0f%% unmatched)' %
-				   (mass, n_tot, p_cor, p_wro, p_unm))
-
 		makeControlPlot(histos[(tag, 172.5)], tag, opt)
 
 		ratplot = RatioPlot('ratioplot')
@@ -268,6 +274,20 @@ def main(args, opt):
 		ntkplot.reset()
 
 
+	print 80*'-'
+	for tag,sel,seltag in SELECTIONS:
+		print tag, sel
+		# for mass in sorted(masstrees.keys()):
+		mass = 172.5
+		hists = histos[(tag, mass)]
+		n_tot, n_cor, n_wro, n_unm = (x.GetEntries() for x in hists)
+		p_cor = 100.*(n_cor/float(n_tot))
+		p_wro = 100.*(n_wro/float(n_tot))
+		p_unm = 100.*(n_unm/float(n_tot))
+		print ('  %5.1f GeV: %7d entries '
+			   '(%2.0f%% corr, %2.0f%% wrong, %2.0f%% unmatched)' %
+			   (mass, n_tot, p_cor, p_wro, p_unm))
+	print 80*'-'
 
 	exit(0)
 

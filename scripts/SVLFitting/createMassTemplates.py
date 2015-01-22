@@ -27,9 +27,9 @@ def checkKeyInFile(key, filehandle, doraise=True):
 
 
 def createWorkspace(sigFile, selection, outdir):
-"""
+    """
     Create the RooFit workspace with the data and fit model and do the fits
-"""
+    """
     # Initiate a workspace where the observable is M_{bl}
     # and the variable to fit is M_{t}
     ws = ROOT.RooWorkspace('w')
@@ -203,9 +203,9 @@ def createWorkspace(sigFile, selection, outdir):
 
 
 def showWorkspace(ws,selection,outdir,outformats=['pdf']):
-"""
+    """
     And show
-"""
+    """
     os.system('mkdir -p %s' % outdir)
     ROOT.gROOT.SetBatch(1)
 
@@ -392,9 +392,9 @@ def showWorkspace(ws,selection,outdir,outformats=['pdf']):
     for ext in outformats : c.SaveAs("%s.%s" % (outname,ext))
 
 def plotParameters(ws, outdir):
-"""
+    """
     Plot the fit parameters as a function of mt
-"""
+    """
     os.system('mkdir -p %s'%outdir)
 
     ROOT.gROOT.SetBatch(1)
@@ -453,9 +453,9 @@ def plotParameters(ws, outdir):
 
 
 def runPseudoExperiments(ws,peFileName,nTotal,fCorrect,nPexp):
-"""
+    """
     run pseudo-experiments
-"""
+    """
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")

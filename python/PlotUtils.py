@@ -112,6 +112,7 @@ class RatioPlot(object):
         self.garbageList.append(tl)
         tl.SetBorderSize(0)
         tl.SetFillColor(0)
+        tl.SetFillStyle(0)
         tl.SetShadowColor(0)
         tl.SetTextFont(43)
         tl.SetTextSize(20)

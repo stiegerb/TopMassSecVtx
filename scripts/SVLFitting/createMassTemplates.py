@@ -27,7 +27,9 @@ def checkKeyInFile(key, filehandle, doraise=True):
 
 
 def createWorkspace(sigFile, selection, outdir):
-
+"""
+    Create the RooFit workspace with the data and fit model and do the fits
+"""
     # Initiate a workspace where the observable is M_{bl}
     # and the variable to fit is M_{t}
     ws = ROOT.RooWorkspace('w')
@@ -200,10 +202,10 @@ def createWorkspace(sigFile, selection, outdir):
     return ws
 
 
-"""
-"""
 def showWorkspace(ws,selection,outdir,outformats=['pdf']):
-    # And show
+"""
+    And show
+"""
     os.system('mkdir -p %s' % outdir)
     ROOT.gROOT.SetBatch(1)
 
@@ -308,15 +310,16 @@ def showWorkspace(ws,selection,outdir,outformats=['pdf']):
             label.SetNDC()
             label.SetTextFont(42)
             label.SetTextSize(0.1)
-            label.DrawLatex(0.1,0.8,'CMS simulation, signal model (correct permutations)')
+            label.DrawLatex(0.1,0.8,'CMS simulation, signal model'
+                                    '(correct permutations)')
 
-        iCatCtr=iCatCtr+1
-        xini=xfin
-        xfin+=deltaX
+        iCatCtr = iCatCtr+1
+        xini = xfin
+        xfin += deltaX
         if xfin>1 : xini,xfin=0,deltaX+leftMargin
-        if iCatCtr==3:
-            yini=yfin
-            yfin+=deltaY
+        if iCatCtr == 3:
+            yini = yfin
+            yfin += deltaY
 
     c.Modified()
     c.Update()
@@ -324,7 +327,6 @@ def showWorkspace(ws,selection,outdir,outformats=['pdf']):
     outname = os.path.join(outdir,'SignalModel_%s_CorrectPermutations'%
                                                              (selection))
     for ext in outformats : c.SaveAs("%s.%s" % (outname,ext))
-    # raw_input()
 
     c.Clear()
     c.SetWindowSize(500,500)
@@ -335,7 +337,10 @@ def showWorkspace(ws,selection,outdir,outformats=['pdf']):
     p1.SetGridx(True)
     frame=ws.var('mbl').frame()
     ws.data('wrong').plotOn(frame)
-    ws.pdf('sig_wrong').plotOn(frame, ROOT.RooFit.Components('sig_wrong_ngauss*'), ROOT.RooFit.LineColor(920),ROOT.RooFit.LineWidth(1))
+    ws.pdf('sig_wrong').plotOn(frame,
+                               ROOT.RooFit.Components('sig_wrong_ngauss*'),
+                               ROOT.RooFit.LineColor(920),
+                               ROOT.RooFit.LineWidth(1) )
     ws.pdf('sig_wrong').plotOn(frame)
     frame.Draw()
     frame.GetXaxis().SetTitle("m(SV,lepton) [GeV]")
@@ -353,7 +358,7 @@ def showWorkspace(ws,selection,outdir,outformats=['pdf']):
     label.DrawLatex(0.72,0.9,'#chi^{2}=%3.2f'%frame.chiSquare())
 
     c.cd()
-    p2=ROOT.TPad('p2','p2',0,0.8,1,1)
+    p2 = ROOT.TPad('p2','p2',0,0.8,1,1)
     p2.Draw()
     p2.cd()
     p2.SetTopMargin(0.4)
@@ -386,9 +391,10 @@ def showWorkspace(ws,selection,outdir,outformats=['pdf']):
                                                              (selection))
     for ext in outformats : c.SaveAs("%s.%s" % (outname,ext))
 
-"""
-"""
 def plotParameters(ws, outdir):
+"""
+    Plot the fit parameters as a function of mt
+"""
     os.system('mkdir -p %s'%outdir)
 
     ROOT.gROOT.SetBatch(1)
@@ -446,10 +452,10 @@ def plotParameters(ws, outdir):
         canv.SaveAs(outname)
 
 
-"""
-run pseudo-experiments
-"""
 def runPseudoExperiments(ws,peFileName,nTotal,fCorrect,nPexp):
+"""
+    run pseudo-experiments
+"""
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")
@@ -577,7 +583,7 @@ def main():
     showWorkspace(ws=ws, selection=opt.selection, outdir=opt.outDir)
     plotParameters(ws=ws, outdir=opt.outDir)
 
-    doPEs = False
+    doPEs = True
     if doPEs:
         print 80*'-'
         print ('Running pseudo-experiments for workspace retrieved from %s'

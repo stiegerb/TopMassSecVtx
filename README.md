@@ -30,6 +30,10 @@ scram b -j 9
 
 ```
 Will merge all the chunks and then move them into treedir/Chunks/
+There is a version of the trees from Nov14 that is still current in:
+```
+/afs/cern.ch/work/s/stiegerb/TopSecVtx/SVLInfo/Nov14
+```
 
 ------------------------------------------------------
 ### Producing plots and histogram file

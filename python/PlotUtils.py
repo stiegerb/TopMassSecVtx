@@ -78,6 +78,16 @@ class RatioPlot(object):
         self.histos.append(hist)
         self.legentries.append(tag)
 
+    def getChiSquares(self):
+        if self.reference is not None:
+            reference = self.reference
+        else:
+            reference = self.histos[0]
+        chisquares = {}
+        for legentry,hist in zip(self.legentries, self.histos):
+            chisquares[legentry] = hist.Chi2Test(reference,"CHI2")
+        return chisquares
+
     def show(self, outname, outdir):
         if not os.path.isdir(outdir):
             os.system('mkdir -p %s' % outdir)

@@ -5,7 +5,9 @@ import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot, getRatio, setMaximums
 from UserCode.TopMassSecVtx.CMS_lumi import CMS_lumi
 from runPlotter import openTFile
+from numpy import roots
 
+# MASSES = [163.5, 166.5, 169.5, 172.5, 173.5, 175.5, 178.5, 181.5]
 TREENAME = 'SVLInfo'
 SELECTIONS = [
 	('inclusive',  '1',
@@ -63,13 +65,11 @@ NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
 
 def projectFromTree(hist, varname, sel, tree, option=''):
 	try:
-		# tree.Draw(">>evlist", sel)
-		# evlist = ROOT.gDirectory.Get("evlist")
-		# tree.SetEventList(evlist)
 		tree.Project(hist.GetName(),varname, sel, option)
 		return True
 	except Exception, e:
 		raise e
+
 
 def getSVLHistos(tree, sel,
 	             var="SVLMass",
@@ -164,43 +164,53 @@ def makeControlPlot(hists, tag, seltag, opt):
 	ctrlplot.show("control_%s"%tag, opt.outDir)
 	ctrlplot.reset()
 
-	# for x in [h_cor, h_wro, h_unm]:
-	# 	x.Scale(1./x.Integral())
 
-	# setMaximums([h_cor, h_wro, h_unm], setminimum=0)
+def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
+	"""
+	This does a pol2 fit to the given values and returns a callable
+	that gives the width of the fit at a given chi2 value
+	"""
+	tg = ROOT.TGraph(len(chi2s)-2)
+	np = 0
+	for mt,chi2 in chi2s:
+		if mt < 166. or mt > 180.: continue
+		tg.SetPoint(np, mt, chi2)
+		np+=1
+	tf = ROOT.TF1("fitf", "pol2", 160., 190.)
+	tg.Fit(tf, "W")
 
-	# tc = ROOT.TCanvas("control_%s"%tag, "Control", 800, 800)
-	# tc.cd()
+	tcanv = ROOT.TCanvas("chi2fit", "chi2fit", 400, 400)
+	tcanv.cd()
+	tg.SetMarkerStyle(20)
+	tg.GetXaxis().SetTitle("m_{t, gen.} [GeV]")
+	tg.GetYaxis().SetTitle("#chi^{2}")
+	tg.Draw("AP")
+	tf.SetLineColor(ROOT.kBlue)
+	tf.SetLineWidth(3)
+	tf.Draw("same")
+	if len(tag)>0:
+	    tlat = ROOT.TLatex()
+	    tlat.SetTextFont(43)
+	    tlat.SetNDC(1)
+	    tlat.SetTextAlign(33)
+        tlat.SetTextSize(10)
+        tlat.DrawLatex(0.85, 0.78, tag)
+	tcanv.SaveAs(oname)
 
-	# h_cor.SetLineColor()
-	# h_wro.SetLineColor()
-	# h_unm.SetLineColor()
+	def getError(chi2test):
+		coeff = [tf.GetParameter(2),
+		         tf.GetParameter(1),
+		         tf.GetParameter(0)-chi2test]
+		mt1, mt2 = roots(coeff)
+		return abs(mt1-mt2)
 
-	# tl = ROOT.TLegend(0.65, 0.75-0.035, .89, .89)
-	# tl.SetBorderSize(0)
-	# tl.SetFillColor(0)
-	# tl.SetShadowColor(0)
-	# tl.SetTextFont(42)
-	# tl.SetTextSize(0.035)
-	# # tl.AddEntry(h_tot , 'Total'     , 'l')
-	# tl.AddEntry(h_cor , 'Correct'   , 'l')
-	# tl.AddEntry(h_wro , 'Wrong'     , 'l')
-	# tl.AddEntry(h_unm , 'Unmatched' , 'l')
 
-	# # h_tot.Draw("hist")
-	# h_cor.Draw("hist")
-	# h_wro.Draw("hist same")
-	# h_unm.Draw("hist same")
-
-	# tl.Draw()
-	# CMS_lumi(pad=tc,iPeriod=2,iPosX=0,extraText='Simulation')
-
-	# tc.SaveAs(os.path.join(opt.outDir,"control_%s.pdf"%tag))
+	return getError
 
 
 def main(args, opt):
+	os.system('mkdir -p %s'%opt.outDir)
 	try:
-		os.system('mkdir -p %s'%opt.outDir)
 
 		massfiles = {} # mass -> filename
 		# find mass scan files
@@ -227,7 +237,7 @@ def main(args, opt):
 		print "Please provide a valid input directory"
 		exit(-1)
 
-	systtrees = {} # mass -> tree
+	systtrees = {} # mass/systname -> tree
 	for mass in sorted(massfiles.keys()):
 		tfile = ROOT.TFile.Open(massfiles[mass],'READ')
 		tree = tfile.Get(TREENAME)
@@ -238,7 +248,7 @@ def main(args, opt):
 
 
 	if not opt.cache:
-		histos = {} # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
+		masshistos = {} # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
 		systhistos = {} # (tag) -> h_tptw, h_tptup, h_tptdn
 		ntkhistos = {} # (tag) -> (h_ntk1, h_ntk2, h_ntk3, ..)
 		for tag,sel,_ in SELECTIONS:
@@ -246,7 +256,7 @@ def main(args, opt):
 				if not mass in massfiles.keys(): continue
 				print ' ... processing %5.1f GeV %s' % (mass, sel)
 				htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
-				histos[(tag, mass)] = getSVLHistos(tree, sel,
+				masshistos[(tag, mass)] = getSVLHistos(tree, sel,
 					                               var="SVLMass", tag=htag,
 					                               titlex='m(SV,lepton) [GeV]')
 
@@ -284,15 +294,15 @@ def main(args, opt):
 
 
 		cachefile = open(".svlhistos.pck", 'w')
-		pickle.dump(histos,        cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(systhistos,   cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(masshistos,    cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(systhistos,    cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(ntkhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(controlhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 
 		ofi = ROOT.TFile(os.path.join(opt.outDir,'histos.root'), 'recreate')
 		ofi.cd()
-		for hist in [h for hists in histos.values() for h in hists]:
+		for hist in [h for hists in masshistos.values() for h in hists]:
 			hist.Write(hist.GetName())
 		for hist in [h for hists in systhistos.values() for h in hists]:
 			hist.Write(hist.GetName())
@@ -305,8 +315,8 @@ def main(args, opt):
 
 	else:
 		cachefile = open(".svlhistos.pck", 'r')
-		histos        = pickle.load(cachefile)
-		systhistos   = pickle.load(cachefile)
+		masshistos    = pickle.load(cachefile)
+		systhistos    = pickle.load(cachefile)
 		ntkhistos     = pickle.load(cachefile)
 		controlhistos = pickle.load(cachefile)
 		cachefile.close()
@@ -319,50 +329,63 @@ def main(args, opt):
 	for var,_,_,_ in CONTROLVARS:
 		makeControlPlot(controlhistos[var], var, 'Fully Inclusive', opt)
 
+	errorGetters = {} # tag -> function(chi2) -> error
+	systematics = {} # (seltag, systname) -> error
 	for tag,sel,seltag in SELECTIONS:
-		makeControlPlot(histos[(tag, 172.5)], tag, seltag, opt)
+		makeControlPlot(masshistos[(tag, 172.5)], tag, seltag, opt)
 
 		ratplot = RatioPlot('ratioplot')
 		ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
 		ratplot.ratiorange = (0.5, 1.5)
+		ratplot.reference = masshistos[(tag,172.5)][0]
+		chisquares = []
 		for mass in sorted(massfiles.keys()):
 			legentry = '%5.1f GeV' % mass
-			ratplot.add(histos[(tag,mass)][0], legentry)
-		ratplot.reference = histos[(tag,172.5)][0]
+			ratplot.add(masshistos[(tag,mass)][0], legentry)
 		ratplot.tag = 'All combinations'
 		ratplot.subtag = seltag
 		ratplot.show("massscan_%s_tot"%tag, opt.outDir)
+		chi2s = ratplot.getChiSquares()
+
+		chi2stofit = []
+		for legentry in sorted(chi2s.keys()):
+			chi2stofit.append((float(legentry[:-4]), chi2s[legentry]))
+		errorGetters[tag] = fitChi2(chi2stofit,
+			                        tag=seltag,
+			                        oname=os.path.join(opt.outDir,
+			                  	                       "chi2fit_%s.pdf"%tag))
+		print 'Error at chi2=1000:', errorGetters[tag](1000), 'GeV'
 		ratplot.reset()
 
+		ratplot.reference = masshistos[(tag,172.5)][1]
 		for mass in sorted(massfiles.keys()):
 			legentry = '%5.1f GeV' % mass
-			ratplot.add(histos[(tag,mass)][1], legentry)
-		ratplot.reference = histos[(tag,172.5)][1]
+			ratplot.add(masshistos[(tag,mass)][1], legentry)
 		ratplot.tag = 'Correct combinations'
 		ratplot.subtag = seltag
 		ratplot.show("massscan_%s_cor"%tag, opt.outDir)
 		ratplot.reset()
 
+		ratplot.reference = masshistos[(tag,172.5)][2]
 		for mass in sorted(massfiles.keys()):
 			legentry = '%5.1f GeV' % mass
-			ratplot.add(histos[(tag,mass)][2], legentry)
-		ratplot.reference = histos[(tag,172.5)][2]
+			ratplot.add(masshistos[(tag,mass)][2], legentry)
 		ratplot.tag = 'Wrong combinations'
 		ratplot.subtag = seltag
 		ratplot.show("massscan_%s_wro"%tag, opt.outDir)
 		ratplot.reset()
 
+		ratplot.reference = masshistos[(tag,172.5)][3]
 		for mass in sorted(massfiles.keys()):
 			legentry = '%5.1f GeV' % mass
-			ratplot.add(histos[(tag,mass)][3], legentry)
-		ratplot.reference = histos[(tag,172.5)][3]
+			ratplot.add(masshistos[(tag,mass)][3], legentry)
 		ratplot.tag = 'Unmatched combinations'
 		ratplot.subtag = seltag
 		ratplot.show("massscan_%s_unm"%tag, opt.outDir)
 		ratplot.reset()
 
 		topptplot = RatioPlot('topptplot_%s'%tag)
-		topptplot.add(histos[(tag, 172.5)][0], 'Nominal')
+		topptplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
 		topptplot.add(systhistos[(tag,'ptt_tot')][0], 'top pt weighted')
 		topptplot.add(systhistos[(tag,'ptt_tot')][1], 'top pt weight up')
 		topptplot.tag = 'Top pt systematic'
@@ -371,10 +394,12 @@ def main(args, opt):
 		topptplot.ratiorange = (0.5, 1.5)
 		topptplot.colors = [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6]
 		topptplot.show("toppt_%s"%tag, opt.outDir)
+		topptchi2 = max(topptplot.getChiSquares().values())
+		systematics[(tag,'toppt')] = errorGetters[tag](topptchi2)
 		topptplot.reset()
 
-		topptplot.add(histos[(tag, 172.5)][1], 'Nominal')
-		topptplot.reference = histos[(tag, 172.5)][1]
+		topptplot.add(masshistos[(tag, 172.5)][1], 'Nominal')
+		topptplot.reference = masshistos[(tag, 172.5)][1]
 		topptplot.add(systhistos[(tag,'ptt_cor')][0], 'top pt weighted')
 		topptplot.add(systhistos[(tag,'ptt_cor')][1], 'top pt weight up')
 		topptplot.tag = 'Top pt systematic (correct comb.)'
@@ -385,8 +410,8 @@ def main(args, opt):
 		topptplot.show("toppt_cor_%s"%tag, opt.outDir)
 		topptplot.reset()
 
-		topptplot.add(histos[(tag, 172.5)][2], 'Nominal')
-		topptplot.reference = histos[(tag, 172.5)][2]
+		topptplot.add(masshistos[(tag, 172.5)][2], 'Nominal')
+		topptplot.reference = masshistos[(tag, 172.5)][2]
 		topptplot.add(systhistos[(tag,'ptt_wro')][0], 'top pt weighted')
 		topptplot.add(systhistos[(tag,'ptt_wro')][1], 'top pt weight up')
 		topptplot.tag = 'Top pt systematic (wrong comb.)'
@@ -398,7 +423,7 @@ def main(args, opt):
 		topptplot.reset()
 
 		scaleplot = RatioPlot('scaleplot_%s'%tag)
-		scaleplot.add(histos[(tag, 172.5)][0], 'Nominal')
+		scaleplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
 		scaleplot.add(systhistos[(tag,'scaleup')][0],   'Q^{2} Scale up')
 		scaleplot.add(systhistos[(tag,'scaledown')][0], 'Q^{2} Scale down')
 		scaleplot.tag = 'Q^{2} Scale systematic'
@@ -407,10 +432,12 @@ def main(args, opt):
 		scaleplot.ratiorange = (0.5, 1.5)
 		scaleplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
 		scaleplot.show("scale_%s"%tag, opt.outDir)
+		scalechi2 = max(scaleplot.getChiSquares().values())
+		systematics[(tag,'scale')] = errorGetters[tag](scalechi2)
 		scaleplot.reset()
 
 		matchplot = RatioPlot('matchplot_%s'%tag)
-		matchplot.add(histos[(tag, 172.5)][0], 'Nominal')
+		matchplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
 		matchplot.add(systhistos[(tag,'matchingup')][0],
 			                      'Matching up')
 		matchplot.add(systhistos[(tag,'matchingdown')][0],
@@ -421,10 +448,12 @@ def main(args, opt):
 		matchplot.ratiorange = (0.5, 1.5)
 		matchplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
 		matchplot.show("matching_%s"%tag, opt.outDir)
+		matchchi2 = max(matchplot.getChiSquares().values())
+		systematics[(tag,'matching')] = errorGetters[tag](matchchi2)
 		matchplot.reset()
 
-		matchplot.reference = histos[(tag, 172.5)][1]
-		matchplot.add(histos[(tag, 172.5)][1], 'Correct')
+		matchplot.reference = masshistos[(tag, 172.5)][1]
+		matchplot.add(masshistos[(tag, 172.5)][1], 'Correct')
 		matchplot.add(systhistos[(tag,'matchingup')][1],
 			                      'Matching up')
 		matchplot.add(systhistos[(tag,'matchingdown')][1],
@@ -437,8 +466,8 @@ def main(args, opt):
 		matchplot.show("matching_cor_%s"%tag, opt.outDir)
 		matchplot.reset()
 
-		matchplot.reference = histos[(tag, 172.5)][2]
-		matchplot.add(histos[(tag, 172.5)][2], 'Wrong')
+		matchplot.reference = masshistos[(tag, 172.5)][2]
+		matchplot.add(masshistos[(tag, 172.5)][2], 'Wrong')
 		matchplot.add(systhistos[(tag,'matchingup')][2],
 			                      'Matching up')
 		matchplot.add(systhistos[(tag,'matchingdown')][2],
@@ -452,7 +481,7 @@ def main(args, opt):
 		matchplot.reset()
 
 		uecrplot = RatioPlot('uecrplot_%s'%tag)
-		uecrplot.add(histos[(tag, 172.5)][0], 'Nominal (Z2*)')
+		uecrplot.add(masshistos[(tag, 172.5)][0], 'Nominal (Z2*)')
 		uecrplot.add(systhistos[(tag,'p11')][0],
 			                      'P11 Nominal')
 		uecrplot.add(systhistos[(tag,'p11tev')][0],
@@ -469,11 +498,17 @@ def main(args, opt):
 		uecrplot.colors = [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,
 		                    ROOT.kMagenta-9, ROOT.kViolet+2]
 		uecrplot.show("uecr_%s"%tag, opt.outDir)
+		uecrchi2s = uecrplot.getChiSquares()
+		uecrchi2 = max([uecrchi2s['P11 Nominal'],
+			            uecrchi2s['P11 Tevatron tune'],
+			            uecrchi2s['P11 MPI High'],
+			            uecrchi2s['P11 No CR']])
+		systematics[(tag,'uecr')] = errorGetters[tag](uecrchi2)
 		uecrplot.reset()
 
 
 		ntkplot = RatioPlot('ntkplot_%s'%tag)
-		ntkplot.add(histos[(tag, 172.5)][0], 'Sum')
+		ntkplot.add(masshistos[(tag, 172.5)][0], 'Sum')
 		for hist in ntkhistos[tag]:
 			ntkplot.add(hist, hist.GetTitle())
 		ntkplot.colors = [ROOT.kOrange+10, ROOT.kGreen+4, ROOT.kGreen+2,
@@ -485,13 +520,20 @@ def main(args, opt):
 		ntkplot.show("ntkscan_%s"%tag, opt.outDir)
 		ntkplot.reset()
 
+	print 80*'-'
+	print 'Estimated systematics (from a crude chi2 fit)'
+	for tag,_,_ in SELECTIONS:
+		print tag
+		for syst in ['scale', 'toppt', 'matching', 'uecr']:
+			print '  %10s: %4.1f GeV' % (syst, systematics[(tag,syst)])
+
 
 	print 80*'-'
 	for tag,sel,seltag in SELECTIONS:
 		print tag, sel
 		# for mass in sorted(systtrees.keys()):
 		mass = 172.5
-		hists = histos[(tag, mass)]
+		hists = masshistos[(tag, mass)]
 		n_tot, n_cor, n_wro, n_unm = (x.GetEntries() for x in hists)
 		p_cor = 100.*(n_cor/float(n_tot))
 		p_wro = 100.*(n_wro/float(n_tot))

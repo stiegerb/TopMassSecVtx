@@ -34,7 +34,7 @@ fi
 if [ "$step" == "2" ]; then
     echo "Making pre-selection plots"
     if [ -z $eosdir ]; then
-	runPlotter.py -l 19701  -j ${outdir}/samples.json -o ${plotsdir}/plots ${outdir}/summary/${hash};
+	runPlotter.py -l 19701  -j ${outdir}/samples.json -o ${plotsdir}/plots ${outdir}/summary/${hash} -f thetall,met; #  -f vertices;
     else
 	runPlotter.py -l 19701  -j ${outdir}/samples.json -o ${plotsdir}/plots ${eosdir};
     fi
@@ -70,9 +70,9 @@ fi
 
 if [ "$step" == "6" ]; then
     runPlotter.py -l 19701  -j ${outdir}/qcd_samples.json    -o ${plotsdir}/qcd_samples_plots ${outdir}/qcd_samples/${hash} --normToData;
-    runPlotter.py -l 19701  -j ${outdir}/photon_samples.json -o ${plotsdir}/photon_samples_plots ${outdir}/photon_samples/${hash} --normToData;
-    runPlotter.py -l 19701  -j ${outdir}/w_samples.json -o ${plotsdir}/w_samples_plots ${outdir}/w_samples/${hash};
-    runPlotter.py -l 19701  -j ${outdir}/z_samples.json -o ${plotsdir}/z_samples_plots ${outdir}/z_samples/${hash};
+    #runPlotter.py -l 19701  -j ${outdir}/photon_samples.json -o ${plotsdir}/photon_samples_plots ${outdir}/photon_samples/${hash} --normToData;
+    #runPlotter.py -l 19701  -j ${outdir}/w_samples.json -o ${plotsdir}/w_samples_plots ${outdir}/w_samples/${hash};
+    #runPlotter.py -l 19701  -j ${outdir}/z_samples.json -o ${plotsdir}/z_samples_plots ${outdir}/z_samples/${hash};
     python test/topss2014/getControlAnalysisTagWeights.py
 fi
 
@@ -83,12 +83,12 @@ if [ "$step" == "7" ]; then
 
     ctrlJsons=("qcd_samples")
     for ijson in ${ctrlJsons[@]}; do
-	runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d /store/cmst3/user/psilva/5311_qcd_ntuples -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash}; #-t MC
+	runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d /store/cmst3/user/psilva/5311_qcd_ntuples -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash} -t MC;
     done
 
-    ctrlJsons=("z_samples" "w_samples" "photon_samples")
-    for ijson in ${ctrlJsons[@]}; do
-	runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d ${indir} -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash}; #-t MC
-    done
-    echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
+    #ctrlJsons=("z_samples" "w_samples" "photon_samples")
+    #for ijson in ${ctrlJsons[@]}; do
+    #	runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d ${indir} -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash} -t MC;
+    #done
+    #echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
 fi

@@ -7,6 +7,7 @@
 #include "UserCode/TopMassSecVtx/interface/DataEventSummaryHandler.h"
 #include "UserCode/TopMassSecVtx/interface/TopSelectionTools.h"
 #include "UserCode/TopMassSecVtx/interface/LxyAnalysis.h"
+#include "UserCode/TopMassSecVtx/interface/UEAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/TopPtWeighter.h"
 #include "UserCode/TopMassSecVtx/interface/LeptonEfficiencySF.h"
 #include "UserCode/TopMassSecVtx/interface/MuScleFitCorrector.h"
@@ -255,6 +256,7 @@ int main(int argc, char* argv[])
     }
   controlHistos.addHistogram( new TH1F("met",          ";Missing transverse energy [GeV]; Events",50,0,250) );
   controlHistos.addHistogram( new TH1F("metoverht",    ";E_{T}^{miss}/#sqrt{H_{T}} [GeV^{1/2}]",50,0,15));
+  controlHistos.addHistogram( new TH1F("photoniso",    ";log(Photon isolation/GeV+0.5)",20,-1,5));
   controlHistos.addHistogram( new TH1F("mt",           ";Transverse mass [GeV];Events",50,0,300) );
   controlHistos.addHistogram( new TH1F("mll",          ";Dilepton mass [GeV];Events",50,10,260) );
 
@@ -297,6 +299,9 @@ int main(int argc, char* argv[])
   //control the sec vtx analysis
   LxyAnalysis lxyAn;
 
+  //control the UE analysis
+  UEAnalysis ueAn(controlHistos);
+
   //prepare the output file
   TString outUrl(out);
   gSystem->ExpandPathName(outUrl);
@@ -315,6 +320,7 @@ int main(int argc, char* argv[])
       spyDir = spyFile->mkdir("dataAnalyzer");
       spyDir->cd();
       lxyAn.attachToDir(spyDir);
+      ueAn.attachToDir(spyDir);
     }
 
 
@@ -528,6 +534,8 @@ int main(int argc, char* argv[])
 		      controlHistos.fillHisto("metoverht",  box.chCat, box.metsig,  evWeight);
 		      controlHistos.fillHisto("eta",         box.chCat , fabs(box.leptons[0]->eta()),                evWeight);
 		      controlHistos.fillHisto("eta",         box.chCat + (( lepcharge>0 ) ? "plus" : "minus"), fabs(box.leptons[0]->eta()),                evWeight);
+		      controlHistos.fillHisto("photoniso",   box.chCat , log(fabs(box.leptons[0]->getVal("gIso03"))+0.5),                evWeight);
+		      controlHistos.fillHisto("photoniso",   box.chCat + (( lepcharge>0 ) ? "plus" : "minus"), log(fabs(box.leptons[0]->getVal("gIso03"))+0.5),                evWeight);
 		      if(box.leptons.size()>=2) 
 			{
 			  controlHistos.fillHisto("mll", box.chCat, ll.mass(), evWeight);
@@ -552,12 +560,15 @@ int main(int argc, char* argv[])
 		  //for QCD and W estimation cross check in a jet multiplicity control region
 		  controlHistos.fillHisto("eta",        box.chCat+box.jetCat, fabs(box.leptons[0]->eta()),                evWeight);
 		  controlHistos.fillHisto("eta",        box.chCat+box.jetCat+(( lepcharge>0 ) ? "plus" : "minus"), fabs(box.leptons[0]->eta()),                evWeight);
+		  controlHistos.fillHisto("photoniso",  box.chCat+box.jetCat , log(fabs(box.leptons[0]->getVal("gIso03"))+0.5),                evWeight);
+		  controlHistos.fillHisto("photoniso",  box.chCat+box.jetCat+(( lepcharge>0 ) ? "plus" : "minus"), log(fabs(box.leptons[0]->getVal("gIso03"))+0.5),                evWeight);
 		}
 	    }
 	}
 		
       //save selected event
       if(!saveSummaryTree || !passPreSelection) continue;
+
       lxyAn.resetBeautyEvent();
       BeautyEvent_t &bev=lxyAn.getBeautyEvent();
       int evCatSummary(box.cat);
@@ -580,8 +591,14 @@ int main(int argc, char* argv[])
       lxyAn.analyze( box.leptons, box.jets, met, pf, gen);
       spyDir->cd();
       lxyAn.save();
+
+      //UE analysis
+      if(abs(box.cat)==11*11 || abs(box.cat)==13*13 || abs(box.cat)==11*13) 
+	{
+	  ueAn.analyze(box.leptons, box.jets, met[0], pf, gen, ev.nvtx,genWeight*puWeight*lepSelectionWeight);
+	  ueAn.fillSummaryTuple(genWeight*puWeight*lepSelectionWeight);
+	}
     }
-  std::cout << std::endl;
   
   //
   // close opened files

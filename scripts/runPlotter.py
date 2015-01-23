@@ -223,9 +223,13 @@ def makePlot(key, inDir, procList, xsecweights, options):
                 hist.Scale(options.lumi)
             newPlot.add(hist,title,color,isData)
 
-    if options.normToData : newPlot.normToData()
-    newPlot.show(options.outDir)
-    if(options.debug or newPlot.name.find('flow')>=0 ) : newPlot.showTable(options.outDir)
+    if options.normToData : 
+        newPlot.normToData()
+
+    if not options.silent :
+        newPlot.show(options.outDir)
+        if options.debug or newPlot.name.find('flow')>=0  : 
+            newPlot.showTable(options.outDir)
     newPlot.appendTo(options.outDir+'/plotter.root')
     newPlot.reset()
 
@@ -371,6 +375,8 @@ if __name__ == "__main__":
                            ' [default: %default]')
     parser.add_option('-o', '--outDir', dest='outDir', default='plots',
                       help='Output directory [default: %default]')
+    parser.add_option('-s', '--silent', dest='silent', action="store_true",
+                      help='Silent mode (no plots) [default: %default]')
     parser.add_option("--jobs", default=0,
                       action="store", type="int", dest="jobs",
                       help=("Run N jobs in parallel."

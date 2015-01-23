@@ -109,25 +109,29 @@ UEAnalysis::UEAnalysis(SmartSelectionMonitor &mon)
     hsoft_inc->GetXaxis()->SetBinLabel(ibin,label);
   }
   mon_->addHistogram( new TH1F("softleptonsmll",";Soft dileptons mass [GeV]",20,0,10));
+}
 
-
+//
+void UEAnalysis::attachToDir(TDirectory *outDir)
+{
   //summary ntuple
   TString summaryTupleVarNames("ch:weight:normWeight");
-  summaryTupleVarNames += ":gen_ptttbar:gen_phittbar:rec_ptttbar:rec_phittbar:rec_nsoftjets";
+  summaryTupleVarNames += ":gen_ptttbar:gen_phittbar:rec_ptttbar:rec_phittbar:rec_nsoftjets:gen_nsoftjets";
   summaryTupleVarNames += ":gen_nch_away:rec_nch_away:gen_nch_tow:rec_nch_tow:gen_nch_tran:rec_nch_tran";
   summaryTupleVarNames += ":gen_ptflux_away:rec_ptflux_away:gen_ptflux_tow:rec_ptflux_tow:gen_ptflux_tran:rec_ptflux_tran";
   summaryTupleVarNames += ":gen_avgptflux_away:rec_avgptflux_away:gen_avgptflux_tow:rec_avgptflux_tow:gen_avgptflux_tran:rec_avgptflux_tran";
   summaryTupleVarNames += ":nvtx:njets";
   summaryTupleVarNames += ":leadpt:trailerpt:st:sumpt";
   summaryTuple_ = new TNtuple("ue","ue",summaryTupleVarNames);
-  summaryTuple_->SetDirectory(0);
+  summaryTuple_->SetDirectory(outDir);
+  summaryTuple_->SetAutoSave(500000);
   summaryTupleVars_ = new Float_t[summaryTupleVarNames.Tokenize(":")->GetEntriesFast()];
 }
 
 
 //
-void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
-			 data::PhysicsObjectCollection_t &jets,
+void UEAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
+			 std::vector<data::PhysicsObject_t *> &jets,
 			 LorentzVector &met,
 			 data::PhysicsObjectCollection_t &pf,
 			 data::PhysicsObjectCollection_t &gen,
@@ -138,7 +142,7 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
   float acceptance( 2*TMath::Pi() * maxPFeta );
 
   //check the event category
-  int lid1(leptons[0].get("id")), lid2(leptons[1].get("id"));
+  int lid1(leptons[0]->get("id")), lid2(leptons[1]->get("id"));
   std::vector<TString> ch;
   int chIdx(abs(lid1)*abs(lid2));
   if     (chIdx==11*11 || chIdx==13*13) ch.push_back("ll");
@@ -147,48 +151,52 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
   ch.push_back("");
 
   //ttbar system reconstructed
-  LorentzVector htlep=leptons[0]+leptons[1]+jets[0]+jets[1];
+  LorentzVector htlep=*(leptons[0])+*(leptons[1])+*(jets[0])+*(jets[1]);
   LorentzVector rec_ttbar=htlep+met;
   {
     float val=rec_ttbar.pt();
     if(isnan(val))
       {
-	cout << "l1:" << leptons[0] << endl;
-	cout << "l2:" << leptons[1] << endl;
-	cout << "j1:" << jets[0] << endl;
-	cout << "j2:" << jets[1] << endl;
+	cout << "l1:" << *(leptons[0]) << endl;
+	cout << "l2:" << *(leptons[1]) << endl;
+	cout << "j1:" << *(jets[0]) << endl;
+	cout << "j2:" << *(jets[1]) << endl;
 	cout << "met:" << met << endl;
 	cout << "---->ttbar:" << rec_ttbar << endl;
       }
   }
 
-  float detaBB=fabs(jets[0].eta()-jets[1].eta());
-  float detaLL=fabs(leptons[0].eta()-leptons[1].eta());
+  float detaBB=fabs(jets[0]->eta()-jets[1]->eta());
+  float detaLL=fabs(leptons[0]->eta()-leptons[1]->eta());
 
   //add category depending on the number of extra jets
   float softHt(0);
-  int nExtraJets(0), nExtraJetsInBB(0), nExtraJetsInLL(0);
+  int nGenExtraJets(0), nExtraJets(0), nExtraJetsInBB(0), nExtraJetsInLL(0);
   int nExtraJets10to20(0),nExtraJets20to30(0),nExtraJetsgt30(0);
   data::PhysicsObject_t *softj1=0, *softj2=0;
   for(size_t ijet=2; ijet<jets.size(); ijet++){
 
-    if(fabs(jets[ijet].eta())>2.5 ) continue;
+    //gen-level
+    const data::PhysicsObject_t &genJet=jets[ijet]->getObject("genJet");
+    if(genJet.pt()>20 && fabs(genJet.eta())<2.5) nGenExtraJets++;
 
-    if(jets[ijet].pt()>15 && jets[ijet].pt()<20) nExtraJets10to20++;
-    if(jets[ijet].pt()>=20 && jets[ijet].pt()<30) nExtraJets20to30++;
-    if(jets[ijet].pt()>=30) nExtraJetsgt30++;
+    //reco-level
+    if(fabs(jets[ijet]->eta())>2.5 ) continue;
+    if(jets[ijet]->pt()>15 && jets[ijet]->pt()<20) nExtraJets10to20++;
+    if(jets[ijet]->pt()>=20 && jets[ijet]->pt()<30) nExtraJets20to30++;
+    if(jets[ijet]->pt()>=30) nExtraJetsgt30++;
 
-    if(jets[ijet].pt()<20) continue;
+    if(jets[ijet]->pt()<20) continue;
     nExtraJets++;
-    softHt+=jets[ijet].pt();
-    if(softj1==0)      softj1=&(jets[ijet]);
+    softHt+=jets[ijet]->pt();
+    if(softj1==0)      softj1=jets[ijet];
     else{
-      if(jets[ijet].pt()>softj1->pt())      { softj2=softj1;        softj1=&(jets[ijet]); }
-      else if(softj2==0)                    { softj2=&(jets[ijet]);                       }
-      else if(jets[ijet].pt()>softj2->pt()) { softj2=&(jets[ijet]);                       }
+      if(jets[ijet]->pt()>softj1->pt())      { softj2=softj1;        softj1=jets[ijet]; }
+      else if(softj2==0)                     { softj2=jets[ijet];                       }
+      else if(jets[ijet]->pt()>softj2->pt()) { softj2=jets[ijet];                       }
     }
-    if(jets[ijet].eta() > min(jets[0].eta(),jets[1].eta())       && jets[ijet].eta() < max(jets[0].eta(),jets[1].eta()) ) nExtraJetsInBB++;
-    if(jets[ijet].eta() > min(leptons[0].eta(),leptons[1].eta()) && jets[ijet].eta() < max(leptons[0].eta(),leptons[1].eta()) ) nExtraJetsInLL++;
+    if(jets[ijet]->eta() > min(jets[0]->eta(),jets[1]->eta())       && jets[ijet]->eta() < max(jets[0]->eta(),jets[1]->eta()) ) nExtraJetsInBB++;
+    if(jets[ijet]->eta() > min(leptons[0]->eta(),leptons[1]->eta()) && jets[ijet]->eta() < max(leptons[0]->eta(),leptons[1]->eta()) ) nExtraJetsInLL++;
   }
   if(nExtraJets==0) ch.push_back( ch[0]+"eq0j" );
   if(nExtraJets==1) ch.push_back( ch[0]+"eq1j" );
@@ -240,8 +248,8 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
       bool belongsToTagJet(false);
       for(size_t ijet=0; (ijet<2 && !belongsToTagJet); ijet++)
 	{
-	  size_t pfstart=jets[ijet].get("pfstart");
-	  size_t pfend=jets[ijet].get("pfend");
+	  size_t pfstart=jets[ijet]->get("pfstart");
+	  size_t pfend=jets[ijet]->get("pfend");
 	  for(size_t ipfn=pfstart; ipfn<=pfend; ipfn++)
 	    {
 	      if( fabs(deltaR(gen[igen],pf[ipfn]))>0.1 ) continue;
@@ -284,8 +292,8 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
       bool belongsToTagJet(false);
       for(size_t ijet=0; ijet<2; ijet++)
 	{
-	  size_t pfstart=jets[ijet].get("pfstart");
-	  size_t pfend=jets[ijet].get("pfend");
+	  size_t pfstart=jets[ijet]->get("pfstart");
+	  size_t pfend=jets[ijet]->get("pfend");
 	  if(ipfn>=pfstart && ipfn<=pfend) belongsToTagJet=true;
 	}
       if(belongsToTagJet) continue;
@@ -296,7 +304,7 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
       //remove if matching a selected lepton
       double minDRpfl(9999.);
       for(size_t ilep=0; ilep<2; ilep++)
-	minDRpfl = TMath::Min( minDRpfl, deltaR(pf[ipfn],leptons[ilep]) );
+	minDRpfl = TMath::Min( minDRpfl, deltaR(pf[ipfn],*(leptons[ilep]) ) );
       if(minDRpfl<0.05) continue;
 
       float dz(pf[ipfn].getVal("dz")), sdz(pf[ipfn].getVal("sdz"));
@@ -410,9 +418,9 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
   mon_->fillHisto("nsoftjetsvsdetall", ch,detaLL, nExtraJetsInLL, weight);
 
   for(size_t ijet=2; ijet<jets.size(); ijet++){
-    if(jets[ijet].pt()<15 || fabs(jets[ijet].eta())>2.5 ) continue;
+    if(jets[ijet]->pt()<15 || fabs(jets[ijet]->eta())>2.5 ) continue;
     TString pf(""); pf+= nExtraJets;
-    mon_->fillHisto("softpt"+pf,ch,jets[ijet].pt(),weight);
+    mon_->fillHisto("softpt"+pf,ch,jets[ijet]->pt(),weight);
   }
 
   if(softj1)
@@ -454,29 +462,30 @@ void UEAnalysis::analyze(data::PhysicsObjectCollection_t &leptons,
   summaryTupleVars_[ 5]=rec_ttbar.pt();
   summaryTupleVars_[ 6]=rec_ttbar.phi();
   summaryTupleVars_[ 7]=nExtraJets;
-  summaryTupleVars_[ 8]=genChCount[1];
-  summaryTupleVars_[ 9]=chCount[1];
-  summaryTupleVars_[10]=genChCount[2];
-  summaryTupleVars_[11]=chCount[2];
-  summaryTupleVars_[12]=genChCount[3];
-  summaryTupleVars_[13]=chCount[3];
-  summaryTupleVars_[14]=genChFlux[1];
-  summaryTupleVars_[15]=chFlux[1];
-  summaryTupleVars_[16]=genChFlux[2];
-  summaryTupleVars_[17]=chFlux[2];
-  summaryTupleVars_[18]=genChFlux[3];
-  summaryTupleVars_[19]=chFlux[3];
-  summaryTupleVars_[20]=genChCount[1]>0 ?  genChCount[1]/genChFlux[1] : 0;
-  summaryTupleVars_[21]=chCount[1]>0    ?  chCount[1]/chFlux[1]       : 0;
-  summaryTupleVars_[22]=genChCount[2]>0 ?  genChCount[2]/genChFlux[2] : 0;
-  summaryTupleVars_[23]=chCount[2]>0    ?  chCount[2]/chFlux[2]       : 0;
-  summaryTupleVars_[24]=genChCount[3]>0 ?  genChCount[3]/genChFlux[3] : 0;
-  summaryTupleVars_[25]=chCount[3]>0    ?  chCount[3]/chFlux[3]       : 0;
-  summaryTupleVars_[26]=nvtx;
-  summaryTupleVars_[27]=nExtraJets;
-  summaryTupleVars_[28]=leptons[0].pt();
-  summaryTupleVars_[29]=leptons[1].pt();
-  summaryTupleVars_[30]=leptons[0].pt()+leptons[1].pt();
-  LorentzVector dil=leptons[0]+leptons[1];
-  summaryTupleVars_[31]=dil.pt();
+  summaryTupleVars_[ 8]=nGenExtraJets;
+  summaryTupleVars_[ 9]=genChCount[1];
+  summaryTupleVars_[10]=chCount[1];
+  summaryTupleVars_[11]=genChCount[2];
+  summaryTupleVars_[12]=chCount[2];
+  summaryTupleVars_[13]=genChCount[3];
+  summaryTupleVars_[14]=chCount[3];
+  summaryTupleVars_[15]=genChFlux[1];
+  summaryTupleVars_[16]=chFlux[1];
+  summaryTupleVars_[17]=genChFlux[2];
+  summaryTupleVars_[18]=chFlux[2];
+  summaryTupleVars_[19]=genChFlux[3];
+  summaryTupleVars_[20]=chFlux[3];
+  summaryTupleVars_[21]=genChCount[1]>0 ?  genChCount[1]/genChFlux[1] : 0;
+  summaryTupleVars_[22]=chCount[1]>0    ?  chCount[1]/chFlux[1]       : 0;
+  summaryTupleVars_[23]=genChCount[2]>0 ?  genChCount[2]/genChFlux[2] : 0;
+  summaryTupleVars_[24]=chCount[2]>0    ?  chCount[2]/chFlux[2]       : 0;
+  summaryTupleVars_[25]=genChCount[3]>0 ?  genChCount[3]/genChFlux[3] : 0;
+  summaryTupleVars_[26]=chCount[3]>0    ?  chCount[3]/chFlux[3]       : 0;
+  summaryTupleVars_[27]=nvtx;
+  summaryTupleVars_[28]=nExtraJets;
+  summaryTupleVars_[29]=leptons[0]->pt();
+  summaryTupleVars_[30]=leptons[1]->pt();
+  summaryTupleVars_[31]=leptons[0]->pt()+leptons[1]->pt();
+  LorentzVector dil=*(leptons[0])+*(leptons[1]);
+  summaryTupleVars_[32]=dil.pt();
 }

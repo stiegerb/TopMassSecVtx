@@ -24,16 +24,17 @@ SELECTIONS = [
 	 'Minimum #Delta R comb., #Delta R < 2.0'),
 	('drrank1',    'SVLDeltaR<2.0&&SVLDeltaRRank==1&&CombCat%2!=0',
 	 'Minimum #Delta R comb., only SV in hardest b-jet, #Delta R < 2.0'),
-	('mrank12',   'SVLDeltaR<2.0&&((NCombs<=2&&SVLMassRank==1)||'
-		          '(NCombs==4&&SVLMassRank<3))',
-	 'Two minimum mass comb., #Delta R < 2.0'),
-	('drrank12',  'SVLDeltaR<2.0&&((NCombs<=2&&SVLDeltaRRank==1)||'
-		          '(NCombs==4&&SVLDeltaRRank<3))',
-	 'Two minimum #Delta R comb., #Delta R < 2.0'),
+	# ('mrank12',   'SVLDeltaR<2.0&&((NCombs<=2&&SVLMassRank==1)||'
+	# 	          '(NCombs==4&&SVLMassRank<3))',
+	#  'Two minimum mass comb., #Delta R < 2.0'),
+	# ('drrank12',  'SVLDeltaR<2.0&&((NCombs<=2&&SVLDeltaRRank==1)||'
+	# 	          '(NCombs==4&&SVLDeltaRRank<3))',
+	#  'Two minimum #Delta R comb., #Delta R < 2.0'),
 ]
 
 CONTROLVARS = [
 	('SVLDeltaR' , 0  , 5   , '#Delta R(Sec.Vtx., lepton)'),
+	('SVLxy'     , 0  , 5   , 'SV flight distance (Lxy) [cm]'),
 	('LPt'       , 20 , 100 , 'Lepton pt [GeV]'),
 	('SVPt'      , 0  , 100 , 'Sec.Vtx. pt [GeV]'),
 	('JPt'       , 30 , 200 , 'Jet pt [GeV]'),
@@ -59,7 +60,9 @@ SYSTS = [
 ]
 
 NBINS = 100
+XMIN = 5.
 XMAX = 200.
+FITRANGE = (20., 140.)
 
 NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
 
@@ -73,7 +76,7 @@ def projectFromTree(hist, varname, sel, tree, option=''):
 
 def getSVLHistos(tree, sel,
 	             var="SVLMass",
-	             tag='', xmin=0, xmax=XMAX,
+	             tag='', xmin=XMIN, xmax=XMAX,
 	             titlex=''):
 	h_tot = ROOT.TH1D("%s_tot_%s"%(var,tag), "total"    , NBINS, xmin, xmax)
 	h_cor = ROOT.TH1D("%s_cor_%s"%(var,tag), "correct"  , NBINS, xmin, xmax)
@@ -101,7 +104,7 @@ def getSVLHistos(tree, sel,
 
 def getTopPtHistos(tree, sel,
 	             var="SVLMass",
-	             tag='', xmin=0, xmax=XMAX,
+	             tag='', xmin=XMIN, xmax=XMAX,
 	             titlex=''):
 	h_tpt = ROOT.TH1D("%s_toppt_%s"%(var,tag),
 		              "top pt weighted"    , NBINS, xmin, xmax)
@@ -125,7 +128,7 @@ def getTopPtHistos(tree, sel,
 
 def getNTrkHistos(tree, sel,
 	             var="SVLMass",
-	             tag='', xmin=0, xmax=XMAX,
+	             tag='', xmin=XMIN, xmax=XMAX,
 	             titlex=''):
 	hists = []
 	for ntk1,ntk2 in NTRKBINS:
@@ -152,6 +155,7 @@ def makeControlPlot(hists, tag, seltag, opt):
 	h_tot.Scale(1./h_tot.Integral())
 
 	ctrlplot = RatioPlot('ctrlplot_%s'%tag)
+	ctrlplot.rangex = FITRANGE
 	ctrlplot.add(h_cor, 'Correct')
 	ctrlplot.add(h_wro, 'Wrong')
 	ctrlplot.add(h_unm, 'Unmatched')
@@ -173,6 +177,7 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
 	tg = ROOT.TGraph(len(chi2s)-2)
 	np = 0
 	for mt,chi2 in chi2s:
+		print mt, chi2
 		if mt < 166. or mt > 180.: continue
 		tg.SetPoint(np, mt, chi2)
 		np+=1
@@ -335,6 +340,7 @@ def main(args, opt):
 		makeControlPlot(masshistos[(tag, 172.5)], tag, seltag, opt)
 
 		ratplot = RatioPlot('ratioplot')
+		ratplot.rangex = FITRANGE
 		ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
 		ratplot.ratiorange = (0.5, 1.5)
 		ratplot.reference = masshistos[(tag,172.5)][0]
@@ -385,6 +391,7 @@ def main(args, opt):
 		ratplot.reset()
 
 		topptplot = RatioPlot('topptplot_%s'%tag)
+		topptplot.rangex = FITRANGE
 		topptplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
 		topptplot.add(systhistos[(tag,'ptt_tot')][0], 'top pt weighted')
 		topptplot.add(systhistos[(tag,'ptt_tot')][1], 'top pt weight up')
@@ -395,7 +402,7 @@ def main(args, opt):
 		topptplot.colors = [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6]
 		topptplot.show("toppt_%s"%tag, opt.outDir)
 		topptchi2 = max(topptplot.getChiSquares().values())
-		systematics[(tag,'toppt')] = errorGetters[tag](topptchi2)
+		systematics[(tag,'toppt')] = (errorGetters[tag](topptchi2), topptchi2)
 		topptplot.reset()
 
 		topptplot.add(masshistos[(tag, 172.5)][1], 'Nominal')
@@ -423,6 +430,7 @@ def main(args, opt):
 		topptplot.reset()
 
 		scaleplot = RatioPlot('scaleplot_%s'%tag)
+		scaleplot.rangex = FITRANGE
 		scaleplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
 		scaleplot.add(systhistos[(tag,'scaleup')][0],   'Q^{2} Scale up')
 		scaleplot.add(systhistos[(tag,'scaledown')][0], 'Q^{2} Scale down')
@@ -433,10 +441,11 @@ def main(args, opt):
 		scaleplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
 		scaleplot.show("scale_%s"%tag, opt.outDir)
 		scalechi2 = max(scaleplot.getChiSquares().values())
-		systematics[(tag,'scale')] = errorGetters[tag](scalechi2)
+		systematics[(tag,'scale')] = (errorGetters[tag](scalechi2), scalechi2)
 		scaleplot.reset()
 
 		matchplot = RatioPlot('matchplot_%s'%tag)
+		matchplot.rangex = FITRANGE
 		matchplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
 		matchplot.add(systhistos[(tag,'matchingup')][0],
 			                      'Matching up')
@@ -449,7 +458,7 @@ def main(args, opt):
 		matchplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
 		matchplot.show("matching_%s"%tag, opt.outDir)
 		matchchi2 = max(matchplot.getChiSquares().values())
-		systematics[(tag,'matching')] = errorGetters[tag](matchchi2)
+		systematics[(tag,'matching')] = (errorGetters[tag](matchchi2), matchchi2)
 		matchplot.reset()
 
 		matchplot.reference = masshistos[(tag, 172.5)][1]
@@ -481,6 +490,7 @@ def main(args, opt):
 		matchplot.reset()
 
 		uecrplot = RatioPlot('uecrplot_%s'%tag)
+		uecrplot.rangex = FITRANGE
 		uecrplot.add(masshistos[(tag, 172.5)][0], 'Nominal (Z2*)')
 		uecrplot.add(systhistos[(tag,'p11')][0],
 			                      'P11 Nominal')
@@ -503,11 +513,12 @@ def main(args, opt):
 			            uecrchi2s['P11 Tevatron tune'],
 			            uecrchi2s['P11 MPI High'],
 			            uecrchi2s['P11 No CR']])
-		systematics[(tag,'uecr')] = errorGetters[tag](uecrchi2)
+		systematics[(tag,'uecr')] = (errorGetters[tag](uecrchi2), uecrchi2)
 		uecrplot.reset()
 
 
 		ntkplot = RatioPlot('ntkplot_%s'%tag)
+		ntkplot.rangex = FITRANGE
 		ntkplot.add(masshistos[(tag, 172.5)][0], 'Sum')
 		for hist in ntkhistos[tag]:
 			ntkplot.add(hist, hist.GetTitle())
@@ -525,7 +536,8 @@ def main(args, opt):
 	for tag,_,_ in SELECTIONS:
 		print tag
 		for syst in ['scale', 'toppt', 'matching', 'uecr']:
-			print '  %10s: %4.1f GeV' % (syst, systematics[(tag,syst)])
+			err, chi2 = systematics[(tag,syst)]
+			print '  %10s: %4.1f GeV %f' % (syst, err, chi2)
 
 
 	print 80*'-'

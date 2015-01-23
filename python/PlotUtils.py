@@ -45,6 +45,7 @@ class RatioPlot(object):
         self.garbageList = []
         self.tag = None
         self.subtag = None
+        self.rangex = None
         self.colors = [
             ROOT.kViolet-7,
             ROOT.kViolet-6,
@@ -75,6 +76,8 @@ class RatioPlot(object):
         if hist.GetEntries() == 0:
             print "Skipping empty histogram", hist.GetName()
             return
+        if self.rangex is not None:
+            hist.GetXaxis().SetRangeUser(self.rangex[0], self.rangex[1])
         self.histos.append(hist)
         self.legentries.append(tag)
 
@@ -84,8 +87,10 @@ class RatioPlot(object):
         else:
             reference = self.histos[0]
         chisquares = {}
+
         for legentry,hist in zip(self.legentries, self.histos):
-            chisquares[legentry] = hist.Chi2Test(reference,"CHI2")
+            chisquares[legentry] = hist.Chi2Test(reference,"WW CHI2/NDF")
+
         return chisquares
 
     def show(self, outname, outdir):
@@ -96,7 +101,12 @@ class RatioPlot(object):
 
         if self.normalized:
             for hist in self.histos:
-                hist.Scale(1./hist.Integral())
+                if self.rangex is not None:
+                    bin1 = hist.GetXaxis().FindBin(self.rangex[0])
+                    bin2 = hist.GetXaxis().FindBin(self.rangex[1])
+                    hist.Scale(1./hist.Integral(bin1, bin2))
+                else:
+                    hist.Scale(1./hist.Integral())
 
         setMaximums(self.histos, setminimum=0)
 

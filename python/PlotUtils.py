@@ -45,17 +45,27 @@ class RatioPlot(object):
         self.garbageList = []
         self.tag = None
         self.subtag = None
-        self.rangex = None
-        self.colors = [
-            ROOT.kViolet-7,
+        self.plotformats = ['.pdf', '.png']
+        self.colors = [ ## rainbow ('gay flag')
             ROOT.kViolet-6,
-            ROOT.kViolet+4,
-            ROOT.kViolet+9,
-            ROOT.kBlue,
-            ROOT.kBlue-7,
-            ROOT.kAzure+1,
-            ROOT.kAzure+8,
+            ROOT.kBlue+2,
+            ROOT.kAzure-2,
+            ROOT.kGreen+3,
+            ROOT.kGreen-3,
+            ROOT.kSpring-9,
+            ROOT.kOrange+8,
+            ROOT.kRed+1,
         ]
+        # self.colors = [ ## shades of blue
+        #     ROOT.kViolet-7,
+        #     ROOT.kViolet-6,
+        #     ROOT.kViolet+4,
+        #     ROOT.kViolet+9,
+        #     ROOT.kBlue,
+        #     ROOT.kBlue-7,
+        #     ROOT.kAzure+1,
+        #     ROOT.kAzure+8,
+        # ]
         self.ratiorange = None
 
     def reset(self):
@@ -76,19 +86,31 @@ class RatioPlot(object):
         if hist.GetEntries() == 0:
             print "Skipping empty histogram", hist.GetName()
             return
-        if self.rangex is not None:
-            hist.GetXaxis().SetRangeUser(self.rangex[0], self.rangex[1])
         self.histos.append(hist)
         self.legentries.append(tag)
 
-    def getChiSquares(self):
+    def getChiSquares(self, rangex=None):
         if self.reference is not None:
             reference = self.reference
         else:
             reference = self.histos[0]
         chisquares = {}
 
-        for legentry,hist in zip(self.legentries, self.histos):
+        # make copies of the histograms
+        histocopies = []
+        for hist in self.histos:
+            histocopies.append(hist.Clone("%s_copy" % hist.GetName()))
+
+        for hist in histocopies:
+            if rangex is not None:
+                hist.GetXaxis().SetRangeUser(rangex[0], rangex[1])
+                bin1 = hist.GetXaxis().FindBin(rangex[0])
+                bin2 = hist.GetXaxis().FindBin(rangex[1])
+                hist.Scale(1./hist.Integral(bin1, bin2))
+            else:
+                hist.Scale(1./hist.Integral())
+
+        for legentry,hist in zip(self.legentries, histocopies):
             chisquares[legentry] = hist.Chi2Test(reference,"WW CHI2/NDF")
 
         return chisquares
@@ -101,12 +123,7 @@ class RatioPlot(object):
 
         if self.normalized:
             for hist in self.histos:
-                if self.rangex is not None:
-                    bin1 = hist.GetXaxis().FindBin(self.rangex[0])
-                    bin2 = hist.GetXaxis().FindBin(self.rangex[1])
-                    hist.Scale(1./hist.Integral(bin1, bin2))
-                else:
-                    hist.Scale(1./hist.Integral())
+                hist.Scale(1./hist.Integral())
 
         setMaximums(self.histos, setminimum=0)
 
@@ -148,10 +165,12 @@ class RatioPlot(object):
 
         mainframe.GetYaxis().SetTitle('a.u.')
         mainframe.GetYaxis().SetLabelSize(22)
-        mainframe.GetXaxis().SetLabelSize(22)
         mainframe.GetYaxis().SetTitleSize(26)
-        mainframe.GetXaxis().SetTitleSize(26)
         mainframe.GetYaxis().SetTitleOffset(1.2)
+
+        mainframe.GetXaxis().SetTitle('')
+        mainframe.GetXaxis().SetLabelSize(0)
+        mainframe.GetXaxis().SetTitleSize(0)
         mainframe.GetXaxis().SetTitleOffset(1.5)
         mainframe.Draw()
 
@@ -190,6 +209,9 @@ class RatioPlot(object):
             ratioframe.GetYaxis().SetTitle('Ratio')
         else:
             ratioframe.GetYaxis().SetTitle(self.ratiotitle)
+        ratioframe.GetXaxis().SetTitle(self.histos[0].GetXaxis().GetTitle())
+        ratioframe.GetXaxis().SetLabelSize(22)
+        ratioframe.GetXaxis().SetTitleSize(26)
         ratioframe.GetYaxis().SetNdivisions(5)
         ratioframe.GetYaxis().SetTitleOffset(1.2)
         ratioframe.GetXaxis().SetTitleOffset(3.0)
@@ -216,7 +238,8 @@ class RatioPlot(object):
         tc.cd()
         tc.Modified()
         tc.Update()
-        tc.SaveAs(os.path.join(outdir,"%s.pdf"%outname))
+        for ext in self.plotformats:
+            tc.SaveAs(os.path.join(outdir,"%s%s"%(outname,ext)))
         tc.Close()
 
 

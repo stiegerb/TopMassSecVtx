@@ -174,23 +174,18 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
 	that gives the width of the fit at a given chi2 value
 	"""
 	tg = ROOT.TGraph(len(chi2s)-2)
-	np = 0
-	for mt,chi2 in chi2s:
-		if mt < 166. or mt > 180.: continue
-		tg.SetPoint(np, mt, chi2)
-		np+=1
-	tf = ROOT.TF1("fitf", "pol2", 160., 190.)
-	tg.Fit(tf, "WN0")
-
+	points_to_remove = []
+	for n,(mt,chi2) in enumerate(chi2s):
+		if mt < 166. or mt > 180.:
+			points_to_remove.append(n)
+		# print n, mt, chi2
+		tg.SetPoint(n, mt, chi2)
 	tcanv = ROOT.TCanvas("chi2fit", "chi2fit", 400, 400)
 	tcanv.cd()
 	tg.SetMarkerStyle(20)
 	tg.GetXaxis().SetTitle("m_{t, gen.} [GeV]")
 	tg.GetYaxis().SetTitle("#chi^{2}")
 	tg.Draw("AP")
-	# tf.SetLineColor(ROOT.kBlue)
-	# tf.SetLineWidth(3)
-	# tf.Draw("same")
 	if len(tag)>0:
 	    tlat = ROOT.TLatex()
 	    tlat.SetTextFont(43)
@@ -199,6 +194,14 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
         tlat.SetTextSize(10)
         tlat.DrawLatex(0.85, 0.78, tag)
 	tcanv.SaveAs(oname)
+
+	for n in reversed(points_to_remove):
+		tg.RemovePoint(n)
+	tf = ROOT.TF1("fitf", "pol2", 160., 190.)
+	tg.Fit(tf, "WN0")
+	# tf.SetLineColor(ROOT.kBlue)
+	# tf.SetLineWidth(3)
+	# tf.Draw("same")
 
 	def getError(chi2test):
 		coeff = [tf.GetParameter(2),

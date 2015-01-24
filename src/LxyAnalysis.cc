@@ -64,6 +64,7 @@ void LxyAnalysis::resetBeautyEvent()
 		bev_.tmass[i] = -999.99;
 
 		bev_.bid[i] = 0;
+		for(size_t j=0; j<3; j++) bev_.bwgt[i][j] = 1.0;
 		bev_.bpt[i]  = -999.99;
 		bev_.beta[i] = -999.99;
 		bev_.bphi[i] = -999.99;
@@ -152,6 +153,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("svlxy",        bev_.svlxy,        "svlxy[nj]/F");
   outT_->Branch("svlxyerr",     bev_.svlxyerr,     "svlxyerr[nj]/F");
   outT_->Branch("bid",          bev_.bid,          "bid[nj]/I");
+  outT_->Branch("bwgt",         bev_.bwgt,         "bwgt[nj][3]/F");
   outT_->Branch("bpt",          bev_.bpt,          "bpt[nj]/F");
   outT_->Branch("beta",         bev_.beta,         "beta[nj]/F");
   outT_->Branch("bphi",         bev_.bphi,         "bphi[nj]/F");

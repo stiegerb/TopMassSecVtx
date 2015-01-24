@@ -9,6 +9,7 @@
 #include "UserCode/TopMassSecVtx/interface/LxyAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/UEAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/TopPtWeighter.h"
+#include "UserCode/TopMassSecVtx/interface/BfragWeighter.h"
 #include "UserCode/TopMassSecVtx/interface/LeptonEfficiencySF.h"
 #include "UserCode/TopMassSecVtx/interface/MuScleFitCorrector.h"
 
@@ -46,6 +47,7 @@
 
 //correctors
 TopPtWeighter *fTopPtWgt=0;
+BfragWeighter *fBfragWgt=0;
 LeptonEfficiencySF fLepEff;
 FactorizedJetCorrector *fJesCor=0;
 std::vector<JetCorrectionUncertainty *> fTotalJESUnc;
@@ -293,6 +295,9 @@ int main(int argc, char* argv[])
       TString shapesDir("");
       shapesDir=weightsFile[0].c_str();
       fTopPtWgt = new TopPtWeighter( proctag, out, shapesDir, evSummary.getTree() );
+
+      TString burl(weightsFile[0].c_str()); burl += "/BfragWeights.root"; 
+      fBfragWgt = new BfragWeighter( burl );
     }
   }
 
@@ -568,7 +573,6 @@ int main(int argc, char* argv[])
 		
       //save selected event
       if(!saveSummaryTree || !passPreSelection) continue;
-
       lxyAn.resetBeautyEvent();
       BeautyEvent_t &bev=lxyAn.getBeautyEvent();
       int evCatSummary(box.cat);
@@ -585,10 +589,27 @@ int main(int argc, char* argv[])
       bev.w[1]=puWeight;           bev.w[2]=puWeightUp;           bev.w[3]=puWeightDown;
       bev.w[4]=lepSelectionWeight; bev.w[5]=lepSelectionWeightUp; bev.w[6]=lepSelectionWeightDown;
       bev.w[7]=topPtWgt;           bev.w[8]=topPtWgtUp;           bev.w[9]=topPtWgtDown;
-      bev.qscale=ev.qscale;        bev.x1=ev.x1; bev.x2=ev.x2; bev.id1=ev.id1; bev.id2=ev.id2;
-      
+
+      //fill lxy tree
       data::PhysicsObjectCollection_t pf = evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
       lxyAn.analyze( box.leptons, box.jets, met, pf, gen);
+
+      //add fragmentation weights using matched b's and B hadrons
+      if(fBfragWgt){
+	for(Int_t ij=0; ij<bev.nj; ij++)
+	  {
+	    if(abs(bev.bid[ij])!=5 || bev.bpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
+	    std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.bpt[ij] );
+	    bev.bwgt[ij][0]=bfragWeights[0]; 
+	    bev.bwgt[ij][1]=bfragWeights[1];
+	    bev.bwgt[ij][2]=bfragWeights[2];
+	  }
+      }
+      
+      //generated proc info
+      bev.qscale=ev.qscale;       bev.x1=ev.x1; bev.x2=ev.x2;     bev.id1=ev.id1; bev.id2=ev.id2;
+      
+      //update
       spyDir->cd();
       lxyAn.save();
 

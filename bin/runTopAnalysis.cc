@@ -64,82 +64,87 @@ using namespace std;
 
 //aggregates all the objects needed for the analysis
 //cat identifies the category: 11-electron 13-muon 11*11,11*13,13*13-dilepton events
-class AnalysisBox{
+class AnalysisBox {
 public:
-  AnalysisBox() : cat(0), chCat(""), lCat(""), jetCat(""), metCat(""), metsig(0) { }
-  ~AnalysisBox() { }
-  Int_t cat;
-  TString chCat, lCat, jetCat, metCat;
-  std::vector<data::PhysicsObject_t *> leptons,jets;
-  LorentzVector met;
-  float metsig;
+    AnalysisBox() : cat(0), chCat(""), lCat(""), jetCat(""), metCat(""), metsig(0) { }
+    ~AnalysisBox() { }
+    Int_t cat;
+    TString chCat, lCat, jetCat, metCat;
+    std::vector<data::PhysicsObject_t *> leptons,jets;
+    LorentzVector met;
+    float metsig;
 };
 
 //
-AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons, 
-		      data::PhysicsObjectCollection_t &jets, 
-		      LorentzVector &met, 
-		      bool hasDileptonTrigger, 
-		      bool hasLJetsTrigger)
+AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons,
+                      data::PhysicsObjectCollection_t &jets,
+                      LorentzVector &met,
+                      bool hasDileptonTrigger,
+                      bool hasLJetsTrigger)
 {
-  AnalysisBox box;
-  box.cat=0;
-  for(size_t i=0; i<jets.size(); i++) { box.jets.push_back( &(jets[i]) ); }
-  box.met=met;
-
-  std::vector<int> dilCands, ljCands, vetoCands;
-  for(size_t i=0; i<leptons.size(); i++){
-    if(leptons[i].getFlag("passLL"))     dilCands.push_back(i);
-    if(leptons[i].getFlag("passLJ"))     ljCands.push_back(i);
-    else {
-      if(leptons[i].getFlag("passLJveto")) vetoCands.push_back(i);
+    AnalysisBox box;
+    box.cat=0;
+    for(size_t i=0; i<jets.size(); i++) {
+        box.jets.push_back( &(jets[i]) );
     }
-  }
+    box.met=met;
+
+    std::vector<int> dilCands, ljCands, vetoCands;
+    for(size_t i=0; i<leptons.size(); i++) {
+        if(leptons[i].getFlag("passLL"))     dilCands.push_back(i);
+        if(leptons[i].getFlag("passLJ"))     ljCands.push_back(i);
+        else {
+            if(leptons[i].getFlag("passLJveto")) vetoCands.push_back(i);
+        }
+    }
 
 
-  //
-  // ASSIGN THE BOX
-  // 1. >=2 tight leptons: OS, pt>20,20 GeV -> ll, Mll>20, |Mll-MZ|>15
-  // 2. =1 tight lepton: pt(e)>30  or pt(mu)>26 GeV and =0 vetoLeptons
-  //
-  box.lCat="";
-  if(dilCands.size()>=2 && hasDileptonTrigger)
+    //
+    // ASSIGN THE BOX
+    // 1. >=2 tight leptons: OS, pt>20,20 GeV -> ll, Mll>20, |Mll-MZ|>15
+    // 2. =1 tight lepton: pt(e)>30  or pt(mu)>26 GeV and =0 vetoLeptons
+    //
+    box.lCat="";
+    if(dilCands.size()>=2 && hasDileptonTrigger)
     {
-      for(size_t i=0; i<dilCands.size(); i++) { box.leptons.push_back( &(leptons[ dilCands[i] ]) ); }
+        for(size_t i=0; i<dilCands.size(); i++) {
+            box.leptons.push_back( &(leptons[ dilCands[i] ]) );
+        }
 
-      int dilId(box.leptons[0]->get("id")*box.leptons[1]->get("id"));
-      LorentzVector dilepton( *(box.leptons[0]) );
-      dilepton += *(box.leptons[1]);
-      if(dilepton.mass()>20 && dilId<0)
-	{
-	  if(abs(dilId)==11*11 || abs(dilId)==13*13 || abs(dilId)==11*13 )              box.cat=dilId;
-	  if( (abs(dilId)==11*11 || abs(dilId)==13*13) && fabs(dilepton.mass()-91)<15)  box.lCat="z";
-	}
+        int dilId(box.leptons[0]->get("id")*box.leptons[1]->get("id"));
+        LorentzVector dilepton( *(box.leptons[0]) );
+        dilepton += *(box.leptons[1]);
+        if(dilepton.mass()>20 && dilId<0)
+        {
+            if(abs(dilId)==11*11 || abs(dilId)==13*13 || abs(dilId)==11*13 )              box.cat=dilId;
+            if( (abs(dilId)==11*11 || abs(dilId)==13*13) && fabs(dilepton.mass()-91)<15)  box.lCat="z";
+        }
     }
-  else if(ljCands.size()==1 && vetoCands.size()==0 && hasLJetsTrigger)
+    else if(ljCands.size()==1 && vetoCands.size()==0 && hasLJetsTrigger)
     {
-      box.leptons.push_back( &(leptons[ ljCands[0] ]) );
-      box.cat=box.leptons[0]->get("id");
+        box.leptons.push_back( &(leptons[ ljCands[0] ]) );
+        box.cat=box.leptons[0]->get("id");
     }
 
-  int njetsBin( box.jets.size()>6 ? 6  : box.jets.size() );
-  box.jetCat="jet"; box.jetCat += njetsBin;
-  float ht(0);
-  for(size_t i=0; i<box.jets.size(); i++) ht += box.jets[i]->pt();
-  box.metsig=(ht>0 ? box.met.pt()/sqrt(ht) : 9999. );
-  
-  box.metCat="";
-  if( (abs(box.cat)==11*11 || abs(box.cat)==13*13) && met.pt()<40 ) box.metCat="lowmet";
+    int njetsBin( box.jets.size()>6 ? 6  : box.jets.size() );
+    box.jetCat="jet";
+    box.jetCat += njetsBin;
+    float ht(0);
+    for(size_t i=0; i<box.jets.size(); i++) ht += box.jets[i]->pt();
+    box.metsig=(ht>0 ? box.met.pt()/sqrt(ht) : 9999. );
 
-  box.chCat="";
-  if(abs(box.cat)==11)    box.chCat="e";
-  if(abs(box.cat)==13)    box.chCat="mu";
-  if(abs(box.cat)==11*11) box.chCat="ee";
-  if(abs(box.cat)==11*13) box.chCat="emu";
-  if(abs(box.cat)==13*13) box.chCat="mumu";
+    box.metCat="";
+    if( (abs(box.cat)==11*11 || abs(box.cat)==13*13) && met.pt()<40 ) box.metCat="lowmet";
 
-  //all done here
-  return box;
+    box.chCat="";
+    if(abs(box.cat)==11)    box.chCat="e";
+    if(abs(box.cat)==13)    box.chCat="mu";
+    if(abs(box.cat)==11*11) box.chCat="ee";
+    if(abs(box.cat)==11*13) box.chCat="emu";
+    if(abs(box.cat)==13*13) box.chCat="mumu";
+
+    //all done here
+    return box;
 }
 
 
@@ -149,113 +154,122 @@ AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons,
 //
 int main(int argc, char* argv[])
 {
-  // load framework libraries
-  gSystem->Load( "libFWCoreFWLite" );
-  AutoLibraryLoader::enable();
+    // load framework libraries
+    gSystem->Load( "libFWCoreFWLite" );
+    AutoLibraryLoader::enable();
 
-  //check arguments
-  if ( argc < 2 ) {
-    std::cout << "Usage : " << argv[0] << " parameters_cfg.py" << std::endl;
-    return 0;
-  }
-
-  //
-  // configure
-  //
-  const edm::ParameterSet &runProcess = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("runProcess");
-  std::vector<std::string> urls=runProcess.getParameter<std::vector<std::string> >("input");
-  TString url = TString(urls[0]);
-  TString baseDir     = runProcess.getParameter<std::string>("dirName");
-  TString jecDir      = runProcess.getParameter<std::string>("jecDir");
-  bool isMC           = runProcess.getParameter<bool>("isMC");
-  double xsec         = runProcess.getParameter<double>("xsec");
-  bool isV0JetsMC(isMC && (url.Contains("DYJetsToLL_50toInf") || url.Contains("TeV_WJets")));
-  bool isTTbarMC(isMC && (url.Contains("TTJets") || url.Contains("_TT_") || url.Contains("TT2l_R")));
-  TString out          = runProcess.getParameter<std::string>("outdir");
-  bool saveSummaryTree = runProcess.getParameter<bool>("saveSummaryTree");
-  std::vector<string>  weightsFile = runProcess.getParameter<std::vector<string> >("weightsFile");
-  int maxEvents = runProcess.getParameter<int>("maxEvents");
-
-  //jet energy scale uncertainties
-  gSystem->ExpandPathName(jecDir);
-  fJesCor = utils::cmssw::getJetCorrector(jecDir,isMC);
-  TString srcnames[]={
-    "Total",
-    "AbsoluteMPFBias", //in-situ correlation group
-    "RelativeFSR",     //JEC inter-calibration
-    "PileUpDataMC", "PileUpPtBB", "PileUpPtEC", "PileUpPtHF",      //Pileup
-    "AbsoluteStat", "AbsoluteScale","HighPtExtra", "SinglePionECAL", "SinglePionHCAL", "RelativeJEREC1", "RelativeJEREC2", "RelativeJERHF", "RelativePtBB", "RelativePtEC1",  "RelativePtEC2", "RelativePtHF", "RelativeStatEC2", "RelativeStatHF", //JEC uncorrelated
-    "FlavorPureGluon", "FlavorPureQuark", "FlavorPureCharm", "FlavorPureBottom" //flavor JES
-  };
-  const int nsrc = sizeof(srcnames)/sizeof(TString);
-  for (int isrc = 0; isrc < nsrc; isrc++) {
-    JetCorrectorParameters *p = new JetCorrectorParameters((jecDir+"/DATA_UncertaintySources_AK5PFchs.txt").Data(), srcnames[isrc].Data());
-    fTotalJESUnc.push_back( new JetCorrectionUncertainty(*p) );
-  }
-
-  //muon energy corrector
-  fMuCor = getMuonCorrector(jecDir,url);
-
-  //
-  // check input file
-  //
-  TFile *inF = TFile::Open(url);
-  if(inF==0) return -1;
-  if(inF->IsZombie()) return -1;
-  TString proctag=gSystem->BaseName(url);
-  Ssiz_t pos=proctag.Index(".root");
-  proctag.Remove(pos,proctag.Length());
-  bool isDoubleElePD(!isMC && url.Contains("DoubleEle"));
-  bool isDoubleMuPD (!isMC && url.Contains("DoubleMu"));
-  bool isMuEGPD     (!isMC && url.Contains("MuEG"));
-  bool isSingleElePD(!isMC && url.Contains("SingleEle"));
-  bool isSingleMuPD (!isMC && url.Contains("SingleMu"));
-
-  //
-  // pileup reweighter
-  //
-  if(isMC)
-    {
-      std::vector<double> dataPileupDistributionDouble = runProcess.getParameter< std::vector<double> >("datapileup");
-      std::vector<float> dataPileupDistribution; for(unsigned int i=0;i<dataPileupDistributionDouble.size();i++){dataPileupDistribution.push_back(dataPileupDistributionDouble[i]);}
-      std::vector<float> mcPileupDistribution;
-      if(isMC){
-	TString puDist(baseDir+"/pileup");
-	TH1F* histo = (TH1F *) inF->Get(puDist);
-	if(!histo)std::cout<<"pileup histogram is null!!!\n";
-	for(int i=1;i<=histo->GetNbinsX();i++){mcPileupDistribution.push_back(histo->GetBinContent(i));}
-	delete histo;
-      }
-      while(mcPileupDistribution.size()<dataPileupDistribution.size()) mcPileupDistribution.push_back(0.0);
-      while(mcPileupDistribution.size()>dataPileupDistribution.size()) dataPileupDistribution.push_back(0.0);
-
-      gROOT->cd();  //THIS LINE IS NEEDED TO MAKE SURE THAT HISTOGRAM INTERNALLY PRODUCED IN LumiReWeighting ARE NOT DESTROYED WHEN CLOSING THE FILE
-      fLumiWeights = new edm::LumiReWeighting(mcPileupDistribution,dataPileupDistribution);
-      fPUshifters=utils::cmssw::getPUshifters(dataPileupDistribution,0.05);
+    //check arguments
+    if ( argc < 2 ) {
+        std::cout << "Usage : " << argv[0] << " parameters_cfg.py" << std::endl;
+        return 0;
     }
 
-  //
-  // control histograms
-  //
-  gROOT->cd(); //do not, i repeat, do not remove me ;)
-  SmartSelectionMonitor controlHistos;
-  TH1F* Hhepup        = (TH1F* )controlHistos.addHistogram(new TH1F ("heupnup"    , "hepupnup"    ,20,0,20) ) ;
-  controlHistos.addHistogram( new TH1F ("nvertices", "; Vertex multiplicity; Events", 50, 0.,50.) );
-  TString labels[]={"Lepton(s)", "=1 jets","=2 jets","=3 jets","#geq4 jets","Jet selection", "E_{T}^{miss}", "#geq1 SecVtx"};
-  int nsteps=sizeof(labels)/sizeof(TString);
-  TH1F *baseEvtFlowH = (TH1F *)controlHistos.addHistogram( new TH1F("evtflow",";Selection step;Events",nsteps,0,nsteps) );
-  for(int i=0; i<nsteps; i++) baseEvtFlowH->GetXaxis()->SetBinLabel(i+1,labels[i]);
-  controlHistos.addHistogram( new TH1F("thetall", ";#theta(l,l') [rad];Events",50,0,3.2) );
-  TH1F *baseJetMult=(TH1F *)controlHistos.addHistogram( new TH1F("njets",   ";Jet multiplicity; Events",6,0,6) );
-  TH1F *baseSecVtxMult=(TH1F *)controlHistos.addHistogram( new TH1F("nsvtx",   ";SecVtx multiplicity; Events",4,0,4) );
-  for(int i=0; i<6; i++) 
-    {
-      TString label("= "); label += i; label += " jet"; if(i!=1) label += "s";
-      baseJetMult->GetXaxis()->SetBinLabel(i+1,label);
-      if(i>=4) continue;
-      label.ReplaceAll("jet","SecVtx");
-      baseSecVtxMult->GetXaxis()->SetBinLabel(i+1,label);
+    //
+    // configure
+    //
+    const edm::ParameterSet &runProcess = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("runProcess");
+    std::vector<std::string> urls=runProcess.getParameter<std::vector<std::string> >("input");
+    TString url = TString(urls[0]);
+    TString baseDir     = runProcess.getParameter<std::string>("dirName");
+    TString jecDir      = runProcess.getParameter<std::string>("jecDir");
+    bool isMC           = runProcess.getParameter<bool>("isMC");
+    double xsec         = runProcess.getParameter<double>("xsec");
+    bool isV0JetsMC(isMC && (url.Contains("DYJetsToLL_50toInf") || url.Contains("TeV_WJets")));
+    bool isTTbarMC(isMC && (url.Contains("TTJets") || url.Contains("_TT_") || url.Contains("TT2l_R")));
+    TString out          = runProcess.getParameter<std::string>("outdir");
+    bool saveSummaryTree = runProcess.getParameter<bool>("saveSummaryTree");
+    std::vector<string>  weightsFile = runProcess.getParameter<std::vector<string> >("weightsFile");
+    int maxEvents = runProcess.getParameter<int>("maxEvents");
+
+    //jet energy scale uncertainties
+    gSystem->ExpandPathName(jecDir);
+    fJesCor = utils::cmssw::getJetCorrector(jecDir,isMC);
+    TString srcnames[]= {
+        "Total",
+        "AbsoluteMPFBias", //in-situ correlation group
+        "RelativeFSR",     //JEC inter-calibration
+        "PileUpDataMC", "PileUpPtBB", "PileUpPtEC", "PileUpPtHF",      //Pileup
+        "AbsoluteStat", "AbsoluteScale","HighPtExtra", "SinglePionECAL", "SinglePionHCAL", "RelativeJEREC1", "RelativeJEREC2", "RelativeJERHF", "RelativePtBB", "RelativePtEC1",  "RelativePtEC2", "RelativePtHF", "RelativeStatEC2", "RelativeStatHF", //JEC uncorrelated
+        "FlavorPureGluon", "FlavorPureQuark", "FlavorPureCharm", "FlavorPureBottom" //flavor JES
+    };
+    const int nsrc = sizeof(srcnames)/sizeof(TString);
+    for (int isrc = 0; isrc < nsrc; isrc++) {
+        JetCorrectorParameters *p = new JetCorrectorParameters((jecDir+"/DATA_UncertaintySources_AK5PFchs.txt").Data(), srcnames[isrc].Data());
+        fTotalJESUnc.push_back( new JetCorrectionUncertainty(*p) );
     }
+
+    //muon energy corrector
+    fMuCor = getMuonCorrector(jecDir,url);
+
+    //
+    // check input file
+    //
+    TFile *inF = TFile::Open(url);
+    if(inF==0) return -1;
+    if(inF->IsZombie()) return -1;
+    TString proctag=gSystem->BaseName(url);
+    Ssiz_t pos=proctag.Index(".root");
+    proctag.Remove(pos,proctag.Length());
+    bool isDoubleElePD(!isMC && url.Contains("DoubleEle"));
+    bool isDoubleMuPD (!isMC && url.Contains("DoubleMu"));
+    bool isMuEGPD     (!isMC && url.Contains("MuEG"));
+    bool isSingleElePD(!isMC && url.Contains("SingleEle"));
+    bool isSingleMuPD (!isMC && url.Contains("SingleMu"));
+
+    //
+    // pileup reweighter
+    //
+    if(isMC)
+    {
+        std::vector<double> dataPileupDistributionDouble = runProcess.getParameter< std::vector<double> >("datapileup");
+        std::vector<float> dataPileupDistribution;
+        for(unsigned int i=0; i<dataPileupDistributionDouble.size(); i++) {
+            dataPileupDistribution.push_back(dataPileupDistributionDouble[i]);
+        }
+        std::vector<float> mcPileupDistribution;
+        if(isMC) {
+            TString puDist(baseDir+"/pileup");
+            TH1F* histo = (TH1F *) inF->Get(puDist);
+            if(!histo)std::cout<<"pileup histogram is null!!!\n";
+            for(int i=1; i<=histo->GetNbinsX(); i++) {
+                mcPileupDistribution.push_back(histo->GetBinContent(i));
+            }
+            delete histo;
+        }
+        while(mcPileupDistribution.size()<dataPileupDistribution.size()) mcPileupDistribution.push_back(0.0);
+        while(mcPileupDistribution.size()>dataPileupDistribution.size()) dataPileupDistribution.push_back(0.0);
+
+        gROOT->cd();  //THIS LINE IS NEEDED TO MAKE SURE THAT HISTOGRAM INTERNALLY PRODUCED IN LumiReWeighting ARE NOT DESTROYED WHEN CLOSING THE FILE
+        fLumiWeights = new edm::LumiReWeighting(mcPileupDistribution,dataPileupDistribution);
+        fPUshifters=utils::cmssw::getPUshifters(dataPileupDistribution,0.05);
+    }
+
+    //
+    // control histograms
+    //
+    gROOT->cd(); //do not, i repeat, do not remove me ;)
+    SmartSelectionMonitor controlHistos;
+    TH1F* Hhepup        = (TH1F* )controlHistos.addHistogram(new TH1F ("heupnup"    , "hepupnup"    ,20,0,20) ) ;
+    controlHistos.addHistogram( new TH1F ("nvertices", "; Vertex multiplicity; Events", 50, 0.,50.) );
+    TString labels[]= {"Lepton(s)", "=1 jets","=2 jets","=3 jets","#geq4 jets","Jet selection", "E_{T}^{miss}", "#geq1 SecVtx"};
+    int nsteps=sizeof(labels)/sizeof(TString);
+    TH1F *baseEvtFlowH = (TH1F *)controlHistos.addHistogram( new TH1F("evtflow",";Selection step;Events",nsteps,0,nsteps) );
+    for(int i=0; i<nsteps; i++) baseEvtFlowH->GetXaxis()->SetBinLabel(i+1,labels[i]);
+    controlHistos.addHistogram( new TH1F("thetall", ";#theta(l,l') [rad];Events",50,0,3.2) );
+    TH1F *baseJetMult=(TH1F *)controlHistos.addHistogram( new TH1F("njets",   ";Jet multiplicity; Events",6,0,6) );
+    TH1F *baseSecVtxMult=(TH1F *)controlHistos.addHistogram( new TH1F("nsvtx",   ";SecVtx multiplicity; Events",4,0,4) );
+    for(int i=0; i<6; i++)
+    {
+        TString label("= ");
+        label += i;
+        label += " jet";
+        if(i!=1) label += "s";
+        baseJetMult->GetXaxis()->SetBinLabel(i+1,label);
+        if(i>=4) continue;
+        label.ReplaceAll("jet","SecVtx");
+        baseSecVtxMult->GetXaxis()->SetBinLabel(i+1,label);
+    }
+
   controlHistos.addHistogram( new TH1F("met",          ";Missing transverse energy [GeV]; Events",50,0,250) );
   controlHistos.addHistogram( new TH1F("metoverht",    ";E_{T}^{miss}/#sqrt{H_{T}} [GeV^{1/2}]",50,0,15));
   controlHistos.addHistogram( new TH1F("photoniso",    ";log(Photon isolation/GeV+0.5)",20,-1,5));
@@ -329,10 +343,10 @@ int main(int argc, char* argv[])
     }
 
 
-  //
-  // analyze (puf...)
-  //
-  for (int inum=0; inum < totalEntries; ++inum)
+    //
+    // analyze (puf...)
+    //
+    for (int inum=0; inum < totalEntries; ++inum)
     {
       if(inum%500==0) { printf("\r [ %d/100 ]",int(100*float(inum)/float(totalEntries))); cout << flush; }
       evSummary.getEntry(inum);

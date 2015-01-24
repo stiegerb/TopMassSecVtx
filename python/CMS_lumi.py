@@ -6,29 +6,39 @@ import ROOT as rt
 #
 
 CMS_lumi_cmsText     = "CMS";
-CMS_lumi_cmsTextFont   = 61  
-CMS_lumi_cmsTextSize      = 0.6
-CMS_lumi_cmsTextOffset    = 0.1
+CMS_lumi_cmsTextFont   = 63
+CMS_lumi_cmsTextSize   = 36
+CMS_lumi_cmsTextOffset = 0.1
+# CMS_lumi_cmsTextFont   = 61
+# CMS_lumi_cmsTextSize   = 0.6
+# CMS_lumi_cmsTextOffset = 0.1
 
 CMS_lumi_writeExtraText = True
 CMS_lumi_extraText   = "work in progress"
-CMS_lumi_writeExtraTextFont = 52
-CMS_lumi_writeExtraTextSize = 0.5
-CMS_lumi_lumiTextSize     = 0.6
+CMS_lumi_writeExtraTextFont = 53
+CMS_lumi_writeExtraTextSize = 32
+CMS_lumi_lumiTextSize     = 32
 CMS_lumi_lumiTextOffset   = 0.2
+# CMS_lumi_writeExtraTextFont = 52
+# CMS_lumi_writeExtraTextSize = 0.5
+# CMS_lumi_lumiTextSize     = 0.6
+# CMS_lumi_lumiTextOffset   = 0.2
 CMS_lumi_relPosX    = 0.045
 CMS_lumi_relPosY    = 0.035
 CMS_lumi_relExtraDY = 1.2
 
 CMS_lumi_intlumi13TeV = "20.1 fb^{-1}"
-CMS_lumi_intlumi8TeV  = "19.7 fb^{-1}" 
+CMS_lumi_intlumi8TeV  = "19.7 fb^{-1}"
 CMS_lumi_intlumi7TeV  = "5.1 fb^{-1}"
 
 CMS_lumi_drawLogo      = False
 
-def CMS_lumi(pad,  iPeriod,  iPosX ):
+def CMS_lumi(pad,  iPeriod,  iPosX, extraText=None):
     outOfFrame    = False
     if(iPosX/10==0 ): outOfFrame = True
+
+    if extraText is not None:
+        CMS_lumi_extraText = extraText
 
     alignY_=3
     alignX_=2
@@ -50,55 +60,63 @@ def CMS_lumi(pad,  iPeriod,  iPosX ):
     pad.cd()
 
     lumiText = ""
-    if( iPeriod==1 ):
-        lumiText += CMS_lumi_intlumi7TeV
-        lumiText += " (7 TeV)"
-    elif ( iPeriod==2 ):
-        lumiText += CMS_lumi_intlumi8TeV
-        lumiText += " (8 TeV)"
+    if 'simulation' in CMS_lumi_extraText.lower():
+        if iPeriod == 1:
+            lumiText = "7 TeV"
+        if iPeriod == 2:
+            lumiText = "8 TeV"
+        if iPeriod == 4:
+            lumiText = "13 TeV"
+    else:
+        if( iPeriod==1 ):
+            lumiText += CMS_lumi_intlumi7TeV
+            lumiText += " (7 TeV)"
+        elif ( iPeriod==2 ):
+            lumiText += CMS_lumi_intlumi8TeV
+            lumiText += " (8 TeV)"
 
-    elif( iPeriod==3 ):      
-        lumiText = CMS_lumi_intlumi8TeV 
-        lumiText += " (8 TeV)"
-        lumiText += " + "
-        lumiText += CMS_lumi_intlumi7TeV
-        lumiText += " (7 TeV)"
-    elif ( iPeriod==4 ):
-        lumiText += CMS_lumi_intlumi13TeV
-        lumiText += " (13 TeV)"
-    elif ( iPeriod==7 ):
-        if( outOfFrame ):lumiText += "#scale[0.85]{"
-        lumiText += CMS_lumi_intlumi13TeV 
-        lumiText += " (13 TeV)"
-        lumiText += " + "
-        lumiText += CMS_lumi_intlumi8TeV 
-        lumiText += " (8 TeV)"
-        lumiText += " + "
-        lumiText += CMS_lumi_intlumi7TeV
-        lumiText += " (7 TeV)"
-        if( outOfFrame): lumiText += "}"
-    elif ( iPeriod==12 ):
-        lumiText += "8 TeV"
-            
-    print lumiText
+        elif( iPeriod==3 ):
+            lumiText = CMS_lumi_intlumi8TeV
+            lumiText += " (8 TeV)"
+            lumiText += " + "
+            lumiText += CMS_lumi_intlumi7TeV
+            lumiText += " (7 TeV)"
+        elif ( iPeriod==4 ):
+            lumiText += CMS_lumi_intlumi13TeV
+            lumiText += " (13 TeV)"
+        elif ( iPeriod==7 ):
+            if( outOfFrame ):lumiText += "#scale[0.85]{"
+            lumiText += CMS_lumi_intlumi13TeV
+            lumiText += " (13 TeV)"
+            lumiText += " + "
+            lumiText += CMS_lumi_intlumi8TeV
+            lumiText += " (8 TeV)"
+            lumiText += " + "
+            lumiText += CMS_lumi_intlumi7TeV
+            lumiText += " (7 TeV)"
+            if( outOfFrame): lumiText += "}"
+        elif ( iPeriod==12 ):
+            lumiText += "8 TeV"
 
     latex = rt.TLatex()
     latex.SetNDC()
     latex.SetTextAngle(0)
-    latex.SetTextColor(rt.kBlack)    
-        
-    latex.SetTextFont(42)
-    latex.SetTextAlign(31) 
-    latex.SetTextSize(CMS_lumi_lumiTextSize*t)    
+    latex.SetTextColor(rt.kBlack)
+
+    latex.SetTextFont(43)
+    latex.SetTextAlign(31)
+    latex.SetTextSize(CMS_lumi_lumiTextSize)
+    # latex.SetTextSize(CMS_lumi_lumiTextSize*t)
 
     latex.DrawLatex(1-r,1-t+CMS_lumi_lumiTextOffset*t,lumiText)
 
     if( outOfFrame ):
         latex.SetTextFont(CMS_lumi_cmsTextFont)
-        latex.SetTextAlign(11) 
-        latex.SetTextSize(CMS_lumi_cmsTextSize*t)    
+        latex.SetTextAlign(11)
+        latex.SetTextSize(CMS_lumi_cmsTextSize)
+        # latex.SetTextSize(CMS_lumi_cmsTextSize*t)
         latex.DrawLatex(l,1-t+CMS_lumi_lumiTextOffset*t,CMS_lumi_cmsText)
-  
+
     pad.cd()
 
     posX_ = 0
@@ -125,16 +143,18 @@ def CMS_lumi(pad,  iPeriod,  iPosX ):
             pad_logo.cd()
             CMS_logo.Draw("X")
             pad_logo.Modified()
-            pad.cd()          
+            pad.cd()
         else:
             latex.SetTextFont(CMS_lumi_cmsTextFont)
-            latex.SetTextSize(CMS_lumi_cmsTextSize*t)
+            latex.SetTextSize(CMS_lumi_cmsTextSize)
+            # latex.SetTextSize(CMS_lumi_cmsTextSize*t)
             latex.SetTextAlign(align_)
             latex.DrawLatex(posX_, posY_, CMS_lumi_cmsText)
             if( CMS_lumi_writeExtraText ) :
                 latex.SetTextFont(CMS_lumi_writeExtraTextFont)
                 latex.SetTextAlign(align_)
-                latex.SetTextSize(CMS_lumi_writeExtraTextSize*t)
+                latex.SetTextSize(CMS_lumi_writeExtraTextSize)
+                # latex.SetTextSize(CMS_lumi_writeExtraTextSize*t)
                 #latex.DrawLatex(posX_, posY_- CMS_lumi_relExtraDY*CMS_lumi_cmsTextSize*t, CMS_lumi_extraText)
                 latex.DrawLatex(posX_*1.2, posY_, CMS_lumi_extraText)
     elif( CMS_lumi_writeExtraText ):
@@ -143,8 +163,9 @@ def CMS_lumi(pad,  iPeriod,  iPosX ):
             posY_ =   1-t+CMS_lumi_lumiTextOffset*t
 
         latex.SetTextFont(CMS_lumi_writeExtraTextFont)
-        latex.SetTextSize(CMS_lumi_writeExtraTextSize*t)
+        latex.SetTextSize(CMS_lumi_writeExtraTextSize)
+        # latex.SetTextSize(CMS_lumi_writeExtraTextSize*t)
         latex.SetTextAlign(align_)
-        latex.DrawLatex(posX_*1.3, posY_, CMS_lumi_extraText)      
+        latex.DrawLatex(posX_*1.5, posY_+(0.002), CMS_lumi_extraText)
 
     pad.Update()

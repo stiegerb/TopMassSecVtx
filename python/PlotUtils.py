@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 import math
 import ROOT
 from ROOT import THStack, TLatex
@@ -7,7 +7,220 @@ from ROOT import TCanvas, TPad, TLegend
 from UserCode.TopMassSecVtx.CMS_lumi import *
 from UserCode.TopMassSecVtx.rounding import *
 
-class Plot:
+def getRatio(hist, reference):
+    ratio = hist.Clone("%s_ratio"%hist.GetName())
+    ratio.SetDirectory(0)
+    ratio.SetLineColor(hist.GetLineColor())
+    for xbin in xrange(1,reference.GetNbinsX()+1):
+        ref = reference.GetBinContent(xbin)
+        val = hist.GetBinContent(xbin);
+        if ref==0:
+            ratio.SetBinContent(xbin, 1.0)
+            continue
+        ratio.SetBinContent(xbin, val/ref)
+    return ratio
+
+def setMaximums(histos, margin=1.1, setminimum=None):
+    maxy = 0.
+    for hist in histos:
+        binmax = 0.
+        for binx in xrange(1,hist.GetNbinsX()+1):
+            binmax = max(binmax, hist.GetBinContent(binx))
+        maxy = max(maxy,margin*binmax)
+    for hist in histos: hist.SetMaximum(maxy)
+    if setminimum is not None:
+        for hist in histos: hist.SetMinimum(setminimum)
+
+class RatioPlot(object):
+    """Wrapper class for making ratio plots"""
+
+    def __init__(self, name):
+        super(RatioPlot, self).__init__()
+        self.name = name
+        self.histos = []
+        self.legentries = []
+        self.reference = None
+        self.normalized = True
+        self.ratiotitle = None
+        self.garbageList = []
+        self.tag = None
+        self.subtag = None
+        self.rangex = None
+        self.colors = [
+            ROOT.kViolet-7,
+            ROOT.kViolet-6,
+            ROOT.kViolet+4,
+            ROOT.kViolet+9,
+            ROOT.kBlue,
+            ROOT.kBlue-7,
+            ROOT.kAzure+1,
+            ROOT.kAzure+8,
+        ]
+        self.ratiorange = None
+
+    def reset(self):
+        for o in self.garbageList:
+            try:
+                o.Delete()
+            except AttributeError:
+                pass
+            except Exception, e:
+                print e
+                raise e
+        self.histos = []
+        self.legentries = []
+        self.tag = None
+        self.subtag = None
+
+    def add(self, hist, tag):
+        if hist.GetEntries() == 0:
+            print "Skipping empty histogram", hist.GetName()
+            return
+        if self.rangex is not None:
+            hist.GetXaxis().SetRangeUser(self.rangex[0], self.rangex[1])
+        self.histos.append(hist)
+        self.legentries.append(tag)
+
+    def getChiSquares(self):
+        if self.reference is not None:
+            reference = self.reference
+        else:
+            reference = self.histos[0]
+        chisquares = {}
+
+        for legentry,hist in zip(self.legentries, self.histos):
+            chisquares[legentry] = hist.Chi2Test(reference,"WW CHI2/NDF")
+
+        return chisquares
+
+    def show(self, outname, outdir):
+        if not os.path.isdir(outdir):
+            os.system('mkdir -p %s' % outdir)
+        for hist,color in zip(self.histos, self.colors):
+            hist.SetLineColor(color)
+
+        if self.normalized:
+            for hist in self.histos:
+                if self.rangex is not None:
+                    bin1 = hist.GetXaxis().FindBin(self.rangex[0])
+                    bin2 = hist.GetXaxis().FindBin(self.rangex[1])
+                    hist.Scale(1./hist.Integral(bin1, bin2))
+                else:
+                    hist.Scale(1./hist.Integral())
+
+        setMaximums(self.histos, setminimum=0)
+
+        tc = ROOT.TCanvas(outname, "ratioplots", 800, 800)
+        # self.garbageList.append(tc)
+        tc.cd()
+
+        tc.SetWindowSize(800 + (800 - tc.GetWw()), (800 + (800 - tc.GetWh())));
+        p2 = ROOT.TPad("pad2","pad2",0,0,1,0.31);
+        self.garbageList.append(p2)
+        p2.SetTopMargin(0);
+        p2.SetBottomMargin(0.3);
+        p2.SetFillStyle(0);
+        p2.Draw();
+        p1 = ROOT.TPad("pad1","pad1",0,0.31,1,1);
+        self.garbageList.append(p1)
+        p1.SetBottomMargin(0);
+        p1.Draw();
+        p1.cd();
+
+        # tl = ROOT.TLegend(0.66, 0.75-0.040*max(len(self.histos)-3,0), .89, .89)
+        tl = ROOT.TLegend(0.66, 0.15, .89, .30+0.040*max(len(self.histos)-3,0))
+        self.garbageList.append(tl)
+        tl.SetBorderSize(0)
+        tl.SetFillColor(0)
+        tl.SetFillStyle(0)
+        tl.SetShadowColor(0)
+        tl.SetTextFont(43)
+        tl.SetTextSize(20)
+
+
+        mainframe = self.histos[0].Clone('mainframe')
+        self.garbageList.append(mainframe)
+        mainframe.Reset('ICE')
+        mainframe.GetXaxis().SetTitleFont(43)
+        mainframe.GetXaxis().SetLabelFont(43)
+        mainframe.GetYaxis().SetTitleFont(43)
+        mainframe.GetYaxis().SetLabelFont(43)
+
+        mainframe.GetYaxis().SetTitle('a.u.')
+        mainframe.GetYaxis().SetLabelSize(22)
+        mainframe.GetXaxis().SetLabelSize(22)
+        mainframe.GetYaxis().SetTitleSize(26)
+        mainframe.GetXaxis().SetTitleSize(26)
+        mainframe.GetYaxis().SetTitleOffset(1.2)
+        mainframe.GetXaxis().SetTitleOffset(1.5)
+        mainframe.Draw()
+
+        # self.histos[0].GetYaxis().SetTitle('a.u.')
+        # self.histos[0].Draw("axis")
+
+        for hist,legentry in zip(self.histos,self.legentries):
+            tl.AddEntry(hist, legentry, 'l')
+            hist.Draw("hist same")
+
+        tl.Draw()
+
+        tlat = TLatex()
+        tlat.SetTextFont(43)
+        tlat.SetNDC(1)
+        tlat.SetTextAlign(33)
+        if self.tag:
+            tlat.SetTextSize(22)
+            tlat.DrawLatex(0.85, 0.85, self.tag)
+        if self.subtag:
+            tlat.SetTextSize(20)
+            tlat.DrawLatex(0.85, 0.78, self.subtag)
+
+        CMS_lumi(pad=p1,iPeriod=2,iPosX=0,extraText='Simulation')
+
+        p2.cd()
+
+        if not self.reference:
+            self.reference = self.histos[0]
+
+        ratioframe = mainframe.Clone('ratioframe')
+        self.garbageList.append(ratioframe)
+        ratioframe.Reset('ICE')
+        ratioframe.GetYaxis().SetRangeUser(0.50,1.50)
+        if not self.ratiotitle:
+            ratioframe.GetYaxis().SetTitle('Ratio')
+        else:
+            ratioframe.GetYaxis().SetTitle(self.ratiotitle)
+        ratioframe.GetYaxis().SetNdivisions(5)
+        ratioframe.GetYaxis().SetTitleOffset(1.2)
+        ratioframe.GetXaxis().SetTitleOffset(3.0)
+        ratioframe.Draw()
+
+        ratios = []
+        for hist in self.histos:
+            ratios.append(getRatio(hist, self.reference))
+        if self.ratiorange:
+            ratmin, ratmax = self.ratiorange
+            for ratio in ratios:
+                ratio.SetMinimum(ratmin)
+                ratio.SetMaximum(ratmax)
+                ratioframe.GetYaxis().SetRangeUser(ratmin, ratmax)
+
+        else:
+            setMaximums(ratios)
+
+        for ratio in ratios:
+            ratio.Draw("hist same")
+
+        p2.RedrawAxis()
+
+        tc.cd()
+        tc.Modified()
+        tc.Update()
+        tc.SaveAs(os.path.join(outdir,"%s.pdf"%outname))
+        tc.Close()
+
+
+class Plot(object):
     """
     A wrapper to store data and MC histograms for comparison
     """
@@ -54,12 +267,17 @@ class Plot:
     def appendTo(self,outUrl):
         #if file does not exist it is created
         outF=ROOT.TFile.Open(outUrl,'UPDATE')
-        outDir=outF.mkdir(self.name)
-        outDir.cd()
-        for m in self.mc : 
+        try:
+            outF.cd(self.name)
+        except Exception, e:
+            outDir=outF.mkdir(self.name)
+            outDir.cd()
+            raise e
+
+        for m in self.mc :
             if m :
                 m.Write()
-        if self.data : 
+        if self.data :
             self.data.Write()
         if self.dataH :
             self.dataH.Write()
@@ -78,10 +296,10 @@ class Plot:
         for m in self.mc:
             m.Scale(scaleFactor)
         self.normalizedToData=True
-            
+
     def reset(self):
         self.normalizedToData=False
-        for o in self.garbageList: 
+        for o in self.garbageList:
             try:
                 o.Delete()
             except:
@@ -156,6 +374,9 @@ class Plot:
             print 'Skipping TH2'
             return
 
+        ROOT.gStyle.SetOptTitle(0)
+        ROOT.gStyle.SetOptStat(0)
+
         canvas = TCanvas('c_'+self.name,'C',600,600)
         canvas.cd()
         t1 = TPad("t1","t1", 0.0, 0.20, 1.0, 1.0)
@@ -204,7 +425,7 @@ class Plot:
         if self.data is not None: nlegCols = nlegCols+1
         if nlegCols == 0:
             print '%s is empty'%self.name
-            return 
+            return
 
         frame.GetYaxis().SetTitleSize(0.045)
         frame.GetYaxis().SetLabelSize(0.04)
@@ -243,7 +464,7 @@ class Plot:
             t2.SetGridy()
             t2.Draw()
             t2.cd()
-            
+
             ratioframe=self.dataH.Clone('ratioframe')
             ratioframe.Reset('ICE')
             ratioframe.Draw()
@@ -361,7 +582,7 @@ def setTDRStyle():
     tdrStyle.SetCanvasDefW(904) #Width of canvas
     tdrStyle.SetCanvasDefX(1320)   #POsition on screen
     tdrStyle.SetCanvasDefY(0)
-    
+
     # For the Pad:
     tdrStyle.SetPadBorderMode(0)
     # tdrStyle.SetPadBorderSize(Width_t size = 1)
@@ -371,7 +592,7 @@ def setTDRStyle():
     tdrStyle.SetGridColor(0)
     tdrStyle.SetGridStyle(3)
     tdrStyle.SetGridWidth(1)
-    
+
     # For the frame:
     tdrStyle.SetFrameBorderMode(0)
     tdrStyle.SetFrameBorderSize(1)
@@ -380,7 +601,7 @@ def setTDRStyle():
     tdrStyle.SetFrameLineColor(1)
     tdrStyle.SetFrameLineStyle(1)
     tdrStyle.SetFrameLineWidth(1)
-    
+
     # For the histo:
     # tdrStyle.SetHistFillColor(1)
     # tdrStyle.SetHistFillStyle(0)
@@ -389,25 +610,25 @@ def setTDRStyle():
     tdrStyle.SetHistLineWidth(1)
     # tdrStyle.SetLegoInnerR(Float_t rad = 0.5)
     # tdrStyle.SetNumberContours(Int_t number = 20)
-    
+
     tdrStyle.SetEndErrorSize(2)
     #  tdrStyle.SetErrorMarker(20)
     tdrStyle.SetErrorX(0.)
-    
+
     tdrStyle.SetMarkerStyle(20)
-    
+
     # For the fit/function:
     tdrStyle.SetOptFit(1)
     tdrStyle.SetFitFormat("5.4g")
     tdrStyle.SetFuncColor(2)
     tdrStyle.SetFuncStyle(1)
     tdrStyle.SetFuncWidth(1)
-    
+
     #For the date:
     tdrStyle.SetOptDate(0)
     # tdrStyle.SetDateX(Float_t x = 0.01)
     # tdrStyle.SetDateY(Float_t y = 0.01)
-    
+
     # For the statistics box:
     tdrStyle.SetOptFile(0)
     tdrStyle.SetOptStat(0) # To display the mean and RMS:   SetOptStat("mr")
@@ -422,13 +643,13 @@ def setTDRStyle():
     # tdrStyle.SetStatStyle(Style_t style = 1001)
     # tdrStyle.SetStatX(Float_t x = 0)
     # tdrStyle.SetStatY(Float_t y = 0)
-    
+
     # Margins:
     tdrStyle.SetPadTopMargin(0.07)
     tdrStyle.SetPadBottomMargin(0.13)
     tdrStyle.SetPadLeftMargin(0.17)
     tdrStyle.SetPadRightMargin(0.03)
-    
+
     # For the Global title:
     tdrStyle.SetOptTitle(0)
     tdrStyle.SetTitleFont(42)
@@ -452,7 +673,7 @@ def setTDRStyle():
     tdrStyle.SetTitleXOffset(0.95)
     tdrStyle.SetTitleYOffset(1.3)
     # tdrStyle.SetTitleOffset(1.1, "Y") # Another way to set the Offset
-    
+
     # For the axis labels:
     tdrStyle.SetLabelColor(1, "XYZ")
     tdrStyle.SetLabelFont(42, "XYZ")
@@ -466,25 +687,25 @@ def setTDRStyle():
     tdrStyle.SetNdivisions(510, "XYZ")
     tdrStyle.SetPadTickX(1)  # To get tick marks on the opposite side of the frame
     tdrStyle.SetPadTickY(1)
-    
+
     # Change for log plots:
     tdrStyle.SetOptLogx(0)
     tdrStyle.SetOptLogy(0)
     tdrStyle.SetOptLogz(0)
-    
+
     # Postscript options:
     tdrStyle.SetPaperSize(20.,20.)
     # tdrStyle.SetLineScalePS(Float_t scale = 3)
     # tdrStyle.SetLineStyleString(Int_t i, const char* text)
     # tdrStyle.SetHeaderPS(const char* header)
     # tdrStyle.SetTitlePS(const char* pstitle)
-    
+
     # tdrStyle.SetBarOffset(Float_t baroff = 0.5)
     # tdrStyle.SetBarWidth(Float_t barwidth = 0.5)
     # tdrStyle.SetPaintTextFormat(const char* format = "g")
     # tdrStyle.SetPalette(Int_t ncolors = 0, Int_t* colors = 0)
     # tdrStyle.SetTimeOffset(Double_t toffset)
     # tdrStyle.SetHistMinimumZero(True)
-    
+
     tdrStyle.cd()
 

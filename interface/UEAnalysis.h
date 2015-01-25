@@ -15,8 +15,8 @@ class UEAnalysis
 public:
   UEAnalysis(SmartSelectionMonitor &mon);
 
-  void analyze(data::PhysicsObjectCollection_t &leptons, 
-	       data::PhysicsObjectCollection_t &jets,
+  void analyze(std::vector<data::PhysicsObject_t *> &leptons,
+	       std::vector<data::PhysicsObject_t *> &jets,
 	       LorentzVector &met, 
 	       data::PhysicsObjectCollection_t &pf,
 	       data::PhysicsObjectCollection_t &mctruth,
@@ -24,6 +24,7 @@ public:
 	       float weight);
 
   void fillSummaryTuple(float evWeight) { summaryTupleVars_[2]=evWeight; summaryTuple_->Fill(summaryTupleVars_); }
+  void attachToDir(TDirectory *outDir);
   TNtuple *getSummaryTuple()            { return summaryTuple_; }
 
   ~UEAnalysis() { delete summaryTupleVars_; }

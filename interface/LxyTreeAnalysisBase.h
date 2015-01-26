@@ -67,6 +67,7 @@ public :
    Float_t         svlxy[50];   //[nj]
    Float_t         svlxyerr[50];   //[nj]
    Int_t           bid[50];   //[nj]
+   Float_t         bwgt[50][3];   //[nj]
    Float_t         bpt[50];   //[nj]
    Float_t         beta[50];   //[nj]
    Float_t         bphi[50];   //[nj]
@@ -138,6 +139,7 @@ public :
    TBranch        *b_svlxy;   //!
    TBranch        *b_svlxyerr;   //!
    TBranch        *b_bid;   //!
+   TBranch        *b_bwgt;   //!
    TBranch        *b_bpt;   //!
    TBranch        *b_beta;   //!
    TBranch        *b_bphi;   //!

@@ -1,6 +1,6 @@
 #include "UserCode/TopMassSecVtx/interface/LxyTreeAnalysisBase.h"
 
-LxyTreeAnalysisBase::LxyTreeAnalysisBase(TTree *tree) : fChain(0) 
+LxyTreeAnalysisBase::LxyTreeAnalysisBase(TTree *tree) : fChain(0)
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
@@ -94,6 +94,7 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("svlxy", svlxy, &b_svlxy);
    fChain->SetBranchAddress("svlxyerr", svlxyerr, &b_svlxyerr);
    fChain->SetBranchAddress("bid", bid, &b_bid);
+   fChain->SetBranchAddress("bwgt", bwgt, &b_bwgt);
    fChain->SetBranchAddress("bpt", bpt, &b_bpt);
    fChain->SetBranchAddress("beta", beta, &b_beta);
    fChain->SetBranchAddress("bphi", bphi, &b_bphi);

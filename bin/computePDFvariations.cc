@@ -2,7 +2,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "UserCode/TopMassSecVtx/interface/PDFInfo.h"
-#include "UserCode/TopMassSecVtx/interface/DataEventSummaryHandler.h"
+#include "UserCode/TopMassSecVtx/interface/LxyAnalysis.h"
 
 #include "FWCore/FWLite/interface/AutoLibraryLoader.h"
 #include "FWCore/PythonParameterSet/interface/MakeParameterSets.h"
@@ -41,11 +41,11 @@ struct stPDFval{
     id2(arg.id2){
   }
 
-   double qscale;
-   double x1;
-   double x2;
-   int id1;
-   int id2;
+   Float_t qscale;
+   Float_t x1;
+   Float_t x2;
+   Int_t id1;
+   Int_t id2;
 };
 
 
@@ -76,6 +76,9 @@ int main(int argc, char* argv[])
   outFileUrl.ReplaceAll(".root","");
 
   //INITIALIZE THE PDF TOOL
+  //notice cteq66.LHgrid yields 90% CI so the final uncertainty is obtained
+  //after re-scaling by 1/C90=1/1.64485
+  //see http://www.hep.ucl.ac.uk/pdf4lhc/PDF4LHC_practical_guide.pdf
   string pdfSets[]   = {"cteq66.LHgrid","MSTW2008nlo68cl.LHgrid","NNPDF20_100.LHgrid"};
   std::vector<Int_t>   nPdfVars;
   //const size_t nPdfSets=sizeof(pdfSets)/sizeof(string);
@@ -90,12 +93,20 @@ int main(int argc, char* argv[])
   TFile *file = TFile::Open(url);
   if(file==0) return -1;
   if(file->IsZombie()) return -1;
-  TString dirname = runProcess.getParameter<std::string>("dirName");
-  DataEventSummaryHandler evSummaryHandler;
-  if( !evSummaryHandler.attach( (TTree *)file->Get(dirname+"/data") ) ){
-    file->Close();
-    return -1;
-  }
+  TTree *t=(TTree *)file->Get("dataAnalyzer/lxy");
+  if(t==0)
+    {
+      cout << "No tree has been found...quitting" << endl;
+      file->Close();
+      return -1;
+    }
+  stPDFval valForPDF;
+  t->SetBranchAddress("qscale",&valForPDF.qscale);
+  t->SetBranchAddress("x1",&valForPDF.x1);
+  t->SetBranchAddress("x2",&valForPDF.x2);
+  t->SetBranchAddress("id1",&valForPDF.id1);
+  t->SetBranchAddress("id2",&valForPDF.id2);
+
   gROOT->cd();
 
   //create the OUTPUTFILE AND TREE
@@ -113,46 +124,21 @@ int main(int argc, char* argv[])
 
   //loop over events
   std::vector<stPDFval> pdfvals;
-  int evStart(0),evEnd(evSummaryHandler.getEntries());
+  int evStart(0),evEnd(t->GetEntriesFast());
   //loop on all the events
   printf("Progressing Bar     :0%%       20%%       40%%       60%%       80%%       100%%\n");
   printf("Scanning the ntuple :");
   int treeStep = (evEnd-evStart)/50;if(treeStep==0)treeStep=1;
   for( int iev=evStart; iev<evEnd; iev++){
       if((iev-evStart)%treeStep==0){printf(".");fflush(stdout);}
-      evSummaryHandler.getEntry(iev);
-      DataEventSummary &ev = evSummaryHandler.getEvent();
-      stPDFval valForPDF;
-      valForPDF.qscale = ev.qscale;
-      valForPDF.x1     = ev.x1;
-      valForPDF.x2     = ev.x2;      
-      valForPDF.id1     = ev.id1;
-      valForPDF.id2     = ev.id2;
+      t->GetEntry(iev);
       pdfvals.push_back(valForPDF);
-      qscale->Fill(ev.qscale);
-   }printf("\n\n\n");
+      qscale->Fill(valForPDF.qscale);
+  }printf("\n\n\n");
   //all done with the events file
   file->Close();
 
-
-  //shift Q^2 scale
-  ofile->cd();
-  float meanScale=qscale->GetMean();
-  cout << "<Q^2>=" << meanScale << endl;
-  TGraph *nomScale=new TGraph(qscale); nomScale->SetName("qscale_nom");
-  TGraph *scaleUp=new TGraph;          scaleUp->SetName("qscale_up");
-  TGraph *scaleDown=new TGraph;        scaleDown->SetName("qscale_down");
-  for(int ip=0; ip<nomScale->GetN(); ip++) 
-    {
-      Double_t x,y; nomScale->GetPoint(ip,x,y);
-      scaleUp->SetPoint(scaleUp->GetN(),x+meanScale,y);
-      scaleDown->SetPoint(scaleDown->GetN(),x-meanScale*0.5,y);
-    }
-  nomScale->Write();
-  scaleUp->Write();
-  scaleDown->Write();
-  qscale->Write();
-
+  //
   printf("Loop on PDF sets and variations\n");   
   for(size_t ipdf=0; ipdf<nPdfSets; ipdf++){
     for(int i=0; i <(nPdfVars[ipdf]+1); ++i){
@@ -179,7 +165,7 @@ int main(int argc, char* argv[])
     
     printf("Done\n");
   }
-
+  qscale->Write();
   ofile->Close();
   printf("All done\n");fflush(stdout);
 }  

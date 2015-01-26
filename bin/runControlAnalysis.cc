@@ -95,12 +95,12 @@ ControlBox assignBox(int reqControlType,
   }
   if(reqControlType==DIJETBOX)
     {
-      //two jets and no leptons
-      if(jets.size()!=2) return box;
+      //at least two jets and no leptons
+      if(jets.size()<2) return box;
       if(dilCands.size() || ljCands.size() || vetoCands.size()) return box;
 
       //require at least one soft muon
-      std::vector<int> nTriggerSoftMuons(jets.size(),0), nSoftMuons(jets.size(),0);
+      std::vector<int> jetsWithSoftMuons;
       for(size_t ijet=0; ijet<jets.size(); ijet++){
 	size_t pfstart=jets[ijet].get("pfstart");
 	size_t pfend=jets[ijet].get("pfend");
@@ -109,39 +109,32 @@ ControlBox assignBox(int reqControlType,
 	  {
 	    int id=pf[ipfn].get("id");
 	    if(abs(id)!=13) continue;
-	    if(pf[ipfn].pt()<1) continue;
-	    nSoftMuons[ijet]++;
 	    if(pf[ipfn].pt()<5) continue;
-	    nTriggerSoftMuons[ijet]++;
+	    jetsWithSoftMuons.push_back(ijet);
+	    break;
 	  }
       }
-      if(nTriggerSoftMuons[0]+nTriggerSoftMuons[1]) return box;
+      if(jetsWithSoftMuons.size()==0) return box;
      
-      //back to back configuration
-      float dphijj=deltaPhi(jets[0].phi(),jets[1].phi());
-      if(fabs(dphijj)<2.7) return box;
-     	   
-      //now decide which one is the tag and which one is the probe (give preference to higher pT jet for tag) 
-      int tagJetIdx(0), probeJetIdx(1);
-      if( nTriggerSoftMuons[0]==0 ) { tagJetIdx=1; probeJetIdx=0; }
-      //randomize if both have muons
-      if( nTriggerSoftMuons[0] && nTriggerSoftMuons[1] )
+      //select one of the jets to be the probe
+      size_t randomTagIdx( (size_t) gRandom->Uniform(0,jetsWithSoftMuons.size()) );
+      Int_t randomProbeIdx(-1);
+      for(size_t ijet=0; ijet<jets.size(); ijet++)
 	{
-	  int assignedTagIdx=gRandom->Binomial(1,0.5);
-	  tagJetIdx=assignedTagIdx;
-	  probeJetIdx=(assignedTagIdx==0 ? 1 : 0);
-	}
-
-      //balancing variable
-      float balance=jets[probeJetIdx].pt()/jets[tagJetIdx].pt();
-      if(balance<0.5 || balance>1.5) return box;
+	  if(ijet==randomTagIdx) continue;
+	  float dR=deltaR(jets[ijet],jets[randomTagIdx]);
+	  if(dR>1.5) continue;
+	  if(randomProbeIdx<0) randomProbeIdx=ijet;
+	  else if( dR>deltaR(jets[randomProbeIdx],jets[randomTagIdx]) && jets[ijet].pt()>jets[randomProbeIdx].pt() ) randomProbeIdx=ijet;
+	} 
+      if(randomProbeIdx<0) return box;
 	   
       //require a tag on the tag jet
-      bool tagHasCSVL(jets[tagJetIdx].getVal("csv")>0.405);
+      bool tagHasCSVL(jets[randomTagIdx].getVal("csv")>0.405);
       if(!tagHasCSVL) return box;
-	   
+      
       //all done here
-      box.assignBox(reqControlType, &(jets[tagJetIdx]), &(jets[probeJetIdx]));
+      box.assignBox(reqControlType, &(jets[randomTagIdx]), &(jets[randomProbeIdx]));
     }
   else if(reqControlType==GAMMABOX)
     {
@@ -446,6 +439,10 @@ int main(int argc, char* argv[])
 	      if(!ev.t_bits[itrig]) continue;
 	      dijetTrigger=true;
 	      triggerPrescale=ev.t_prescale[itrig];
+	      if(itrig==1) triggerThreshold=50;
+	      if(itrig==2) triggerThreshold=80;
+	      if(itrig==3) triggerThreshold=120;
+	      if(itrig==4) triggerThreshold=320;
 	      break;
 	    }
 	  //if(isMC) dijetTrigger=true; 
@@ -492,6 +489,16 @@ int main(int argc, char* argv[])
       data::PhysicsObjectCollection_t rawJets    = evSummary.getPhysicsObject(DataEventSummaryHandler::JETS);
       LorentzVector jetDiff                      = utils::cmssw::updateJEC(rawJets, fJesCor, fTotalJESUnc, ev.rho, ev.nvtx, isMC);      
       data::PhysicsObjectCollection_t jets       = top::selectJets(rawJets,leptons);
+      if(runDijetControl)
+	{
+	  data::PhysicsObjectCollection_t dijetCtrlJets;
+	  for(size_t ijet=0; ijet<jets.size(); ijet++)
+	    {
+	      if(jets[ijet].pt()<triggerThreshold || fabs(jets[ijet].eta())>2.4) continue;
+	      dijetCtrlJets.push_back( jets[ijet] );
+	    }
+	}
+
       data::PhysicsObjectCollection_t recoMet    = evSummary.getPhysicsObject(DataEventSummaryHandler::MET);
       recoMet[2].SetPxPyPzE(recoMet[2].px()-jetDiff.px(),
 			    recoMet[2].py()-jetDiff.py(),

@@ -75,13 +75,13 @@ def projectFromTree(hist, varname, sel, tree, option=''):
 
 
 def getSVLHistos(tree, sel,
-	             var="SVLMass",
-	             tag='', xmin=XMIN, xmax=XMAX,
-	             titlex=''):
-	h_tot = ROOT.TH1D("%s_tot_%s"%(var,tag), "total"    , NBINS, xmin, xmax)
-	h_cor = ROOT.TH1D("%s_cor_%s"%(var,tag), "correct"  , NBINS, xmin, xmax)
-	h_wro = ROOT.TH1D("%s_wro_%s"%(var,tag), "wrong"    , NBINS, xmin, xmax)
-	h_unm = ROOT.TH1D("%s_unm_%s"%(var,tag), "unmatched", NBINS, xmin, xmax)
+				 var="SVLMass",
+				 tag='', nbins=NBINS, xmin=XMIN, xmax=XMAX,
+				 titlex=''):
+	h_tot = ROOT.TH1D("%s_tot_%s"%(var,tag), "total"    , nbins, xmin, xmax)
+	h_cor = ROOT.TH1D("%s_cor_%s"%(var,tag), "correct"  , nbins, xmin, xmax)
+	h_wro = ROOT.TH1D("%s_wro_%s"%(var,tag), "wrong"    , nbins, xmin, xmax)
+	h_unm = ROOT.TH1D("%s_unm_%s"%(var,tag), "unmatched", nbins, xmin, xmax)
 
 	if sel=="": sel = "1"
 	sel = "(%s)"%sel
@@ -103,13 +103,13 @@ def getSVLHistos(tree, sel,
 	return h_tot, h_cor, h_wro, h_unm
 
 def getTopPtHistos(tree, sel,
-	             var="SVLMass",
-	             tag='', xmin=XMIN, xmax=XMAX,
-	             titlex=''):
+				 var="SVLMass",
+				 tag='', xmin=XMIN, xmax=XMAX,
+				 titlex=''):
 	h_tpt = ROOT.TH1D("%s_toppt_%s"%(var,tag),
-		              "top pt weighted"    , NBINS, xmin, xmax)
+					  "top pt weighted"    , NBINS, xmin, xmax)
 	h_tup = ROOT.TH1D("%s_topptup_%s"%(var,tag),
-		              "top pt weighted up" , NBINS, xmin, xmax)
+					  "top pt weighted up" , NBINS, xmin, xmax)
 
 	if sel=="": sel = "1"
 	sel = "(%s)"%sel
@@ -127,9 +127,9 @@ def getTopPtHistos(tree, sel,
 	return h_tpt, h_tup
 
 def getNTrkHistos(tree, sel,
-	             var="SVLMass",
-	             tag='', xmin=XMIN, xmax=XMAX,
-	             titlex=''):
+				 var="SVLMass",
+				 tag='', xmin=XMIN, xmax=XMAX,
+				 titlex=''):
 	hists = []
 	for ntk1,ntk2 in NTRKBINS:
 		title = "%d #leq N_{trk.} < %d" %(ntk1, ntk2)
@@ -187,14 +187,15 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
 	tg.GetYaxis().SetTitle("#chi^{2}")
 	tg.Draw("AP")
 	if len(tag)>0:
-	    tlat = ROOT.TLatex()
-	    tlat.SetTextFont(43)
-	    tlat.SetNDC(1)
-	    tlat.SetTextAlign(33)
-        tlat.SetTextSize(10)
-        tlat.DrawLatex(0.85, 0.78, tag)
+		tlat = ROOT.TLatex()
+		tlat.SetTextFont(43)
+		tlat.SetNDC(1)
+		tlat.SetTextAlign(33)
+		tlat.SetTextSize(10)
+		tlat.DrawLatex(0.85, 0.78, tag)
 	tcanv.SaveAs(oname)
 
+	# need to reverse because the indices change when removing a point
 	for n in reversed(points_to_remove):
 		tg.RemovePoint(n)
 	tf = ROOT.TF1("fitf", "pol2", 160., 190.)
@@ -205,14 +206,76 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
 
 	def getError(chi2test):
 		coeff = [tf.GetParameter(2),
-		         tf.GetParameter(1),
-		         tf.GetParameter(0)-chi2test]
+				 tf.GetParameter(1),
+				 tf.GetParameter(0)-chi2test]
 		mt1, mt2 = roots(coeff)
 		return abs(mt1-mt2)
 
 
 	return getError
 
+
+def plotFracVsTopMass(fcor, fwro, funm, tag, oname):
+	tg_cor = ROOT.TGraph(len(fcor))
+	tg_wro = ROOT.TGraph(len(fwro))
+	tg_unm = ROOT.TGraph(len(funm))
+
+	np = 0
+	for mt in sorted(fcor.keys()):
+		tg_cor.SetPoint(np, mt, fcor[mt]/100.)
+		tg_wro.SetPoint(np, mt, fwro[mt]/100.)
+		tg_unm.SetPoint(np, mt, funm[mt]/100.)
+		np += 1
+
+	colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
+	for graph,color in zip([tg_cor, tg_wro, tg_unm], colors):
+		graph.SetLineWidth(2)
+		graph.SetLineColor(color)
+		graph.SetMarkerStyle(20)
+		graph.SetMarkerColor(color)
+		graph.SetFillColor(color)
+		graph.SetFillStyle(1001)
+
+
+	tcanv = ROOT.TCanvas("fracvsmt_%s"%tag, "fracvsmt", 400, 400)
+	tcanv.cd()
+
+	h_axes = ROOT.TH2D("axes", "axes", 10, 162.5, 182.5, 10, 0., 1.)
+	h_axes.GetXaxis().SetTitle("m_{t, gen.} [GeV]")
+	h_axes.GetYaxis().SetTitleOffset(1.2)
+	h_axes.GetYaxis().SetTitle("Fraction of combinations")
+	h_axes.Draw()
+
+	if len(tag)>0:
+		tlat = ROOT.TLatex()
+		tlat.SetTextFont(43)
+		tlat.SetNDC(1)
+		tlat.SetTextAlign(33)
+		tlat.SetTextSize(10)
+		tlat.DrawLatex(0.85, 0.78, tag)
+
+	tleg = ROOT.TLegend(0.12, 0.75, .50, 0.89)
+	tleg.SetBorderSize(0)
+	tleg.SetFillColor(0)
+	tleg.SetFillStyle(0)
+	tleg.SetShadowColor(0)
+	tleg.SetTextFont(43)
+	tleg.SetTextSize(10)
+
+	tleg.AddEntry(tg_cor, "Correct",   'F')
+	tleg.AddEntry(tg_wro, "Wrong",     'F')
+	tleg.AddEntry(tg_unm, "Unmatched", 'F')
+
+	tg_cor.Draw("PL")
+	tg_wro.Draw("PL")
+	tg_unm.Draw("PL")
+
+	tleg.Draw()
+	# tcanv.Modified()
+	tcanv.Update()
+
+	for ext in ['.pdf','.png']:
+		tcanv.SaveAs(oname+ext)
 
 def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)
@@ -235,7 +298,7 @@ def main(args, opt):
 		for systname, systtag, systfile in SYSTS:
 			if not systfile in os.listdir(os.path.join(args[0],'syst')):
 				print ("File %s not found in %s" %
-					          (systfile, os.path.join(args[0]), 'syst'))
+							  (systfile, os.path.join(args[0]), 'syst'))
 				continue
 			systfiles[systname] = os.path.join(args[0],'syst',systfile)
 
@@ -256,53 +319,55 @@ def main(args, opt):
 	if not opt.cache:
 		masshistos = {} # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
 		systhistos = {} # (tag) -> h_tptw, h_tptup, h_tptdn
-		ntkhistos = {} # (tag) -> (h_ntk1, h_ntk2, h_ntk3, ..)
+		massntkhistos = {} # (tag) -> (h_ntk1, h_ntk2, h_ntk3, ..)
 		for tag,sel,_ in SELECTIONS:
 			for mass, tree in systtrees.iteritems():
 				if not mass in massfiles.keys(): continue
 				print ' ... processing %5.1f GeV %s' % (mass, sel)
 				htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
 				masshistos[(tag, mass)] = getSVLHistos(tree, sel,
-					                               var="SVLMass", tag=htag,
-					                               titlex='m(SV,lepton) [GeV]')
+												   var="SVLMass", tag=htag,
+												   titlex='m(SV,lepton) [GeV]')
 
 			systhistos[(tag,'ptt_tot')] = getTopPtHistos(systtrees[172.5],
-				                              sel=sel,
-				                              var="SVLMass", tag=tag,
-				                              titlex='m(SV,lepton) [GeV]')
+											  sel=sel,
+											  var="SVLMass", tag=tag,
+											  titlex='m(SV,lepton) [GeV]')
 
 			systhistos[(tag,'ptt_cor')] = getTopPtHistos(systtrees[172.5],
-				                              sel=sel+'&&(CombInfo==1)',
-				                              var="SVLMass", tag=tag+'_cor',
-				                              titlex='m(SV,lepton) [GeV]')
+											  sel=sel+'&&(CombInfo==1)',
+											  var="SVLMass", tag=tag+'_cor',
+											  titlex='m(SV,lepton) [GeV]')
 
 			systhistos[(tag,'ptt_wro')] = getTopPtHistos(systtrees[172.5],
-				                              sel=sel+'&&(CombInfo==0)',
-				                              var="SVLMass", tag=tag+'_wro',
-				                              titlex='m(SV,lepton) [GeV]')
+											  sel=sel+'&&(CombInfo==0)',
+											  var="SVLMass", tag=tag+'_wro',
+											  titlex='m(SV,lepton) [GeV]')
 
 			for syst,_,_ in SYSTS:
 				systhistos[(tag,syst)] = getSVLHistos(systtrees[syst],
-				                        sel=sel,
-				                        var="SVLMass", tag=tag+'_'+syst,
-				                        titlex='m(SV,lepton) [GeV]')
+										sel=sel,
+										var="SVLMass", tag=tag+'_'+syst,
+										titlex='m(SV,lepton) [GeV]')
 
-			ntkhistos[tag] = getNTrkHistos(systtrees[172.5], sel=sel, tag=tag,
-				                           var='SVLMass',
-				                           titlex='m(SV,lepton) [GeV]')
+			massntkhistos[tag] = getNTrkHistos(systtrees[172.5],
+										   sel=sel,
+										   tag=tag,
+										   var='SVLMass',
+										   titlex='m(SV,lepton) [GeV]')
 
 		controlhistos = {} # (var) -> h_tot, h_cor, h_wro, h_unm
 		for var,xmin,xmax,titlex in CONTROLVARS:
 			controlhistos[var] = getSVLHistos(systtrees[172.5],"1",
-				                              var=var, tag="incl",
-				                              xmin=xmin, xmax=xmax,
-				                              titlex=titlex)
+											  var=var, tag="incl",
+											  xmin=xmin, xmax=xmax,
+											  titlex=titlex)
 
 
 		cachefile = open(".svlhistos.pck", 'w')
 		pickle.dump(masshistos,    cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(systhistos,    cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(ntkhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(massntkhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(controlhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 
@@ -314,7 +379,7 @@ def main(args, opt):
 			hist.Write(hist.GetName())
 		for hist in [h for hists in controlhistos.values() for h in hists]:
 			hist.Write(hist.GetName())
-		for hist in [h for hists in ntkhistos.values() for h in hists]:
+		for hist in [h for hists in massntkhistos.values() for h in hists]:
 			hist.Write(hist.GetName())
 		ofi.Write()
 		ofi.Close()
@@ -323,7 +388,7 @@ def main(args, opt):
 		cachefile = open(".svlhistos.pck", 'r')
 		masshistos    = pickle.load(cachefile)
 		systhistos    = pickle.load(cachefile)
-		ntkhistos     = pickle.load(cachefile)
+		massntkhistos = pickle.load(cachefile)
 		controlhistos = pickle.load(cachefile)
 		cachefile.close()
 
@@ -357,9 +422,9 @@ def main(args, opt):
 		for legentry in sorted(chi2s.keys()):
 			chi2stofit.append((float(legentry[8:-4]), chi2s[legentry]))
 		errorGetters[tag] = fitChi2(chi2stofit,
-			                        tag=seltag,
-			                        oname=os.path.join(opt.outDir,
-			                  	                       "chi2fit_%s.pdf"%tag))
+									tag=seltag,
+									oname=os.path.join(opt.outDir,
+													   "chi2fit_%s.pdf"%tag))
 		ratplot.reset()
 
 		ratplot.reference = masshistos[(tag,172.5)][1]
@@ -438,15 +503,16 @@ def main(args, opt):
 		scaleplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
 		scaleplot.show("scale_%s"%tag, opt.outDir)
 		scalechi2 = max(scaleplot.getChiSquares(rangex=FITRANGE).values())
-		systematics[(tag,'scale')] = (errorGetters[tag](scalechi2), scalechi2)
+		systematics[(tag,'scale')] = (errorGetters[tag](scalechi2),
+																 scalechi2)
 		scaleplot.reset()
 
 		matchplot = RatioPlot('matchplot_%s'%tag)
 		matchplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
 		matchplot.add(systhistos[(tag,'matchingup')][0],
-			                      'Matching up')
+								  'Matching up')
 		matchplot.add(systhistos[(tag,'matchingdown')][0],
-			                      'Matching down')
+								  'Matching down')
 		matchplot.tag = 'ME/PS matching scale systematic'
 		matchplot.subtag = seltag
 		matchplot.ratiotitle = 'Ratio wrt Nominal'
@@ -454,15 +520,16 @@ def main(args, opt):
 		matchplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
 		matchplot.show("matching_%s"%tag, opt.outDir)
 		matchchi2 = max(matchplot.getChiSquares(rangex=FITRANGE).values())
-		systematics[(tag,'matching')] = (errorGetters[tag](matchchi2), matchchi2)
+		systematics[(tag,'matching')] = (errorGetters[tag](matchchi2),
+																 matchchi2)
 		matchplot.reset()
 
 		matchplot.reference = masshistos[(tag, 172.5)][1]
 		matchplot.add(masshistos[(tag, 172.5)][1], 'Correct')
 		matchplot.add(systhistos[(tag,'matchingup')][1],
-			                      'Matching up')
+								  'Matching up')
 		matchplot.add(systhistos[(tag,'matchingdown')][1],
-			                      'Matching down')
+								  'Matching down')
 		matchplot.tag = 'ME/PS matching scale systematic'
 		matchplot.subtag = seltag+', correct comb.'
 		matchplot.ratiotitle = 'Ratio wrt Nominal'
@@ -474,9 +541,9 @@ def main(args, opt):
 		matchplot.reference = masshistos[(tag, 172.5)][2]
 		matchplot.add(masshistos[(tag, 172.5)][2], 'Wrong')
 		matchplot.add(systhistos[(tag,'matchingup')][2],
-			                      'Matching up')
+								  'Matching up')
 		matchplot.add(systhistos[(tag,'matchingdown')][2],
-			                      'Matching down')
+								  'Matching down')
 		matchplot.tag = 'ME/PS matching scale systematic'
 		matchplot.subtag = seltag+', wrong comb.'
 		matchplot.ratiotitle = 'Ratio wrt Nominal'
@@ -488,36 +555,36 @@ def main(args, opt):
 		uecrplot = RatioPlot('uecrplot_%s'%tag)
 		uecrplot.add(masshistos[(tag, 172.5)][0], 'Nominal (Z2*)')
 		uecrplot.add(systhistos[(tag,'p11')][0],
-			                      'P11 Nominal')
+								  'P11 Nominal')
 		uecrplot.add(systhistos[(tag,'p11tev')][0],
-			                      'P11 Tevatron tune')
+								  'P11 Tevatron tune')
 		uecrplot.add(systhistos[(tag,'p11mpihi')][0],
-			                      'P11 MPI High')
+								  'P11 MPI High')
 		uecrplot.add(systhistos[(tag,'p11nocr')][0],
-			                      'P11 No CR')
+								  'P11 No CR')
 		uecrplot.tag = 'Underlying event / Color reconnection'
 		uecrplot.subtag = seltag
 		uecrplot.ratiotitle = 'Ratio wrt P11'
 		uecrplot.ratiorange = (0.5, 1.5)
 		uecrplot.reference = systhistos[(tag,'p11')][0]
 		uecrplot.colors = [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,
-		                    ROOT.kMagenta-9, ROOT.kViolet+2]
+							ROOT.kMagenta-9, ROOT.kViolet+2]
 		uecrplot.show("uecr_%s"%tag, opt.outDir)
 		uecrchi2s = uecrplot.getChiSquares(rangex=FITRANGE)
 		uecrchi2 = max([uecrchi2s['P11 Nominal'],
-			            uecrchi2s['P11 Tevatron tune'],
-			            uecrchi2s['P11 MPI High'],
-			            uecrchi2s['P11 No CR']])
+						uecrchi2s['P11 Tevatron tune'],
+						uecrchi2s['P11 MPI High'],
+						uecrchi2s['P11 No CR']])
 		systematics[(tag,'uecr')] = (errorGetters[tag](uecrchi2), uecrchi2)
 		uecrplot.reset()
 
 
 		ntkplot = RatioPlot('ntkplot_%s'%tag)
 		ntkplot.add(masshistos[(tag, 172.5)][0], 'Sum')
-		for hist in ntkhistos[tag]:
+		for hist in massntkhistos[tag]:
 			ntkplot.add(hist, hist.GetTitle())
 		ntkplot.colors = [ROOT.kOrange+10, ROOT.kGreen+4, ROOT.kGreen+2,
-		                  ROOT.kGreen, ROOT.kGreen-7, ROOT.kGreen-8]
+						  ROOT.kGreen, ROOT.kGreen-7, ROOT.kGreen-8]
 		ntkplot.ratiorange = (0,3.0)
 		ntkplot.ratiotitle = "Ratio wrt Sum"
 		ntkplot.tag = 'm_{t} = 172.5 GeV'
@@ -528,8 +595,8 @@ def main(args, opt):
 	print 94*'-'
 	print 'Estimated systematics (from a crude chi2 fit)'
 	print '%20s | %-15s | %-15s | %-15s | %-15s' % (
-		                                 'selection', 'scale', 'toppt',
-		                                 'matching', 'uecr')
+										 'selection', 'scale', 'toppt',
+										 'matching', 'uecr')
 	for tag,_,_ in SELECTIONS:
 			sys.stdout.write("%20s | " % tag)
 			for syst in ['scale', 'toppt', 'matching', 'uecr']:
@@ -542,16 +609,21 @@ def main(args, opt):
 	for tag,sel,seltag in SELECTIONS:
 		print 70*'-'
 		print '%-10s: %s' % (tag, sel)
-		# for mass in sorted(systtrees.keys()):
-		mass = 172.5
-		hists = masshistos[(tag, mass)]
-		n_tot, n_cor, n_wro, n_unm = (x.GetEntries() for x in hists)
-		p_cor = 100.*(n_cor/float(n_tot))
-		p_wro = 100.*(n_wro/float(n_tot))
-		p_unm = 100.*(n_unm/float(n_tot))
-		print ('  %5.1f GeV: %7d entries \t'
-			   '(%2.0f%% corr, %2.0f%% wrong, %2.0f%% unmatched)' %
-			   (mass, n_tot, p_cor, p_wro, p_unm))
+		fcor, fwro, funm = {}, {}, {}
+		for mass in sorted(massfiles.keys()):
+		# mass = 172.5
+			hists = masshistos[(tag, mass)]
+			n_tot, n_cor, n_wro, n_unm = (x.GetEntries() for x in hists)
+			fcor[mass] = 100.*(n_cor/float(n_tot))
+			fwro[mass] = 100.*(n_wro/float(n_tot))
+			funm[mass] = 100.*(n_unm/float(n_tot))
+			print ('  %5.1f GeV: %7d entries \t'
+				   '(%4.1f%% corr, %4.1f%% wrong, %4.1f%% unmatched)' %
+				   (mass, n_tot, fcor[mass], fwro[mass], funm[mass]))
+
+		oname = os.path.join(opt.outDir, 'fracvsmt_%s'%tag)
+		plotFracVsTopMass(fcor, fwro, funm, tag, oname)
+
 	print 80*'-'
 
 	exit(0)

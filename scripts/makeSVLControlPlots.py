@@ -126,6 +126,34 @@ def getTopPtHistos(tree, sel,
 
 	return h_tpt, h_tup
 
+def getBfragHistos(tree, sel,
+				   var="SVLMass",
+				   tag='', xmin=XMIN, xmax=XMAX,
+				   titlex=''):
+	h_bfrag = ROOT.TH1D("%s_bfrag_%s"%(var,tag),
+					  "bfrag weighted"    , NBINS, xmin, xmax)
+	h_bfhar = ROOT.TH1D("%s_bfrag_hard_%s"%(var,tag),
+					  "bfrag hard" , NBINS, xmin, xmax)
+	h_bfsof = ROOT.TH1D("%s_bfrag_soft_%s"%(var,tag),
+					  "bfrag soft" , NBINS, xmin, xmax)
+
+	if sel=="": sel = "1"
+	sel = "(%s)"%sel
+	projectFromTree(h_bfrag, var, sel+"*SVBfragWeight[0]", tree)
+	projectFromTree(h_bfhar, var, sel+"*SVBfragWeight[1]", tree)
+	projectFromTree(h_bfsof, var, sel+"*SVBfragWeight[2]", tree)
+
+	h_bfrag.SetLineColor(ROOT.kGreen+2)
+	h_bfhar.SetLineColor(ROOT.kGreen+5)
+	h_bfsof.SetLineColor(ROOT.kGreen)
+
+	for x in [h_bfrag, h_bfhar, h_bfsof]:
+		x.SetLineWidth(2)
+		x.GetXaxis().SetTitle(titlex)
+		x.Sumw2()
+
+	return h_bfrag, h_bfhar, h_bfsof
+
 def getNTrkHistos(tree, sel,
 				 var="SVLMass",
 				 tag='', xmin=XMIN, xmax=XMAX,
@@ -215,7 +243,7 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
 	return getError
 
 
-def plotFracVsTopMass(fcor, fwro, funm, tag, oname):
+def plotFracVsTopMass(fcor, fwro, funm, tag, subtag, oname):
 	tg_cor = ROOT.TGraph(len(fcor))
 	tg_wro = ROOT.TGraph(len(fwro))
 	tg_unm = ROOT.TGraph(len(funm))
@@ -246,13 +274,16 @@ def plotFracVsTopMass(fcor, fwro, funm, tag, oname):
 	h_axes.GetYaxis().SetTitle("Fraction of combinations")
 	h_axes.Draw()
 
+	tlat = ROOT.TLatex()
+	tlat.SetTextFont(43)
+	tlat.SetNDC(1)
+	tlat.SetTextAlign(33)
 	if len(tag)>0:
-		tlat = ROOT.TLatex()
-		tlat.SetTextFont(43)
-		tlat.SetNDC(1)
-		tlat.SetTextAlign(33)
+		tlat.SetTextSize(11)
+		tlat.DrawLatex(0.85, 0.85, tag)
+	if len(subtag)>0:
 		tlat.SetTextSize(10)
-		tlat.DrawLatex(0.85, 0.78, tag)
+		tlat.DrawLatex(0.85, 0.78, subtag)
 
 	tleg = ROOT.TLegend(0.12, 0.75, .50, 0.89)
 	tleg.SetBorderSize(0)
@@ -320,6 +351,7 @@ def main(args, opt):
 		masshistos = {} # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
 		systhistos = {} # (tag) -> h_tptw, h_tptup, h_tptdn
 		massntkhistos = {} # (tag) -> (h_ntk1, h_ntk2, h_ntk3, ..)
+		ntkhistos = {} # (tag) -> h_ntk_tot, h_ntk_cor, h_ntk_wro, h_ntk_unm
 		for tag,sel,_ in SELECTIONS:
 			for mass, tree in systtrees.iteritems():
 				if not mass in massfiles.keys(): continue
@@ -350,11 +382,21 @@ def main(args, opt):
 										var="SVLMass", tag=tag+'_'+syst,
 										titlex='m(SV,lepton) [GeV]')
 
+			systhistos[(tag,'bfrag')] = getBfragHistos(systtrees[172.5],
+				                        sel=sel, var='SVLMass',
+				                        tag=tag+'_bfrag',
+				                        titlex='m(SV,lepton) [GeV]')
+
 			massntkhistos[tag] = getNTrkHistos(systtrees[172.5],
 										   sel=sel,
 										   tag=tag,
 										   var='SVLMass',
 										   titlex='m(SV,lepton) [GeV]')
+
+			ntkhistos[tag] = getSVLHistos(systtrees[172.5], sel,
+										  var='SVNtrk', tag="_ntk_%s"%tag,
+										  nbins=8, xmin=2, xmax=10,
+										  titlex='Track Multiplicity')
 
 		controlhistos = {} # (var) -> h_tot, h_cor, h_wro, h_unm
 		for var,xmin,xmax,titlex in CONTROLVARS:
@@ -367,7 +409,8 @@ def main(args, opt):
 		cachefile = open(".svlhistos.pck", 'w')
 		pickle.dump(masshistos,    cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(systhistos,    cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(massntkhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(ntkhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(massntkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(controlhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 
@@ -381,6 +424,8 @@ def main(args, opt):
 			hist.Write(hist.GetName())
 		for hist in [h for hists in massntkhistos.values() for h in hists]:
 			hist.Write(hist.GetName())
+		for hist in [h for hists in ntkhistos.values() for h in hists]:
+			hist.Write(hist.GetName())
 		ofi.Write()
 		ofi.Close()
 
@@ -388,6 +433,7 @@ def main(args, opt):
 		cachefile = open(".svlhistos.pck", 'r')
 		masshistos    = pickle.load(cachefile)
 		systhistos    = pickle.load(cachefile)
+		ntkhistos     = pickle.load(cachefile)
 		massntkhistos = pickle.load(cachefile)
 		controlhistos = pickle.load(cachefile)
 		cachefile.close()
@@ -429,7 +475,7 @@ def main(args, opt):
 
 		ratplot.reference = masshistos[(tag,172.5)][1]
 		for mass in sorted(massfiles.keys()):
-			legentry = '%5.1f GeV' % mass
+			legentry = 'm_{t} = %5.1f GeV' % mass
 			ratplot.add(masshistos[(tag,mass)][1], legentry)
 		ratplot.tag = 'Correct combinations'
 		ratplot.subtag = seltag
@@ -438,7 +484,7 @@ def main(args, opt):
 
 		ratplot.reference = masshistos[(tag,172.5)][2]
 		for mass in sorted(massfiles.keys()):
-			legentry = '%5.1f GeV' % mass
+			legentry = 'm_{t} = %5.1f GeV' % mass
 			ratplot.add(masshistos[(tag,mass)][2], legentry)
 		ratplot.tag = 'Wrong combinations'
 		ratplot.subtag = seltag
@@ -447,7 +493,7 @@ def main(args, opt):
 
 		ratplot.reference = masshistos[(tag,172.5)][3]
 		for mass in sorted(massfiles.keys()):
-			legentry = '%5.1f GeV' % mass
+			legentry = 'm_{t} = %5.1f GeV' % mass
 			ratplot.add(masshistos[(tag,mass)][3], legentry)
 		ratplot.tag = 'Unmatched combinations'
 		ratplot.subtag = seltag
@@ -578,28 +624,73 @@ def main(args, opt):
 		systematics[(tag,'uecr')] = (errorGetters[tag](uecrchi2), uecrchi2)
 		uecrplot.reset()
 
+		bfragplot = RatioPlot('bfragplot_%s'%tag)
+		bfragplot.add(masshistos[(tag, 172.5)][0], 'Nominal (Z2*)')
+		bfragplot.add(systhistos[(tag,'bfrag')][0],
+								  'rb LEP weighted')
+		bfragplot.add(systhistos[(tag,'bfrag')][1],
+								  'rb LEP hard weighted')
+		bfragplot.add(systhistos[(tag,'bfrag')][2],
+								  'rb LEP soft weighted')
+		bfragplot.tag = 'B fragmentation'
+		bfragplot.subtag = seltag
+		bfragplot.ratiotitle = 'Ratio wrt Nominal'
+		bfragplot.ratiorange = (0.5, 1.5)
+		bfragplot.colors = [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,
+							ROOT.kMagenta-9, ROOT.kViolet+2]
+		bfragplot.show("bfrag_%s"%tag, opt.outDir)
+		bfragchi2s = bfragplot.getChiSquares(rangex=FITRANGE)
+		bfragchi2 = max([bfragchi2s['rb LEP weighted'],
+						 bfragchi2s['rb LEP hard weighted'],
+						 bfragchi2s['rb LEP soft weighted']])
+		systematics[(tag,'bfrag')] = (errorGetters[tag](bfragchi2), bfragchi2)
+		bfragplot.reset()
 
-		ntkplot = RatioPlot('ntkplot_%s'%tag)
-		ntkplot.add(masshistos[(tag, 172.5)][0], 'Sum')
+
+		ntkmassplot = RatioPlot('ntkmassplot_%s'%tag)
+		ntkmassplot.add(masshistos[(tag, 172.5)][0], 'Sum')
 		for hist in massntkhistos[tag]:
-			ntkplot.add(hist, hist.GetTitle())
-		ntkplot.colors = [ROOT.kOrange+10, ROOT.kGreen+4, ROOT.kGreen+2,
-						  ROOT.kGreen, ROOT.kGreen-7, ROOT.kGreen-8]
-		ntkplot.ratiorange = (0,3.0)
-		ntkplot.ratiotitle = "Ratio wrt Sum"
-		ntkplot.tag = 'm_{t} = 172.5 GeV'
-		ntkplot.subtag = seltag
-		ntkplot.show("ntkscan_%s"%tag, opt.outDir)
-		ntkplot.reset()
+			ntkmassplot.add(hist, hist.GetTitle())
+		ntkmassplot.colors = [ROOT.kOrange+10, ROOT.kGreen+4, ROOT.kGreen+2,
+							  ROOT.kGreen, ROOT.kGreen-7, ROOT.kGreen-8]
+		ntkmassplot.ratiorange = (0,3.0)
+		ntkmassplot.ratiotitle = "Ratio wrt Sum"
+		ntkmassplot.tag = 'm_{t} = 172.5 GeV'
+		ntkmassplot.subtag = seltag
+		ntkmassplot.show("ntkscan_%s"%tag, opt.outDir)
+		ntkmassplot.reset()
+
+	ntkplot = RatioPlot('ntkplot')
+	ntkplot.colors = [ROOT.kGreen+2,
+					  ROOT.kBlue, ROOT.kAzure-4, ROOT.kViolet+7,
+					  ROOT.kRed-4, ROOT.kOrange-3, ROOT.kPink+7]
+	ntkplot.ratiorange = (0.8,1.3)
+	ntkplot.titlex = 'SV Track Multiplicity'
+	ntkplot.ratiotitle = "Ratio wrt Incl."
+	ntkplot.tag = 'm_{t} = 172.5 GeV'
+
+	for tag,_,_ in SELECTIONS:
+		ntkplot.add(ntkhistos[tag][0], tag)
+	ntkplot.reference = ntkhistos['inclusive'][0]
+	ntkplot.subtag = '(All combinations)'
+	ntkplot.show("ntks_tot", opt.outDir)
+	ntkplot.reset()
+
+	for tag,_,_ in SELECTIONS:
+		ntkplot.add(ntkhistos[tag][1], tag)
+	ntkplot.reference = ntkhistos['inclusive'][1]
+	ntkplot.subtag = '(Correct combinations)'
+	ntkplot.show("ntks_cor", opt.outDir)
+	ntkplot.reset()
 
 	print 94*'-'
 	print 'Estimated systematics (from a crude chi2 fit)'
-	print '%20s | %-15s | %-15s | %-15s | %-15s' % (
-										 'selection', 'scale', 'toppt',
-										 'matching', 'uecr')
+	print '%20s | %-15s | %-15s | %-15s | %-15s | %-15s' % (
+										 'selection', 'bfrag', 'scale',
+										 'toppt', 'matching', 'uecr')
 	for tag,_,_ in SELECTIONS:
 			sys.stdout.write("%20s | " % tag)
-			for syst in ['scale', 'toppt', 'matching', 'uecr']:
+			for syst in ['bfrag', 'scale', 'toppt', 'matching', 'uecr']:
 				err, chi2 = systematics[(tag,syst)]
 				sys.stdout.write('%4.1f (%4.1f GeV)' % (chi2, err))
 				sys.stdout.write(' | ')
@@ -622,7 +713,7 @@ def main(args, opt):
 				   (mass, n_tot, fcor[mass], fwro[mass], funm[mass]))
 
 		oname = os.path.join(opt.outDir, 'fracvsmt_%s'%tag)
-		plotFracVsTopMass(fcor, fwro, funm, tag, oname)
+		plotFracVsTopMass(fcor, fwro, funm, tag, seltag, oname)
 
 	print 80*'-'
 

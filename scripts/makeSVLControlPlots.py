@@ -130,11 +130,11 @@ def getBfragHistos(tree, sel,
 				   var="SVLMass",
 				   tag='', xmin=XMIN, xmax=XMAX,
 				   titlex=''):
-	h_bfrag = ROOT.TH1D("%s_bfrag_%s"%(var,tag),
+	h_bfrag = ROOT.TH1D("%s_tot_%s_bfrag"%(var,tag),
 					  "bfrag weighted"    , NBINS, xmin, xmax)
-	h_bfhar = ROOT.TH1D("%s_bfrag_hard_%s"%(var,tag),
+	h_bfhar = ROOT.TH1D("%s_tot_%s_bfrag_hard"%(var,tag),
 					  "bfrag hard" , NBINS, xmin, xmax)
-	h_bfsof = ROOT.TH1D("%s_bfrag_soft_%s"%(var,tag),
+	h_bfsof = ROOT.TH1D("%s_tot_%s_bfrag_soft"%(var,tag),
 					  "bfrag soft" , NBINS, xmin, xmax)
 
 	if sel=="": sel = "1"
@@ -153,6 +153,30 @@ def getBfragHistos(tree, sel,
 		x.Sumw2()
 
 	return h_bfrag, h_bfhar, h_bfsof
+
+def getJESHistos(tree, sel,
+				 var="SVLMass",
+				 tag='', xmin=XMIN, xmax=XMAX,
+				 titlex=''):
+	h_jesup = ROOT.TH1D("%s_tot_%s_jes_up"%(var,tag),
+					  "jes up",   NBINS, xmin, xmax)
+	h_jesdn = ROOT.TH1D("%s_tot_%s_jes_dn"%(var,tag),
+					  "jes down", NBINS, xmin, xmax)
+
+	if sel=="": sel = "1"
+	sel = "(%s)"%sel
+	projectFromTree(h_jesup, var, sel+"&&JESWeight[1]", tree)
+	projectFromTree(h_jesdn, var, sel+"&&JESWeight[2]", tree)
+
+	h_jesup.SetLineColor(ROOT.kBlue+2)
+	h_jesdn.SetLineColor(ROOT.kBlue-6)
+
+	for x in [h_jesup, h_jesdn]:
+		x.SetLineWidth(2)
+		x.GetXaxis().SetTitle(titlex)
+		x.Sumw2()
+
+	return h_jesup, h_jesdn
 
 def getNTrkHistos(tree, sel,
 				 var="SVLMass",
@@ -195,8 +219,7 @@ def makeControlPlot(hists, tag, seltag, opt):
 	ctrlplot.show("control_%s"%tag, opt.outDir)
 	ctrlplot.reset()
 
-
-def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
+def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
 	"""
 	This does a pol2 fit to the given values and returns a callable
 	that gives the width of the fit at a given chi2 value
@@ -208,7 +231,7 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
 			points_to_remove.append(n)
 		# print n, mt, chi2
 		tg.SetPoint(n, mt, chi2)
-	tcanv = ROOT.TCanvas("chi2fit", "chi2fit", 400, 400)
+	tcanv = ROOT.TCanvas("chi2fit_%s"%tag, "chi2fit", 400, 400)
 	tcanv.cd()
 	tg.SetMarkerStyle(20)
 	tg.GetXaxis().SetTitle("m_{t, gen.} [GeV]")
@@ -221,16 +244,21 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
 		tlat.SetTextAlign(33)
 		tlat.SetTextSize(10)
 		tlat.DrawLatex(0.85, 0.78, tag)
-	tcanv.SaveAs(oname)
+
+	if not drawfit:
+		tcanv.SaveAs(oname)
+
 
 	# need to reverse because the indices change when removing a point
 	for n in reversed(points_to_remove):
 		tg.RemovePoint(n)
 	tf = ROOT.TF1("fitf", "pol2", 160., 190.)
-	tg.Fit(tf, "WN0")
-	# tf.SetLineColor(ROOT.kBlue)
-	# tf.SetLineWidth(3)
-	# tf.Draw("same")
+	tg.Fit(tf, "WQ")
+	if drawfit:
+		tf.SetLineColor(ROOT.kBlue)
+		tf.SetLineWidth(3)
+		tf.Draw("same")
+		tcanv.SaveAs(oname)
 
 	def getError(chi2test):
 		coeff = [tf.GetParameter(2),
@@ -241,7 +269,6 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf'):
 
 
 	return getError
-
 
 def plotFracVsTopMass(fcor, fwro, funm, tag, subtag, oname):
 	tg_cor = ROOT.TGraph(len(fcor))
@@ -387,6 +414,11 @@ def main(args, opt):
 				                        tag=tag+'_bfrag',
 				                        titlex='m(SV,lepton) [GeV]')
 
+			systhistos[(tag,'jes')] = getJESHistos(systtrees[172.5],
+				                        sel=sel, var='SVLMass',
+				                        tag=tag+'_jes',
+				                        titlex='m(SV,lepton) [GeV]')
+
 			massntkhistos[tag] = getNTrkHistos(systtrees[172.5],
 										   sel=sel,
 										   tag=tag,
@@ -449,28 +481,29 @@ def main(args, opt):
 	errorGetters = {} # tag -> function(chi2) -> error
 	systematics = {} # (seltag, systname) -> error
 	for tag,sel,seltag in SELECTIONS:
+		print "... processing %s"%tag
 		makeControlPlot(masshistos[(tag, 172.5)], tag, seltag, opt)
 
 		ratplot = RatioPlot('ratioplot')
 		ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
 		ratplot.ratiorange = (0.5, 1.5)
 		ratplot.reference = masshistos[(tag,172.5)][0]
-		chisquares = []
 		for mass in sorted(massfiles.keys()):
 			legentry = 'm_{t} = %5.1f GeV' % mass
 			ratplot.add(masshistos[(tag,mass)][0], legentry)
 		ratplot.tag = 'All combinations'
 		ratplot.subtag = seltag
 		ratplot.show("massscan_%s_tot"%tag, opt.outDir)
-		chi2s = ratplot.getChiSquares(rangex=FITRANGE)
 
+		chi2s = ratplot.getChiSquares(rangex=FITRANGE)
 		chi2stofit = []
 		for legentry in sorted(chi2s.keys()):
 			chi2stofit.append((float(legentry[8:-4]), chi2s[legentry]))
 		errorGetters[tag] = fitChi2(chi2stofit,
 									tag=seltag,
 									oname=os.path.join(opt.outDir,
-													   "chi2fit_%s.pdf"%tag))
+								    "chi2_simple_fit_%s.pdf"%tag),
+									drawfit=False)
 		ratplot.reset()
 
 		ratplot.reference = masshistos[(tag,172.5)][1]
@@ -646,6 +679,22 @@ def main(args, opt):
 		systematics[(tag,'bfrag')] = (errorGetters[tag](bfragchi2), bfragchi2)
 		bfragplot.reset()
 
+		jesplot = RatioPlot('jesplot_%s'%tag)
+		jesplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
+		jesplot.add(systhistos[(tag,'jes')][0],
+								  'JES up')
+		jesplot.add(systhistos[(tag,'jes')][1],
+								  'JES down')
+		jesplot.tag = 'Jet energy scales'
+		jesplot.subtag = seltag
+		jesplot.ratiotitle = 'Ratio wrt Nominal'
+		jesplot.ratiorange = (0.5, 1.5)
+		jesplot.colors = [ROOT.kBlack, ROOT.kBlue+2, ROOT.kBlue-6]
+		jesplot.show("jes_%s"%tag, opt.outDir)
+		jeschi2s = jesplot.getChiSquares(rangex=FITRANGE)
+		jeschi2 = max([jeschi2s['JES up'], jeschi2s['JES down']])
+		systematics[(tag,'jes')] = (errorGetters[tag](jeschi2), jeschi2)
+		jesplot.reset()
 
 		ntkmassplot = RatioPlot('ntkmassplot_%s'%tag)
 		ntkmassplot.add(masshistos[(tag, 172.5)][0], 'Sum')
@@ -683,20 +732,6 @@ def main(args, opt):
 	ntkplot.show("ntks_cor", opt.outDir)
 	ntkplot.reset()
 
-	print 94*'-'
-	print 'Estimated systematics (from a crude chi2 fit)'
-	print '%20s | %-15s | %-15s | %-15s | %-15s | %-15s' % (
-										 'selection', 'bfrag', 'scale',
-										 'toppt', 'matching', 'uecr')
-	for tag,_,_ in SELECTIONS:
-			sys.stdout.write("%20s | " % tag)
-			for syst in ['bfrag', 'scale', 'toppt', 'matching', 'uecr']:
-				err, chi2 = systematics[(tag,syst)]
-				sys.stdout.write('%4.1f (%4.1f GeV)' % (chi2, err))
-				sys.stdout.write(' | ')
-			sys.stdout.write('\n')
-	print 94*'-'
-
 	for tag,sel,seltag in SELECTIONS:
 		print 70*'-'
 		print '%-10s: %s' % (tag, sel)
@@ -715,9 +750,23 @@ def main(args, opt):
 		oname = os.path.join(opt.outDir, 'fracvsmt_%s'%tag)
 		plotFracVsTopMass(fcor, fwro, funm, tag, seltag, oname)
 
-	print 80*'-'
+	print 112*'-'
+	print 'Estimated systematics (from a crude chi2 fit)'
+	print '%20s | %-15s | %-15s | %-15s | %-15s | %-15s' % (
+										 'selection', 'bfrag', 'scale',
+										 'toppt', 'matching', 'uecr')
+	for tag,_,_ in SELECTIONS:
+			sys.stdout.write("%20s | " % tag)
+			for syst in ['bfrag', 'scale', 'toppt', 'matching', 'uecr']:
+				err, chi2 = systematics[(tag,syst)]
+				sys.stdout.write('%4.1f (%4.1f GeV)' % (chi2*1e5, err))
+				# sys.stdout.write('%4.1f (%4.1f GeV)' % (chi2, err))
+				sys.stdout.write(' | ')
+			sys.stdout.write('\n')
+	print 112*'-'
 
-	exit(0)
+
+	return 0
 
 
 
@@ -741,8 +790,7 @@ if __name__ == "__main__":
 					  help='Read from cache')
 	(opt, args) = parser.parse_args()
 
-	main(args, opt)
-	exit(-1)
+	exit(main(args, opt))
 
 
 

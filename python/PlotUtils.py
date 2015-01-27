@@ -31,6 +31,18 @@ def setMaximums(histos, margin=1.1, setminimum=None):
     if setminimum is not None:
         for hist in histos: hist.SetMinimum(setminimum)
 
+def customChi2(hist1, hist2):
+    if hist1.GetNbinsX() != hist2.GetNbinsX():
+        print "customChi2::Error ==> Histograms not compatible"
+        return -1
+    chi2 = 0
+    for ibin in xrange(1,hist1.GetNbinsX()):
+        binc1 = hist1.GetBinContent(ibin)
+        binc2 = hist2.GetBinContent(ibin)
+        chi2 += (binc1-binc2)**2
+    return chi2
+
+
 class RatioPlot(object):
     """Wrapper class for making ratio plots"""
 
@@ -102,18 +114,25 @@ class RatioPlot(object):
         histocopies = []
         for hist in self.histos:
             histocopies.append(hist.Clone("%s_copy" % hist.GetName()))
+            reference = reference.Clone("%s_copy" % reference.GetName())
 
         for hist in histocopies:
             if rangex is not None:
                 hist.GetXaxis().SetRangeUser(rangex[0], rangex[1])
+                reference.GetXaxis().SetRangeUser(rangex[0], rangex[1])
                 bin1 = hist.GetXaxis().FindBin(rangex[0])
                 bin2 = hist.GetXaxis().FindBin(rangex[1])
+
                 hist.Scale(1./hist.Integral(bin1, bin2))
+                reference.Scale(1./reference.Integral(bin1, bin2))
+
             else:
                 hist.Scale(1./hist.Integral())
 
         for legentry,hist in zip(self.legentries, histocopies):
-            chisquares[legentry] = hist.Chi2Test(reference,"WW CHI2/NDF")
+            # chisquares[legentry] = hist.Chi2Test(reference,"WW CHI2/NDF")
+            # chisquares[legentry] = hist.KolmogorovTest(reference,"")
+            chisquares[legentry] = customChi2(hist, reference)
 
         return chisquares
 

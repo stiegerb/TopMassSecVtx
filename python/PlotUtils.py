@@ -39,6 +39,8 @@ class RatioPlot(object):
         self.name = name
         self.histos = []
         self.legentries = []
+        self.titlex = None
+        self.titley = None
         self.reference = None
         self.normalized = True
         self.ratiotitle = None
@@ -79,8 +81,8 @@ class RatioPlot(object):
                 raise e
         self.histos = []
         self.legentries = []
-        self.tag = None
-        self.subtag = None
+        # self.tag = None
+        # self.subtag = None
 
     def add(self, hist, tag):
         if hist.GetEntries() == 0:
@@ -163,7 +165,10 @@ class RatioPlot(object):
         mainframe.GetYaxis().SetTitleFont(43)
         mainframe.GetYaxis().SetLabelFont(43)
 
-        mainframe.GetYaxis().SetTitle('a.u.')
+        if not self.titley:
+            mainframe.GetYaxis().SetTitle('a.u.')
+        else:
+            mainframe.GetXaxis().SetTitle(self.titley)
         mainframe.GetYaxis().SetLabelSize(22)
         mainframe.GetYaxis().SetTitleSize(26)
         mainframe.GetYaxis().SetTitleOffset(1.2)
@@ -209,7 +214,10 @@ class RatioPlot(object):
             ratioframe.GetYaxis().SetTitle('Ratio')
         else:
             ratioframe.GetYaxis().SetTitle(self.ratiotitle)
-        ratioframe.GetXaxis().SetTitle(self.histos[0].GetXaxis().GetTitle())
+        if not self.titlex:
+            ratioframe.GetXaxis().SetTitle(self.histos[0].GetXaxis().GetTitle())
+        else:
+            ratioframe.GetXaxis().SetTitle(self.titlex)
         ratioframe.GetXaxis().SetLabelSize(22)
         ratioframe.GetXaxis().SetTitleSize(26)
         ratioframe.GetYaxis().SetNdivisions(5)

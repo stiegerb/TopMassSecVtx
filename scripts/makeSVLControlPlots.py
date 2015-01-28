@@ -10,20 +10,24 @@ from numpy import roots
 # MASSES = [163.5, 166.5, 169.5, 172.5, 173.5, 175.5, 178.5, 181.5]
 TREENAME = 'SVLInfo'
 SELECTIONS = [
-	('inclusive',  '1',
-	 'Fully inclusive'),
-	('mrankinc',  'SVLMassRank==1',
-	 'Minimum mass comb.'),
-	('mrank',     'SVLMassRank==1&&SVLDeltaR<2.0',
-	 'Minimum mass comb., #Delta R < 2.0'),
-	('mrank1',    'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',
-	 'Minimum mass comb., only SV in hardest b-jet, #Delta R < 2.0'),
-	('drrankinc', 'SVLDeltaRRank==1',
-	 'Minimum #Delta R comb.'),
-	('drrank',    'SVLDeltaRRank==1&&SVLDeltaR<2.0',
-	 'Minimum #Delta R comb., #Delta R < 2.0'),
-	('drrank1',   'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',
-	 'Minimum #Delta R comb., only SV in hardest b-jet, #Delta R < 2.0'),
+	('inclusive', '1',              '#geq 1 lepton'),
+	('ee',        'EvCat==-121',    'ee'),
+	('emu',       'EvCat==-143',    'e#mu'),
+	('mumu',      'EvCat==-169',    '#mu#mu'),
+	('e',         'abs(EvCat)==11', 'e'),
+	('mu',        'abs(EvCat)==13', '#mu'),
+	('inclusive_mrank1', '1 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',              '#geq 1 lepton'),
+	('ee_mrank1',        'EvCat==-121 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',    'ee'),
+	('emu_mrank1',       'EvCat==-143 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',    'e#mu'),
+	('mumu_mrank1',      'EvCat==-169 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',    '#mu#mu'),
+	('e_mrank1',         'abs(EvCat)==11 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'e'),
+	('mu_mrank1',        'abs(EvCat)==13 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#mu'),
+#	('mrankinc',  'SVLMassRank==1',  'Minimum mass comb.'),
+#	('mrank',     'SVLMassRank==1&&SVLDeltaR<2.0', 'Minimum mass comb., #Delta R < 2.0'),
+#	('mrank1',    'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'Minimum mass comb., only SV in hardest b-jet, #Delta R < 2.0'),
+#	('drrankinc', 'SVLDeltaRRank==1', 'Minimum #Delta R comb.'),
+#	('drrank',    'SVLDeltaRRank==1&&SVLDeltaR<2.0', 'Minimum #Delta R comb., #Delta R < 2.0'),
+#	('drrank1',   'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'Minimum #Delta R comb., only SV in hardest b-jet, #Delta R < 2.0'),
 	# ('mrank12',   'SVLDeltaR<2.0&&((NCombs<=2&&SVLMassRank==1)||'
 	# 	          '(NCombs==4&&SVLMassRank<3))',
 	#  'Two minimum mass comb., #Delta R < 2.0'),
@@ -64,7 +68,8 @@ XMIN = 5.
 XMAX = 200.
 FITRANGE = (20., 140.)
 
-NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
+#NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
+NTRKBINS = [(2,3), (3,4), (4,1000)]
 
 def projectFromTree(hist, varname, sel, tree, option=''):
 	try:
@@ -179,20 +184,29 @@ def getJESHistos(tree, sel,
 	return h_jesup, h_jesdn
 
 def getNTrkHistos(tree, sel,
-				 var="SVLMass",
-				 tag='', xmin=XMIN, xmax=XMAX,
-				 titlex=''):
+		  var="SVLMass",
+		  tag='', 
+		  xmin=XMIN, xmax=XMAX,
+		  titlex='',
+		  combsToProject=[('tot','')]
+		  ):
 	hists = []
 	for ntk1,ntk2 in NTRKBINS:
 		title = "%d #leq N_{trk.} < %d" %(ntk1, ntk2)
 		if ntk2 > 100:
 			title = "%d #leq N_{trk.}" %(ntk1)
-		hist = ROOT.TH1D("%s_%d_%s"%(var,ntk1,tag), title, NBINS, xmin, xmax)
-		tksel = "(SVNtrk>=%d&&SVNtrk<%d)"%(ntk1,ntk2)
-		if sel=="": sel = "1"
-		sel = "(%s)"%sel
-		projectFromTree(hist, var, sel+"&&"+tksel, tree)
-		hists.append(hist)
+
+		
+		for comb,combSel in combsToProject:
+			hist = ROOT.TH1D("%s_%s_%d_%s"%(var,comb,ntk1,tag), title, NBINS, xmin, xmax)
+			tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
+			finalSel=sel
+			if finalSel=="": finalSel = "1"
+			if combSel=="" : finalSel = "(%s)"%finalSel
+			else           : finalSel = "(%s && %s)"%(finalSel,combSel)
+			finalSel=finalSel+"&&"+tksel
+			projectFromTree(hist, var, finalSel, tree)
+			hists.append(hist)
 
 	for x in hists:
 		x.SetLineWidth(2)
@@ -376,17 +390,25 @@ def main(args, opt):
 
 	if not opt.cache:
 		masshistos = {} # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
+		fittertkhistos = {} #(tag, mass or syst) -> h_tot, h_cor, h_wro, h_unm
 		systhistos = {} # (tag) -> h_tptw, h_tptup, h_tptdn
 		massntkhistos = {} # (tag) -> (h_ntk1, h_ntk2, h_ntk3, ..)
 		ntkhistos = {} # (tag) -> h_ntk_tot, h_ntk_cor, h_ntk_wro, h_ntk_unm
 		for tag,sel,_ in SELECTIONS:
 			for mass, tree in systtrees.iteritems():
 				if not mass in massfiles.keys(): continue
-				print ' ... processing %5.1f GeV %s' % (mass, sel)
 				htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
+				print ' ... processing %5.1f GeV %s tag=%s' % (mass, sel,htag)
 				masshistos[(tag, mass)] = getSVLHistos(tree, sel,
-												   var="SVLMass", tag=htag,
-												   titlex='m(SV,lepton) [GeV]')
+								       var="SVLMass", tag=htag,
+								       titlex='m(SV,lepton) [GeV]')
+
+				fittertkhistos[(tag,mass)] = getNTrkHistos(tree,
+									   sel=sel,
+									   tag=htag,
+									   var='SVLMass',
+									   titlex='m(SV,lepton) [GeV]',
+									   combsToProject=[('tot',''),('cor','CombInfo==1'),('wro','CombInfo==0'),('unm','CombInfo==-1')])
 
 			systhistos[(tag,'ptt_tot')] = getTopPtHistos(systtrees[172.5],
 											  sel=sel,
@@ -405,9 +427,15 @@ def main(args, opt):
 
 			for syst,_,_ in SYSTS:
 				systhistos[(tag,syst)] = getSVLHistos(systtrees[syst],
-										sel=sel,
-										var="SVLMass", tag=tag+'_'+syst,
-										titlex='m(SV,lepton) [GeV]')
+								      sel=sel,
+								      var="SVLMass", tag=tag+'_'+syst,
+								      titlex='m(SV,lepton) [GeV]')
+				#fittertkhistos[(tag,syst)] = getNTrkHistos(systtrees[syst],
+				#                                           sel=sel,
+				#                                           tag=htag,
+				#					    var='SVLMass',
+				#					    titlex='m(SV,lepton) [GeV]',
+				#					    combsToProject=[('tot',''),('cor','CombInfo==1'),('wro','CombInfo==0'),('unm','CombInfo==-1')])
 
 			systhistos[(tag,'bfrag')] = getBfragHistos(systtrees[172.5],
 				                        sel=sel, var='SVLMass',
@@ -420,10 +448,11 @@ def main(args, opt):
 				                        titlex='m(SV,lepton) [GeV]')
 
 			massntkhistos[tag] = getNTrkHistos(systtrees[172.5],
-										   sel=sel,
-										   tag=tag,
-										   var='SVLMass',
-										   titlex='m(SV,lepton) [GeV]')
+							   sel=sel,
+							   tag=tag,
+							   var='SVLMass',
+							   titlex='m(SV,lepton) [GeV]')
+
 
 			ntkhistos[tag] = getSVLHistos(systtrees[172.5], sel,
 										  var='SVNtrk', tag="_ntk_%s"%tag,
@@ -440,6 +469,7 @@ def main(args, opt):
 
 		cachefile = open(".svlhistos.pck", 'w')
 		pickle.dump(masshistos,    cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(fittertkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(systhistos,    cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(ntkhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(massntkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
@@ -449,6 +479,8 @@ def main(args, opt):
 		ofi = ROOT.TFile(os.path.join(opt.outDir,'histos.root'), 'recreate')
 		ofi.cd()
 		for hist in [h for hists in masshistos.values() for h in hists]:
+			hist.Write(hist.GetName())
+		for hist in [h for hists in fittertkhistos.values() for h in hists]:
 			hist.Write(hist.GetName())
 		for hist in [h for hists in systhistos.values() for h in hists]:
 			hist.Write(hist.GetName())
@@ -464,6 +496,7 @@ def main(args, opt):
 	else:
 		cachefile = open(".svlhistos.pck", 'r')
 		masshistos    = pickle.load(cachefile)
+		fittertkhistos = pickle.load(cachefile)
 		systhistos    = pickle.load(cachefile)
 		ntkhistos     = pickle.load(cachefile)
 		massntkhistos = pickle.load(cachefile)

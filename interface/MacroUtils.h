@@ -111,7 +111,6 @@ namespace utils
     //cf. https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections#JetEnCorFWLite
     FactorizedJetCorrector *getJetCorrector(TString baseDir, bool isMC);
   }
-
 }
 
 // CODE FOR DUPLICATE EVENTS CHECKING

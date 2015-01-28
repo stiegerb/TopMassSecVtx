@@ -49,12 +49,7 @@ Will run the plots and put them in svlplots/ by default. Also produces a histos.
 ### Running the fits (work in progress...)
 
 ```
-./scripts/SVLFitting/createMassTemplates.py -i svlplots/histos.root -s mrankinc
-./scripts/SVLFitting/createMassTemplates.py -i svlplots/histos.root -s drrankinc
-
-./scripts/SVLFitting/createMassTemplates.py -w svlfits/mSVL_Workspace_mrankinc.root -s mrankinc
-./scripts/SVLFitting/createMassTemplates.py -w svlfits/mSVL_Workspace_drrankinc.root -s drrankinc
-
+./scripts/makeSVLWorkspace.py -i .svlhistos.pck
 ```
 Will run the fits and put the RooFit workspace and plots in svlfits/ by default.
 

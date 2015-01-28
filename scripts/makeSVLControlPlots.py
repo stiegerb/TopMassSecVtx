@@ -199,11 +199,13 @@ def getNTrkHistos(tree, sel,
 		
 		for comb,combSel in combsToProject:
 			hist = ROOT.TH1D("%s_%s_%d_%s"%(var,comb,ntk1,tag), title, NBINS, xmin, xmax)
-			tksel = "(SVNtrk>=%d&&SVNtrk<%d)"%(ntk1,ntk2)
-			if sel=="": sel = "1"
-			if combSel=="" : sel = "(%s)"%sel
-			else           : sel = "(%s && %s)"%(sel,combSel)
-			projectFromTree(hist, var, sel+"&&"+tksel, tree)
+			tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
+			finalSel=sel
+			if finalSel=="": finalSel = "1"
+			if combSel=="" : finalSel = "(%s)"%finalSel
+			else           : finalSel = "(%s && %s)"%(finalSel,combSel)
+			finalSel=finalSel+"&&"+tksel
+			projectFromTree(hist, var, finalSel, tree)
 			hists.append(hist)
 
 	for x in hists:

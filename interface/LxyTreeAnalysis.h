@@ -172,6 +172,7 @@ public:
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
     Float_t fTWeight[10], fTJESWeight[3];
     Float_t fTSVLMass, fTSVLDeltaR, fTLPt, fTSVPt, fTSVLxy, fTJPt, fTJEta;
+    Float_t fTSVBfragWeight[3];
     Int_t fTSVLMinMassRank, fTSVLDeltaRRank;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
 

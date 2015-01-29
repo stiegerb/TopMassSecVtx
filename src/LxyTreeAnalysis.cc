@@ -19,6 +19,7 @@ struct SVLInfo{ // needed for sorting...
 	float svlmass;
 	float svldeltar;
 	int jesweights[3];
+	float bfragweights[3];
 };
 bool compare_mass (SVLInfo svl1, SVLInfo svl2){
 	return (svl1.svlmass < svl2.svlmass);
@@ -733,26 +734,27 @@ bool LxyTreeAnalysis::selectSVLEvent(){
 
 void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree = new TTree("SVLInfo", "SecVtx Lepton Tree");
-	fSVLInfoTree->Branch("Event",     &fTEvent,     "Event/I");
-	fSVLInfoTree->Branch("Run",       &fTRun,       "Run/I");
-	fSVLInfoTree->Branch("Lumi",      &fTLumi,      "Lumi/I");
-	fSVLInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
-	fSVLInfoTree->Branch("Weight",     fTWeight,    "Weight[10]/F");
-	fSVLInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[3]/F");
-	fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
-	fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
-	fSVLInfoTree->Branch("SVLMass",   &fTSVLMass,   "SVLMass/F");
-	fSVLInfoTree->Branch("SVLDeltaR", &fTSVLDeltaR, "SVLDeltaR/F");
-	fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
-	fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
-	fSVLInfoTree->Branch("SVLxy",     &fTSVLxy,     "SVLxy/F");
-	fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
-	fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
-	fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
+	fSVLInfoTree->Branch("Event"         , &fTEvent         , "Event/I");
+	fSVLInfoTree->Branch("Run"           , &fTRun           , "Run/I");
+	fSVLInfoTree->Branch("Lumi"          , &fTLumi          , "Lumi/I");
+	fSVLInfoTree->Branch("EvCat"         , &fTEvCat         , "EvCat/I");
+	fSVLInfoTree->Branch("Weight"        , fTWeight         , "Weight[10]/F");
+	fSVLInfoTree->Branch("JESWeight"     , fTJESWeight      , "JESWeight[3]/F");
+	fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[3]/F");
+	fSVLInfoTree->Branch("NPVtx"         , &fTNPVtx         , "NPVtx/I");
+	fSVLInfoTree->Branch("NCombs"        , &fTNCombs        , "NCombs/I");
+	fSVLInfoTree->Branch("SVLMass"       , &fTSVLMass       , "SVLMass/F");
+	fSVLInfoTree->Branch("SVLDeltaR"     , &fTSVLDeltaR     , "SVLDeltaR/F");
+	fSVLInfoTree->Branch("LPt"           , &fTLPt           , "LPt/F");
+	fSVLInfoTree->Branch("SVPt"          , &fTSVPt          , "SVPt/F");
+	fSVLInfoTree->Branch("SVLxy"         , &fTSVLxy         , "SVLxy/F");
+	fSVLInfoTree->Branch("JPt"           , &fTJPt           , "JPt/F");
+	fSVLInfoTree->Branch("JEta"          , &fTJEta          , "JEta/F");
+	fSVLInfoTree->Branch("SVNtrk"        , &fTSVNtrk        , "SVNtrk/I");
 	// CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
-	fSVLInfoTree->Branch("CombCat",   &fTCombCat,   "CombCat/I");
+	fSVLInfoTree->Branch("CombCat"       , &fTCombCat       , "CombCat/I");
 	// CombInfo = -1 for data or unmatched, 0 for wrong combs, 1 for correct combs
-	fSVLInfoTree->Branch("CombInfo",  &fTCombInfo,  "CombInfo/I");
+	fSVLInfoTree->Branch("CombInfo"      , &fTCombInfo      , "CombInfo/I");
 
 	// Intra event rankings
 	fSVLInfoTree->Branch("SVLMassRank",   &fTSVLMinMassRank, "SVLMassRank/I");
@@ -769,22 +771,23 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	}
 	for (int i = 0; i < 3; ++i){
 		fTJESWeight[i] = -99.99;
+		fTSVBfragWeight[i] = -99.99;
 	}
-	fTNPVtx     = nvtx;
-	fTNCombs    = -99.99;
-	fTSVLMass   = -99.99;
-	fTSVLDeltaR = -99.99;
-	fTLPt       = -99.99;
-	fTSVPt      = -99.99;
-	fTSVLxy     = -99.99;
-	fTJEta      = -99.99;
-	fTJPt       = -99.99;
-	fTSVNtrk    = -99;
-	fTCombCat   = -99;
-	fTCombInfo  = -99;
+	fTNPVtx          = nvtx;
+	fTNCombs         = -99.99;
+	fTSVLMass        = -99.99;
+	fTSVLDeltaR      = -99.99;
+	fTLPt            = -99.99;
+	fTSVPt           = -99.99;
+	fTSVLxy          = -99.99;
+	fTJEta           = -99.99;
+	fTJPt            = -99.99;
+	fTSVNtrk         = -99;
+	fTCombCat        = -99;
+	fTCombInfo       = -99;
 
-	fTSVLMinMassRank  = -99;
-	fTSVLDeltaRRank   = -99;
+	fTSVLMinMassRank = -99;
+	fTSVLDeltaRRank  = -99;
 }
 
 void LxyTreeAnalysis::analyze(){
@@ -881,7 +884,11 @@ void LxyTreeAnalysis::analyze(){
 				if(jjesup[svind][0] > 30.) svl_pairing.jesweights[1] = 1; // jes up
 				if(jjesdn[svind][0] > 30.) svl_pairing.jesweights[2] = 1; // jes down
 
-				if(jjesup[svind][0] > 30.){ // if this doesn't pass, none of them will
+				svl_pairing.bfragweights[0] = bwgt[svind][0];
+				svl_pairing.bfragweights[1] = bwgt[svind][1];
+				svl_pairing.bfragweights[2] = bwgt[svind][2];
+
+				if(jpt[svind] > 30. || jjesup[svind][0] > 30. || jjesdn[svind][0] > 30.){
 					int combcat = (il+1)*10 + (ij+1); // 10(20) + 1(2): 11, 21, 12, 22
 					svl_pairing.counter = svl_pairs.size();
 					svl_pairing.lepindex = il;
@@ -932,6 +939,9 @@ void LxyTreeAnalysis::analyze(){
 			fTJESWeight[0] = svl.jesweights[0]; // nominal
 			fTJESWeight[1] = svl.jesweights[1]; // jes up
 			fTJESWeight[2] = svl.jesweights[2]; // jes down
+			fTSVBfragWeight[0] = svl.bfragweights[0]; // nominal (Z2star_rbLEP_weight)
+			fTSVBfragWeight[1] = svl.bfragweights[1]; // bfrag up (Z2star_rbLEPhard_weight)
+			fTSVBfragWeight[2] = svl.bfragweights[2]; // bfrag dn (Z2star_rbLEPsoft_weight)
 
 			// MC truth information on correct/wrong matchings
 			fTCombInfo = -1;    // unmatched

@@ -68,7 +68,7 @@ bool DataEventSummaryHandler::init(TTree *t, bool needsToRecreate)
     t_->Branch("mc_pz",       evSummary_.mc_pz,        "mc_pz[mcn]/F");
     t_->Branch("mc_en",       evSummary_.mc_en,        "mc_en[mcn]/F");
     t_->Branch("mc_lxy",      evSummary_.mc_lxy,       "mc_lxy[mcn]/F");
-    t_->Branch("mc_genNeutrino",  evSummary_.mc_genNeutrino,    "mc_genNeutrino[jn]/O");
+    t_->Branch("mc_genNeutrino",  evSummary_.mc_genNeutrino,    "mc_genNeutrino[mcn]/O");
 
     //selected leptons
     t_->Branch("ln",            &evSummary_.ln,          "ln/I");

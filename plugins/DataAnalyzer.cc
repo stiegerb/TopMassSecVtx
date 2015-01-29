@@ -325,6 +325,7 @@ void DataAnalyzer::analyze(const edm::Event &event, const edm::EventSetup &iSetu
 	    
 	    //find first stable particle to trace decay length
 	    const reco::Candidate *gd=d;
+	    bool hasNeutrino=false;
 	    while(1)
 	      {
 		if(gd->status()==1) break;
@@ -333,6 +334,7 @@ void DataAnalyzer::analyze(const edm::Event &event, const edm::EventSetup &iSetu
 		for(size_t k=0; k<gd->numberOfDaughters(); k++)
 		  {
 		    if(gd->daughter(k)->pdgId()==22) continue;
+		    if(abs(gd->daughter(k)->pdgId())==12||abs(gd->daughter(k)->pdgId())==14||abs(gd->daughter(k)->pdgId())==16) hasNeutrino=true;
 		    if(gd->daughter(k)==gd) continue;
 		    newGd=gd->daughter(k);
 		  }
@@ -351,6 +353,7 @@ void DataAnalyzer::analyze(const edm::Event &event, const edm::EventSetup &iSetu
 	    ev.mc_pz[ev.mcn]     = d->pz(); 
 	    ev.mc_en[ev.mcn]     = d->energy();  
 	    ev.mc_lxy[ev.mcn]    = sqrt(pow(vxMother-vxDaughter,2)+pow(vyMother-vyDaughter,2));
+	    ev.mc_genNeutrino[ev.mcn] = hasNeutrino;
 	    ev.mcn++; 
 	  }
       }

@@ -68,6 +68,7 @@ bool DataEventSummaryHandler::init(TTree *t, bool needsToRecreate)
     t_->Branch("mc_pz",       evSummary_.mc_pz,        "mc_pz[mcn]/F");
     t_->Branch("mc_en",       evSummary_.mc_en,        "mc_en[mcn]/F");
     t_->Branch("mc_lxy",      evSummary_.mc_lxy,       "mc_lxy[mcn]/F");
+    t_->Branch("mc_genNeutrino",  evSummary_.mc_genNeutrino,    "mc_genNeutrino[jn]/O");
 
     //selected leptons
     t_->Branch("ln",            &evSummary_.ln,          "ln/I");
@@ -222,6 +223,7 @@ bool DataEventSummaryHandler::init(TTree *t, bool needsToRecreate)
     t_->Branch("jn_genjpy",      evSummary_.jn_genjpy,          "jn_genjpy[jn]/F");
     t_->Branch("jn_genjpz",      evSummary_.jn_genjpz,          "jn_genjpz[jn]/F");
     t_->Branch("jn_genjen",      evSummary_.jn_genjen,          "jn_genjen[jn]/F");
+
     // unfolding jets
     //	t_->Branch("jnUnf",            &evSummary_.jnUnf,                "jnUnf/I");
     // t_->Branch("jn_genUnfjpx",      evSummary_.jn_genUnfjpx,          "jn_genUnfjpx[jnUnf]/F");
@@ -307,6 +309,7 @@ bool DataEventSummaryHandler::attach(TTree *t,bool readPFbranch)
     t_->SetBranchAddress("mc_pz",       evSummary_.mc_pz);
     t_->SetBranchAddress("mc_en",       evSummary_.mc_en);
     t_->SetBranchAddress("mc_lxy",      evSummary_.mc_lxy);
+    if(t_->GetBranch("mc_genNeutrino"))      t_->SetBranchAddress("mc_genNeutrino",  evSummary_.mc_genNeutrino);
 
     //selected leptons
     t_->SetBranchAddress("ln",            &evSummary_.ln);
@@ -460,6 +463,7 @@ bool DataEventSummaryHandler::attach(TTree *t,bool readPFbranch)
     t_->SetBranchAddress("jn_genjpy",      evSummary_.jn_genjpy);
     t_->SetBranchAddress("jn_genjpz",      evSummary_.jn_genjpz);
     t_->SetBranchAddress("jn_genjen",      evSummary_.jn_genjen);
+
     // unfolding jets
     // t_->SetBranchAddress("jnUnf",             &evSummary_.jnUnf);
     // t_->SetBranchAddress("jn_genUnfjpx",      evSummary_.jn_genUnfjpx);
@@ -678,6 +682,7 @@ data::PhysicsObjectCollection_t DataEventSummaryHandler::getPhysicsObject(int co
             p.set("id",evSummary_.mc_id[imc]);
             p.set("status",evSummary_.mc_status[imc]);
             p.setVal("lxy",evSummary_.mc_lxy[imc]);
+	    p.setFlag("genNeutrino",evSummary_.mc_genNeutrino[imc]);
             coll.push_back(p);
         }
         break;

@@ -42,6 +42,7 @@ public:
     //gen level event
     Int_t mcn, mc_id[MAXDATAOBJECTS], mc_status[MAXDATAOBJECTS];
     Float_t mc_px[MAXDATAOBJECTS],mc_py[MAXDATAOBJECTS],mc_pz[MAXDATAOBJECTS],mc_en[MAXDATAOBJECTS], mc_lxy[MAXDATAOBJECTS];
+    Bool_t mc_genNeutrino[MAXDATAOBJECTS];
 
     //leptons
     Int_t ln;
@@ -88,12 +89,11 @@ public:
     Float_t jn_genjpx[MAXDATAOBJECTS], jn_genjpy[MAXDATAOBJECTS], jn_genjpz[MAXDATAOBJECTS], jn_genjen[MAXDATAOBJECTS];
     Float_t jn_genUnfjpx[MAXDATAOBJECTS], jn_genUnfjpy[MAXDATAOBJECTS], jn_genUnfjpz[MAXDATAOBJECTS], jn_genUnfjen[MAXDATAOBJECTS];
 
-
     //met
     Int_t metn;
     Float_t met_pt[MAXDATAOBJECTS], met_phi[MAXDATAOBJECTS],met_sig[MAXDATAOBJECTS],met_sigx2[MAXDATAOBJECTS],met_sigxy[MAXDATAOBJECTS],met_sigy2[MAXDATAOBJECTS];
 
-    DataEventSummary() { }
+    DataEventSummary() {  for(int i=0; i<MAXDATAOBJECTS; i++) mc_genNeutrino[i]=false; }
     ~DataEventSummary() { }
 
     //

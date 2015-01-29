@@ -60,6 +60,7 @@ def CMS_lumi(pad,  iPeriod,  iPosX, extraText=None):
     pad.cd()
 
     lumiText = ""
+    global CMS_lumi_extraText
     if 'simulation' in CMS_lumi_extraText.lower():
         if iPeriod == 1:
             lumiText = "7 TeV"

@@ -302,6 +302,7 @@ void DataAnalyzer::analyze(const edm::Event &event, const edm::EventSetup &iSetu
 		ev.mc_pz[ev.mcn]=p.pz();
 		ev.mc_en[ev.mcn]=p.energy();
 		ev.mc_lxy[ev.mcn]=0;
+		ev.mc_genNeutrino[ev.mcn] = false;
 		ev.mcn++;
 	      }
 	  }

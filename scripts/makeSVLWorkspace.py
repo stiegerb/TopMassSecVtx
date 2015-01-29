@@ -28,19 +28,19 @@ def parameterizeSignalPermutations(ws,permName,chList,combList,trkMultList,sig_m
                            "offset_%s_p0[0.4,0.1,0.9]})"%
                            (tag,tag,tag))
                 ws.factory("RooFormulaVar::%s_p1('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p1[0.01,-1,2],"
+                           "slope_%s_p1[0.01,0,5],"
                            "mtop,"
-                           "offset_%s_p1[50,0,100]})"%
+                           "offset_%s_p1[40,5,150]})"%
                            (tag,tag,tag))
                 ws.factory("RooFormulaVar::%s_p2('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p2[0.01,-1,2],"
+                           "slope_%s_p2[0.01,0.001,5],"
                            "mtop,"
-                           "offset_%s_p2[15,-100,100]})"%
+                           "offset_%s_p2[15,5,100]})"%
                            (tag,tag,tag))
                 ws.factory("RooFormulaVar::%s_p3('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p3[0.01,-1,2],"
+                           "slope_%s_p3[0.01,0.001,5],"
                            "mtop,"
-                           "offset_%s_p3[25,-100,100]})"%
+                           "offset_%s_p3[25,5,100]})"%
                            (tag,tag,tag))
                 ws.factory("RooFormulaVar::%s_p4('@0*(@1-172.5)+@2',{"
                            #"slope_%s_p4[0,-1,1],"
@@ -147,9 +147,9 @@ def createWorkspace(opt):
     print 'Track multiplicities available: ',trkMultList
 
     #run signal parameterization cycles
-    parameterizeSignalPermutations(ws=ws,permName='unm',chList=chList,combList=combList,trkMultList=trkMultList,sig_mass_cats=sig_mass_cats,massList=massList,SVLmass=SVLmass)
-    parameterizeSignalPermutations(ws=ws,permName='wro',chList=chList,combList=combList,trkMultList=trkMultList,sig_mass_cats=sig_mass_cats,massList=massList,SVLmass=SVLmass)
     parameterizeSignalPermutations(ws=ws,permName='cor',chList=chList,combList=combList,trkMultList=trkMultList,sig_mass_cats=sig_mass_cats,massList=massList,SVLmass=SVLmass)
+    parameterizeSignalPermutations(ws=ws,permName='wro',chList=chList,combList=combList,trkMultList=trkMultList,sig_mass_cats=sig_mass_cats,massList=massList,SVLmass=SVLmass)
+    parameterizeSignalPermutations(ws=ws,permName='unm',chList=chList,combList=combList,trkMultList=trkMultList,sig_mass_cats=sig_mass_cats,massList=massList,SVLmass=SVLmass)
 
     #save all to file
     ws.writeToFile('SVLWorkspace.root',True)

@@ -3,12 +3,15 @@
 
 ```
 ssh lxplus
-scramv1 project CMSSW CMSSW_5_3_20
-cd CMSSW_5_3_20/src/
+scramv1 project CMSSW CMSSW_5_3_22
+cd CMSSW_5_3_22/src/
 cmsenv
+wget -q -O - --no-check-certificate https://raw.github.com/stiegerb/TopMassSecVtx/master/TAGS.txt | sh
 git clone git@github.com:stiegerb/TopMassSecVtx.git UserCode/TopMassSecVtx
 scram b -j 9
 ```
+
+Note: the ntuplizer is running without pileup jet id and IVF-related b-tagging variables
 
 ------------------------------------------------------
 ### Producing the trees

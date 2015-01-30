@@ -44,7 +44,7 @@ for i in `seq 0 ${totalstep}`; do
     done
     hadd -f -k /tmp/psilva/${crab_working_dir}_${i}.root ${outputList}
     cmsStage -f /tmp/psilva/${crab_working_dir}_${i}.root ${output_dir} 
-    rm /tmp/psilva/${crab_working_dir}_${i}.root
+    #rm /tmp/psilva/${crab_working_dir}_${i}.root
 done
 
 

@@ -34,6 +34,17 @@
       ]
     },
     {
+      "tag":"t#bar{t}171.5",
+      "isdata":false,
+      "color":5,
+      "lcolor":5,
+      "fill":0,
+      "spimpose":1,
+      "data":[
+        { "dtag":"MC8TeV_TTJets_MSDecays_171v5"                     , "split":5, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
+      ]
+    },
+    {
       "tag":"t#bar{t}172.5",
       "isdata":false,
       "color":1,

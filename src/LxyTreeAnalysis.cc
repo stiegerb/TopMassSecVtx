@@ -12,19 +12,25 @@ const float gMassPi = 0.1396;
 const float gMassMu = 0.1057;
 
 struct SVLInfo{ // needed for sorting...
-	unsigned counter;
-	int lepindex;
-	int svindex;
-	int combcat;
-	float svlmass;
-	float svldeltar;
-	int jesweights[3];
+  unsigned counter;
+  int lepindex;
+  int svindex;
+  int combcat;
+  float svlmass,svlmass_rot;
+  float svldeltar,svldeltar_rot;
+  int jesweights[3];
 };
 bool compare_mass (SVLInfo svl1, SVLInfo svl2){
 	return (svl1.svlmass < svl2.svlmass);
 }
 bool compare_deltar (SVLInfo svl1, SVLInfo svl2){
 	return (svl1.svldeltar < svl2.svldeltar);
+}
+bool compare_mass_rot (SVLInfo svl1, SVLInfo svl2){
+	return (svl1.svlmass_rot < svl2.svlmass_rot);
+}
+bool compare_deltar_rot (SVLInfo svl1, SVLInfo svl2){
+	return (svl1.svldeltar_rot < svl2.svldeltar_rot);
 }
 
 bool isOppositeSign(int id1, int id2) {
@@ -36,6 +42,39 @@ bool isOppositeSign(int id1, int id2) {
 	if(id1*id2 == -11*11)   return true;
 	return false;
 }
+
+//
+TLorentzVector LxyTreeAnalysis::RotateLepton(TLorentzVector &origLep,std::vector<TLorentzVector> &isoObjects)
+{
+  //rotate lepton
+  int ntries(0);
+  while(ntries<100)
+    {
+      TLorentzVector rotLepton(origLep);
+      double en    = rotLepton.E();
+      double pabs  = rotLepton.P();
+      double phi   = rndGen_.Uniform(0,2*TMath::Pi());
+      double theta = TMath::ACos( rndGen_.Uniform(-1,1) );
+      rotLepton.SetPxPyPzE(pabs*TMath::Cos(phi)*TMath::Sin(theta),pabs*TMath::Sin(phi)*TMath::Sin(theta),pabs*TMath::Cos(theta),en);
+
+      //require selectable kinematics
+      if( TMath::Abs(rotLepton.Eta())>2.4 || rotLepton.Pt()<20 ) continue;
+      
+      //require object separation wrt to jets
+      double minDR(1000);
+      for(std::vector<TLorentzVector>::iterator it = isoObjects.begin(); it!=isoObjects.end(); it++)
+	{
+	  double dR = it->DeltaR(rotLepton);
+	  if(dR>minDR) continue;
+	  minDR=dR;
+	}
+      if(minDR<0.4) continue;
+      return rotLepton;
+    }
+     
+  return TLorentzVector(0,0,0,0);
+}
+
 
 void LxyTreeAnalysis::RunJob(TString filename){
 	TFile *file = TFile::Open(filename, "recreate");
@@ -743,6 +782,8 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
 	fSVLInfoTree->Branch("SVLMass",   &fTSVLMass,   "SVLMass/F");
 	fSVLInfoTree->Branch("SVLDeltaR", &fTSVLDeltaR, "SVLDeltaR/F");
+	fSVLInfoTree->Branch("SVLMass_rot",   &fTSVLMass_rot,   "SVLMass_rot/F");
+	fSVLInfoTree->Branch("SVLDeltaR_rot", &fTSVLDeltaR_rot, "SVLDeltaR_rot/F");
 	fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
 	fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
 	fSVLInfoTree->Branch("SVLxy",     &fTSVLxy,     "SVLxy/F");
@@ -757,6 +798,8 @@ void LxyTreeAnalysis::BookSVLTree() {
 	// Intra event rankings
 	fSVLInfoTree->Branch("SVLMassRank",   &fTSVLMinMassRank, "SVLMassRank/I");
 	fSVLInfoTree->Branch("SVLDeltaRRank", &fTSVLDeltaRRank,  "SVLDeltaRRank/I");
+	fSVLInfoTree->Branch("SVLMassRank_rot",   &fTSVLMinMassRank_rot, "SVLMassRank_rot/I");
+	fSVLInfoTree->Branch("SVLDeltaRRank_rot", &fTSVLDeltaRRank_rot,  "SVLDeltaRRank_rot/I");
 }
 
 void LxyTreeAnalysis::ResetSVLTree() {
@@ -865,6 +908,9 @@ void LxyTreeAnalysis::analyze(){
 	if(svindices[0]<0) svindices.pop_back();
 	bool check_secv = svindices.size()>0;
 
+	std::vector<TLorentzVector> isoObjects;
+	for (int il = 0; il < nl; ++il) { TLorentzVector p4; p4.SetPtEtaPhiM(lpt[il], leta[il], lphi[il], 0.); isoObjects.push_back(p4); }
+	for (int ij = 0; ij < nj; ++ij) { TLorentzVector p4; p4.SetPtEtaPhiM(jpt[ij], jeta[ij], jphi[ij], 0.); isoObjects.push_back(p4); }
 
 	if(selectSVLEvent()){
 		// First find all pairs and get their ranking in mass and deltar
@@ -896,7 +942,11 @@ void LxyTreeAnalysis::analyze(){
 					svl_pairing.svlmass = (p_lep + p_sv).M();
 					svl_pairing.svldeltar = p_lep.DeltaR(p_sv);
 
-					svl_pairs.push_back(svl_pairing);
+					TLorentzVector p_lep_rot=RotateLepton(p_lep,isoObjects);
+					svl_pairing.svlmass_rot = (p_lep_rot + p_sv).M();
+					svl_pairing.svldeltar = p_lep_rot.DeltaR(p_sv);
+
+					svl_pairs.push_back(svl_pairing);					
 				}
 			}
 		}
@@ -906,6 +956,10 @@ void LxyTreeAnalysis::analyze(){
 		std::sort (svl_pairs_massranked.begin(), svl_pairs_massranked.end(), compare_mass);
 		std::vector<SVLInfo> svl_pairs_drranked = svl_pairs;
 		std::sort (svl_pairs_drranked.begin(), svl_pairs_drranked.end(), compare_deltar);
+		std::vector<SVLInfo> svl_pairs_massranked_rot = svl_pairs;
+		std::sort (svl_pairs_massranked_rot.begin(), svl_pairs_massranked_rot.end(), compare_mass_rot);
+		std::vector<SVLInfo> svl_pairs_drranked_rot = svl_pairs;
+		std::sort (svl_pairs_drranked_rot.begin(), svl_pairs_drranked_rot.end(), compare_deltar_rot);
 
 		// Now put the info in the tree
 		fTNCombs = svl_pairs.size();
@@ -913,15 +967,26 @@ void LxyTreeAnalysis::analyze(){
 			SVLInfo svl = svl_pairs[isvl];
 			fTSVLMass   = svl.svlmass;
 			fTSVLDeltaR = svl.svldeltar;
+			fTSVLMass_rot   = svl.svlmass_rot;
+			fTSVLDeltaR_rot = svl.svldeltar_rot;
 			fTCombCat   = svl.combcat;
+			
 			// Find the mass and dr ranks:
 			for (size_t i = 0; i < svl_pairs.size(); ++i){
 				if(svl_pairs_massranked[i].counter != isvl) continue;
 				fTSVLMinMassRank = i+1;
 			}
 			for (size_t i = 0; i < svl_pairs.size(); ++i){
+				if(svl_pairs_massranked_rot[i].counter != isvl) continue;
+				fTSVLMinMassRank_rot = i+1;
+			}
+			for (size_t i = 0; i < svl_pairs.size(); ++i){
 				if(svl_pairs_drranked[i].counter != isvl) continue;
 				fTSVLDeltaRRank = i+1;
+			}
+			for (size_t i = 0; i < svl_pairs.size(); ++i){
+			        if(svl_pairs_drranked_rot[i].counter != isvl) continue;
+				fTSVLDeltaRRank_rot = i+1;
 			}
 			fTLPt          = lpt  [svl.lepindex];
 			fTSVPt         = svpt [svl.svindex];

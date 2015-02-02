@@ -122,19 +122,20 @@ def btvDefaultSequence(process, isMC=True, jetCollection="selectedPatJetsPFlow",
 
 
     #the sequence
-    process.mainBtvSequence=cms.Sequence(process.inclusiveVertexing*process.inclusiveMergedVerticesFiltered*process.bToCharmDecayVertexMerged
-                                         *process.ak5JetTracksAssociatorAtVertex
+    process.mainBtvSequence=cms.Sequence(#process.inclusiveVertexing*process.inclusiveMergedVerticesFiltered*process.bToCharmDecayVertexMerged*
+                                         process.ak5JetTracksAssociatorAtVertex
                                          *process.btagging
                                          *process.negativeTrackCountingHighEffJetTags*process.negativeTrackCountingHighPur
                                          *process.secondaryVertexTagInfos*process.simpleSecondaryVertexHighEffBJetTags*process.simpleSecondaryVertexHighPurBJetTags
                                          *process.secondaryVertexNegativeTagInfos*process.simpleSecondaryVertexNegativeHighEffBJetTags*process.simpleSecondaryVertexNegativeHighPurBJetTags
                                          *process.combinedSecondaryVertexRetrainedBJetTags
-                                         *process.inclusiveSecondaryVertexFinderFilteredTagInfos
-                                         *process.inclusiveSecondaryVertexFinderTagInfos
-                                         *process.simpleInclusiveSecondaryVertexHighEffBJetTags
-                                         *process.simpleInclusiveSecondaryVertexHighPurBJetTags
+                                         #*process.inclusiveSecondaryVertexFinderFilteredTagInfos
+                                         #*process.inclusiveSecondaryVertexFinderTagInfos
+                                         #*process.simpleInclusiveSecondaryVertexHighEffBJetTags
+                                         #*process.simpleInclusiveSecondaryVertexHighPurBJetTags
                                          #*process.doubleSecondaryVertexHighEffBJetTags
-                                         *process.combinedInclusiveSecondaryVertexBJetTags)
+                                         #*process.combinedInclusiveSecondaryVertexBJetTags
+                                         )
                                          
     if(isMC) : process.btvSequence=cms.Sequence(process.myPartons*process.AK5Flavour*process.mainBtvSequence)
     else     : process.btvSequence=cms.Sequence(process.mainBtvSequence)

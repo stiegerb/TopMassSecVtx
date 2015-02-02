@@ -30,7 +30,8 @@
       "lcolor":1,
       "isinvisible":true,
       "data":[
-        { "dtag":"MC8TeV_TTJets_TuneP11"                   , "split":5, "xsec":245.8       , "br":[ 0.10608049 ]          , "dset":"Unknown"        }
+        { "dtag":"MC8TeV_TTJets_TuneP11"                   , "split":5, "xsec":245.8       , "br":[ 0.10608049 ]          , "dset":"Unknown"        },
+        { "dtag":"MC8TeV_TTJets_SemiLep_TuneP11"           , "split":5, "xsec":245.8       , "br":[ 0.43924 ]             , "dset":"Unknown"        }
       ]
     },
     {
@@ -41,7 +42,8 @@
       "lcolor":1,
       "isinvisible":true,
       "data":[
-        { "dtag":"MC8TeV_TTJets_TuneP11TeV"                , "split":5, "xsec":245.8       , "br":[ 0.10608049 ]          , "dset":"Unknown"        }
+        { "dtag":"MC8TeV_TTJets_TuneP11TeV"                , "split":5, "xsec":245.8       , "br":[ 0.10608049 ]          , "dset":"Unknown"        },
+        { "dtag":"MC8TeV_TTJets_SemiLep_TuneP11TeV"        , "split":5, "xsec":245.8       , "br":[ 0.43924 ]             , "dset":"Unknown"        }
       ]
     },
     {
@@ -52,7 +54,8 @@
       "lcolor":1,
       "isinvisible":true,
       "data":[
-        { "dtag":"MC8TeV_TTJets_TuneP11noCR"               , "split":5, "xsec":245.8       , "br":[ 0.10608049 ]          , "dset":"Unknown"        }
+        { "dtag":"MC8TeV_TTJets_TuneP11noCR"               , "split":5, "xsec":245.8       , "br":[ 0.10608049 ]          , "dset":"Unknown"        },
+        { "dtag":"MC8TeV_TTJets_SemiLep_TuneP11noCR"       , "split":5, "xsec":245.8       , "br":[ 0.43924 ]             , "dset":"Unknown"        }
       ]
     },
     {
@@ -63,7 +66,8 @@
       "lcolor":1,
       "isinvisible":true,
       "data":[
-        { "dtag":"MC8TeV_TTJets_TuneP11mpiHi"              , "split":5, "xsec":245.8       , "br":[ 0.10608049 ]          , "dset":"Unknown"        }
+        { "dtag":"MC8TeV_TTJets_TuneP11mpiHi"              , "split":5, "xsec":245.8       , "br":[ 0.10608049 ]          , "dset":"Unknown"        },
+        { "dtag":"MC8TeV_TTJets_SemiLep_TuneP11mpiHi"      , "split":5, "xsec":245.8       , "br":[ 0.43924 ]             , "dset":"Unknown"        }
       ]
     },
     {

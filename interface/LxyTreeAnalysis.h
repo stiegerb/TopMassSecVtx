@@ -4,6 +4,7 @@
 #include <TFile.h>
 #include <TH1D.h>
 #include <TH2D.h>
+#include <TRandom3.h>
 #include <TString.h>
 #include <TTreeFormula.h>
 #include <TLorentzVector.h>
@@ -77,7 +78,7 @@ public:
     virtual void BookCharmHistos();
     virtual void BookSVLHistos();
     virtual void WriteHistos();
-
+    TLorentzVector RotateLepton(TLorentzVector &origLep,std::vector<TLorentzVector> &isoObjects);
     virtual void BookCharmTree();
     virtual void ResetCharmTree();
     virtual void FillCharmTree(int type, int jetindex,
@@ -171,9 +172,9 @@ public:
     TTree *fSVLInfoTree;
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
     Float_t fTWeight[10], fTJESWeight[3];
-    Float_t fTSVLMass, fTSVLDeltaR, fTLPt, fTSVPt, fTSVLxy, fTJPt, fTJEta;
+    Float_t fTSVLMass, fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot, fTLPt, fTSVPt, fTSVLxy, fTJPt, fTJEta;
     Float_t fTSVBfragWeight[3];
-    Int_t fTSVLMinMassRank, fTSVLDeltaRRank;
+    Int_t fTSVLMinMassRank, fTSVLDeltaRRank, fTSVLMinMassRank_rot, fTSVLDeltaRRank_rot;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
 
     // Int_t   fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
@@ -341,7 +342,7 @@ public:
    TH1D *fHdeltar_svl_emu_wrong_ntr4;
    TH1D *fHdeltar_svl_emu_wrong_ntr5;
 
-// sumw2
+   TRandom3 rndGen_;
 };
 #endif
 

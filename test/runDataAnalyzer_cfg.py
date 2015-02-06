@@ -12,7 +12,7 @@ process.load("Configuration.Geometry.GeometryIdeal_cff")
 ## MessageLogger
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 5000
-process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(False),#True),
+process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(False),
                                         SkipEvent = cms.untracked.vstring('ProductNotFound')
                                         ) 
 
@@ -20,7 +20,7 @@ process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(False),
 try:
     print 'Processing %d inputs'%len(inputList)
 except:
-    if isMC : inputList = cms.untracked.vstring('/store/relval/CMSSW_5_3_6-START53_V14/RelValTTbar/GEN-SIM-RECO/v2/00000/16D5D599-F129-E211-AB60-00261894390B.root')
+    if isMC : inputList = cms.untracked.vstring('/store/cmst3/user/psilva/gg2vv/Signal_v2/Events_3214.root')
     else    : inputList = cms.untracked.vstring('/store/data//Run2012A/DoubleMu/AOD//22Jan2013-v1/20000/F4C34C30-B581-E211-8269-003048FFD7A2.root') 
 process.source = cms.Source("PoolSource",
                             fileNames = inputList
@@ -130,7 +130,7 @@ usePF2PAT(process,
           typeIMetCorrections=False)
 
 #setup trigger matching
-from UserCode.llvv_fwk.triggerMatching_cfg import *
+from UserCode.TopMassSecVtx.triggerMatching_cfg import *
 addTriggerMatchingTo(process)
 
 #custom electrons
@@ -180,7 +180,7 @@ process.kt6PFJetsCentral = kt4PFJets.clone( rParam = cms.double(0.6),
                                             Rho_EtaMax = cms.double(2.5),
                                             Ghost_EtaMax = cms.double(2.5) )
 
-from UserCode.llvv_fwk.btvDefaultSequence_cff import * 
+from UserCode.TopMassSecVtx.btvDefaultSequence_cff import * 
 btvDefaultSequence(process,isMC,"selectedPatJets"+postfix,"goodOfflinePrimaryVertices")
 
 # cf. https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMetAnalysis
@@ -194,7 +194,7 @@ process.pfType1CorrectedMet.srcType1Corrections = cms.VInputTag( cms.InputTag('p
 
 #the analyzer
 print'here'
-from UserCode.llvv_fwk.dataAnalyzer_cfi import *
+from UserCode.TopMassSecVtx.dataAnalyzer_cfi import *
 try:
     if runDijetsAnalysis :
         process.dataAnalyzer = dijetAnalyzer.clone()
@@ -228,25 +228,45 @@ process.startCounter = cms.EDProducer("EventCountProducer")
 process.scrapCounter = process.startCounter.clone()
 process.vtxCounter   = process.startCounter.clone()
 process.metCounter   = process.startCounter.clone() 
-process.p = cms.Path( process.startCounter
-                      *process.noscraping
-                      *process.scrapCounter
-                      *process.goodOfflinePrimaryVertices
-                      *process.goodVertexFilter
-                      *process.vtxCounter
-                      *process.metFilteringTaggers
-		      *process.metCounter
-                      *process.eidMVASequence
-                      *getattr(process,"patPF2PATSequence"+postfix)
-                      *process.btvSequence
-                      *process.kt6PFJetsCentral
-                      *process.qgSequence  #FIXME
-                      *process.type0PFMEtCorrection*process.producePFMETCorrections
-                      *process.selectedPatElectronsWithTrigger
-#                      *process.selectedPatElectronsPFlowHeep  #FIXME - not needed most probably? Tomislav if you want this one fix it ;)
-                      *process.selectedPatMuonsTriggerMatch 
-                      *process.dataAnalyzer
-                      )
+if not isMC:
+    process.p = cms.Path( process.startCounter
+                          *process.noscraping
+                          *process.scrapCounter
+                          *process.goodOfflinePrimaryVertices
+                          *process.goodVertexFilter
+                          *process.vtxCounter
+                          *process.metFilteringTaggers
+                          *process.metCounter
+                          *process.eidMVASequence
+                          *getattr(process,"patPF2PATSequence"+postfix)
+                          *process.btvSequence
+                          *process.kt6PFJetsCentral
+                          *process.qgSequence  #FIXME
+                          *process.type0PFMEtCorrection*process.producePFMETCorrections
+                          *process.selectedPatElectronsWithTrigger
+                          #                      *process.selectedPatElectronsPFlowHeep  #FIXME - not needed most probably? Tomislav if you want this one fix it ;)
+                          *process.selectedPatMuonsTriggerMatch 
+                          *process.dataAnalyzer
+                          )
+else:
+    process.p = cms.Path( process.startCounter
+#                          *process.noscraping
+                          *process.scrapCounter
+                          *process.goodOfflinePrimaryVertices
+                          *process.goodVertexFilter
+                          *process.vtxCounter
+                          *process.metCounter
+                          *process.eidMVASequence
+                          *getattr(process,"patPF2PATSequence"+postfix)
+                          *process.btvSequence
+                          *process.kt6PFJetsCentral
+                          *process.qgSequence  #FIXME
+                          *process.type0PFMEtCorrection*process.producePFMETCorrections
+                          *process.selectedPatElectronsWithTrigger
+                          #                      *process.selectedPatElectronsPFlowHeep  #FIXME - not needed most probably? Tomislav if you want this one fix it ;)
+                          *process.selectedPatMuonsTriggerMatch 
+                          *process.dataAnalyzer
+                          )
 
 	
 

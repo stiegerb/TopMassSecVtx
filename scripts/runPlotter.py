@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import pickle
 from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle,fixExtremities,Plot
 
 sys.path.append('/afs/cern.ch/cms/caf/python/')
@@ -249,15 +250,94 @@ def makePlot(key, inDir, procList, xsecweights, options):
     newPlot.appendTo(options.outDir+'/plotter.root')
     newPlot.reset()
 
-def getListofProcessesFromJSON(procList, chopPrefix=False):
-    returnlist = []
-    for desc in procList[0][1]:
-        for process in desc['data']:
-            listitem = process['dtag']
-            if chopPrefix:
-                listitem = listitem.split('_',1)[1]
-            returnlist.append(str(listitem))
-    return returnlist
+def readXSecWeights(inDir, options, reread=False):
+    """
+    Loop over the inputs and fill in a xsecweights dictionary
+    """
+
+    try:
+        if reread:
+            # trigger re-reading of weights
+            raise IOError
+
+        cachefile = open(".xsecweights.pck", 'r')
+        xsecweights = pickle.load(cachefile)
+        cachefile.close()
+        print '>>> Read xsec weights from cache (.xsecweights.pck)'
+        return xsecweights
+    except IOError:
+        pass
+
+    jsonFile = open(options.json,'r')
+    procList = json.load(jsonFile,encoding = 'utf-8').items()
+
+    # Make a survey of *all* existing plots
+    xsecweights = {}
+    tot_ngen = {}
+    missing_files = []
+    for proc_tag in procList:
+        for desc in proc_tag[1]:
+            data = desc['data']
+            isData = getByLabel(desc,'isdata',False)
+            mctruthmode = getByLabel(desc,'mctruthmode')
+            for process in data:
+                dtag = getByLabel(process,'dtag','')
+                split = getByLabel(process,'split',1)
+                dset = getByLabel(process,'dset',dtag)
+
+                try:
+                    ngen = tot_ngen[dset]
+                except KeyError:
+                    ngen = 0
+
+                for segment in range(0,split):
+                    eventsFile = dtag
+                    if split > 1:
+                        eventsFile = dtag + '_' + str(segment)
+                    if mctruthmode:
+                        eventsFile += '_filt%d' % mctruthmode
+                    rootFileUrl = inDir+'/'+eventsFile+'.root'
+                    rootFile = openTFile(rootFileUrl)
+                    if rootFile is None:
+                        missing_files.append(eventsFile+'.root')
+                        continue
+
+                    ngen_seg,_ = getNormalization(rootFile)
+                    if not isData: ngen += ngen_seg
+
+                    rootFile.Close()
+
+                tot_ngen[dset] = ngen
+
+            # Calculate weights:
+            for process in data:
+                dtag = getByLabel(process,'dtag','')
+                dset = getByLabel(process,'dset',dtag)
+                brratio = getByLabel(process,'br',[1])
+                xsec = getByLabel(process,'xsec',1)
+                if dtag not in xsecweights.keys():
+                    try:
+                        ngen = tot_ngen[dset]
+                        xsecweights[str(dtag)] = brratio[0]*xsec/ngen
+                    except ZeroDivisionError:
+                        if isData:
+                            xsecweights[str(dtag)] = 1.0
+                        else:
+                            print "ngen not properly set for", dtag
+
+
+    if len(missing_files) and options.verbose>0:
+        print 20*'-'
+        print "WARNING: Missing the following files:"
+        for filename in missing_files:
+            print filename
+        print 20*'-'
+
+    cachefile = open(".xsecweights.pck", 'w')
+    pickle.dump(xsecweights, cachefile, pickle.HIGHEST_PROTOCOL)
+    cachefile.close()
+    print '>>> Produced xsec weights and wrote to cache (.xsecweights.pck)'
+    return xsecweights
 
 def runPlotter(inDir, options):
     """
@@ -425,7 +505,8 @@ if __name__ == "__main__":
 
         os.system('mkdir -p %s'%opt.outDir)
         os.system('rm %s/plotter.root'%opt.outDir)
-        runPlotter(inDir=args[0], options=opt)
+        xsecweights = readXSecWeights(inDir=args[0], options=opt)
+        # runPlotter(inDir=args[0], options=opt)
         print 'Plots have been saved to %s' % opt.outDir
         exit(0)
 

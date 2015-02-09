@@ -51,7 +51,7 @@ def openTFile(url):
         return None
     return rootFile
 
-def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[]):
+def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],filterByProcList=[]):
     """
     Return a list of all keys deriving from TH1 in a file
     """
@@ -61,7 +61,7 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[]):
         key = tkey.GetName()
         keepPlot=False
         for tag in tagsToFilter:
-            if key.find(tag)>=0 : 
+            if key.find(tag)>=0 :
                 keepPlot=True
         if not keepPlot : continue
         obj = tdir.Get(key)
@@ -82,6 +82,17 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[]):
             if chopPrefix:
                 key = key.replace(tdir.GetName()+'_','')
             toReturn.append(key)
+
+    if len(filterByProcList):
+        newlist = []
+        for key in toReturn:
+            for proc in filterByProcList:
+                if key.endswith('_%s'%proc):
+                    newkey = key.replace('_%s'%proc,'')
+                    newlist.append(newkey)
+
+        return list(set(newlist))
+
     return toReturn
 
 def checkMissingFiles(inDir, jsonUrl):
@@ -157,7 +168,9 @@ def makePlot(key, inDir, procList, xsecweights, options):
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
-    baseRootFile = None ## FIXME
+    baseRootFile = None
+    if inDir.endswith('.root'):
+        baseRootFile = openTFile(inDir)
     for proc_tag in procList:
         for desc in proc_tag[1]: # loop on processes
             title = getByLabel(desc,'tag','unknown')
@@ -193,7 +206,7 @@ def makePlot(key, inDir, procList, xsecweights, options):
                             continue
 
                         fixExtremities(ihist,True,True)
-                        ihist.Scale(xsecweights[dtag])
+                        ihist.Scale(xsecweights[str(dtag)])
 
                         if hist is None :
                             hist = ihist.Clone(dtag+'_'+pName)
@@ -203,14 +216,17 @@ def makePlot(key, inDir, procList, xsecweights, options):
                         rootFile.Close()
 
                 else:
-                    ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
+                    # ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
+                    # baseRootFile.ls()
+                    # print '%s_%s' % (key,dtag.split('_',1)[1])
+                    ihist = baseRootFile.Get('%s_%s' % (key,dtag.split('_',1)[1]))
                     try:
                         if ihist.Integral() <= 0: continue
                     except AttributeError:
                         continue
 
                     fixExtremities(ihist,True,True)
-                    ihist.Scale(xsecweights[dtag])
+                    ihist.Scale(xsecweights[str(dtag)])
 
                     if hist is None: ## Check if it is found
                         hist = ihist.Clone(dtag+'_'+pName)
@@ -223,15 +239,25 @@ def makePlot(key, inDir, procList, xsecweights, options):
                 hist.Scale(options.lumi)
             newPlot.add(hist,title,color,isData)
 
-    if options.normToData : 
+    if options.normToData :
         newPlot.normToData()
 
     if not options.silent :
         newPlot.show(options.outDir)
-        if options.debug or newPlot.name.find('flow')>=0  : 
+        if options.debug or newPlot.name.find('flow')>=0  :
             newPlot.showTable(options.outDir)
     newPlot.appendTo(options.outDir+'/plotter.root')
     newPlot.reset()
+
+def getListofProcessesFromJSON(procList, chopPrefix=False):
+    returnlist = []
+    for desc in procList[0][1]:
+        for process in desc['data']:
+            listitem = process['dtag']
+            if chopPrefix:
+                listitem = listitem.split('_',1)[1]
+            returnlist.append(str(listitem))
+    return returnlist
 
 def runPlotter(inDir, options):
     """
@@ -241,6 +267,7 @@ def runPlotter(inDir, options):
 
     jsonFile = open(options.json,'r')
     procList = json.load(jsonFile,encoding = 'utf-8').items()
+    list_of_processes = getListofProcessesFromJSON(procList, chopPrefix=True)
 
     # Make a survey of *all* existing plots
     plots = []
@@ -251,7 +278,10 @@ def runPlotter(inDir, options):
     tagsToFilter=opt.filter.split(',')
     if inDir.endswith('.root'):
         baseRootFile = TFile.Open(inDir)
-        plots = list(set(getAllPlotsFrom(tdir=baseRootFile,chopPrefix=True,tagsToFilter=tagsToFilter)))
+        plots = getAllPlotsFrom(tdir=baseRootFile,
+                                chopPrefix=True,
+                                tagsToFilter=tagsToFilter,
+                                filterByProcList=list_of_processes)
     else:
         for proc_tag in procList:
             for desc in proc_tag[1]:

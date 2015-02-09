@@ -169,6 +169,7 @@ def makePlot(key, inDir, procList, xsecweights, options):
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
+    newPlot.plotformats = ['pdf']
     baseRootFile = None
     if inDir.endswith('.root'):
         baseRootFile = openTFile(inDir)
@@ -218,8 +219,6 @@ def makePlot(key, inDir, procList, xsecweights, options):
 
                 else:
                     # ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
-                    # baseRootFile.ls()
-                    # print '%s_%s' % (key,dtag.split('_',1)[1])
                     ihist = baseRootFile.Get('%s_%s' % (key,dtag.split('_',1)[1]))
                     try:
                         if ihist.Integral() <= 0: continue
@@ -250,13 +249,13 @@ def makePlot(key, inDir, procList, xsecweights, options):
     newPlot.appendTo(options.outDir+'/plotter.root')
     newPlot.reset()
 
-def readXSecWeights(inDir, options, reread=False):
+def readXSecWeights(inDir, options):
     """
     Loop over the inputs and fill in a xsecweights dictionary
     """
 
     try:
-        if reread:
+        if options.rereadXsecWeights:
             # trigger re-reading of weights
             raise IOError
 
@@ -338,6 +337,15 @@ def readXSecWeights(inDir, options, reread=False):
     cachefile.close()
     print '>>> Produced xsec weights and wrote to cache (.xsecweights.pck)'
     return xsecweights
+def getListofProcessesFromJSON(procList, chopPrefix=False):
+    returnlist = []
+    for desc in procList[0][1]:
+        for process in desc['data']:
+            listitem = process['dtag']
+            if chopPrefix:
+                listitem = listitem.split('_',1)[1]
+            returnlist.append(str(listitem))
+    return returnlist
 
 def runPlotter(inDir, options):
     """
@@ -351,17 +359,23 @@ def runPlotter(inDir, options):
 
     # Make a survey of *all* existing plots
     plots = []
-    xsecweights = {}
-    tot_ngen = {}
+
+    # Read the xsection weights (from cache or from the input files)
+    xsecweights = readXSecWeights(inDir=args[0], options=opt)
+
     missing_files = []
+    tagsToFilter = opt.filter.split(',')
     baseRootFile = None
-    tagsToFilter=opt.filter.split(',')
+
+    # Input is a single root file with all histograms
     if inDir.endswith('.root'):
         baseRootFile = TFile.Open(inDir)
         plots = getAllPlotsFrom(tdir=baseRootFile,
                                 chopPrefix=True,
                                 tagsToFilter=tagsToFilter,
                                 filterByProcList=list_of_processes)
+
+    # Input is a directory with files for each process containing histograms
     else:
         for proc_tag in procList:
             for desc in proc_tag[1]:
@@ -372,11 +386,6 @@ def runPlotter(inDir, options):
                     dtag = getByLabel(process,'dtag','')
                     split = getByLabel(process,'split',1)
                     dset = getByLabel(process,'dset',dtag)
-
-                    try:
-                        ngen = tot_ngen[dset]
-                    except KeyError:
-                        ngen = 0
 
                     for segment in range(0,split):
                         eventsFile = dtag
@@ -391,31 +400,8 @@ def runPlotter(inDir, options):
                             continue
 
                         iplots = getAllPlotsFrom(tdir=rootFile,tagsToFilter=tagsToFilter)
-                        ngen_seg,_=getNormalization(rootFile)
-                        if not isData: ngen += ngen_seg
-
                         rootFile.Close()
                         plots = list(set(plots+iplots))
-
-                    tot_ngen[dset] = ngen
-
-
-                # Calculate weights:
-                for process in data:
-                    dtag = getByLabel(process,'dtag','')
-                    dset = getByLabel(process,'dset',dtag)
-                    brratio = getByLabel(process,'br',[1])
-                    xsec = getByLabel(process,'xsec',1)
-                    if dtag not in xsecweights.keys():
-                        try:
-                            ngen = tot_ngen[dset]
-                            xsecweights[str(dtag)] = brratio[0]*xsec/ngen
-                        except ZeroDivisionError:
-                            if isData:
-                                xsecweights[str(dtag)] = 1.0
-                            else:
-                                print "ngen not properly set for", dtag
-
 
         if len(missing_files) and options.verbose>0:
             print 20*'-'
@@ -487,6 +473,9 @@ if __name__ == "__main__":
                       help='Output directory [default: %default]')
     parser.add_option('-s', '--silent', dest='silent', action="store_true",
                       help='Silent mode (no plots) [default: %default]')
+    parser.add_option('--rereadXsecWeights', dest='rereadXsecWeights',
+                      action="store_true",
+                      help='Trigger re-reading of xsec weights')
     parser.add_option("--jobs", default=0,
                       action="store", type="int", dest="jobs",
                       help=("Run N jobs in parallel."
@@ -505,8 +494,7 @@ if __name__ == "__main__":
 
         os.system('mkdir -p %s'%opt.outDir)
         os.system('rm %s/plotter.root'%opt.outDir)
-        xsecweights = readXSecWeights(inDir=args[0], options=opt)
-        # runPlotter(inDir=args[0], options=opt)
+        runPlotter(inDir=args[0], options=opt)
         print 'Plots have been saved to %s' % opt.outDir
         exit(0)
 

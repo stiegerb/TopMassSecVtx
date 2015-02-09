@@ -283,6 +283,7 @@ class Plot(object):
         self.data = None
         self.garbageList = []
         self.normalizedToData=False
+        self.plotformats = ['pdf','png']
 
     def info(self):
         print self.name
@@ -333,7 +334,6 @@ class Plot(object):
         if self.dataH :
             self.dataH.Write()
         outF.Close()
-
 
     def normToData(self):
         totalMC=0
@@ -414,7 +414,6 @@ class Plot(object):
         f.write('------------------------------------------\n')
         f.close()
 
-
     def show(self, outDir):
         if len(self.mc)==0:
             print '%s is empty' % self.name
@@ -428,7 +427,7 @@ class Plot(object):
         ROOT.gStyle.SetOptTitle(0)
         ROOT.gStyle.SetOptStat(0)
 
-        canvas = TCanvas('c_'+self.name,'C',600,600)
+        canvas = TCanvas('c_'+self.name,'C',800,800)
         canvas.cd()
         t1 = TPad("t1","t1", 0.0, 0.20, 1.0, 1.0)
         t1.SetBottomMargin(0)
@@ -491,7 +490,7 @@ class Plot(object):
         leg.Draw()
 
         ## Draw CMS Preliminary label
-        CMS_lumi(t1,2,0)
+        CMS_lumi(pad=t1,iPeriod=2,iPosX=0)
 
         if self.normalizedToData:
             txt=TLatex()
@@ -566,17 +565,17 @@ class Plot(object):
         canvas.cd()
         canvas.Modified()
         canvas.Update()
-        for ext in ['pdf','png'] : canvas.SaveAs(outDir+'/'+self.name+'.'+ext)
+        for ext in self.plotformats : canvas.SaveAs(os.path.join(outDir, self.name+'.'+ext))
         t1.cd()
         t1.SetLogy()
         frame.GetYaxis().SetRangeUser(0.5,4*maxY)
         canvas.cd()
-        for ext in ['pdf','png'] : canvas.SaveAs(outDir+'/'+self.name+'_log.'+ext)
+        for ext in self.plotformats : canvas.SaveAs(os.path.join(outDir, self.name+'_log.'+ext))
 
 
 
 """
-converts an histogram to a graph with Poisson error bars
+converts a histogram to a graph with Poisson error bars
 """
 def convertToPoissonErrorGr(h):
 

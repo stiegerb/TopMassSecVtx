@@ -7,7 +7,17 @@ from UserCode.TopMassSecVtx.CMS_lumi import CMS_lumi
 from runPlotter import openTFile
 from numpy import roots
 
-# MASSES = [163.5, 166.5, 169.5, 172.5, 173.5, 175.5, 178.5, 181.5]
+# MASSES = [163.5, 166.5, 169.5, 171.5, 172.5, 173.5, 175.5, 178.5, 181.5]
+NBINS = 100
+XMIN = 5.
+XMAX = 200.
+FITRANGE = (20., 140.)
+MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
+
+#NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
+NTRKBINS = [(2,3), (3,4), (4,1000)]
+
+
 TREENAME = 'SVLInfo'
 SELECTIONS = [
 	('inclusive', '1',              '#geq 1 lepton'),
@@ -16,32 +26,26 @@ SELECTIONS = [
 	('mumu',      'EvCat==-169',    '#mu#mu'),
 	('e',         'abs(EvCat)==11', 'e'),
 	('mu',        'abs(EvCat)==13', '#mu'),
-	('inclusive_mrank1', '1 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',              '#geq 1 lepton'),
-	('ee_mrank1',        'EvCat==-121 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',    'ee'),
-	('emu_mrank1',       'EvCat==-143 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',    'e#mu'),
-	('mumu_mrank1',      'EvCat==-169 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0',    '#mu#mu'),
-	('e_mrank1',         'abs(EvCat)==11 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'e'),
-	('mu_mrank1',        'abs(EvCat)==13 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#mu'),
-#	('mrankinc',  'SVLMassRank==1',  'Minimum mass comb.'),
-#	('mrank',     'SVLMassRank==1&&SVLDeltaR<2.0', 'Minimum mass comb., #Delta R < 2.0'),
-#	('mrank1',    'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'Minimum mass comb., only SV in hardest b-jet, #Delta R < 2.0'),
-#	('drrankinc', 'SVLDeltaRRank==1', 'Minimum #Delta R comb.'),
-#	('drrank',    'SVLDeltaRRank==1&&SVLDeltaR<2.0', 'Minimum #Delta R comb., #Delta R < 2.0'),
-#	('drrank1',   'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'Minimum #Delta R comb., only SV in hardest b-jet, #Delta R < 2.0'),
-	# ('mrank12',   'SVLDeltaR<2.0&&((NCombs<=2&&SVLMassRank==1)||'
-	# 	          '(NCombs==4&&SVLMassRank<3))',
-	#  'Two minimum mass comb., #Delta R < 2.0'),
-	# ('drrank12',  'SVLDeltaR<2.0&&((NCombs<=2&&SVLDeltaRRank==1)||'
-	# 	          '(NCombs==4&&SVLDeltaRRank<3))',
-	#  'Two minimum #Delta R comb., #Delta R < 2.0'),
+	('inclusive_mrank1',         '1 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#geq 1 lepton'),
+	('ee_mrank1',      'EvCat==-121 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'ee'),
+	('emu_mrank1',     'EvCat==-143 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'e#mu'),
+	('mumu_mrank1',    'EvCat==-169 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#mu#mu'),
+	('e_mrank1',    'abs(EvCat)==11 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'e'),
+	('mu_mrank1',   'abs(EvCat)==13 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#mu'),
 ]
 
 CONTROLVARS = [
-	('SVLDeltaR' , 0  , 5   , '#Delta R(Sec.Vtx., lepton)'),
-	('SVLxy'     , 0  , 5   , 'SV flight distance (Lxy) [cm]'),
-	('LPt'       , 20 , 100 , 'Lepton pt [GeV]'),
-	('SVPt'      , 0  , 100 , 'Sec.Vtx. pt [GeV]'),
-	('JPt'       , 30 , 200 , 'Jet pt [GeV]'),
+	('SVLDeltaR' , NBINS, 0  , 5   , '#Delta R(Sec.Vtx., lepton)'),
+	('SVLxy'     , NBINS, 0  , 5   , 'SV flight distance (Lxy) [cm]'),
+	('LPt'       , NBINS, 20 , 100 , 'Lepton pt [GeV]'),
+	('SVPt'      , NBINS, 0  , 100 , 'Sec.Vtx. pt [GeV]'),
+	('JPt'       , NBINS, 30 , 200 , 'Jet pt [GeV]'),
+]
+
+DATAMCPLOTS = [
+	('SVLDeltaR' , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
+	('SVNtrk'    , 8,     2  , 10, 'SV Track Multiplicity'),
+	# ('SVLMass'   , NBINS, XMIN, XMAX, MASSXAXISTITLE),
 ]
 
 SYSTS = [
@@ -63,14 +67,6 @@ SYSTS = [
 		'MC8TeV_TTJets_TuneP11mpiHi.root'),
 ]
 
-NBINS = 100
-XMIN = 5.
-XMAX = 200.
-FITRANGE = (20., 140.)
-
-#NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
-NTRKBINS = [(2,3), (3,4), (4,1000)]
-
 def projectFromTree(hist, varname, sel, tree, option=''):
 	try:
 		tree.Project(hist.GetName(),varname, sel, option)
@@ -78,114 +74,94 @@ def projectFromTree(hist, varname, sel, tree, option=''):
 	except Exception, e:
 		raise e
 
+def getHistoFromTree(tree, sel, var="SVLMass",
+	         hname="histo",
+	         nbins=NBINS, xmin=XMIN, xmax=XMAX,
+	         titlex=''):
+	histo = ROOT.TH1D(hname, "histo" , nbins, xmin, xmax)
+	if sel=="": sel = "1"
+	sel = "(%s)"%sel
+	projectFromTree(histo, var, sel, tree)
+	histo.SetLineWidth(2)
+	histo.GetXaxis().SetTitle(titlex)
+	histo.Sumw2()
+	return histo
 
 def getSVLHistos(tree, sel,
 				 var="SVLMass",
 				 tag='', nbins=NBINS, xmin=XMIN, xmax=XMAX,
 				 titlex=''):
-	h_tot = ROOT.TH1D("%s_tot_%s"%(var,tag), "total"    , nbins, xmin, xmax)
-	h_cor = ROOT.TH1D("%s_cor_%s"%(var,tag), "correct"  , nbins, xmin, xmax)
-	h_wro = ROOT.TH1D("%s_wro_%s"%(var,tag), "wrong"    , nbins, xmin, xmax)
-	h_unm = ROOT.TH1D("%s_unm_%s"%(var,tag), "unmatched", nbins, xmin, xmax)
-
-	if sel=="": sel = "1"
-	sel = "(%s)"%sel
-	projectFromTree(h_tot, var, sel,                  tree)
-	projectFromTree(h_cor, var, sel+'&&CombInfo==1',  tree)
-	projectFromTree(h_wro, var, sel+'&&CombInfo==0',  tree)
-	projectFromTree(h_unm, var, sel+'&&CombInfo==-1', tree)
-
+	h_tot = getHistoFromTree(tree, sel,
+		             var=var, hname="%s_tot_%s"%(var,tag),
+		             nbins=nbins, xmin=xmin, xmax=xmax, titlex=titlex)
+	h_cor = getHistoFromTree(tree, sel+'&&CombInfo==1',
+		             var=var, hname="%s_cor_%s"%(var,tag),
+		             nbins=nbins, xmin=xmin, xmax=xmax, titlex=titlex)
+	h_wro = getHistoFromTree(tree, sel+'&&CombInfo==0',
+		             var=var, hname="%s_wro_%s"%(var,tag),
+		             nbins=nbins, xmin=xmin, xmax=xmax, titlex=titlex)
+	h_unm = getHistoFromTree(tree, sel+'&&CombInfo==-1',
+		             var=var, hname="%s_unm_%s"%(var,tag),
+		             nbins=nbins, xmin=xmin, xmax=xmax, titlex=titlex)
 	h_tot.SetLineColor(ROOT.kBlack)
 	h_cor.SetLineColor(ROOT.kBlue)
 	h_wro.SetLineColor(ROOT.kRed)
 	h_unm.SetLineColor(ROOT.kSpring-5)
-
-	for x in [h_tot, h_cor, h_wro, h_unm]:
-		x.SetLineWidth(2)
-		x.GetXaxis().SetTitle(titlex)
-		x.Sumw2()
-
 	return h_tot, h_cor, h_wro, h_unm
 
 def getTopPtHistos(tree, sel,
 				 var="SVLMass",
 				 tag='', xmin=XMIN, xmax=XMAX,
 				 titlex=''):
-	h_tpt = ROOT.TH1D("%s_toppt_%s"%(var,tag),
-					  "top pt weighted"    , NBINS, xmin, xmax)
-	h_tup = ROOT.TH1D("%s_topptup_%s"%(var,tag),
-					  "top pt weighted up" , NBINS, xmin, xmax)
-
-	if sel=="": sel = "1"
-	sel = "(%s)"%sel
-	projectFromTree(h_tpt, var, sel+"*Weight[7]", tree)
-	projectFromTree(h_tup, var, sel+"*Weight[8]", tree)
+	h_tpt = getHistoFromTree(tree, sel=sel+"*Weight[7]",
+	                  var=var, hname="%s_toppt_%s"%(var,tag),
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	h_tup = getHistoFromTree(tree, sel=sel+"*Weight[8]",
+	                  var=var, hname="%s_topptup_%s"%(var,tag),
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
 
 	h_tpt.SetLineColor(ROOT.kRed)
 	h_tup.SetLineColor(ROOT.kRed-6)
-
-	for x in [h_tpt, h_tup]:
-		x.SetLineWidth(2)
-		x.GetXaxis().SetTitle(titlex)
-		x.Sumw2()
-
 	return h_tpt, h_tup
 
 def getBfragHistos(tree, sel,
 				   var="SVLMass",
 				   tag='', xmin=XMIN, xmax=XMAX,
 				   titlex=''):
-	h_bfrag = ROOT.TH1D("%s_tot_%s_bfrag"%(var,tag),
-					  "bfrag weighted"    , NBINS, xmin, xmax)
-	h_bfhar = ROOT.TH1D("%s_tot_%s_bfrag_hard"%(var,tag),
-					  "bfrag hard" , NBINS, xmin, xmax)
-	h_bfsof = ROOT.TH1D("%s_tot_%s_bfrag_soft"%(var,tag),
-					  "bfrag soft" , NBINS, xmin, xmax)
-
-	if sel=="": sel = "1"
-	sel = "(%s)"%sel
-	projectFromTree(h_bfrag, var, sel+"*SVBfragWeight[0]", tree)
-	projectFromTree(h_bfhar, var, sel+"*SVBfragWeight[1]", tree)
-	projectFromTree(h_bfsof, var, sel+"*SVBfragWeight[2]", tree)
+	h_bfrag = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[0]",
+		              var=var, hname="%s_tot_%s_bfrag"%(var,tag),
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	h_bfhar = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[1]",
+		              var=var, hname="%s_tot_%s_bfrag_hard"%(var,tag),
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	h_bfsof = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[2]",
+		              var=var, hname="%s_tot_%s_bfrag_soft"%(var,tag),
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
 
 	h_bfrag.SetLineColor(ROOT.kGreen+2)
 	h_bfhar.SetLineColor(ROOT.kGreen+5)
 	h_bfsof.SetLineColor(ROOT.kGreen)
-
-	for x in [h_bfrag, h_bfhar, h_bfsof]:
-		x.SetLineWidth(2)
-		x.GetXaxis().SetTitle(titlex)
-		x.Sumw2()
-
 	return h_bfrag, h_bfhar, h_bfsof
 
 def getJESHistos(tree, sel,
 				 var="SVLMass",
 				 tag='', xmin=XMIN, xmax=XMAX,
 				 titlex=''):
-	h_jesup = ROOT.TH1D("%s_tot_%s_jes_up"%(var,tag),
-					  "jes up",   NBINS, xmin, xmax)
-	h_jesdn = ROOT.TH1D("%s_tot_%s_jes_dn"%(var,tag),
-					  "jes down", NBINS, xmin, xmax)
-
-	if sel=="": sel = "1"
-	sel = "(%s)"%sel
-	projectFromTree(h_jesup, var, sel+"&&JESWeight[1]", tree)
-	projectFromTree(h_jesdn, var, sel+"&&JESWeight[2]", tree)
+	h_jesup = getHistoFromTree(tree, sel=sel+"&&JESWeight[1]",
+		              var=var, hname="%s_tot_%s_jes_up"%(var,tag),
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	h_jesdn = getHistoFromTree(tree, sel=sel+"&&JESWeight[2]",
+		              var=var, hname="%s_tot_%s_jes_dn"%(var,tag),
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
 
 	h_jesup.SetLineColor(ROOT.kBlue+2)
 	h_jesdn.SetLineColor(ROOT.kBlue-6)
-
-	for x in [h_jesup, h_jesdn]:
-		x.SetLineWidth(2)
-		x.GetXaxis().SetTitle(titlex)
-		x.Sumw2()
 
 	return h_jesup, h_jesdn
 
 def getNTrkHistos(tree, sel,
 		  var="SVLMass",
-		  tag='', 
+		  tag='',
 		  xmin=XMIN, xmax=XMAX,
 		  titlex='',
 		  combsToProject=[('tot','')]
@@ -196,7 +172,7 @@ def getNTrkHistos(tree, sel,
 		if ntk2 > 100:
 			title = "%d #leq N_{trk.}" %(ntk1)
 
-		
+
 		for comb,combSel in combsToProject:
 			hist = ROOT.TH1D("%s_%s_%d_%s"%(var,comb,ntk1,tag), title, NBINS, xmin, xmax)
 			tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
@@ -232,6 +208,25 @@ def makeControlPlot(hists, tag, seltag, opt):
 	ctrlplot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
 	ctrlplot.show("control_%s"%tag, opt.outDir)
 	ctrlplot.reset()
+
+def writeDataMCHistos(treefiles, opt):
+	ofi = ROOT.TFile(os.path.join(opt.outDir,'datamc_histos.root'),
+		             'recreate')
+	ofi.cd()
+	for proc in treefiles.keys():
+		tree = ROOT.TFile.Open(treefiles[proc],'READ').Get(TREENAME)
+		print "... processing %s, %d entries" % (proc, tree.GetEntries())
+		for tag,sel,_ in SELECTIONS:
+			for var,nbins,xmin,xmax,titlex in DATAMCPLOTS:
+				hist = getHistoFromTree(tree, sel=sel,
+					              var=var, hname="%s_%s_%s"%(var,tag,proc),
+				                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+				ofi.cd()
+				hist.Write(hist.GetName())
+
+	ofi.Write()
+	ofi.Close()
+
 
 def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
 	"""
@@ -353,6 +348,13 @@ def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)
 	try:
 
+		treefiles = {} # procname -> filename
+		for filename in os.listdir(args[0]):
+			if not os.path.splitext(filename)[1] == '.root': continue
+			procname = filename.split('_', 1)[1][:-5]
+			treefiles[procname] = os.path.join(args[0],filename)
+
+
 		massfiles = {} # mass -> filename
 		# find mass scan files
 		for filename in os.listdir(os.path.join(args[0],'mass_scan')):
@@ -387,13 +389,15 @@ def main(args, opt):
 	for syst,_,_ in SYSTS:
 		systtrees[syst] = ROOT.TFile.Open(systfiles[syst],'READ').Get(TREENAME)
 
+	if opt.writeDataMCHistos:
+		writeDataMCHistos(treefiles, opt)
 
 	if not opt.cache:
-		masshistos = {} # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
-		fittertkhistos = {} #(tag, mass or syst) -> h_tot, h_cor, h_wro, h_unm
-		systhistos = {} # (tag) -> h_tptw, h_tptup, h_tptdn
-		massntkhistos = {} # (tag) -> (h_ntk1, h_ntk2, h_ntk3, ..)
-		ntkhistos = {} # (tag) -> h_ntk_tot, h_ntk_cor, h_ntk_wro, h_ntk_unm
+		masshistos = {}     # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
+		fittertkhistos = {} # (tag, mass or syst) -> h_tot, h_cor, h_wro, h_unm
+		systhistos = {}     # (tag) -> h_tptw, h_tptup, h_tptdn
+		massntkhistos = {}  # (tag) -> (h_ntk1, h_ntk2, h_ntk3, ..)
+		ntkhistos = {}      # (tag) -> h_ntk_tot, h_ntk_cor, h_ntk_wro, h_ntk_unm
 		for tag,sel,_ in SELECTIONS:
 			for mass, tree in systtrees.iteritems():
 				if not mass in massfiles.keys(): continue
@@ -401,57 +405,63 @@ def main(args, opt):
 				print ' ... processing %5.1f GeV %s tag=%s' % (mass, sel,htag)
 				masshistos[(tag, mass)] = getSVLHistos(tree, sel,
 								       var="SVLMass", tag=htag,
-								       titlex='m(SV,lepton) [GeV]')
+								       titlex=MASSXAXISTITLE)
 
 				fittertkhistos[(tag,mass)] = getNTrkHistos(tree,
 									   sel=sel,
 									   tag=htag,
 									   var='SVLMass',
-									   titlex='m(SV,lepton) [GeV]',
-									   combsToProject=[('tot',''),('cor','CombInfo==1'),('wro','CombInfo==0'),('unm','CombInfo==-1')])
+									   titlex=MASSXAXISTITLE,
+									   combsToProject=[('tot',''),
+									                   ('cor','CombInfo==1'),
+									                   ('wro','CombInfo==0'),
+									                   ('unm','CombInfo==-1')])
 
 			systhistos[(tag,'ptt_tot')] = getTopPtHistos(systtrees[172.5],
 											  sel=sel,
 											  var="SVLMass", tag=tag,
-											  titlex='m(SV,lepton) [GeV]')
+											  titlex=MASSXAXISTITLE)
 
 			systhistos[(tag,'ptt_cor')] = getTopPtHistos(systtrees[172.5],
 											  sel=sel+'&&(CombInfo==1)',
 											  var="SVLMass", tag=tag+'_cor',
-											  titlex='m(SV,lepton) [GeV]')
+											  titlex=MASSXAXISTITLE)
 
 			systhistos[(tag,'ptt_wro')] = getTopPtHistos(systtrees[172.5],
 											  sel=sel+'&&(CombInfo==0)',
 											  var="SVLMass", tag=tag+'_wro',
-											  titlex='m(SV,lepton) [GeV]')
+											  titlex=MASSXAXISTITLE)
 
 			for syst,_,_ in SYSTS:
 				systhistos[(tag,syst)] = getSVLHistos(systtrees[syst],
 								      sel=sel,
 								      var="SVLMass", tag=tag+'_'+syst,
-								      titlex='m(SV,lepton) [GeV]')
-				#fittertkhistos[(tag,syst)] = getNTrkHistos(systtrees[syst],
+								      titlex=MASSXAXISTITLE)
+				# fittertkhistos[(tag,syst)] = getNTrkHistos(systtrees[syst],
 				#                                           sel=sel,
 				#                                           tag=htag,
-				#					    var='SVLMass',
-				#					    titlex='m(SV,lepton) [GeV]',
-				#					    combsToProject=[('tot',''),('cor','CombInfo==1'),('wro','CombInfo==0'),('unm','CombInfo==-1')])
+				# 					    var='SVLMass',
+				# 					    titlex=MASSXAXISTITLE,
+				# 					    combsToProject=[('tot',''),
+				#                                         ('cor','CombInfo==1'),
+				#                                         ('wro','CombInfo==0'),
+				#                                         ('unm','CombInfo==-1')])
 
 			systhistos[(tag,'bfrag')] = getBfragHistos(systtrees[172.5],
 				                        sel=sel, var='SVLMass',
 				                        tag=tag+'_bfrag',
-				                        titlex='m(SV,lepton) [GeV]')
+				                        titlex=MASSXAXISTITLE)
 
 			systhistos[(tag,'jes')] = getJESHistos(systtrees[172.5],
 				                        sel=sel, var='SVLMass',
 				                        tag=tag+'_jes',
-				                        titlex='m(SV,lepton) [GeV]')
+				                        titlex=MASSXAXISTITLE)
 
 			massntkhistos[tag] = getNTrkHistos(systtrees[172.5],
 							   sel=sel,
 							   tag=tag,
 							   var='SVLMass',
-							   titlex='m(SV,lepton) [GeV]')
+							   titlex=MASSXAXISTITLE)
 
 
 			ntkhistos[tag] = getSVLHistos(systtrees[172.5], sel,
@@ -460,10 +470,10 @@ def main(args, opt):
 										  titlex='Track Multiplicity')
 
 		controlhistos = {} # (var) -> h_tot, h_cor, h_wro, h_unm
-		for var,xmin,xmax,titlex in CONTROLVARS:
+		for var,nbins,xmin,xmax,titlex in CONTROLVARS:
 			controlhistos[var] = getSVLHistos(systtrees[172.5],"1",
 											  var=var, tag="incl",
-											  xmin=xmin, xmax=xmax,
+											  nbins=nbins,xmin=xmin, xmax=xmax,
 											  titlex=titlex)
 
 
@@ -508,7 +518,7 @@ def main(args, opt):
 	ROOT.gROOT.SetBatch(1)
 
 
-	for var,_,_,_ in CONTROLVARS:
+	for var,_,_,_,_ in CONTROLVARS:
 		makeControlPlot(controlhistos[var], var, 'Fully Inclusive', opt)
 
 	errorGetters = {} # tag -> function(chi2) -> error
@@ -821,6 +831,9 @@ if __name__ == "__main__":
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",
 					  help='Read from cache')
+	parser.add_option('-w', '--writeDataMCHistos', dest='writeDataMCHistos',
+		              action="store_true",
+					  help='Write the Data vs MC histograms')
 	(opt, args) = parser.parse_args()
 
 	exit(main(args, opt))

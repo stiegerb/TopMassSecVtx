@@ -69,6 +69,7 @@ class RatioPlot(object):
             ROOT.kSpring-9,
             ROOT.kOrange+8,
             ROOT.kRed+1,
+            ROOT.kRed+3,
         ]
         # self.colors = [ ## shades of blue
         #     ROOT.kViolet-7,

@@ -585,10 +585,14 @@ bool LxyTreeAnalysis::selectEvent(){
 }
 
 bool LxyTreeAnalysis::selectSVLEvent(){
-	int nsvjets(0), nbjets(0);
+	int nsvjets(0), nbjets(0), nbnosv(0);
 	for( int i=0; i < nj; i++){
 		if(svlxy[i] > 0) nsvjets++;
-		if(jcsv[i] > 0.783) nbjets++;
+		if(jcsv[i] > 0.783){
+			nbjets++;
+			// Count also jets with b-tag but no SV
+			if(svlxy[i] == 0.) nbnosv++;
+		}
 	}
 
 	// At least one SV in any channel
@@ -603,10 +607,11 @@ bool LxyTreeAnalysis::selectSVLEvent(){
 		return false;
 	}
 
-	// For single lepton, at least 4 jets, and either 2 SV or 1 CSVM
+	// For single lepton, at least 4 jets, and either 2 SV or 1 SV + 1 CSVM
 	if (abs(evcat) == 11 || abs(evcat) == 13){
 		if (nj < 4) return false;
-		if (nsvjets > 1 || nbjets > 0) return true;
+		if (nsvjets > 1) return true;
+		if (nsvjets > 0 && nbnosv > 0) return true;
 		return false;
 	}
 	return false;
@@ -720,7 +725,6 @@ void LxyTreeAnalysis::analyze(){
 		// D+
 		fillDpmHists(maxind);
 		fillDpmHists(maxind2);
-
 	}
 
 

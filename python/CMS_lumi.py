@@ -14,7 +14,7 @@ CMS_lumi_cmsTextOffset = 0.1
 # CMS_lumi_cmsTextOffset = 0.1
 
 CMS_lumi_writeExtraText = True
-CMS_lumi_extraText   = "work in progress"
+CMS_lumi_extraText = "Work in progress"
 CMS_lumi_writeExtraTextFont = 53
 CMS_lumi_writeExtraTextSize = 32
 CMS_lumi_lumiTextSize     = 32

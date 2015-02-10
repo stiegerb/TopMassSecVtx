@@ -1,10 +1,11 @@
 #!/bin/bash
 WHAT=$1; if [[ "$1" == "" ]]; then echo "runAll.sh <TREES/ALLTREES/MERGE/UNFOLD/DIFF>"; exit 1; fi
 
-tag=Nov11
+tag=Feb6
+# tag=Nov14
 # tag=Aug28
 # tag=Sep18
-treedir=/afs/cern.ch/work/s/stiegerb/TopSecVtx/LxyTrees/${tag}/
+treedir=/afs/cern.ch/work/s/stiegerb/TopSecVtx/SVLInfo/${tag}/
 # treedir=/data/stiegerb/topss2014/hidde/lxyplots_${tag}/
 
 mkdir -p ${treedir}
@@ -28,16 +29,19 @@ case $WHAT in
 		./scripts/runLxyTreeAnalysis.py -p MC8TeV_TT_AUET2_powheg_herwig -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/${hash}/syst/
 		;;
 	ALLTREES )
-		# ./scripts/runLxyTreeAnalysis.py -o ${treedir} -j 8 /store/cmst3/group/top/summer2014/${hash}/
-		mkdir -p ${treedir}/mass_scan/
+		./scripts/runLxyTreeAnalysis.py -o ${treedir}            -j 8 /store/cmst3/group/top/summer2014/${hash}/
 		./scripts/runLxyTreeAnalysis.py -o ${treedir}/mass_scan/ -j 8 /store/cmst3/group/top/summer2014/${hash}/mass_scan/
+		./scripts/runLxyTreeAnalysis.py -o ${treedir}/syst/      -j 8 /store/cmst3/group/top/summer2014/${hash}/syst/
 		;;
 	MERGE )
-		hadd ${treedir}/Data8TeV_merged.root ${treedir}/Data8TeV_*.root
-		hadd ${treedir}/MC8TeV_TT_AUET2_powheg_herwig.root ${treedir}/MC8TeV_TT_AUET2_powheg_herwig_?.root
-		hadd ${treedir}/MC8TeV_TTJets_MSDecays_172v5.root ${treedir}/MC8TeV_TTJets_MSDecays_172v5_*.root
-		hadd ${treedir}/MC8TeV_TT_Z2star_powheg_pythia.root ${treedir}/MC8TeV_TT_Z2star_powheg_pythia_*.root
-		hadd ${treedir}/MC8TeV_TTJets_TuneP11.root ${treedir}/MC8TeV_TTJets_TuneP11_?.root
+		./scripts/mergeSVLInfoFiles.py ${treedir}
+		./scripts/mergeSVLInfoFiles.py ${treedir}/mass_scan/
+		./scripts/mergeSVLInfoFiles.py ${treedir}/syst/
+		# hadd ${treedir}/Data8TeV_merged.root ${treedir}/Data8TeV_*.root
+		# hadd ${treedir}/MC8TeV_TT_AUET2_powheg_herwig.root ${treedir}/MC8TeV_TT_AUET2_powheg_herwig_?.root
+		# hadd ${treedir}/MC8TeV_TTJets_MSDecays_172v5.root ${treedir}/MC8TeV_TTJets_MSDecays_172v5_*.root
+		# hadd ${treedir}/MC8TeV_TT_Z2star_powheg_pythia.root ${treedir}/MC8TeV_TT_Z2star_powheg_pythia_*.root
+		# hadd ${treedir}/MC8TeV_TTJets_TuneP11.root ${treedir}/MC8TeV_TTJets_TuneP11_?.root
 
 		# Cleanup the non-merged files
 		# rm ${treedir}/MC8TeV_TTJets_MSDecays_172v5_*
@@ -45,6 +49,9 @@ case $WHAT in
 		# rm ${treedir}/MC8TeV_TT_AUET2_powheg_herwig_*
 		# rm ${treedir}/MC8TeV_TTJets_TuneP11_*
 		# rm ${treedir}/Data8TeV_*_*.root
+		;;
+	SVLPLOTS )
+		./scripts/makeSVLControlPlots.py ${treedir}
 		;;
 	UNFOLD )
 		outdir=unfolded_${tag}

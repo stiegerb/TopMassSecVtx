@@ -169,6 +169,13 @@ public:
     Float_t fTCandPtRel, fTCandDeltaR;
     Float_t fTJetPt, fTJetEta, fTSumPtCharged, fTJetPz, fTSumPzCharged;
 
+    // Lepton Secondary Vertex:
+    TH1D *fHNJets, *fHNJets_e, *fHNJets_m, *fHNJets_ee, *fHNJets_mm, *fHNJets_em;
+    TH1D *fHNSVJets, *fHNSVJets_e, *fHNSVJets_m, *fHNSVJets_ee, *fHNSVJets_mm, *fHNSVJets_em;
+    TH1D *fHNbJets, *fHNbJets_e, *fHNbJets_m, *fHNbJets_ee, *fHNbJets_mm, *fHNbJets_em;
+    TH1D *fHMET, *fHMET_e, *fHMET_m, *fHMET_ee, *fHMET_mm, *fHMET_em;
+
+
     TTree *fSVLInfoTree;
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
     Float_t fTWeight[10], fTJESWeight[3];
@@ -177,170 +184,7 @@ public:
     Int_t fTSVLMinMassRank, fTSVLDeltaRRank, fTSVLMinMassRank_rot, fTSVLDeltaRRank_rot;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
 
-    // Int_t   fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
-    // Float_t fTCandMass, fTCandPt, fTCandPz, fTCandEta;
-    // Float_t fTCandPtRel, fTCandDeltaR;
-    // Float_t fTJetPt, fTJetEta, fTSumPtCharged, fTJetPz, fTSumPzCharged;
 
-    // Lepton - secondary vertex histos
-// cut
-   TH1D *fHmlsv_emu_deltar_cut;
-   TH1D *fHmlsv_emu_deltar_cut_flow;
-   TH1D *fHmlsv_emu_deltar_cut_correct;
-   TH1D *fHmlsv_emu_deltar_cut_wrong;
-
-   TH1D *fHmlsv_emu_deltar_cut_ntr2;
-   TH1D *fHmlsv_emu_deltar_cut_ntr2_correct;
-   TH1D *fHmlsv_emu_deltar_cut_ntr2_wrong;
-
-   TH1D *fHmlsv_emu_deltar_cut_ntr3;
-   TH1D *fHmlsv_emu_deltar_cut_ntr3_correct;
-   TH1D *fHmlsv_emu_deltar_cut_ntr3_wrong;
-
-   TH1D *fHmlsv_emu_deltar_cut_ntr4;
-   TH1D *fHmlsv_emu_deltar_cut_ntr4_correct;
-   TH1D *fHmlsv_emu_deltar_cut_ntr4_wrong;
-
-//invm using deltar
-   TH1D *fHdeltar_lsv_emu_deltar_cut;
-   TH1D *fHdeltar_lsv_emu_deltar_cut_correct;
-   TH1D *fHdeltar_lsv_emu_deltar_cut_wrong;
-
-   TH1D *fHmlsv_emu_deltar;
-   TH1D *fHmlsv_emu_deltar_correct;
-   TH1D *fHmlsv_emu_deltar_wrong;
-
-   TH1D *fHmlsv_emu_deltar_ntr2;
-   TH1D *fHmlsv_emu_deltar_ntr2_correct;
-   TH1D *fHmlsv_emu_deltar_ntr2_wrong;
-
-   TH1D *fHmlsv_emu_deltar_ntr3;
-   TH1D *fHmlsv_emu_deltar_ntr3_correct;
-   TH1D *fHmlsv_emu_deltar_ntr3_wrong;
-
-   TH1D *fHmlsv_emu_deltar_ntr4;
-   TH1D *fHmlsv_emu_deltar_ntr4_correct;
-   TH1D *fHmlsv_emu_deltar_ntr4_wrong;
-
-//minmass
-
-   TH1D *fHmlsv_emu_minmass;
-   TH1D *fHmlsv_emu_minmass_flow;
-   TH1D *fHmlsv_emu_minmass_correct;
-   TH1D *fHmlsv_emu_minmass_wrong;
-
-   TH1D *fHmlsv_emu_minmass_ntr2;
-   TH1D *fHmlsv_emu_minmass_ntr2_correct;
-   TH1D *fHmlsv_emu_minmass_ntr2_wrong;
-
-   TH1D *fHmlsv_emu_minmass_ntr3;
-   TH1D *fHmlsv_emu_minmass_ntr3_correct;
-   TH1D *fHmlsv_emu_minmass_ntr3_wrong;
-
-   TH1D *fHmlsv_emu_minmass_ntr4;
-   TH1D *fHmlsv_emu_minmass_ntr4_correct;
-   TH1D *fHmlsv_emu_minmass_ntr4_wrong;
-
-   TH1D *fHmlsv_emu_deltar_cut_correct_topweight;
-   TH1D *fHmlsv_emu_deltar_cut_correct_topweight_up;
-   TH1D *fHmlsv_emu_deltar_cut_wrong_topweight;
-   TH1D *fHmlsv_emu_deltar_cut_wrong_topweight_up;
-
-   TH1D *fHmlsv_emu_minmass_correct_topweight;
-   TH1D *fHmlsv_emu_minmass_correct_topweight_up;
-   TH1D *fHmlsv_emu_minmass_wrong_topweight;
-   TH1D *fHmlsv_emu_minmass_wrong_topweight_up;
-
-   TH1D *fHmlsv_emu_minmass_correct_nvtx_1bin;
-   TH1D *fHmlsv_emu_minmass_correct_nvtx_2bin;
-   TH1D *fHmlsv_emu_minmass_correct_nvtx_3bin;
-   TH1D *fHmlsv_emu_minmass_correct_nvtx_4bin;
-
-   TH1D *fHmlsv_emu_minmass_wrong_nvtx_1bin;
-   TH1D *fHmlsv_emu_minmass_wrong_nvtx_2bin;
-   TH1D *fHmlsv_emu_minmass_wrong_nvtx_3bin;
-   TH1D *fHmlsv_emu_minmass_wrong_nvtx_4bin;
-   TH1D *fHsvntk;
-
-// pratio
-
-   TH1D *fHsecbhad_pratio_emu;
-   TH1D *fHsecbhad_pratio_emu_ntr2;
-   TH1D *fHsecbhad_pratio_emu_ntr3;
-   TH1D *fHsecbhad_pratio_emu_ntr4;
-   TH1D *fHsecbhad_pratio_emu_ntr5;
-   TH1D *fHsecbhad_pratio_emu_ntr6;
-   TH1D *fHsecbhad_pratio_emu_ntr7;
-   TH1D *fHsecbhad_pratio_emu_ntr8;
-   TH1D *fHsecbhad_pratio_emu_ntr9;
-   TH1D *fHsecbhad_pratio_emu_ntr10;
-   TH1D *fHsecbhad_pratio_emu_ntr11;
-   TH1D *fHsecbhad_pratio_emu_ntr12;
-   TH1D *fHsecbhad_pratio_emu_ntr13;
-   TH1D *fHsecbhad_pratio_emu_ntr14;
-   TH1D *fHsecbhad_pratio_emu_ntr15;
-
-   TH1D *fHsecbhad_deltar_emu;
-   TH1D *fHsecbhad_deltar_emu_ntr2;
-   TH1D *fHsecbhad_deltar_emu_ntr3;
-   TH1D *fHsecbhad_deltar_emu_ntr4;
-   TH1D *fHsecbhad_deltar_emu_ntr5;
-   TH1D *fHsecbhad_deltar_emu_ntr6;
-   TH1D *fHsecbhad_deltar_emu_ntr7;
-   TH1D *fHsecbhad_deltar_emu_ntr8;
-   TH1D *fHsecbhad_deltar_emu_ntr9;
-   TH1D *fHsecbhad_deltar_emu_ntr10;
-   TH1D *fHsecbhad_deltar_emu_ntr11;
-   TH1D *fHsecbhad_deltar_emu_ntr12;
-   TH1D *fHsecbhad_deltar_emu_ntr13;
-   TH1D *fHsecbhad_deltar_emu_ntr14;
-   TH1D *fHsecbhad_deltar_emu_ntr15;
-
-   TH1D *fHsecb_pratio_emu;
-   TH1D *fHsecb_pratio_emu_ntr2;
-   TH1D *fHsecb_pratio_emu_ntr3;
-   TH1D *fHsecb_pratio_emu_ntr4;
-   TH1D *fHsecb_pratio_emu_ntr5;
-   TH1D *fHsecb_pratio_emu_ntr6;
-   TH1D *fHsecb_pratio_emu_ntr7;
-   TH1D *fHsecb_pratio_emu_ntr8;
-   TH1D *fHsecb_pratio_emu_ntr9;
-   TH1D *fHsecb_pratio_emu_ntr10;
-   TH1D *fHsecb_pratio_emu_ntr11;
-   TH1D *fHsecb_pratio_emu_ntr12;
-   TH1D *fHsecb_pratio_emu_ntr13;
-   TH1D *fHsecb_pratio_emu_ntr14;
-   TH1D *fHsecb_pratio_emu_ntr15;
-
-   TH1D *fHsecb_deltar_emu;
-   TH1D *fHsecb_deltar_emu_ntr2;
-   TH1D *fHsecb_deltar_emu_ntr3;
-   TH1D *fHsecb_deltar_emu_ntr4;
-   TH1D *fHsecb_deltar_emu_ntr5;
-   TH1D *fHsecb_deltar_emu_ntr6;
-   TH1D *fHsecb_deltar_emu_ntr7;
-   TH1D *fHsecb_deltar_emu_ntr8;
-   TH1D *fHsecb_deltar_emu_ntr9;
-   TH1D *fHsecb_deltar_emu_ntr10;
-   TH1D *fHsecb_deltar_emu_ntr11;
-   TH1D *fHsecb_deltar_emu_ntr12;
-   TH1D *fHsecb_deltar_emu_ntr13;
-   TH1D *fHsecb_deltar_emu_ntr14;
-   TH1D *fHsecb_deltar_emu_ntr15;
-
-   TH2D *fHdeltar_svl_emu_2d;
-
-   TH1D *fHdeltar_svl_emu_correct;
-   TH1D *fHdeltar_svl_emu_correct_ntr2;
-   TH1D *fHdeltar_svl_emu_correct_ntr3;
-   TH1D *fHdeltar_svl_emu_correct_ntr4;
-   TH1D *fHdeltar_svl_emu_correct_ntr5;
-
-   TH1D *fHdeltar_svl_emu_wrong;
-   TH1D *fHdeltar_svl_emu_wrong_ntr2;
-   TH1D *fHdeltar_svl_emu_wrong_ntr3;
-   TH1D *fHdeltar_svl_emu_wrong_ntr4;
-   TH1D *fHdeltar_svl_emu_wrong_ntr5;
 
    TRandom3 rndGen_;
 };

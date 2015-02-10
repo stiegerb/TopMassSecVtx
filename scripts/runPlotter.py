@@ -2,11 +2,30 @@
 import os
 import sys
 import json
+import pickle
+import ROOT
 from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle,fixExtremities,Plot
 
 sys.path.append('/afs/cern.ch/cms/caf/python/')
 from cmsIO import cmsFile
 
+COLORPALETTE = { # title -> color
+    't#bar{t}'       : ROOT.kGray,
+    'Single top'     : ROOT.kAzure+5,
+    'W+Jets'         : ROOT.kOrange-3,
+    'DY+Jets'        : ROOT.kOrange+9,
+    'QCD Multijets'  : ROOT.kGray+2,
+    'Multiboson'     : ROOT.kSpring-5,
+    'other t#bar{t}' : ROOT.kBlue+2,
+    ## Original
+    # 'VV'             : ROOT.kBlue-9,    # 591
+    # 'W'              : ROOT.kOrange+9,  # 809
+    # 'other t#bar{t}' : ROOT.kSpring+2,  # 822
+    # 'Single top'     : ROOT.kSpring+4,  # 824
+    # 'DY'             : ROOT.kTeal-9,    # 831
+    # 't#bar{t}'       : ROOT.kMagenta-2, # 614
+    # 'Multijets'      : ROOT.kYellow-6,  # 41
+}
 
 def getByLabel(desc, key, defaultVal=None) :
     """
@@ -51,7 +70,7 @@ def openTFile(url):
         return None
     return rootFile
 
-def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[]):
+def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],filterByProcList=[]):
     """
     Return a list of all keys deriving from TH1 in a file
     """
@@ -61,7 +80,7 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[]):
         key = tkey.GetName()
         keepPlot=False
         for tag in tagsToFilter:
-            if key.find(tag)>=0 : 
+            if key.find(tag)>=0 :
                 keepPlot=True
         if not keepPlot : continue
         obj = tdir.Get(key)
@@ -82,6 +101,17 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[]):
             if chopPrefix:
                 key = key.replace(tdir.GetName()+'_','')
             toReturn.append(key)
+
+    if len(filterByProcList):
+        newlist = []
+        for key in toReturn:
+            for proc in filterByProcList:
+                if key.endswith('_%s'%proc):
+                    newkey = key.replace('_%s'%proc,'')
+                    newlist.append(newkey)
+
+        return list(set(newlist))
+
     return toReturn
 
 def checkMissingFiles(inDir, jsonUrl):
@@ -157,25 +187,60 @@ def makePlot(key, inDir, procList, xsecweights, options):
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
-    baseRootFile = None ## FIXME
+    newPlot.plotformats = ['pdf', 'png']
+    newPlot.ratiorange = (0.4,2.3)
+    baseRootFile = None
+    if inDir.endswith('.root'):
+        baseRootFile = openTFile(inDir)
     for proc_tag in procList:
         for desc in proc_tag[1]: # loop on processes
             title = getByLabel(desc,'tag','unknown')
             isData = getByLabel(desc,'isdata',False)
-            color = int(getByLabel(desc,'color',1))
+            try:
+                color = COLORPALETTE[title]
+            except KeyError:
+                color = int(getByLabel(desc,'color',1))
             data = desc['data']
             mctruthmode = getByLabel(desc,'mctruthmode')
 
             hist = None
             for process in data: # loop on datasets for process
                 dtag = getByLabel(process,'dtag','')
-                split = getByLabel(process,'split',1)
 
                 if baseRootFile is None:
-                    for segment in range(0,split) :
+                    if options.split: # Files are split
+                        split = getByLabel(process,'split',1)
+                        for segment in range(0,split) :
+                            eventsFile = dtag
+                            if split > 1:
+                                eventsFile = dtag + '_' + str(segment)
+                            if mctruthmode:
+                                eventsFile += '_filt%d' % mctruthmode
+                            rootFileUrl = inDir+'/'+eventsFile+'.root'
+
+                            rootFile = openTFile(rootFileUrl)
+                            if rootFile is None: continue
+
+                            ihist = rootFile.Get(key)
+                            try: ## Check if it is found
+                                if ihist.Integral() <= 0:
+                                    rootFile.Close()
+                                    continue
+                            except AttributeError:
+                                rootFile.Close()
+                                continue
+
+                            fixExtremities(ihist,True,True)
+                            ihist.Scale(xsecweights[str(dtag)])
+
+                            if hist is None :
+                                hist = ihist.Clone(dtag+'_'+pName)
+                                hist.SetDirectory(0)
+                            else:
+                                hist.Add(ihist)
+                            rootFile.Close()
+                    else:
                         eventsFile = dtag
-                        if split > 1:
-                            eventsFile = dtag + '_' + str(segment)
                         if mctruthmode:
                             eventsFile += '_filt%d' % mctruthmode
                         rootFileUrl = inDir+'/'+eventsFile+'.root'
@@ -193,7 +258,7 @@ def makePlot(key, inDir, procList, xsecweights, options):
                             continue
 
                         fixExtremities(ihist,True,True)
-                        ihist.Scale(xsecweights[dtag])
+                        ihist.Scale(xsecweights[str(dtag)])
 
                         if hist is None :
                             hist = ihist.Clone(dtag+'_'+pName)
@@ -203,14 +268,15 @@ def makePlot(key, inDir, procList, xsecweights, options):
                         rootFile.Close()
 
                 else:
-                    ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
+                    # ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
+                    ihist = baseRootFile.Get('%s_%s' % (key,dtag.split('_',1)[1]))
                     try:
                         if ihist.Integral() <= 0: continue
                     except AttributeError:
                         continue
 
                     fixExtremities(ihist,True,True)
-                    ihist.Scale(xsecweights[dtag])
+                    ihist.Scale(xsecweights[str(dtag)])
 
                     if hist is None: ## Check if it is found
                         hist = ihist.Clone(dtag+'_'+pName)
@@ -223,15 +289,113 @@ def makePlot(key, inDir, procList, xsecweights, options):
                 hist.Scale(options.lumi)
             newPlot.add(hist,title,color,isData)
 
-    if options.normToData : 
+    if options.normToData :
         newPlot.normToData()
 
     if not options.silent :
         newPlot.show(options.outDir)
-        if options.debug or newPlot.name.find('flow')>=0  : 
+        if options.debug or newPlot.name.find('flow')>=0  :
             newPlot.showTable(options.outDir)
     newPlot.appendTo(options.outDir+'/plotter.root')
     newPlot.reset()
+
+def readXSecWeights(inDir, options):
+    """
+    Loop over the inputs and fill in a xsecweights dictionary
+    """
+
+    try:
+        if options.rereadXsecWeights:
+            # trigger re-reading of weights
+            raise IOError
+
+        cachefile = open(".xsecweights.pck", 'r')
+        xsecweights = pickle.load(cachefile)
+        cachefile.close()
+        print '>>> Read xsec weights from cache (.xsecweights.pck)'
+        return xsecweights
+    except IOError:
+        pass
+
+    jsonFile = open(options.json,'r')
+    procList = json.load(jsonFile,encoding = 'utf-8').items()
+
+    # Make a survey of *all* existing plots
+    xsecweights = {}
+    tot_ngen = {}
+    missing_files = []
+    for proc_tag in procList:
+        for desc in proc_tag[1]:
+            data = desc['data']
+            isData = getByLabel(desc,'isdata',False)
+            mctruthmode = getByLabel(desc,'mctruthmode')
+            for process in data:
+                dtag = getByLabel(process,'dtag','')
+                split = getByLabel(process,'split',1)
+                dset = getByLabel(process,'dset',dtag)
+
+                try:
+                    ngen = tot_ngen[dset]
+                except KeyError:
+                    ngen = 0
+
+                for segment in range(0,split):
+                    eventsFile = dtag
+                    if split > 1:
+                        eventsFile = dtag + '_' + str(segment)
+                    if mctruthmode:
+                        eventsFile += '_filt%d' % mctruthmode
+                    rootFileUrl = inDir+'/'+eventsFile+'.root'
+                    rootFile = openTFile(rootFileUrl)
+                    if rootFile is None:
+                        missing_files.append(eventsFile+'.root')
+                        continue
+
+                    ngen_seg,_ = getNormalization(rootFile)
+                    if not isData: ngen += ngen_seg
+
+                    rootFile.Close()
+
+                tot_ngen[dset] = ngen
+
+            # Calculate weights:
+            for process in data:
+                dtag = getByLabel(process,'dtag','')
+                dset = getByLabel(process,'dset',dtag)
+                brratio = getByLabel(process,'br',[1])
+                xsec = getByLabel(process,'xsec',1)
+                if dtag not in xsecweights.keys():
+                    try:
+                        ngen = tot_ngen[dset]
+                        xsecweights[str(dtag)] = brratio[0]*xsec/ngen
+                    except ZeroDivisionError:
+                        if isData:
+                            xsecweights[str(dtag)] = 1.0
+                        else:
+                            print "ngen not properly set for", dtag
+
+
+    if len(missing_files) and options.verbose>0:
+        print 20*'-'
+        print "WARNING: Missing the following files:"
+        for filename in missing_files:
+            print filename
+        print 20*'-'
+
+    cachefile = open(".xsecweights.pck", 'w')
+    pickle.dump(xsecweights, cachefile, pickle.HIGHEST_PROTOCOL)
+    cachefile.close()
+    print '>>> Produced xsec weights and wrote to cache (.xsecweights.pck)'
+    return xsecweights
+def getListofProcessesFromJSON(procList, chopPrefix=False):
+    returnlist = []
+    for desc in procList[0][1]:
+        for process in desc['data']:
+            listitem = process['dtag']
+            if chopPrefix:
+                listitem = listitem.split('_',1)[1]
+            returnlist.append(str(listitem))
+    return returnlist
 
 def runPlotter(inDir, options):
     """
@@ -241,17 +405,27 @@ def runPlotter(inDir, options):
 
     jsonFile = open(options.json,'r')
     procList = json.load(jsonFile,encoding = 'utf-8').items()
+    list_of_processes = getListofProcessesFromJSON(procList, chopPrefix=True)
 
     # Make a survey of *all* existing plots
     plots = []
-    xsecweights = {}
-    tot_ngen = {}
+
+    # Read the xsection weights (from cache or from the input files)
+    xsecweights = readXSecWeights(inDir=args[0], options=opt)
+
     missing_files = []
+    tagsToFilter = opt.filter.split(',')
     baseRootFile = None
-    tagsToFilter=opt.filter.split(',')
+
+    # Input is a single root file with all histograms
     if inDir.endswith('.root'):
         baseRootFile = TFile.Open(inDir)
-        plots = list(set(getAllPlotsFrom(tdir=baseRootFile,chopPrefix=True,tagsToFilter=tagsToFilter)))
+        plots = getAllPlotsFrom(tdir=baseRootFile,
+                                chopPrefix=True,
+                                tagsToFilter=tagsToFilter,
+                                filterByProcList=list_of_processes)
+
+    # Input is a directory with files for each process containing histograms
     else:
         for proc_tag in procList:
             for desc in proc_tag[1]:
@@ -260,18 +434,27 @@ def runPlotter(inDir, options):
                 mctruthmode = getByLabel(desc,'mctruthmode')
                 for process in data:
                     dtag = getByLabel(process,'dtag','')
-                    split = getByLabel(process,'split',1)
                     dset = getByLabel(process,'dset',dtag)
 
-                    try:
-                        ngen = tot_ngen[dset]
-                    except KeyError:
-                        ngen = 0
+                    if options.split: # Files are split
+                        split = getByLabel(process,'split',1)
+                        for segment in range(0,split):
+                            eventsFile = dtag
+                            if split > 1:
+                                eventsFile = dtag + '_' + str(segment)
+                            if mctruthmode:
+                                eventsFile += '_filt%d' % mctruthmode
+                            rootFileUrl = inDir+'/'+eventsFile+'.root'
+                            rootFile = openTFile(rootFileUrl)
+                            if rootFile is None:
+                                missing_files.append(eventsFile+'.root')
+                                continue
 
-                    for segment in range(0,split):
+                            iplots = getAllPlotsFrom(tdir=rootFile,tagsToFilter=tagsToFilter)
+                            rootFile.Close()
+                            plots = list(set(plots+iplots))
+                    else: # Files are merged by processes
                         eventsFile = dtag
-                        if split > 1:
-                            eventsFile = dtag + '_' + str(segment)
                         if mctruthmode:
                             eventsFile += '_filt%d' % mctruthmode
                         rootFileUrl = inDir+'/'+eventsFile+'.root'
@@ -281,31 +464,8 @@ def runPlotter(inDir, options):
                             continue
 
                         iplots = getAllPlotsFrom(tdir=rootFile,tagsToFilter=tagsToFilter)
-                        ngen_seg,_=getNormalization(rootFile)
-                        if not isData: ngen += ngen_seg
-
                         rootFile.Close()
                         plots = list(set(plots+iplots))
-
-                    tot_ngen[dset] = ngen
-
-
-                # Calculate weights:
-                for process in data:
-                    dtag = getByLabel(process,'dtag','')
-                    dset = getByLabel(process,'dset',dtag)
-                    brratio = getByLabel(process,'br',[1])
-                    xsec = getByLabel(process,'xsec',1)
-                    if dtag not in xsecweights.keys():
-                        try:
-                            ngen = tot_ngen[dset]
-                            xsecweights[str(dtag)] = brratio[0]*xsec/ngen
-                        except ZeroDivisionError:
-                            if isData:
-                                xsecweights[str(dtag)] = 1.0
-                            else:
-                                print "ngen not properly set for", dtag
-
 
         if len(missing_files) and options.verbose>0:
             print 20*'-'
@@ -377,6 +537,11 @@ if __name__ == "__main__":
                       help='Output directory [default: %default]')
     parser.add_option('-s', '--silent', dest='silent', action="store_true",
                       help='Silent mode (no plots) [default: %default]')
+    parser.add_option('--split', dest='split', action="store_true",
+                      help='Run on split files')
+    parser.add_option('--rereadXsecWeights', dest='rereadXsecWeights',
+                      action="store_true",
+                      help='Trigger re-reading of xsec weights')
     parser.add_option("--jobs", default=0,
                       action="store", type="int", dest="jobs",
                       help=("Run N jobs in parallel."

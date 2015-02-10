@@ -11,6 +11,9 @@ const float gMassK  = 0.4937;
 const float gMassPi = 0.1396;
 const float gMassMu = 0.1057;
 
+const int njetbins = 6;
+const int nsvbins = 4;
+
 struct SVLInfo{ // needed for sorting...
 	unsigned counter;
 	int lepindex;
@@ -45,7 +48,8 @@ bool isOppositeSign(int id1, int id2) {
 }
 
 //
-TLorentzVector LxyTreeAnalysis::RotateLepton(TLorentzVector &origLep,std::vector<TLorentzVector> &isoObjects)
+TLorentzVector LxyTreeAnalysis::RotateLepton(TLorentzVector &origLep,
+	                                std::vector<TLorentzVector> &isoObjects)
 {
   //rotate lepton
   int ntries(0);
@@ -56,14 +60,18 @@ TLorentzVector LxyTreeAnalysis::RotateLepton(TLorentzVector &origLep,std::vector
       double pabs  = rotLepton.P();
       double phi   = rndGen_.Uniform(0,2*TMath::Pi());
       double theta = TMath::ACos( rndGen_.Uniform(-1,1) );
-      rotLepton.SetPxPyPzE(pabs*TMath::Cos(phi)*TMath::Sin(theta),pabs*TMath::Sin(phi)*TMath::Sin(theta),pabs*TMath::Cos(theta),en);
+      rotLepton.SetPxPyPzE(pabs*TMath::Cos(phi)*TMath::Sin(theta),
+      	                   pabs*TMath::Sin(phi)*TMath::Sin(theta),
+      	                   pabs*TMath::Cos(theta),en);
 
       //require selectable kinematics
       if( TMath::Abs(rotLepton.Eta())>2.4 || rotLepton.Pt()<20 ) continue;
 
       //require object separation wrt to jets
       double minDR(1000);
-      for(std::vector<TLorentzVector>::iterator it = isoObjects.begin(); it!=isoObjects.end(); it++)
+      for(std::vector<TLorentzVector>::iterator it = isoObjects.begin();
+      	  it!=isoObjects.end();
+      	  it++)
 	{
 	  double dR = it->DeltaR(rotLepton);
 	  if(dR>minDR) continue;
@@ -175,220 +183,34 @@ void LxyTreeAnalysis::BookCharmHistos(){
 	fHMDpmlep->SetXTitle("m(K#pi#pi) [GeV]");
 }
 void LxyTreeAnalysis::BookSVLHistos(){
-	fHmlsv_emu_deltar = new TH1D("mlsv_emu_deltar", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar);
-	fHmlsv_emu_deltar->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_flow = new TH1D("mlsv_emu_deltar_cut_flow", "Lepton/SecVtx Mass in eMu channel, deltar algorithm",
-							  4, 0.,4.); fHistos.push_back(fHmlsv_emu_deltar_cut_flow);
-	fHmlsv_emu_deltar_cut_flow->SetXTitle("Lepton/SecVtx mass [GeV]");
+	fHNJets    = new TH1D("NJets",    "NJets (inclusive)", njetbins, 2, 2+njetbins); fHistos.push_back(fHNJets); fHNJets->SetXTitle("Jet Multiplicity");
+	fHNJets_e  = new TH1D("NJets_e",  "NJets (single e)",  njetbins, 2, 2+njetbins); fHistos.push_back(fHNJets_e); fHNJets_e->SetXTitle("Jet Multiplicity");
+	fHNJets_m  = new TH1D("NJets_m",  "NJets (single mu)", njetbins, 2, 2+njetbins); fHistos.push_back(fHNJets_m); fHNJets_m->SetXTitle("Jet Multiplicity");
+	fHNJets_ee = new TH1D("NJets_ee", "NJets (ee)",        njetbins, 2, 2+njetbins); fHistos.push_back(fHNJets_ee); fHNJets_ee->SetXTitle("Jet Multiplicity");
+	fHNJets_mm = new TH1D("NJets_mm", "NJets (mumu)",      njetbins, 2, 2+njetbins); fHistos.push_back(fHNJets_mm); fHNJets_mm->SetXTitle("Jet Multiplicity");
+	fHNJets_em = new TH1D("NJets_em", "NJets (emu)",       njetbins, 2, 2+njetbins); fHistos.push_back(fHNJets_em); fHNJets_em->SetXTitle("Jet Multiplicity");
 
+	fHNSVJets    = new TH1D("NSVJets",    "NJets with SV (inclusive)", nsvbins, 1, 1+nsvbins); fHistos.push_back(fHNSVJets); fHNSVJets->SetXTitle("SV Multiplicity");
+	fHNSVJets_e  = new TH1D("NSVJets_e",  "NJets with SV (single e)",  nsvbins, 1, 1+nsvbins); fHistos.push_back(fHNSVJets_e); fHNSVJets_e->SetXTitle("SV Multiplicity");
+	fHNSVJets_m  = new TH1D("NSVJets_m",  "NJets with SV (single mu)", nsvbins, 1, 1+nsvbins); fHistos.push_back(fHNSVJets_m); fHNSVJets_m->SetXTitle("SV Multiplicity");
+	fHNSVJets_ee = new TH1D("NSVJets_ee", "NJets with SV (ee)",        nsvbins, 1, 1+nsvbins); fHistos.push_back(fHNSVJets_ee); fHNSVJets_ee->SetXTitle("SV Multiplicity");
+	fHNSVJets_mm = new TH1D("NSVJets_mm", "NJets with SV (mumu)",      nsvbins, 1, 1+nsvbins); fHistos.push_back(fHNSVJets_mm); fHNSVJets_mm->SetXTitle("SV Multiplicity");
+	fHNSVJets_em = new TH1D("NSVJets_em", "NJets with SV (emu)",       nsvbins, 1, 1+nsvbins); fHistos.push_back(fHNSVJets_em); fHNSVJets_em->SetXTitle("SV Multiplicity");
 
-	fHmlsv_emu_deltar_cut = new TH1D("mlsv_emu_deltar_cut", "Lepton/SecVtx Mass in eMu channel after cut",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut);
-	fHmlsv_emu_deltar_cut->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_correct = new TH1D("mlsv_emu_deltar_cut_correct", "Lepton/SecVtx Mass in eMu channel after cut_correct",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_correct);
-	fHmlsv_emu_deltar_cut_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_wrong = new TH1D("mlsv_emu_deltar_cut_wrong", "Lepton/SecVtx Mass in eMu channel after cut_wrong",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_wrong);
-	fHmlsv_emu_deltar_cut_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
+	fHNbJets    = new TH1D("NbJets",    "NbJets (inclusive)", nsvbins, 0, nsvbins); fHistos.push_back(fHNbJets); fHNbJets->SetXTitle("CSV med-tagged Jet Multiplicity");
+	fHNbJets_e  = new TH1D("NbJets_e",  "NbJets (single e)",  nsvbins, 0, nsvbins); fHistos.push_back(fHNbJets_e); fHNbJets_e->SetXTitle("CSV med-tagged Jet Multiplicity");
+	fHNbJets_m  = new TH1D("NbJets_m",  "NbJets (single mu)", nsvbins, 0, nsvbins); fHistos.push_back(fHNbJets_m); fHNbJets_m->SetXTitle("CSV med-tagged Jet Multiplicity");
+	fHNbJets_ee = new TH1D("NbJets_ee", "NbJets (ee)",        nsvbins, 0, nsvbins); fHistos.push_back(fHNbJets_ee); fHNbJets_ee->SetXTitle("CSV med-tagged Jet Multiplicity");
+	fHNbJets_mm = new TH1D("NbJets_mm", "NbJets (mumu)",      nsvbins, 0, nsvbins); fHistos.push_back(fHNbJets_mm); fHNbJets_mm->SetXTitle("CSV med-tagged Jet Multiplicity");
+	fHNbJets_em = new TH1D("NbJets_em", "NbJets (emu)",       nsvbins, 0, nsvbins); fHistos.push_back(fHNbJets_em); fHNbJets_em->SetXTitle("CSV med-tagged Jet Multiplicity");
 
+	fHMET    = new TH1D("MET",    "MET (inclusive)", 100, 0, 200.); fHistos.push_back(fHMET); fHMET->SetXTitle("Missing ET [GeV]");
+	fHMET_e  = new TH1D("MET_e",  "MET (single e)",  100, 0, 200.); fHistos.push_back(fHMET_e); fHMET_e->SetXTitle("Missing ET [GeV]");
+	fHMET_m  = new TH1D("MET_m",  "MET (single mu)", 100, 0, 200.); fHistos.push_back(fHMET_m); fHMET_m->SetXTitle("Missing ET [GeV]");
+	fHMET_ee = new TH1D("MET_ee", "MET (ee)",        80, 40.,200.); fHistos.push_back(fHMET_ee); fHMET_ee->SetXTitle("Missing ET [GeV]");
+	fHMET_mm = new TH1D("MET_mm", "MET (mumu)",      80, 40.,200.); fHistos.push_back(fHMET_mm); fHMET_mm->SetXTitle("Missing ET [GeV]");
+	fHMET_em = new TH1D("MET_em", "MET (emu)",       100, 0, 200.); fHistos.push_back(fHMET_em); fHMET_em->SetXTitle("Missing ET [GeV]");
 
-
-	fHmlsv_emu_deltar_cut_ntr2 = new TH1D("mlsv_emu_deltar_cut_ntr2", "Lepton/SecVtx Mass in eMu channel after cut (2 tracks)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_ntr2);
-	fHmlsv_emu_deltar_cut_ntr2->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_ntr2_correct = new TH1D("mlsv_emu_deltar_cut_ntr2_correct", "Lepton/SecVtx Mass in eMu channel after cut (2 tracks)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_ntr2_correct);
-	fHmlsv_emu_deltar_cut_ntr2_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_ntr2_wrong = new TH1D("mlsv_emu_deltar_cut_ntr2_wrong", "Lepton/SecVtx Mass in eMu channel after cut (2 tracks)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_ntr2_wrong);
-	fHmlsv_emu_deltar_cut_ntr2_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHmlsv_emu_deltar_cut_ntr3 = new TH1D("mlsv_emu_deltar_cut_ntr3", "Lepton/SecVtx Mass in eMu channel after cut (3 tracks)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_ntr3);
-	fHmlsv_emu_deltar_cut_ntr3->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_ntr3_correct = new TH1D("mlsv_emu_deltar_cut_ntr3_correct", "Lepton/SecVtx Mass in eMu channel after cut (3 tracks)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_ntr3_correct);
-	fHmlsv_emu_deltar_cut_ntr3_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_ntr3_wrong = new TH1D("mlsv_emu_deltar_cut_ntr3_wrong", "Lepton/SecVtx Mass in eMu channel after cut (3 tracks)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_ntr3_wrong);
-	fHmlsv_emu_deltar_cut_ntr3_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHmlsv_emu_deltar_cut_ntr4 = new TH1D("mlsv_emu_deltar_cut_ntr4", "Lepton/SecVtx Mass in eMu channel after cut (4 and more tracks)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_ntr4);
-	fHmlsv_emu_deltar_cut_ntr4->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_ntr4_correct = new TH1D("mlsv_emu_deltar_cut_ntr4_correct", "Lepton/SecVtx Mass in eMu channel after cut (4 and more tracks)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_ntr4_correct);
-	fHmlsv_emu_deltar_cut_ntr4_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_ntr4_wrong = new TH1D("mlsv_emu_deltar_cut_ntr4_wrong", "Lepton/SecVtx Mass in eMu channel after cut (4 and more tracks)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_ntr4_wrong);
-	fHmlsv_emu_deltar_cut_ntr4_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-
-	fHdeltar_lsv_emu_deltar_cut = new TH1D("deltar_lsv_emu_deltar_cut", "Lepton/SecVtx deltar in eMu channel after cut",
-							  100, 0., 6.); fHistos.push_back(fHdeltar_lsv_emu_deltar_cut);
-	fHdeltar_lsv_emu_deltar_cut->SetXTitle("DeltaR");
-	fHdeltar_lsv_emu_deltar_cut_correct = new TH1D("deltar_lsv_emu_deltar_cut_correct", "Lepton/SecVtx deltar in eMu channel after cut_correct",
-							  100, 0., 6.); fHistos.push_back(fHdeltar_lsv_emu_deltar_cut_correct);
-	fHdeltar_lsv_emu_deltar_cut_correct->SetXTitle("DeltaR");
-	fHdeltar_lsv_emu_deltar_cut_wrong = new TH1D("deltar_lsv_emu_deltar_cut_wrong", "Lepton/SecVtx deltar in eMu channel after cut_wrong",
-							  100, 0., 6.); fHistos.push_back(fHdeltar_lsv_emu_deltar_cut_wrong);
-	fHdeltar_lsv_emu_deltar_cut_wrong->SetXTitle("DeltaR");
-
-
-
-	fHmlsv_emu_deltar_correct = new TH1D("mlsv_emu_deltar_correct", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_correct);
-	fHmlsv_emu_deltar_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_wrong = new TH1D("mlsv_emu_deltar_wrong", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_wrong);
-	fHmlsv_emu_deltar_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHmlsv_emu_deltar_ntr2 = new TH1D("mlsv_emu_deltar_ntr2", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_ntr2);
-	fHmlsv_emu_deltar_ntr2->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_ntr2_correct = new TH1D("mlsv_emu_deltar_ntr2_correct", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_ntr2_correct);
-	fHmlsv_emu_deltar_ntr2_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_ntr2_wrong = new TH1D("mlsv_emu_deltar_ntr2_wrong", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_ntr2_wrong);
-	fHmlsv_emu_deltar_ntr2_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHmlsv_emu_deltar_ntr3 = new TH1D("mlsv_emu_deltar_ntr3", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_ntr3);
-	fHmlsv_emu_deltar_ntr3->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_ntr3_correct = new TH1D("mlsv_emu_deltar_ntr3_correct", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_ntr3_correct);
-	fHmlsv_emu_deltar_ntr3_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_ntr3_wrong = new TH1D("mlsv_emu_deltar_ntr3_wrong", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_ntr3_wrong);
-	fHmlsv_emu_deltar_ntr3_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHmlsv_emu_deltar_ntr4 = new TH1D("mlsv_emu_deltar_ntr4", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_ntr4);
-	fHmlsv_emu_deltar_ntr4->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_ntr4_correct = new TH1D("mlsv_emu_deltar_ntr4_correct", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_ntr4_correct);
-	fHmlsv_emu_deltar_ntr4_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_ntr4_wrong = new TH1D("mlsv_emu_deltar_ntr4_wrong", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_ntr4_wrong);
-	fHmlsv_emu_deltar_ntr4_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-	// min mass method
-	fHmlsv_emu_minmass = new TH1D("mlsv_emu_minmass", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass);
-	fHmlsv_emu_minmass->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-	fHmlsv_emu_minmass_flow = new TH1D("mlsv_emu_minmass_flow", "Lepton/SecVtx Mass in eMu channel, minmass algorithm",
-							 4, 0., 4.); fHistos.push_back(fHmlsv_emu_minmass_flow);
-	fHmlsv_emu_minmass_flow->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_correct = new TH1D("mlsv_emu_minmass_correct", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_correct);
-	fHmlsv_emu_minmass_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_wrong = new TH1D("mlsv_emu_minmass_wrong", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_wrong);
-	fHmlsv_emu_minmass_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHmlsv_emu_minmass_ntr2 = new TH1D("mlsv_emu_minmass_ntr2", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_ntr2);
-	fHmlsv_emu_minmass_ntr2->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_ntr2_correct = new TH1D("mlsv_emu_minmass_ntr2_correct", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_ntr2_correct);
-	fHmlsv_emu_minmass_ntr2_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_ntr2_wrong = new TH1D("mlsv_emu_minmass_ntr2_wrong", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_ntr2_wrong);
-	fHmlsv_emu_minmass_ntr2_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHmlsv_emu_minmass_ntr3 = new TH1D("mlsv_emu_minmass_ntr3", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_ntr3);
-	fHmlsv_emu_minmass_ntr3->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_ntr3_correct = new TH1D("mlsv_emu_minmass_ntr3_correct", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_ntr3_correct);
-	fHmlsv_emu_minmass_ntr3_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_ntr3_wrong = new TH1D("mlsv_emu_minmass_ntr3_wrong", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_ntr3_wrong);
-	fHmlsv_emu_minmass_ntr3_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHmlsv_emu_minmass_ntr4 = new TH1D("mlsv_emu_minmass_ntr4", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_ntr4);
-	fHmlsv_emu_minmass_ntr4->SetXTitle("Lepton/SecVtx malss [GeV]");
-	fHmlsv_emu_minmass_ntr4_correct = new TH1D("mlsv_emu_minmass_ntr4_correct", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_ntr4_correct);
-	fHmlsv_emu_minmass_ntr4_correct->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_ntr4_wrong = new TH1D("mlsv_emu_minmass_ntr4_wrong", "Lepton/SecVtx Mass in eMu channel",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_ntr4_wrong);
-	fHmlsv_emu_minmass_ntr4_wrong->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-	// systematics
-	fHmlsv_emu_deltar_cut_correct_topweight = new TH1D("mlsv_emu_deltar_cut_correct_topweight", "Lepton/SecVtx Mass in eMu channel (incl. topweight)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_correct_topweight);
-	fHmlsv_emu_deltar_cut_correct_topweight->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_correct_topweight_up = new TH1D("mlsv_emu_deltar_cut_correct_topweight_up", "Lepton/SecVtx Mass in eMu channel (incl. topweight_up)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_correct_topweight_up);
-	fHmlsv_emu_deltar_cut_correct_topweight_up->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_wrong_topweight = new TH1D("mlsv_emu_deltar_cut_wrong_topweight", "Lepton/SecVtx Mass in eMu channel (incl. topweight)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_wrong_topweight);
-	fHmlsv_emu_deltar_cut_wrong_topweight->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_deltar_cut_wrong_topweight_up = new TH1D("mlsv_emu_deltar_cut_wrong_topweight_up", "Lepton/SecVtx Mass in eMu channel (incl. topweight_up)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_deltar_cut_wrong_topweight_up);
-	fHmlsv_emu_deltar_cut_wrong_topweight_up->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHmlsv_emu_minmass_correct_topweight = new TH1D("mlsv_emu_minmass_correct_topweight", "Lepton/SecVtx Mass in eMu channel (incl. topweight)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_correct_topweight);
-	fHmlsv_emu_minmass_correct_topweight->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_correct_topweight_up = new TH1D("mlsv_emu_minmass_correct_topweight_up", "Lepton/SecVtx Mass in eMu channel (incl. topweight_up)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_correct_topweight_up);
-	fHmlsv_emu_minmass_correct_topweight_up->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_wrong_topweight = new TH1D("mlsv_emu_minmass_wrong_topweight", "Lepton/SecVtx Mass in eMu channel (incl. topweight)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_wrong_topweight);
-	fHmlsv_emu_minmass_wrong_topweight->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_wrong_topweight_up = new TH1D("mlsv_emu_minmass_wrong_topweight_up", "Lepton/SecVtx Mass in eMu channel (incl. topweight_up)",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_wrong_topweight_up);
-	fHmlsv_emu_minmass_wrong_topweight_up->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	// nvtx check
-	fHmlsv_emu_minmass_correct_nvtx_1bin = new TH1D("mlsv_emu_minmass_correct_nvtx_1bin", "Lepton/SecVtx Mass in eMu channel 1-10 vtx",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_correct_nvtx_1bin);
-	fHmlsv_emu_minmass_correct_nvtx_1bin->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_correct_nvtx_2bin = new TH1D("mlsv_emu_minmass_correct_nvtx_2bin", "Lepton/SecVtx Mass in eMu channel 11-14 vtx",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_correct_nvtx_2bin);
-	fHmlsv_emu_minmass_correct_nvtx_2bin->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_correct_nvtx_3bin = new TH1D("mlsv_emu_minmass_correct_nvtx_3bin", "Lepton/SecVtx Mass in eMu channel 15-19 vtx",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_correct_nvtx_3bin);
-	fHmlsv_emu_minmass_correct_nvtx_3bin->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_correct_nvtx_4bin = new TH1D("mlsv_emu_minmass_correct_nvtx_4bin", "Lepton/SecVtx Mass in eMu channel 20+ vtx",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_correct_nvtx_4bin);
-	fHmlsv_emu_minmass_correct_nvtx_4bin->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-	fHmlsv_emu_minmass_wrong_nvtx_1bin = new TH1D("mlsv_emu_minmass_wrong_nvtx_1bin", "Lepton/SecVtx Mass in eMu channel 1-10 vtx",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_wrong_nvtx_1bin);
-	fHmlsv_emu_minmass_wrong_nvtx_1bin->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_wrong_nvtx_2bin = new TH1D("mlsv_emu_minmass_wrong_nvtx_2bin", "Lepton/SecVtx Mass in eMu channel 11-14 vtx",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_wrong_nvtx_2bin);
-	fHmlsv_emu_minmass_wrong_nvtx_2bin->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_wrong_nvtx_3bin = new TH1D("mlsv_emu_minmass_wrong_nvtx_3bin", "Lepton/SecVtx Mass in eMu channel 15-19 vtx",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_wrong_nvtx_3bin);
-	fHmlsv_emu_minmass_wrong_nvtx_3bin->SetXTitle("Lepton/SecVtx mass [GeV]");
-	fHmlsv_emu_minmass_wrong_nvtx_4bin = new TH1D("mlsv_emu_minmass_wrong_nvtx_4bin", "Lepton/SecVtx Mass in eMu channel 20+ vtx",
-							  50, 0., 150.); fHistos.push_back(fHmlsv_emu_minmass_wrong_nvtx_4bin);
-	fHmlsv_emu_minmass_wrong_nvtx_4bin->SetXTitle("Lepton/SecVtx mass [GeV]");
-
-
-	fHsvntk = new TH1D("svntk", "number of tracks of sec.vertex in eMu channel",
-							  15, 0., 15.); fHistos.push_back(fHsvntk);
-	fHsvntk->SetXTitle("n vtx");
 }
 void LxyTreeAnalysis::BookHistos(){
 	// charm resonance histos:
@@ -763,11 +585,30 @@ bool LxyTreeAnalysis::selectEvent(){
 }
 
 bool LxyTreeAnalysis::selectSVLEvent(){
-	if (abs(evcat) == 11*13) return true;                // emu
-	if (abs(evcat) == 11*11 && metpt > 40.) return true; // ee
-	if (abs(evcat) == 13*13 && metpt > 40.) return true; // mumu
-	if (abs(evcat) == 11 && nj > 3) return true;         // e
-	if (abs(evcat) == 13 && nj > 3) return true;         // mu
+	int nsvjets(0), nbjets(0);
+	for( int i=0; i < nj; i++){
+		if(svlxy[i] > 0) nsvjets++;
+		if(jcsv[i] > 0.783) nbjets++;
+	}
+
+	// At least one SV in any channel
+	if (nsvjets < 1) return false;
+
+	// That's it for emu
+	if (abs(evcat) == 11*13) return true;
+
+	// For dilepton also MET > 40 GeV
+	if (abs(evcat) == 11*11 || abs(evcat) == 13*13){
+		if (metpt > 40.) return true;
+		return false;
+	}
+
+	// For single lepton, at least 4 jets, and either 2 SV or 1 CSVM
+	if (abs(evcat) == 11 || abs(evcat) == 13){
+		if (nj < 4) return false;
+		if (nsvjets > 1 || nbjets > 0) return true;
+		return false;
+	}
 	return false;
 }
 
@@ -889,10 +730,13 @@ void LxyTreeAnalysis::analyze(){
 
 	// Find jets with SVs:
 	std::vector<int> svindices(2,-1);
+	int nsvjets(0), nbjets(0);
 	float lxymax1(0), lxymax2(0);
 
 	for( int i=0; i < nj; i++){
 		if(svlxy[i]>0){
+			nsvjets++;
+			if(jcsv[i] > 0.783) nbjets++;
 			if(svlxyerr[i]!=0){
 				if(svlxy[i]/svlxyerr[i]>lxymax1) {
 					lxymax2=lxymax1;
@@ -907,17 +751,50 @@ void LxyTreeAnalysis::analyze(){
 			}
 		}
 	}
-	bool check_secv2=0;
-	if(lxymax2>0) check_secv2=1;
 	if(svindices[1]<0) svindices.pop_back();
 	if(svindices[0]<0) svindices.pop_back();
-	bool check_secv = svindices.size()>0;
 
 	std::vector<TLorentzVector> isoObjects;
 	for (int il = 0; il < nl; ++il) { TLorentzVector p4; p4.SetPtEtaPhiM(lpt[il], leta[il], lphi[il], 0.); isoObjects.push_back(p4); }
 	for (int ij = 0; ij < nj; ++ij) { TLorentzVector p4; p4.SetPtEtaPhiM(jpt[ij], jeta[ij], jphi[ij], 0.); isoObjects.push_back(p4); }
 
 	if(selectSVLEvent()){
+		// Fill some control histograms:
+		fHNJets   ->Fill(nj,      w[1]*w[4]);
+		fHNSVJets ->Fill(nsvjets, w[1]*w[4]);
+		fHNbJets  ->Fill(nbjets,  w[1]*w[4]);
+		fHMET     ->Fill(metpt,   w[1]*w[4]);
+		if (abs(evcat) == 11*13){
+			fHNJets_em   ->Fill(nj,      w[1]*w[4]);
+			fHNSVJets_em ->Fill(nsvjets, w[1]*w[4]);
+			fHNbJets_em  ->Fill(nbjets,  w[1]*w[4]);
+			fHMET_em     ->Fill(metpt,   w[1]*w[4]);
+		}
+		if (abs(evcat) == 11*11){
+			fHNJets_ee   ->Fill(nj,      w[1]*w[4]);
+			fHNSVJets_ee ->Fill(nsvjets, w[1]*w[4]);
+			fHNbJets_ee  ->Fill(nbjets,  w[1]*w[4]);
+			fHMET_ee     ->Fill(metpt,   w[1]*w[4]);
+		}
+		if (abs(evcat) == 13*13){
+			fHNJets_mm   ->Fill(nj,      w[1]*w[4]);
+			fHNSVJets_mm ->Fill(nsvjets, w[1]*w[4]);
+			fHNbJets_mm  ->Fill(nbjets,  w[1]*w[4]);
+			fHMET_mm     ->Fill(metpt,   w[1]*w[4]);
+		}
+		if (abs(evcat) == 11){
+			fHNJets_e   ->Fill(nj,      w[1]*w[4]);
+			fHNSVJets_e ->Fill(nsvjets, w[1]*w[4]);
+			fHNbJets_e  ->Fill(nbjets,  w[1]*w[4]);
+			fHMET_e     ->Fill(metpt,   w[1]*w[4]);
+		}
+		if (abs(evcat) == 13){
+			fHNJets_m   ->Fill(nj,      w[1]*w[4]);
+			fHNSVJets_m ->Fill(nsvjets, w[1]*w[4]);
+			fHNbJets_m  ->Fill(nbjets,  w[1]*w[4]);
+			fHMET_m     ->Fill(metpt,   w[1]*w[4]);
+		}
+
 		// First find all pairs and get their ranking in mass and deltar
 		std::vector<SVLInfo> svl_pairs;
 		for (int il = 0; il < nl; ++il){ // lepton loop
@@ -1022,268 +899,6 @@ void LxyTreeAnalysis::analyze(){
 			fSVLInfoTree->Fill();
 		}
 	}
-
-	///////////////////////////////////////
-	// Jevgeni's code
-
-	if(abs(evcat) == 11*13  && check_secv && nj > 1 ){
-		// emu channel
-		// inv.m of l and correct sec.v. (deltar and minmass methods)
-
-		std::vector <TLorentzVector> leptons(2,0);
-		std::vector <TLorentzVector> secvertices(2,0);
-		std::vector <double> deltar;
-		leptons[0].SetPtEtaPhiM(lpt[0], leta[0], lphi[0], 0.);
-		leptons[1].SetPtEtaPhiM(lpt[1], leta[1], lphi[1], 0.);
-		secvertices[0].SetPtEtaPhiM(svpt[svindices[0]], sveta[svindices[0]], svphi[svindices[0]], svmass[svindices[0]]);
-		if (svindices.size() > 1) {secvertices[1].SetPtEtaPhiM(svpt[svindices[1]], sveta[svindices[1]], svphi[svindices[1]], svmass[svindices[1]]);}
-		else {secvertices.pop_back();}
-		double mindeltar=100.;
-		int mindeltar_index=0;
-		int mindeltar_index2= abs(3-mindeltar_index);
-		for(unsigned int j=0; j<secvertices.size(); j++){
-			for(unsigned int i=0; i<2; i++){
-				deltar.push_back(leptons[i].DeltaR(secvertices[j]));
-			}
-		}
-		for(unsigned int i=0; i<deltar.size(); i++){
-			if (deltar[i]<mindeltar){
-				mindeltar_index=i;
-				mindeltar=deltar[i];
-				mindeltar_index2= abs(3-mindeltar_index);
-			}
-		}
-
-		//now if we have 2 sec.vertices
-		if(deltar.size()>2){
-	//		if(deltar[mindeltar_index]<2.2){
-
-				int l1=0,s1=0;
-				if(mindeltar_index==1){l1=1;}
-				else if(mindeltar_index==2){s1=1;}
-				else if(mindeltar_index==3){s1=1;l1=1;}
-
-				fHmlsv_emu_deltar_cut_flow->Fill(0.,w[0]);
-				fHmlsv_emu_deltar_cut->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-				fHdeltar_lsv_emu_deltar_cut->Fill(deltar[mindeltar_index],w[0]);
-				fHsvntk->Fill(svntk[svindices[s1]], w[0]);
-				if(svntk[svindices[s1]]==2){
-					fHmlsv_emu_deltar_cut_ntr2->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHmlsv_emu_deltar_cut_flow->Fill(1.,w[0]);
-					}
-				if(svntk[svindices[s1]]==3){
-					fHmlsv_emu_deltar_cut_ntr3->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHmlsv_emu_deltar_cut_flow->Fill(2.,w[0]);
-					}
-				if(svntk[svindices[s1]]>3){
-					fHmlsv_emu_deltar_cut_ntr4->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHmlsv_emu_deltar_cut_flow->Fill(3.,w[0]);
-					}
-
-				if( (lid[l1] > 0 && bid[svindices[s1]] == -5 ) || (lid[l1] < 0 && bid[svindices[s1]] == 5) ){
-					fHmlsv_emu_deltar_cut_correct->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHdeltar_lsv_emu_deltar_cut_correct->Fill(deltar[mindeltar_index],w[0]);
-					fHmlsv_emu_deltar_cut_correct_topweight->Fill((leptons[l1]+secvertices[s1]).M(), (w[0]*w[6]));
-					fHmlsv_emu_deltar_cut_correct_topweight_up->Fill((leptons[l1]+secvertices[s1]).M(), (w[0]*w[7]));
-					if (svntk[svindices[s1]]==2){fHmlsv_emu_deltar_cut_ntr2_correct->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-					if (svntk[svindices[s1]]==3){fHmlsv_emu_deltar_cut_ntr3_correct->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-					if (svntk[svindices[s1]]>3){fHmlsv_emu_deltar_cut_ntr4_correct->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-				}
-				else{
-					fHmlsv_emu_deltar_cut_wrong->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHdeltar_lsv_emu_deltar_cut_wrong->Fill(deltar[mindeltar_index],w[0]);
-					fHmlsv_emu_deltar_cut_wrong_topweight->Fill((leptons[l1]+secvertices[s1]).M(), (w[0]*w[6]));
-					fHmlsv_emu_deltar_cut_wrong_topweight_up->Fill((leptons[l1]+secvertices[s1]).M(), (w[0]*w[7]));
-					if (svntk[svindices[s1]]==2){fHmlsv_emu_deltar_cut_ntr2_wrong->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-					if (svntk[svindices[s1]]==3){fHmlsv_emu_deltar_cut_ntr3_wrong->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-					if (svntk[svindices[s1]]>3){fHmlsv_emu_deltar_cut_ntr4_wrong->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-				}
-
-//			}
-//			if(deltar[mindeltar_index2]<2.2){
-
-				if(mindeltar_index2==0){l1=0;s1=0;}
-				else if(mindeltar_index2==1){l1=1;s1=0;}
-				else if(mindeltar_index2==2){l1=0;s1=1;}
-				else if(mindeltar_index2==3){s1=1;l1=1;}
-
-				fHmlsv_emu_deltar_cut_flow->Fill(0.,w[0]);
-				fHmlsv_emu_deltar_cut->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-				fHdeltar_lsv_emu_deltar_cut->Fill(deltar[mindeltar_index],w[0]);
-				fHsvntk->Fill(svntk[svindices[s1]], w[0]);
-				if(svntk[svindices[s1]]==2){
-					fHmlsv_emu_deltar_cut_ntr2->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHmlsv_emu_deltar_cut_flow->Fill(1.,w[0]);
-					}
-				if(svntk[svindices[s1]]==3){
-					fHmlsv_emu_deltar_cut_ntr3->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHmlsv_emu_deltar_cut_flow->Fill(2.,w[0]);
-					}
-				if(svntk[svindices[s1]]>3){
-					fHmlsv_emu_deltar_cut_ntr4->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHmlsv_emu_deltar_cut_flow->Fill(3.,w[0]);
-					}
-
-
-
-				if( (lid[l1] > 0 && bid[svindices[s1]] == -5 ) || (lid[l1] < 0 && bid[svindices[s1]] == 5) ){
-					fHmlsv_emu_deltar_cut_correct->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHdeltar_lsv_emu_deltar_cut_correct->Fill(deltar[mindeltar_index2],w[0]);
-					fHmlsv_emu_deltar_cut_correct_topweight->Fill((leptons[l1]+secvertices[s1]).M(), (w[0]*w[6]));
-					fHmlsv_emu_deltar_cut_correct_topweight_up->Fill((leptons[l1]+secvertices[s1]).M(), (w[0]*w[7]));
-					if (svntk[svindices[s1]]==2){fHmlsv_emu_deltar_cut_ntr2_correct->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-					if (svntk[svindices[s1]]==3){fHmlsv_emu_deltar_cut_ntr3_correct->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-					if (svntk[svindices[s1]]>3){fHmlsv_emu_deltar_cut_ntr4_correct->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-				}
-				else{
-					fHmlsv_emu_deltar_cut_wrong->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);
-					fHdeltar_lsv_emu_deltar_cut_wrong->Fill(deltar[mindeltar_index2],w[0]);
-					fHmlsv_emu_deltar_cut_wrong_topweight->Fill((leptons[l1]+secvertices[s1]).M(), (w[0]*w[6]));
-					fHmlsv_emu_deltar_cut_wrong_topweight_up->Fill((leptons[l1]+secvertices[s1]).M(), (w[0]*w[7]));
-					if (svntk[svindices[s1]]==2){fHmlsv_emu_deltar_cut_ntr2_wrong->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-					if (svntk[svindices[s1]]==3){fHmlsv_emu_deltar_cut_ntr3_wrong->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-					if (svntk[svindices[s1]]>3){fHmlsv_emu_deltar_cut_ntr4_wrong->Fill((leptons[l1]+secvertices[s1]).M(),w[0]);}
-				}
-//			}
-
-
-		}
-		//if we have only 1 sec.vertex
-		else {
-//			if(deltar[mindeltar_index]<2.2){
-				fHmlsv_emu_deltar_cut->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);
-				fHmlsv_emu_deltar_cut_flow->Fill(0.,w[0]);
-				fHdeltar_lsv_emu_deltar_cut->Fill(deltar[mindeltar_index],w[0]);
-				fHsvntk->Fill(svntk[svindices[0]], w[0]);
-				if(svntk[svindices[0]]==2){
-					fHmlsv_emu_deltar_cut_ntr2->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);
-					fHmlsv_emu_deltar_cut_flow->Fill(1.,w[0]);
-					}
-				if(svntk[svindices[0]]==3){
-					fHmlsv_emu_deltar_cut_ntr3->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);
-					fHmlsv_emu_deltar_cut_flow->Fill(2.,w[0]);
-					}
-				if(svntk[svindices[0]]>3){
-					fHmlsv_emu_deltar_cut_ntr4->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);
-					fHmlsv_emu_deltar_cut_flow->Fill(3.,w[0]);
-					}
-
-
-				if( (lid[mindeltar_index] > 0 && bid[svindices[0]] == -5 ) || (lid[mindeltar_index] < 0 && bid[svindices[0]] == 5) ){
-					fHmlsv_emu_deltar_cut_correct->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);
-					fHdeltar_lsv_emu_deltar_cut_correct->Fill(deltar[mindeltar_index],w[0]);
-					fHmlsv_emu_deltar_cut_correct_topweight->Fill((leptons[mindeltar_index]+secvertices[0]).M(), (w[0]*w[6]));
-					fHmlsv_emu_deltar_cut_correct_topweight_up->Fill((leptons[mindeltar_index]+secvertices[0]).M(), (w[0]*w[7]));
-					if(svntk[svindices[0]]==2){fHmlsv_emu_deltar_cut_ntr2_correct->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);}
-					if(svntk[svindices[0]]==3){fHmlsv_emu_deltar_cut_ntr3_correct->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);}
-					if(svntk[svindices[0]]>3){fHmlsv_emu_deltar_cut_ntr4_correct->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);}
-				}
-				else {
-					fHmlsv_emu_deltar_cut_wrong->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);
-					fHdeltar_lsv_emu_deltar_cut_wrong->Fill(deltar[mindeltar_index],w[0]);
-					fHmlsv_emu_deltar_cut_wrong_topweight->Fill((leptons[mindeltar_index]+secvertices[0]).M(), (w[0]*w[6]));
-					fHmlsv_emu_deltar_cut_wrong_topweight_up->Fill((leptons[mindeltar_index]+secvertices[0]).M(), (w[0]*w[7]));
-					if(svntk[svindices[0]]==2){fHmlsv_emu_deltar_cut_ntr2_wrong->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);}
-					if(svntk[svindices[0]]==3){fHmlsv_emu_deltar_cut_ntr3_wrong->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);}
-					if(svntk[svindices[0]]>3){fHmlsv_emu_deltar_cut_ntr4_wrong->Fill((leptons[mindeltar_index]+secvertices[0]).M(),w[0]);}
-				}
-//			}
-		}
-	}
-
-
-	if(abs(evcat) == 11*13  && check_secv2 && nj > 1 ){
-		// emu channel
-		// inv.m of l and correct sec.v. (deltar and minmass methods)
-		TLorentzVector p_secvtx1, p_secvtx2, p_secvtx1m, p_secvtx2m, p_l;
-		p_l.SetPtEtaPhiM(lpt[0], leta[0], lphi[0], 0.);
-		p_secvtx1.SetPtEtaPhiM(svpt[svindices[0]], sveta[svindices[0]], svphi[svindices[0]], svmass[svindices[0]]);
-		p_secvtx1m.SetPtEtaPhiM(svpt[svindices[0]], sveta[svindices[0]], svphi[svindices[0]], svmass[svindices[0]]);
-		int index_for_correct=svindices[0];
-		int index_for_correct_m=svindices[0];
-
-		for (unsigned int iii=1; iii<svindices.size(); iii++){
-				p_secvtx2.SetPtEtaPhiM(svpt[svindices[iii]], sveta[svindices[iii]], svphi[svindices[iii]], svmass[svindices[iii]]);
-				p_secvtx2m.SetPtEtaPhiM(svpt[svindices[iii]], sveta[svindices[iii]], svphi[svindices[iii]], svmass[svindices[iii]]);
-				if(p_secvtx1.DeltaR(p_l) > p_secvtx2.DeltaR(p_l)){
-					p_secvtx1=p_secvtx2;
-					index_for_correct=svindices[iii];
-				}
-				if((p_secvtx1m+p_l).M() > (p_secvtx2m+p_l).M()){
-					p_secvtx1m=p_secvtx2m;
-					index_for_correct_m=svindices[iii];
-				}
-
-		}
-
-		fHmlsv_emu_deltar->Fill((p_secvtx1+p_l).M(), w[0]);
-		if (svntk[index_for_correct] ==2){fHmlsv_emu_deltar_ntr2->Fill((p_secvtx1+p_l).M(), w[0]);}
-		if (svntk[index_for_correct] ==3){fHmlsv_emu_deltar_ntr3->Fill((p_secvtx1+p_l).M(), w[0]);}
-		if (svntk[index_for_correct] > 3){fHmlsv_emu_deltar_ntr4->Fill((p_secvtx1+p_l).M(), w[0]);}
-
-		fHmlsv_emu_minmass_flow->Fill(0.,w[0]);
-		fHmlsv_emu_minmass->Fill((p_secvtx1m+p_l).M(), w[0]);
-		if (svntk[index_for_correct_m] ==2){
-			fHmlsv_emu_minmass_ntr2->Fill((p_secvtx1m+p_l).M(), w[0]);
-			fHmlsv_emu_minmass_flow->Fill(1., w[0]);
-			}
-		if (svntk[index_for_correct_m] ==3){
-			fHmlsv_emu_minmass_ntr3->Fill((p_secvtx1m+p_l).M(), w[0]);
-			fHmlsv_emu_minmass_flow->Fill(2., w[0]);
-			}
-		if (svntk[index_for_correct_m] > 3){
-			fHmlsv_emu_minmass_ntr4->Fill((p_secvtx1m+p_l).M(), w[0]);
-			fHmlsv_emu_minmass_flow->Fill(3., w[0]);
-			}
-
-
-		if( (lid[0] > 0 && bid[index_for_correct] == -5 ) || (lid[0] < 0 && bid[index_for_correct] == 5) ){
-			fHmlsv_emu_deltar_correct->Fill((p_secvtx1+p_l).M(), w[0]);
-			if (svntk[index_for_correct] ==2){fHmlsv_emu_deltar_ntr2_correct->Fill((p_secvtx1+p_l).M(), w[0]);}
-			if (svntk[index_for_correct] ==3){fHmlsv_emu_deltar_ntr3_correct->Fill((p_secvtx1+p_l).M(), w[0]);}
-			if (svntk[index_for_correct] > 3){fHmlsv_emu_deltar_ntr4_correct->Fill((p_secvtx1+p_l).M(), w[0]);}
-		}
-
-		else {
-			fHmlsv_emu_deltar_wrong->Fill((p_secvtx1+p_l).M(), w[0]);
-			if (svntk[index_for_correct] ==2){fHmlsv_emu_deltar_ntr2_wrong->Fill((p_secvtx1+p_l).M(), w[0]);}
-			if (svntk[index_for_correct] ==3){fHmlsv_emu_deltar_ntr3_wrong->Fill((p_secvtx1+p_l).M(), w[0]);}
-			if (svntk[index_for_correct] >3){fHmlsv_emu_deltar_ntr4_wrong->Fill((p_secvtx1+p_l).M(), w[0]);}
-		}
-
-		if( (lid[0] > 0 && bid[index_for_correct_m] == -5 ) || (lid[0] < 0 && bid[index_for_correct_m] == 5) ){
-			fHmlsv_emu_minmass_correct->Fill((p_secvtx1m+p_l).M(), w[0]);
-			fHmlsv_emu_minmass_correct_topweight->Fill((p_secvtx1m+p_l).M(), (w[0]*w[6]));
-			fHmlsv_emu_minmass_correct_topweight_up->Fill((p_secvtx1m+p_l).M(), (w[0]*w[7]));
-
-			if (nvtx > 0 && nvtx < 11) {fHmlsv_emu_minmass_correct_nvtx_1bin->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (nvtx > 10 && nvtx < 15) {fHmlsv_emu_minmass_correct_nvtx_2bin->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (nvtx > 14 && nvtx < 20) {fHmlsv_emu_minmass_correct_nvtx_3bin->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (nvtx > 20) {fHmlsv_emu_minmass_correct_nvtx_4bin->Fill((p_secvtx1m+p_l).M(), w[0]);}
-
-			if (svntk[index_for_correct_m] ==2){fHmlsv_emu_minmass_ntr2_correct->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (svntk[index_for_correct_m] ==3){fHmlsv_emu_minmass_ntr3_correct->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (svntk[index_for_correct_m] > 3){fHmlsv_emu_minmass_ntr4_correct->Fill((p_secvtx1m+p_l).M(), w[0]);}
-		}
-
-		else {
-			fHmlsv_emu_minmass_wrong->Fill((p_secvtx1m+p_l).M(), w[0]);
-			fHmlsv_emu_minmass_wrong_topweight->Fill((p_secvtx1m+p_l).M(), (w[0]*w[6]));
-			fHmlsv_emu_minmass_wrong_topweight_up->Fill((p_secvtx1m+p_l).M(), (w[0]*w[7]));
-
-			if (nvtx > 0 && nvtx < 11) {fHmlsv_emu_minmass_wrong_nvtx_1bin->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (nvtx > 10 && nvtx < 15) {fHmlsv_emu_minmass_wrong_nvtx_2bin->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (nvtx > 14 && nvtx < 20) {fHmlsv_emu_minmass_wrong_nvtx_3bin->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (nvtx > 20) {fHmlsv_emu_minmass_wrong_nvtx_4bin->Fill((p_secvtx1m+p_l).M(), w[0]);}
-
-			if (svntk[index_for_correct_m] ==2){fHmlsv_emu_minmass_ntr2_wrong->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (svntk[index_for_correct_m] ==3){fHmlsv_emu_minmass_ntr3_wrong->Fill((p_secvtx1m+p_l).M(), w[0]);}
-			if (svntk[index_for_correct_m] >3){fHmlsv_emu_minmass_ntr4_wrong->Fill((p_secvtx1m+p_l).M(), w[0]);}
-		}
-	}
-
-
-
 }
 
 void LxyTreeAnalysis::Loop(){
@@ -1303,7 +918,6 @@ void LxyTreeAnalysis::Loop(){
 			std::cout << std::flush;
 		}
 
-		// std::cout << jentry << "\t" << event << std::endl;
 		analyze();
 
 	}

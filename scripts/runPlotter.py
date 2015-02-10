@@ -206,13 +206,41 @@ def makePlot(key, inDir, procList, xsecweights, options):
             hist = None
             for process in data: # loop on datasets for process
                 dtag = getByLabel(process,'dtag','')
-                split = getByLabel(process,'split',1)
 
                 if baseRootFile is None:
-                    for segment in range(0,split) :
+                    if options.split: # Files are split
+                        split = getByLabel(process,'split',1)
+                        for segment in range(0,split) :
+                            eventsFile = dtag
+                            if split > 1:
+                                eventsFile = dtag + '_' + str(segment)
+                            if mctruthmode:
+                                eventsFile += '_filt%d' % mctruthmode
+                            rootFileUrl = inDir+'/'+eventsFile+'.root'
+
+                            rootFile = openTFile(rootFileUrl)
+                            if rootFile is None: continue
+
+                            ihist = rootFile.Get(key)
+                            try: ## Check if it is found
+                                if ihist.Integral() <= 0:
+                                    rootFile.Close()
+                                    continue
+                            except AttributeError:
+                                rootFile.Close()
+                                continue
+
+                            fixExtremities(ihist,True,True)
+                            ihist.Scale(xsecweights[str(dtag)])
+
+                            if hist is None :
+                                hist = ihist.Clone(dtag+'_'+pName)
+                                hist.SetDirectory(0)
+                            else:
+                                hist.Add(ihist)
+                            rootFile.Close()
+                    else:
                         eventsFile = dtag
-                        if split > 1:
-                            eventsFile = dtag + '_' + str(segment)
                         if mctruthmode:
                             eventsFile += '_filt%d' % mctruthmode
                         rootFileUrl = inDir+'/'+eventsFile+'.root'
@@ -406,13 +434,27 @@ def runPlotter(inDir, options):
                 mctruthmode = getByLabel(desc,'mctruthmode')
                 for process in data:
                     dtag = getByLabel(process,'dtag','')
-                    split = getByLabel(process,'split',1)
                     dset = getByLabel(process,'dset',dtag)
 
-                    for segment in range(0,split):
+                    if options.split: # Files are split
+                        split = getByLabel(process,'split',1)
+                        for segment in range(0,split):
+                            eventsFile = dtag
+                            if split > 1:
+                                eventsFile = dtag + '_' + str(segment)
+                            if mctruthmode:
+                                eventsFile += '_filt%d' % mctruthmode
+                            rootFileUrl = inDir+'/'+eventsFile+'.root'
+                            rootFile = openTFile(rootFileUrl)
+                            if rootFile is None:
+                                missing_files.append(eventsFile+'.root')
+                                continue
+
+                            iplots = getAllPlotsFrom(tdir=rootFile,tagsToFilter=tagsToFilter)
+                            rootFile.Close()
+                            plots = list(set(plots+iplots))
+                    else: # Files are merged by processes
                         eventsFile = dtag
-                        if split > 1:
-                            eventsFile = dtag + '_' + str(segment)
                         if mctruthmode:
                             eventsFile += '_filt%d' % mctruthmode
                         rootFileUrl = inDir+'/'+eventsFile+'.root'
@@ -495,6 +537,8 @@ if __name__ == "__main__":
                       help='Output directory [default: %default]')
     parser.add_option('-s', '--silent', dest='silent', action="store_true",
                       help='Silent mode (no plots) [default: %default]')
+    parser.add_option('--split', dest='split', action="store_true",
+                      help='Run on split files')
     parser.add_option('--rereadXsecWeights', dest='rereadXsecWeights',
                       action="store_true",
                       help='Trigger re-reading of xsec weights')

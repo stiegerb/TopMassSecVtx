@@ -500,6 +500,7 @@ class Plot(object):
         frame.GetYaxis().SetTitleSize(0.045)
         frame.GetYaxis().SetLabelSize(0.04)
         frame.GetYaxis().SetRangeUser(0.5, 1.2*maxY)
+        frame.GetYaxis().SetNoExponent()
         frame.SetDirectory(0)
         frame.Draw()
         frame.GetYaxis().SetTitleOffset(1.6)

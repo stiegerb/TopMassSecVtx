@@ -3,11 +3,29 @@ import os
 import sys
 import json
 import pickle
+import ROOT
 from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle,fixExtremities,Plot
 
 sys.path.append('/afs/cern.ch/cms/caf/python/')
 from cmsIO import cmsFile
 
+COLORPALETTE = { # title -> color
+    't#bar{t}'       : ROOT.kGray,
+    'Single top'     : ROOT.kAzure+5,
+    'W+Jets'         : ROOT.kOrange-3,
+    'DY+Jets'        : ROOT.kOrange+9,
+    'QCD Multijets'  : ROOT.kGray+2,
+    'Multiboson'     : ROOT.kSpring-5,
+    'other t#bar{t}' : ROOT.kBlue+2,
+    ## Original
+    # 'VV'             : ROOT.kBlue-9,    # 591
+    # 'W'              : ROOT.kOrange+9,  # 809
+    # 'other t#bar{t}' : ROOT.kSpring+2,  # 822
+    # 'Single top'     : ROOT.kSpring+4,  # 824
+    # 'DY'             : ROOT.kTeal-9,    # 831
+    # 't#bar{t}'       : ROOT.kMagenta-2, # 614
+    # 'Multijets'      : ROOT.kYellow-6,  # 41
+}
 
 def getByLabel(desc, key, defaultVal=None) :
     """
@@ -170,6 +188,7 @@ def makePlot(key, inDir, procList, xsecweights, options):
     pName = key.replace('/','')
     newPlot = Plot(pName)
     newPlot.plotformats = ['pdf']
+    newPlot.ratiorange = (0.4,2.3)
     baseRootFile = None
     if inDir.endswith('.root'):
         baseRootFile = openTFile(inDir)
@@ -177,7 +196,10 @@ def makePlot(key, inDir, procList, xsecweights, options):
         for desc in proc_tag[1]: # loop on processes
             title = getByLabel(desc,'tag','unknown')
             isData = getByLabel(desc,'isdata',False)
-            color = int(getByLabel(desc,'color',1))
+            try:
+                color = COLORPALETTE[title]
+            except KeyError:
+                color = int(getByLabel(desc,'color',1))
             data = desc['data']
             mctruthmode = getByLabel(desc,'mctruthmode')
 

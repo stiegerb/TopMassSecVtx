@@ -1,7 +1,7 @@
 {
   "proc":[
     {
-      "tag":"VV",
+      "tag":"Multiboson",
       "isdata":false,
       "color":592,
       "lcolor":1,
@@ -13,7 +13,7 @@
       ]
     },
     {
-      "tag":"W",
+      "tag":"W+Jets",
       "isdata":false,
       "color":809,
       "lcolor":1,
@@ -50,7 +50,7 @@
       ]
     },
     {
-      "tag":"DY",
+      "tag":"DY+Jets",
       "isdata":false,
       "color":831,
       "lcolor":1,
@@ -75,7 +75,7 @@
       ]
     },
     {
-     "tag":"Multijets",
+     "tag":"QCD Multijets",
      "isdata":false,
      "color":41,
      "lcolor":1,

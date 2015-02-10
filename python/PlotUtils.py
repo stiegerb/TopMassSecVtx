@@ -42,6 +42,14 @@ def customChi2(hist1, hist2):
         chi2 += (binc1-binc2)**2
     return chi2
 
+def redrawBorder(pad):
+    # this little macro redraws the axis tick marks and the pad border lines.
+    pad.Update()
+    pad.RedrawAxis()
+    l = ROOT.TLine()
+    l.DrawLine(pad.GetUxmin(), pad.GetUymax(), pad.GetUxmax(), pad.GetUymax())
+    l.DrawLine(pad.GetUxmax(), pad.GetUymin(), pad.GetUxmax(), pad.GetUymax())
+
 
 class RatioPlot(object):
     """Wrapper class for making ratio plots"""
@@ -221,6 +229,7 @@ class RatioPlot(object):
 
         CMS_lumi(pad=p1,iPeriod=2,iPosX=0,extraText='Simulation')
 
+        redrawBorder(p1)
         p2.cd()
 
         if not self.reference:
@@ -261,7 +270,7 @@ class RatioPlot(object):
         for ratio in ratios:
             ratio.Draw("hist same")
 
-        p2.RedrawAxis()
+        redrawBorder(p2)
 
         tc.cd()
         tc.Modified()
@@ -284,6 +293,8 @@ class Plot(object):
         self.garbageList = []
         self.normalizedToData=False
         self.plotformats = ['pdf','png']
+        self.savelog = False
+        self.ratiorange = (0.62, 1.36)
 
     def info(self):
         print self.name
@@ -300,17 +311,18 @@ class Plot(object):
 
         if isData:
             h.SetMarkerStyle(20)
+            h.SetMarkerSize(1.4)
             h.SetMarkerColor(color)
-            h.SetLineColor(color)
+            h.SetLineColor(ROOT.kBlack)
             h.SetLineWidth(2)
             h.SetFillColor(0)
             h.SetFillStyle(0)
-            self.dataH=h
-            self.data=convertToPoissonErrorGr(h)
+            self.dataH = h
+            self.data = convertToPoissonErrorGr(h)
         else:
             h.SetMarkerStyle(1)
             h.SetMarkerColor(color)
-            h.SetLineColor(color)
+            h.SetLineColor(ROOT.kBlack)
             h.SetLineWidth(1)
             h.SetFillColor(color)
             h.SetFillStyle(1001)
@@ -436,12 +448,16 @@ class Plot(object):
         self.garbageList.append(t1)
 
         frame = None
-        # leg = TLegend(0.15,0.9,0.9,0.95)
-        leg = TLegend(0.5,0.7,0.9,0.89)
+        # Decide which backgrounds are visible
+        maxint = max([x.Integral() for x in self.mc])
+        hists_to_add = [h for h in self.mc if h.Integral() > 0.005*maxint]
+
+        # Make the legend with the correct size
+        leg = TLegend(0.75, 0.74-0.04*max(len(hists_to_add)-2,0), .89, 0.89)
         leg.SetBorderSize(0)
         leg.SetFillStyle(0)
-        leg.SetTextFont(42)
-        leg.SetTextSize(0.04)
+        leg.SetTextFont(43)
+        leg.SetTextSize(20)
         nlegCols = 0
 
         maxY = 1.0
@@ -449,15 +465,19 @@ class Plot(object):
             leg.AddEntry( self.data, self.data.GetTitle(),'p')
             frame = self.dataH.Clone('frame')
             self.garbageList.append(frame)
-            maxY = self.data.GetMaximum()*1.1
+            maxY = self.dataH.GetMaximum()
             frame.Reset('ICE')
 
+        # Add the legend entries for the visible backgrounds
+        for h in sorted(hists_to_add, key=lambda x: x.Integral(), reverse=True):
+            leg.AddEntry(h, h.GetTitle(), 'f')
+            nlegCols = nlegCols+1
+
+        # Build the stack to plot from all backgrounds
         totalMC = None
         stack = THStack('mc','mc')
-        for h in self.mc:
+        for h in sorted(self.mc, key=lambda x: x.Integral()):
             stack.Add(h,'hist')
-            leg.AddEntry(h,h.GetTitle(),'f')
-            nlegCols = nlegCols+1
             if totalMC is None:
                 totalMC = h.Clone('totalmc')
                 self.garbageList.append(totalMC)
@@ -479,18 +499,20 @@ class Plot(object):
 
         frame.GetYaxis().SetTitleSize(0.045)
         frame.GetYaxis().SetLabelSize(0.04)
-        frame.GetYaxis().SetRangeUser(0.5,1.3*maxY)
+        frame.GetYaxis().SetRangeUser(0.5, 1.2*maxY)
         frame.SetDirectory(0)
         frame.Draw()
         frame.GetYaxis().SetTitleOffset(1.6)
         stack.Draw('hist same')
-        if self.data is not None: self.data.Draw('P same')
+        if self.data is not None:
+            self.data.Draw('P')
         # leg.SetNColumns(nlegCols)
-        leg.SetNColumns(2)
         leg.Draw()
+        redrawBorder(t1)
+
 
         ## Draw CMS Preliminary label
-        CMS_lumi(pad=t1,iPeriod=2,iPosX=0)
+        CMS_lumi(pad=t1,iPeriod=2,iPosX=0,extraText='Work in Progress')
 
         if self.normalizedToData:
             txt=TLatex()
@@ -518,7 +540,7 @@ class Plot(object):
             ratioframe=self.dataH.Clone('ratioframe')
             ratioframe.Reset('ICE')
             ratioframe.Draw()
-            ratioframe.GetYaxis().SetRangeUser(0.62,1.36)
+            ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
             ratioframe.GetYaxis().SetTitle('Data/#SigmaBkg')
             ratioframe.GetYaxis().SetNdivisions(5)
             ratioframe.GetYaxis().SetLabelSize(0.15)
@@ -531,10 +553,11 @@ class Plot(object):
 
             gr=ROOT.TGraphAsymmErrors()
             gr.SetName("data2bkg")
-            gr.SetMarkerStyle(20)
-            gr.SetMarkerColor(1)
-            gr.SetLineColor(1)
-            gr.SetLineWidth(2)
+            gr.SetMarkerStyle(self.data.GetMarkerStyle())
+            gr.SetMarkerSize(self.data.GetMarkerSize())
+            gr.SetMarkerColor(self.data.GetMarkerColor())
+            gr.SetLineColor(self.data.GetLineColor())
+            gr.SetLineWidth(self.data.GetLineWidth())
             bkgUncGr=ROOT.TGraphErrors()
             bkgUncGr.SetName('bkgunc')
             bkgUncGr.SetMarkerColor(920)
@@ -560,17 +583,22 @@ class Plot(object):
                 bkgUncGr.SetPointError(np,dx,bkgCts_err/bkgCts)
             bkgUncGr.Draw('2')
             gr.Draw('p')
+            redrawBorder(t2)
 
 
         canvas.cd()
         canvas.Modified()
         canvas.Update()
+
+
+
         for ext in self.plotformats : canvas.SaveAs(os.path.join(outDir, self.name+'.'+ext))
-        t1.cd()
-        t1.SetLogy()
-        frame.GetYaxis().SetRangeUser(0.5,4*maxY)
-        canvas.cd()
-        for ext in self.plotformats : canvas.SaveAs(os.path.join(outDir, self.name+'_log.'+ext))
+        if self.savelog:
+            t1.cd()
+            t1.SetLogy()
+            frame.GetYaxis().SetRangeUser(0.5,4*maxY)
+            canvas.cd()
+            for ext in self.plotformats : canvas.SaveAs(os.path.join(outDir, self.name+'_log.'+ext))
 
 
 

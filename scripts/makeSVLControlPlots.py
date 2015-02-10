@@ -45,6 +45,8 @@ CONTROLVARS = [
 DATAMCPLOTS = [
 	('SVLDeltaR' , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
 	('SVNtrk'    , 8,     2  , 10, 'SV Track Multiplicity'),
+	('LPt'       , NBINS, 20 , 200, 'Lepton pt [GeV]'),
+	('JPt'       , NBINS, 30 , 200, 'Jet pt [GeV]'),
 	# ('SVLMass'   , NBINS, XMIN, XMAX, MASSXAXISTITLE),
 ]
 
@@ -77,10 +79,13 @@ def projectFromTree(hist, varname, sel, tree, option=''):
 def getHistoFromTree(tree, sel, var="SVLMass",
 	         hname="histo",
 	         nbins=NBINS, xmin=XMIN, xmax=XMAX,
-	         titlex=''):
+	         titlex='',
+	         applyWeights=True):
 	histo = ROOT.TH1D(hname, "histo" , nbins, xmin, xmax)
 	if sel=="": sel = "1"
-	sel = "(%s)"%sel
+	sel = "(%s)" % sel
+	if applyWeights:
+		sel = "%s*(Weight[1]*Weight[4])" % sel
 	projectFromTree(histo, var, sel, tree)
 	histo.SetLineWidth(2)
 	histo.GetXaxis().SetTitle(titlex)
@@ -111,7 +116,8 @@ def getSVLHistos(tree, sel,
 
 def getTopPtHistos(tree, sel,
 				 var="SVLMass",
-				 tag='', xmin=XMIN, xmax=XMAX,
+				 tag='',
+				 nbins=NBINS,xmin=XMIN, xmax=XMAX,
 				 titlex=''):
 	h_tpt = getHistoFromTree(tree, sel=sel+"*Weight[7]",
 	                  var=var, hname="%s_toppt_%s"%(var,tag),
@@ -126,7 +132,8 @@ def getTopPtHistos(tree, sel,
 
 def getBfragHistos(tree, sel,
 				   var="SVLMass",
-				   tag='', xmin=XMIN, xmax=XMAX,
+				   tag='',
+				   nbins=NBINS,xmin=XMIN, xmax=XMAX,
 				   titlex=''):
 	h_bfrag = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[0]",
 		              var=var, hname="%s_tot_%s_bfrag"%(var,tag),
@@ -145,7 +152,8 @@ def getBfragHistos(tree, sel,
 
 def getJESHistos(tree, sel,
 				 var="SVLMass",
-				 tag='', xmin=XMIN, xmax=XMAX,
+				 tag='',
+				 nbins=NBINS, xmin=XMIN, xmax=XMAX,
 				 titlex=''):
 	h_jesup = getHistoFromTree(tree, sel=sel+"&&JESWeight[1]",
 		              var=var, hname="%s_tot_%s_jes_up"%(var,tag),
@@ -162,7 +170,7 @@ def getJESHistos(tree, sel,
 def getNTrkHistos(tree, sel,
 		  var="SVLMass",
 		  tag='',
-		  xmin=XMIN, xmax=XMAX,
+		  nbins=NBINS, xmin=XMIN, xmax=XMAX,
 		  titlex='',
 		  combsToProject=[('tot','')]
 		  ):

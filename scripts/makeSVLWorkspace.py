@@ -25,7 +25,7 @@ def parameterizeSignalPermutations(ws,permName,chList,combList,trkMultList,sig_m
                 ws.factory("RooFormulaVar::%s_p0('@0*(@1-172.5)+@2',{"
                            "slope_%s_p0[0.0],"
                            "mtop,"
-                           "offset_%s_p0[0.4,0.1,0.9]})"%
+                           "offset_%s_p0[0.4,0.0.05,0.95]})"%
                            (tag,tag,tag))
                 ws.factory("RooFormulaVar::%s_p1('@0*(@1-172.5)+@2',{"
                            "slope_%s_p1[0.01,0,5],"
@@ -37,10 +37,14 @@ def parameterizeSignalPermutations(ws,permName,chList,combList,trkMultList,sig_m
                            "mtop,"
                            "offset_%s_p2[15,5,100]})"%
                            (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p3('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p3[0.01,0.001,5],"
-                           "mtop,"
-                           "offset_%s_p3[25,5,100]})"%
+                #ws.factory("RooFormulaVar::%s_p3('@0*(@1-172.5)+@2',{"
+                #           "slope_%s_p3[0.01,0.001,5],"
+                #           "mtop,"
+                #           "offset_%s_p3[25,5,100]})"%
+                #           (tag,tag,tag))
+                ws.factory("RooFormulaVar::%s_p3('@0*@1',{"
+                           "%s_p2,"
+                           "slope_%s_p3[1,0.25,5.0]})"%
                            (tag,tag,tag))
                 ws.factory("RooFormulaVar::%s_p4('@0*(@1-172.5)+@2',{"
                            #"slope_%s_p4[0,-1,1],"

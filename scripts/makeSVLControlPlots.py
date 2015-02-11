@@ -110,12 +110,16 @@ def getTopPtHistos(tree, sel,
 				 tag='',
 				 nbins=NBINS,xmin=XMIN, xmax=XMAX,
 				 titlex=''):
-	h_tpt = getHistoFromTree(tree, sel=sel+"*Weight[7]",
+	weight = "%s*Weight[7]" % COMMONWEIGHT
+	h_tpt = getHistoFromTree(tree, sel=sel,
 	                  var=var, hname="%s_toppt_%s"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-	h_tup = getHistoFromTree(tree, sel=sel+"*Weight[8]",
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
+	weight = "%s*Weight[8]" % COMMONWEIGHT
+	h_tup = getHistoFromTree(tree, sel=sel,
 	                  var=var, hname="%s_topptup_%s"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
 
 	h_tpt.SetLineColor(ROOT.kRed)
 	h_tup.SetLineColor(ROOT.kRed-6)
@@ -126,15 +130,21 @@ def getBfragHistos(tree, sel,
 				   tag='',
 				   nbins=NBINS,xmin=XMIN, xmax=XMAX,
 				   titlex=''):
-	h_bfrag = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[0]",
+	weight = "%s*SVBfragWeight[0]" % COMMONWEIGHT
+	h_bfrag = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_bfrag"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-	h_bfhar = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[1]",
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
+	weight = "%s*SVBfragWeight[1]" % COMMONWEIGHT
+	h_bfhar = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_bfrag_hard"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-	h_bfsof = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[2]",
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
+	weight = "%s*SVBfragWeight[2]" % COMMONWEIGHT
+	h_bfsof = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_bfrag_soft"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
 
 	h_bfrag.SetLineColor(ROOT.kGreen+2)
 	h_bfhar.SetLineColor(ROOT.kGreen+5)
@@ -417,15 +427,6 @@ def main(args, opt):
 								      sel=sel,
 								      var="SVLMass", tag=tag+'_'+syst,
 								      titlex=MASSXAXISTITLE)
-				# fittertkhistos[(tag,syst)] = getNTrkHistos(systtrees[syst],
-				#                                           sel=sel,
-				#                                           tag=htag,
-				# 					    var='SVLMass',
-				# 					    titlex=MASSXAXISTITLE,
-				# 					    combsToProject=[('tot',''),
-				#                                         ('cor','CombInfo==1'),
-				#                                         ('wro','CombInfo==0'),
-				#                                         ('unm','CombInfo==-1')])
 
 			systhistos[(tag,'bfrag')] = getBfragHistos(systtrees[172.5],
 				                        sel=sel, var='SVLMass',
@@ -458,12 +459,12 @@ def main(args, opt):
 
 
 		cachefile = open(".svlhistos.pck", 'w')
-		pickle.dump(masshistos,    cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(masshistos,     cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(fittertkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(systhistos,    cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(ntkhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(massntkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(controlhistos, cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(systhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(ntkhistos,      cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(massntkhistos,  cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(controlhistos,  cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 
 		ofi = ROOT.TFile(os.path.join(opt.outDir,'histos.root'), 'recreate')
@@ -485,12 +486,12 @@ def main(args, opt):
 
 	else:
 		cachefile = open(".svlhistos.pck", 'r')
-		masshistos    = pickle.load(cachefile)
+		masshistos     = pickle.load(cachefile)
 		fittertkhistos = pickle.load(cachefile)
-		systhistos    = pickle.load(cachefile)
-		ntkhistos     = pickle.load(cachefile)
-		massntkhistos = pickle.load(cachefile)
-		controlhistos = pickle.load(cachefile)
+		systhistos     = pickle.load(cachefile)
+		ntkhistos      = pickle.load(cachefile)
+		massntkhistos  = pickle.load(cachefile)
+		controlhistos  = pickle.load(cachefile)
 		cachefile.close()
 
 	ROOT.gStyle.SetOptTitle(0)

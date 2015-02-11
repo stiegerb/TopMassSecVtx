@@ -11,6 +11,8 @@ const float gMassK  = 0.4937;
 const float gMassPi = 0.1396;
 const float gMassMu = 0.1057;
 
+const float gCSVWPMedium = 0.783;
+
 const int njetbins = 6;
 const int nsvbins = 4;
 
@@ -91,7 +93,6 @@ void LxyTreeAnalysis::RunJob(TString filename){
 	Loop();
 	End(file);
 }
-
 void LxyTreeAnalysis::Begin(TFile *file){
 	// Anything that has to be done once at the beginning
 	file->cd();
@@ -225,7 +226,6 @@ void LxyTreeAnalysis::BookHistos(){
 		(*h)->Sumw2();
 	}
 }
-
 void LxyTreeAnalysis::WriteHistos(){
 	// Write all histos to file, then delete them
 	std::vector<TH1*>::iterator h;
@@ -251,7 +251,6 @@ void LxyTreeAnalysis::BookCharmTree() {
 	fCharmInfoTree->Branch("SumPtCharged", &fTSumPtCharged, "SumPtCharged/F");
 	fCharmInfoTree->Branch("SumPzCharged", &fTSumPzCharged, "SumPzCharged/F");
 }
-
 void LxyTreeAnalysis::ResetCharmTree() {
 	fTCandType     = -99;
 	fTCandMass     = -99.99;
@@ -294,7 +293,6 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 	FillCharmTree(type, jind, p_cand, p_jet);
 	return;
 }
-
 void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 									int ind1, float mass1,
 									int ind2, float mass2,
@@ -588,7 +586,7 @@ bool LxyTreeAnalysis::selectSVLEvent(){
 	int nsvjets(0), nbjets(0);
 	for( int i=0; i < nj; i++){
 		// count as bjet either jet with SV or jet with CSVM tag
-		nbjets  += (svlxy[i] > 0 || jcsv[i] > 0.783);
+		nbjets  += (svlxy[i] > 0 || jcsv[i] > gCSVWPMedium);
 		nsvjets += (svlxy[i] > 0);
 		// this implies nbjets >= nsvjets
 	}
@@ -647,7 +645,6 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("SVLMassRank_rot",   &fTSVLMinMassRank_rot, "SVLMassRank_rot/I");
 	fSVLInfoTree->Branch("SVLDeltaRRank_rot", &fTSVLDeltaRRank_rot,  "SVLDeltaRRank_rot/I");
 }
-
 void LxyTreeAnalysis::ResetSVLTree() {
 	fTEvent     = event;
 	fTRun       = run;
@@ -738,7 +735,7 @@ void LxyTreeAnalysis::analyze(){
 	for( int i=0; i < nj; i++){
 		if(svlxy[i]>0){
 			nsvjets++;
-			if(jcsv[i] > 0.783) nbjets++;
+			if(jcsv[i] > gCSVWPMedium) nbjets++;
 			if(svlxyerr[i]!=0){
 				if(svlxy[i]/svlxyerr[i]>lxymax1) {
 					lxymax2=lxymax1;

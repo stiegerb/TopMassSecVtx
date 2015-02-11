@@ -49,6 +49,7 @@ def main(args, opt):
 	ofi.Write()
 	ofi.Close()
 
+	runPlotter(args[0], opt)
 	runPlotter(outputFileName, opt)
 	return 0
 

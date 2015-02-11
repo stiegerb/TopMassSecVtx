@@ -2,9 +2,7 @@
 import os, sys
 import ROOT
 import pickle
-from UserCode.TopMassSecVtx.PlotUtils import RatioPlot, getRatio, setMaximums
-from UserCode.TopMassSecVtx.CMS_lumi import CMS_lumi
-from runPlotter import openTFile
+from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
 from numpy import roots
 
 # MASSES = [163.5, 166.5, 169.5, 171.5, 172.5, 173.5, 175.5, 178.5, 181.5]
@@ -40,14 +38,6 @@ CONTROLVARS = [
 	('LPt'       , NBINS, 20 , 100 , 'Lepton pt [GeV]'),
 	('SVPt'      , NBINS, 0  , 100 , 'Sec.Vtx. pt [GeV]'),
 	('JPt'       , NBINS, 30 , 200 , 'Jet pt [GeV]'),
-]
-
-DATAMCPLOTS = [
-	('SVLDeltaR' , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
-	('SVNtrk'    , 8,     2  , 10, 'SV Track Multiplicity'),
-	('LPt'       , NBINS, 20 , 200, 'Lepton pt [GeV]'),
-	('JPt'       , NBINS, 30 , 200, 'Jet pt [GeV]'),
-	# ('SVLMass'   , NBINS, XMIN, XMAX, MASSXAXISTITLE),
 ]
 
 SYSTS = [
@@ -90,6 +80,7 @@ def getHistoFromTree(tree, sel, var="SVLMass",
 	histo.SetLineWidth(2)
 	histo.GetXaxis().SetTitle(titlex)
 	histo.Sumw2()
+	histo.SetDirectory(0)
 	return histo
 
 def getSVLHistos(tree, sel,
@@ -217,25 +208,6 @@ def makeControlPlot(hists, tag, seltag, opt):
 	ctrlplot.show("control_%s"%tag, opt.outDir)
 	ctrlplot.reset()
 
-def writeDataMCHistos(treefiles, opt):
-	ofi = ROOT.TFile(os.path.join(opt.outDir,'datamc_histos.root'),
-		             'recreate')
-	ofi.cd()
-	for proc in treefiles.keys():
-		tree = ROOT.TFile.Open(treefiles[proc],'READ').Get(TREENAME)
-		print "... processing %s, %d entries" % (proc, tree.GetEntries())
-		for tag,sel,_ in SELECTIONS:
-			for var,nbins,xmin,xmax,titlex in DATAMCPLOTS:
-				hist = getHistoFromTree(tree, sel=sel,
-					              var=var, hname="%s_%s_%s"%(var,tag,proc),
-				                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-				ofi.cd()
-				hist.Write(hist.GetName())
-
-	ofi.Write()
-	ofi.Close()
-
-
 def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
 	"""
 	This does a pol2 fit to the given values and returns a callable
@@ -362,7 +334,6 @@ def main(args, opt):
 			procname = filename.split('_', 1)[1][:-5]
 			treefiles[procname] = os.path.join(args[0],filename)
 
-
 		massfiles = {} # mass -> filename
 		# find mass scan files
 		for filename in os.listdir(os.path.join(args[0],'mass_scan')):
@@ -396,9 +367,6 @@ def main(args, opt):
 
 	for syst,_,_ in SYSTS:
 		systtrees[syst] = ROOT.TFile.Open(systfiles[syst],'READ').Get(TREENAME)
-
-	if opt.writeDataMCHistos:
-		writeDataMCHistos(treefiles, opt)
 
 	if not opt.cache:
 		masshistos = {}     # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
@@ -839,9 +807,6 @@ if __name__ == "__main__":
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",
 					  help='Read from cache')
-	parser.add_option('-w', '--writeDataMCHistos', dest='writeDataMCHistos',
-		              action="store_true",
-					  help='Write the Data vs MC histograms')
 	(opt, args) = parser.parse_args()
 
 	exit(main(args, opt))

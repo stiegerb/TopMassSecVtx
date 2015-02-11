@@ -14,7 +14,7 @@ MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
 
 #NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
 NTRKBINS = [(2,3), (3,4), (4,1000)]
-
+COMMONWEIGHT = "Weight[1]*Weight[4]*JESWeight[0]"
 
 TREENAME = 'SVLInfo'
 SELECTIONS = [
@@ -70,12 +70,12 @@ def getHistoFromTree(tree, sel, var="SVLMass",
 	         hname="histo",
 	         nbins=NBINS, xmin=XMIN, xmax=XMAX,
 	         titlex='',
-	         applyWeights=True):
+	         weight=COMMONWEIGHT):
 	histo = ROOT.TH1D(hname, "histo" , nbins, xmin, xmax)
 	if sel=="": sel = "1"
 	sel = "(%s)" % sel
-	if applyWeights:
-		sel = "%s*(Weight[1]*Weight[4])" % sel
+	if len(weight):
+		sel = "%s*(%s)" % (sel, weight)
 	projectFromTree(histo, var, sel, tree)
 	histo.SetLineWidth(2)
 	histo.GetXaxis().SetTitle(titlex)
@@ -146,12 +146,16 @@ def getJESHistos(tree, sel,
 				 tag='',
 				 nbins=NBINS, xmin=XMIN, xmax=XMAX,
 				 titlex=''):
-	h_jesup = getHistoFromTree(tree, sel=sel+"&&JESWeight[1]",
+	weight = COMMONWEIGHT.replace('JESWeight[0]', 'JESWeight[1]')
+	h_jesup = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_jes_up"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-	h_jesdn = getHistoFromTree(tree, sel=sel+"&&JESWeight[2]",
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
+	weight = COMMONWEIGHT.replace('JESWeight[0]', 'JESWeight[2]')
+	h_jesdn = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_jes_dn"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
 
 	h_jesup.SetLineColor(ROOT.kBlue+2)
 	h_jesdn.SetLineColor(ROOT.kBlue-6)

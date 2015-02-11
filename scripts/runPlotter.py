@@ -411,10 +411,10 @@ def runPlotter(inDir, options):
     plots = []
 
     # Read the xsection weights (from cache or from the input files)
-    xsecweights = readXSecWeights(inDir=args[0], options=opt)
+    xsecweights = readXSecWeights(inDir=inDir, options=options)
 
     missing_files = []
-    tagsToFilter = opt.filter.split(',')
+    tagsToFilter = options.filter.split(',')
     baseRootFile = None
 
     # Input is a single root file with all histograms
@@ -496,18 +496,7 @@ def runPlotter(inDir, options):
 
     if baseRootFile is not None: baseRootFile.Close()
 
-
-if __name__ == "__main__":
-    import sys
-    tmpargv  = sys.argv[:]     # [:] for a copy, not reference
-    sys.argv = []
-    from ROOT import gROOT, gStyle
-    sys.argv = tmpargv
-    from optparse import OptionParser
-    usage = """
-    usage: %prog [options] input_directory
-    """
-    parser = OptionParser(usage=usage)
+def addPlotterOptions(parser):
     parser.add_option('-j', '--json', dest='json',
                       default='test/topss2014/samples.json',
                       help='A json file with the samples to analyze'
@@ -546,6 +535,19 @@ if __name__ == "__main__":
                       action="store", type="int", dest="jobs",
                       help=("Run N jobs in parallel."
                             "[default: %default]"))
+
+if __name__ == "__main__":
+    import sys
+    tmpargv  = sys.argv[:]     # [:] for a copy, not reference
+    sys.argv = []
+    from ROOT import gROOT, gStyle
+    sys.argv = tmpargv
+    from optparse import OptionParser
+    usage = """
+    usage: %prog [options] input_directory
+    """
+    parser = OptionParser(usage=usage)
+    addPlotterOptions(parser)
     (opt, args) = parser.parse_args()
 
     if len(args) > 0:

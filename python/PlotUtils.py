@@ -438,6 +438,7 @@ class Plot(object):
 
         ROOT.gStyle.SetOptTitle(0)
         ROOT.gStyle.SetOptStat(0)
+        ROOT.gROOT.SetBatch(1)
 
         canvas = TCanvas('c_'+self.name,'C',800,800)
         canvas.cd()

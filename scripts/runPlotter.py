@@ -555,6 +555,10 @@ if __name__ == "__main__":
             checkMissingFiles(inDir=args[0], jsonUrl=opt.json)
             exit(0)
 
+        if opt.rereadXsecWeights:
+            readXSecWeights(inDir=args[0], options=opt)
+            exit(0)
+
         setTDRStyle()
         gROOT.SetBatch(True)
         gStyle.SetOptTitle(0)

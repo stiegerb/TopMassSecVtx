@@ -8,116 +8,123 @@ import pickle
 """
 parameterize the signal permutations
 """
-def parameterizeSignalPermutations(ws,permName,chList,combList,trkMultList,sig_mass_cats,massList,SVLmass) :
+def fitSignalPermutation((ws, tag, massList, SVLmass, options)):
+    sig_mass_cats = buildSigMassCats(massList)
+    print ' ...processing %s'%tag
+    #base correct, signal PDF : free parameters are linear
+    #functions of the top mass
+    ws.factory("RooFormulaVar::%s_p0('@0*(@1-172.5)+@2',{"
+               "slope_%s_p0[0.0],"
+               "mtop,"
+               "offset_%s_p0[0.4,0.1,0.9]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p1('@0*(@1-172.5)+@2',{"
+               "slope_%s_p1[0.01,0,5],"
+               "mtop,"
+               "offset_%s_p1[40,5,150]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p2('@0*(@1-172.5)+@2',{"
+               "slope_%s_p2[0.01,0.001,5],"
+               "mtop,"
+               "offset_%s_p2[15,5,100]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p3('@0*(@1-172.5)+@2',{"
+               "slope_%s_p3[0.01,0.001,5],"
+               "mtop,"
+               "offset_%s_p3[25,5,100]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p4('@0*(@1-172.5)+@2',{"
+               #"slope_%s_p4[0,-1,1],"
+               "slope_%s_p4[0],"
+               "mtop,"
+               "offset_%s_p4[5,-10,10]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p5('@0*(@1-172.5)+@2',{"
+               #"slope_%s_p5[0.05,0,2],"
+               "slope_%s_p5[0],"
+               "mtop,"
+               "offset_%s_p5[10,0.5,100]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p6('@0*(@1-172.5)+@2',{"
+               "slope_%s_p6[0.05,0,2],"
+               #"slope_%s_p6[0],"
+               "mtop,"
+               "offset_%s_p6[0.5,0.1,100]})"%
+               (tag,tag,tag))
+
+    ws.factory("SUM::simplemodel_%s("
+               "%s_p0*RooBifurGauss::%s_f1("
+               "SVLMass,%s_p1,%s_p2,%s_p3),"
+               "RooGamma::%s_f2("
+               "SVLMass,%s_p4,%s_p5,%s_p6))"%
+               (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
+
+    #replicate the base signal PDF for different categories
+    #(top masses available)
+    thePDF=ws.factory("SIMCLONE::model_%s("
+                      " simplemodel_%s, $SplitParam({mtop},%s))"%
+                       (tag, tag, sig_mass_cats))
+
+    #fix mass values and create a mapped data hist
+    histMap=ROOT.MappedRooDataHist()
+    for mass in massList:
+        mcat='%d'%int(mass*10)
+        massNodeVar=ws.var('mtop_m%s'%mcat)
+        massNodeVar.setVal(mass)
+        massNodeVar.setConstant(True)
+        binnedData=ws.data('SVLMass_%s_%s'%(tag,mcat))
+        histMap.add('m%s'%mcat,binnedData)
+
+    #the categorized dataset
+    getattr(ws,'import')(
+                 ROOT.RooDataHist("data_%s"%tag,
+                                  "data_%s"%tag,
+                                  ROOT.RooArgList(SVLmass),
+                                  ws.cat('massCat'),
+                                  histMap.get()) )
+    theData = ws.data("data_%s"%tag)
+    theFitResult = thePDF.fitTo(theData,ROOT.RooFit.Save(True))
+    showFitResult(tag=tag, var=SVLmass, pdf=thePDF,
+                  data=theData, cat=ws.cat('massCat'),
+                  catNames=histMap.getCategories(),
+                  outDir=options.outDir)
+
+def parameterizeSignalPermutations(ws,permName,config,SVLmass,options):
 
     print '[parameterizeSignalPermutations] with %s'%permName
+    chList, combList, massList, trkMultList = config
+    sig_mass_cats = buildSigMassCats(massList)
 
+    tasklist = []
     for ch in chList:
         if ch=='inclusive': continue
         for comb in combList:
             for ntrk in trkMultList:
                 tag='%s_%d_%s'%(permName,ntrk,ch)
                 if len(comb)>0 : tag += '_' + comb
-                
-                print ' ...processing %s'%tag
+                tasklist.append((ws, tag, massList, SVLmass, options))
+                # fitSignalPermutation(ws=ws, tag=tag, massList=massList,
+                #                      SVLmass=SVLmass, options=options)
 
-                #base correct, signal PDF : free parameters are linear functions of the top mass
-                ws.factory("RooFormulaVar::%s_p0('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p0[0.0],"
-                           "mtop,"
-                           "offset_%s_p0[0.4,0.1,0.9]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p1('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p1[0.01,0,5],"
-                           "mtop,"
-                           "offset_%s_p1[40,5,150]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p2('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p2[0.01,0.001,5],"
-                           "mtop,"
-                           "offset_%s_p2[15,5,100]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p3('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p3[0.01,0.001,5],"
-                           "mtop,"
-                           "offset_%s_p3[25,5,100]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p4('@0*(@1-172.5)+@2',{"
-                           #"slope_%s_p4[0,-1,1],"
-                           "slope_%s_p4[0],"
-                           "mtop,"
-                           "offset_%s_p4[5,-10,10]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p5('@0*(@1-172.5)+@2',{"
-                           #"slope_%s_p5[0.05,0,2],"
-                           "slope_%s_p5[0],"
-                           "mtop,"
-                           "offset_%s_p5[10,0.5,100]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p6('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p6[0.05,0,2],"
-                           #"slope_%s_p6[0],"
-                           "mtop,"
-                           "offset_%s_p6[0.5,0.1,100]})"%
-                           (tag,tag,tag))
-
-                ws.factory("SUM::simplemodel_%s("
-                           "%s_p0*RooBifurGauss::%s_f1("
-                           "SVLMass,%s_p1,%s_p2,%s_p3),"
-                           "RooGamma::%s_f2("
-                           "SVLMass,%s_p4,%s_p5,%s_p6))"%
-                           (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
-
-                #replicate the base signal PDF for different categories (top masses available)
-                thePDF=ws.factory("SIMCLONE::model_%s( simplemodel_%s, $SplitParam({mtop},%s))"% (tag,tag,sig_mass_cats))
-
-                #fix mass values and create a mapped data hist
-                histMap=ROOT.MappedRooDataHist()
-                for mass in massList:
-                    mcat='%d'%int(mass*10)
-                    massNodeVar=ws.var('mtop_m%s'%mcat)
-                    massNodeVar.setVal(mass)
-                    massNodeVar.setConstant(True)
-                    binnedData=ws.data('SVLMass_%s_%s'%(tag,mcat))
-                    histMap.add('m%s'%mcat,binnedData)
-              
-                #the categorized dataset
-                getattr(ws,'import')( ROOT.RooDataHist("data_%s"%tag,
-                                                       "data_%s"%tag,
-                                                       ROOT.RooArgList(SVLmass),
-                                                       ws.cat('massCat'),
-                                                       histMap.get()) )
-                theData=ws.data("data_%s"%tag)
-                theFitResult = thePDF.fitTo(theData,ROOT.RooFit.Save(True))
-                showFitResult(tag=tag,var=SVLmass,pdf=thePDF,data=theData,cat=ws.cat('massCat'),catNames=histMap.getCategories())
+    if options.jobs > 1:
+        import multiprocessing
+        multiprocessing.Pool(8).map(fitSignalPermutation, tasklist)
+    else:
+        for task in tasklist:
+            fitSignalPermutation(task)
 
 
-"""
-Reads out the histograms from the picke file  converts them RooDataHist 
-Prepare PDFs 
-Save all to a RooWorkspace
-"""
-def createWorkspace(opt):
-
-    #read file
-    cachefile = open(opt.input,'r')
-    inchistos  = pickle.load(cachefile)
-    diffhistos = pickle.load(cachefile)
-    cachefile.close()
-
-    # Initiate a workspace where the observable is the SVLMass
-    # and the variable to fit is mtop
-    ws   = ROOT.RooWorkspace('w')
-    SVLmass  = ws.factory('SVLMass[100,0,300]')
-    mtop = ws.factory('mtop[172.5,100,200]')
-
-    #import binned PDFs from histograms read from file
+def readConfig(diffhistos):
+    """
+    Extracts the channels, combinations, mass values, and
+    track multiplicity bins from the dictionary containing
+    the histograms.
+    """
     chList=[]
     combList=[]
     massList=[]
     trkMultList=[]
-    for key,histos in diffhistos.iteritems(): 
-
+    for key,histos in diffhistos.iteritems():
         chTags=key[0].split('_')
         chList.append( chTags[0] )
 
@@ -130,29 +137,64 @@ def createWorkspace(opt):
         for h in histos:
             hname=h.GetName()
             trkMultList.append( int(hname.split('_')[2]) )
-            getattr(ws,'import')(ROOT.RooDataHist(hname,h.GetTitle(),ROOT.RooArgList(SVLmass),h))
-        
+
     chList=list( set(chList) )
     combList=list( set(combList) )
-    massList=list( set(massList) )
+    massList=sorted(list( set(massList) ))
     trkMultList=list( set(trkMultList) )
+    return chList, combList, massList, trkMultList
+def buildSigMassCats(massList):
     sig_mass_cats='massCat['
-    for m in massList:
+    for m in sorted(massList):
         sig_mass_cats+='m%d,'%int(m*10)
     sig_mass_cats = sig_mass_cats[:-1]+']'
-    
-    print 'Channels available :',chList
-    print 'Combinations available: ',combList
-    print 'Masses categories  available: ',sig_mass_cats
-    print 'Track multiplicities available: ',trkMultList
+    return sig_mass_cats
+def createWorkspace(options):
+    """
+    Reads out the histograms from the pickle file and converts them
+    to a RooDataHist
+    Prepare PDFs
+    Save all to a RooWorkspace
+    """
 
-    #run signal parameterization cycles
-    parameterizeSignalPermutations(ws=ws,permName='cor',chList=chList,combList=combList,trkMultList=trkMultList,sig_mass_cats=sig_mass_cats,massList=massList,SVLmass=SVLmass)
-    parameterizeSignalPermutations(ws=ws,permName='wro',chList=chList,combList=combList,trkMultList=trkMultList,sig_mass_cats=sig_mass_cats,massList=massList,SVLmass=SVLmass)
-    parameterizeSignalPermutations(ws=ws,permName='unm',chList=chList,combList=combList,trkMultList=trkMultList,sig_mass_cats=sig_mass_cats,massList=massList,SVLmass=SVLmass)
+    # Read file
+    cachefile = open(options.input,'r')
+    inchistos  = pickle.load(cachefile)
+    diffhistos = pickle.load(cachefile)
+    cachefile.close()
 
-    #save all to file
-    ws.writeToFile('SVLWorkspace.root',True)
+    # Extract the configurations from the diffhistos dictionary
+    config = readConfig(diffhistos)
+    chList, combList, massList, trkMultList = config
+    sig_mass_cats = buildSigMassCats(massList)
+    print 'Channels available :', chList
+    print 'Combinations available: ', combList
+    print 'Mass points available: ', massList
+    print 'Track multiplicities available: ', trkMultList
+
+
+    # Initiate a workspace where the observable is the SVLMass
+    # and the variable to fit is mtop
+    ws = ROOT.RooWorkspace('w')
+    SVLmass = ws.factory('SVLMass[100,0,300]')
+    mtop    = ws.factory('mtop[172.5,100,200]')
+
+    # Import binned PDFs from histograms read from file
+    for histos in diffhistos.values():
+        for h in histos:
+            getattr(ws,'import')(ROOT.RooDataHist(h.GetName(), h.GetTitle(),
+                                 ROOT.RooArgList(SVLmass), h))
+
+    # Run signal parameterization cycles
+    parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
+                                   SVLmass=SVLmass, options=options)
+    parameterizeSignalPermutations(ws=ws, permName='wro', config=config,
+                                   SVLmass=SVLmass, options=options)
+    parameterizeSignalPermutations(ws=ws, permName='unm', config=config,
+                                   SVLmass=SVLmass, options=options)
+
+    # Save all to file
+    ws.writeToFile(os.path.join(options.outDir, 'SVLWorkspace.root'), True)
     print 80*'-'
     print 'Workspace has been created and stored @ SVLWorkspace.root'
     print 80*'-'
@@ -161,49 +203,45 @@ def createWorkspace(opt):
 
 
 
+   #  Fraction
+   #     ws.factory("RooFormulaVar::sig_frac('@0*(@1-172.5)+@2',{"
+   #                   "a_sig_frac[0.,-2.0,2.0],"
+   #                   "mtop,"
+   #                  "b_sig_frac[0.90,0.0,1]})")
 
 
 
-
-    # Fraction
-    #    ws.factory("RooFormulaVar::sig_frac('@0*(@1-172.5)+@2',{"
-    #                  "a_sig_frac[0.,-2.0,2.0],"
-    #                  "mtop,"
-    #                 "b_sig_frac[0.90,0.0,1]})")
+   #  cov = fitresult.covarianceMatrix()
+   #  cor = fitresult.correlationMatrix()
 
 
+   #  parameterization for wrong combinations
 
-    # cov = fitresult.covarianceMatrix()
-    # cor = fitresult.correlationMatrix()
+   # ws.factory("SUM::sig_wrong(sig_wrong_frac[0.9,0,1.0]*"
+   #                "BifurGauss::sig_wrong_agauss(mbl,"
+   #                   "sig_wrong_agauss_mean[70,0,100],"
+   #                   "sig_wrong_agauss_sigmaL[20,0,50],"
+   #                   "sig_wrong_agauss_sigmaR[70,20,100]),"
+   #                "RooGamma::sig_wrong_ngauss(mbl,"
+   #                   "sig_wrong_ngauss_gamma[3.2,2.5,4.0],"
+   #                   "sig_wrong_ngauss_beta[14,10,20],"
+   #                   "sig_wrong_ngauss_mu[8,0,15]))")
+   # # raw_input()
+   # ws.pdf('sig_wrong').fitTo(ws.data('wrong'), ROOT.RooFit.Save(True))
 
-    #
-    # parameterization for wrong combinations
-    #
- #   ws.factory("SUM::sig_wrong(sig_wrong_frac[0.9,0,1.0]*"
- #                  "BifurGauss::sig_wrong_agauss(mbl,"
- #                     "sig_wrong_agauss_mean[70,0,100],"
- #                     "sig_wrong_agauss_sigmaL[20,0,50],"
- #                     "sig_wrong_agauss_sigmaR[70,20,100]),"
- #                  "RooGamma::sig_wrong_ngauss(mbl,"
- #                     "sig_wrong_ngauss_gamma[3.2,2.5,4.0],"
- #                     "sig_wrong_ngauss_beta[14,10,20],"
- #                     "sig_wrong_ngauss_mu[8,0,15]))")
- #   # raw_input()
- #   ws.pdf('sig_wrong').fitTo(ws.data('wrong'), ROOT.RooFit.Save(True))
- #
- #   # These are the current values
-#    ws.saveSnapshot("model_params", ws.allVars(), True)
+   # # These are the current values
+   # ws.saveSnapshot("model_params", ws.allVars(), True)
 
-    # Save workspace to file and return the name
-#    wsFile = os.path.join(outdir, 'mSVL_Workspace_%s.root'%selection)
-#    ws.writeToFile(wsFile)
+   #  Save workspace to file and return the name
+   # wsFile = os.path.join(outdir, 'mSVL_Workspace_%s.root'%selection)
+   # ws.writeToFile(wsFile)
 
-#    return ws
+   # return ws
 
 """
 
 """
-def showFitResult(tag,var,pdf,data,cat,catNames):
+def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
 
     #plot slices one by one to compare with the model
     c = ROOT.TCanvas('c','c',500,500)
@@ -222,7 +260,8 @@ def showFitResult(tag,var,pdf,data,cat,catNames):
         p1.SetBottomMargin(0.2)
         p1.SetGridx(True)
         frame   = var.frame()
-        redData = data.reduce(ROOT.RooFit.Cut("massCat==massCat::%s"%catName))
+        redData = data.reduce(ROOT.RooFit.Cut(
+                                 "massCat==massCat::%s"%catName))
         redData.plotOn(frame)
         cat.setLabel(catName)
         pdf.plotOn(frame,
@@ -283,10 +322,13 @@ def showFitResult(tag,var,pdf,data,cat,catNames):
 
         c.Modified()
         c.Update()
-        c.SaveAs("%s_%s.png"%(tag,catName))
+        plotdir = os.path.join(outDir, 'plots')
+        os.system('mkdir -p %s' % plotdir)
+        for ext in ['png', 'pdf']:
+            c.SaveAs(os.path.join(plotdir, "%s_%s.%s"%(tag,catName,ext)))
 
 
-def runPseudoExperiments(ws,peFileName,nTotal,fCorrect,nPexp):
+def runPseudoExperiments(ws,peFileName,nTotal,fCorrect,nPexp,options):
     """
     run pseudo-experiments
     """
@@ -357,7 +399,7 @@ def runPseudoExperiments(ws,peFileName,nTotal,fCorrect,nPexp):
             fitPullH[trueMtop].Fill((mtopFit.getVal()-trueMtop)/mtopFit.getError())
 
     #save results to a file
-    peFile=ROOT.TFile(peFileName,'RECREATE')
+    peFile=ROOT.TFile(os.path.join(options.outDir, peFileName), 'RECREATE')
     for cat in fitBiasesH:
         fitBiasesH[cat].Fit('gaus','LMQ+')
         fitBiasesH[cat].SetDirectory(peFile)
@@ -387,6 +429,8 @@ def main():
                        help='ROOT file with previous workspace.')
     parser.add_option('-n', '--nPexp', dest='nPexp', default=250, type=int,
                        help='Total # pseudo-experiments.')
+    parser.add_option('-j', '--jobs', dest='jobs', default=1,
+                       type=int, help='Run n jobs in parallel')
     parser.add_option('-t', '--nTotal', dest='nTotal', default=66290,
                        type=float, help='Total # events.')
     parser.add_option('-f', '--fCorrect', dest='fCorrect', default=0.75,
@@ -402,13 +446,16 @@ def main():
     ROOT.gSystem.Load("libUserCodeTopMassSecVtx")
     ROOT.AutoLibraryLoader.enable()
     ROOT.shushRooFit()
-    ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal") # see TError.h - gamma function prints lots of errors when scanning
+    # see TError.h - gamma function prints lots of errors when scanning
+    ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
+
+    os.system('mkdir -p %s' % opt.outDir)
 
     # Check if one needs to create a new workspace or run pseudo-experiments
     print 80*'-'
     if opt.wsFile is None :
         print 'Creating a new workspace file from %s'%opt.input
-        ws = createWorkspace(opt)
+        ws = createWorkspace(options=opt)
     else:
         print 'Reading workspace file from %s'%opt.wsFile
         inF = ROOT.TFile.Open(opt.wsFile)
@@ -416,14 +463,14 @@ def main():
         inF.Close()
     print 80*'-'
 
-
 #    doPEs = True
 #    if doPEs:
 #        print 80*'-'
 #        print ('Running pseudo-experiments for workspace retrieved from %s'
 #                 % opt.wsFile)
 #        runPseudoExperiments(ws=ws,
-#                             peFileName=opt.wsFile.replace('.root','_pe.root'),
+#                             peFileName=opt.wsFile.replace('.root',
+#                                                           '_pe.root'),
 #                             nTotal=opt.nTotal,
 #                             fCorrect=opt.fCorrect,
 #                             nPexp=opt.nPexp)

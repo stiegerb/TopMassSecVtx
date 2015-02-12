@@ -8,7 +8,7 @@ import pickle
 """
 parameterize the signal permutations
 """
-def fitSignalPermutation(ws, tag, massList, SVLmass, options):
+def fitSignalPermutation((ws, tag, massList, SVLmass, options)):
     sig_mass_cats = buildSigMassCats(massList)
     print ' ...processing %s'%tag
     #base correct, signal PDF : free parameters are linear
@@ -95,14 +95,23 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options):
     chList, combList, massList, trkMultList = config
     sig_mass_cats = buildSigMassCats(massList)
 
+    tasklist = []
     for ch in chList:
         if ch=='inclusive': continue
         for comb in combList:
             for ntrk in trkMultList:
                 tag='%s_%d_%s'%(permName,ntrk,ch)
                 if len(comb)>0 : tag += '_' + comb
-                fitSignalPermutation(ws=ws, tag=tag, massList=massList,
-                                     SVLmass=SVLmass, options=options)
+                tasklist.append((ws, tag, massList, SVLmass, options))
+                # fitSignalPermutation(ws=ws, tag=tag, massList=massList,
+                #                      SVLmass=SVLmass, options=options)
+
+    if options.jobs > 1:
+        import multiprocessing
+        multiprocessing.Pool(8).map(fitSignalPermutation, tasklist)
+    else:
+        for task in tasklist:
+            fitSignalPermutation(task)
 
 
 def readConfig(diffhistos):
@@ -313,8 +322,10 @@ def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
 
         c.Modified()
         c.Update()
+        plotdir = os.path.join(outDir, 'plots')
+        os.system('mkdir -p %s' % plotdir)
         for ext in ['png', 'pdf']:
-            c.SaveAs(os.path.join(outDir, "%s_%s.%s"%(tag,catName,ext)))
+            c.SaveAs(os.path.join(plotdir, "%s_%s.%s"%(tag,catName,ext)))
 
 
 def runPseudoExperiments(ws,peFileName,nTotal,fCorrect,nPexp,options):
@@ -418,6 +429,8 @@ def main():
                        help='ROOT file with previous workspace.')
     parser.add_option('-n', '--nPexp', dest='nPexp', default=250, type=int,
                        help='Total # pseudo-experiments.')
+    parser.add_option('-j', '--jobs', dest='jobs', default=1,
+                       type=int, help='Run n jobs in parallel')
     parser.add_option('-t', '--nTotal', dest='nTotal', default=66290,
                        type=float, help='Total # events.')
     parser.add_option('-f', '--fCorrect', dest='fCorrect', default=0.75,

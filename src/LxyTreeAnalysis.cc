@@ -829,7 +829,7 @@ void LxyTreeAnalysis::analyze(){
 
 					TLorentzVector p_lep_rot=RotateLepton(p_lep,isoObjects);
 					svl_pairing.svlmass_rot = (p_lep_rot + p_sv).M();
-					svl_pairing.svldeltar = p_lep_rot.DeltaR(p_sv);
+					svl_pairing.svldeltar_rot = p_lep_rot.DeltaR(p_sv);
 
 					svl_pairs.push_back(svl_pairing);
 				}

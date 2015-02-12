@@ -11,7 +11,8 @@ parameterize the signal permutations
 def parameterizeSignalPermutations(ws,permName,config,SVLmass,options):
 
     print '[parameterizeSignalPermutations] with %s'%permName
-    chList, combList, massList, trkMultList, sig_mass_cats = config
+    chList, combList, massList, trkMultList = config
+    sig_mass_cats = buildSigMassCats(massList)
 
     for ch in chList:
         if ch=='inclusive': continue
@@ -129,13 +130,13 @@ def readConfig(diffhistos):
     combList=list( set(combList) )
     massList=list( set(massList) )
     trkMultList=list( set(trkMultList) )
+    return chList, combList, massList, trkMultList
+def buildSigMassCats(massList):
     sig_mass_cats='massCat['
     for m in sorted(massList):
         sig_mass_cats+='m%d,'%int(m*10)
     sig_mass_cats = sig_mass_cats[:-1]+']'
-
-    return chList, combList, massList, trkMultList, sig_mass_cats
-
+    return sig_mass_cats
 def createWorkspace(options):
     """
     Reads out the histograms from the pickle file and converts them
@@ -152,7 +153,8 @@ def createWorkspace(options):
 
     # Extract the configurations from the diffhistos dictionary
     config = readConfig(diffhistos)
-    chList, combList, massList, trkMultList, sig_mass_cats = config
+    chList, combList, massList, trkMultList = config
+    sig_mass_cats = buildSigMassCats(massList)
     print 'Channels available :',chList
     print 'Combinations available: ',combList
     print 'Masses categories available: ',sig_mass_cats

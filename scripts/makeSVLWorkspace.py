@@ -8,6 +8,87 @@ import pickle
 """
 parameterize the signal permutations
 """
+def fitSignalPermutation(ws, tag, massList, SVLmass, options):
+    sig_mass_cats = buildSigMassCats(massList)
+    print ' ...processing %s'%tag
+    #base correct, signal PDF : free parameters are linear
+    #functions of the top mass
+    ws.factory("RooFormulaVar::%s_p0('@0*(@1-172.5)+@2',{"
+               "slope_%s_p0[0.0],"
+               "mtop,"
+               "offset_%s_p0[0.4,0.1,0.9]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p1('@0*(@1-172.5)+@2',{"
+               "slope_%s_p1[0.01,0,5],"
+               "mtop,"
+               "offset_%s_p1[40,5,150]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p2('@0*(@1-172.5)+@2',{"
+               "slope_%s_p2[0.01,0.001,5],"
+               "mtop,"
+               "offset_%s_p2[15,5,100]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p3('@0*(@1-172.5)+@2',{"
+               "slope_%s_p3[0.01,0.001,5],"
+               "mtop,"
+               "offset_%s_p3[25,5,100]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p4('@0*(@1-172.5)+@2',{"
+               #"slope_%s_p4[0,-1,1],"
+               "slope_%s_p4[0],"
+               "mtop,"
+               "offset_%s_p4[5,-10,10]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p5('@0*(@1-172.5)+@2',{"
+               #"slope_%s_p5[0.05,0,2],"
+               "slope_%s_p5[0],"
+               "mtop,"
+               "offset_%s_p5[10,0.5,100]})"%
+               (tag,tag,tag))
+    ws.factory("RooFormulaVar::%s_p6('@0*(@1-172.5)+@2',{"
+               "slope_%s_p6[0.05,0,2],"
+               #"slope_%s_p6[0],"
+               "mtop,"
+               "offset_%s_p6[0.5,0.1,100]})"%
+               (tag,tag,tag))
+
+    ws.factory("SUM::simplemodel_%s("
+               "%s_p0*RooBifurGauss::%s_f1("
+               "SVLMass,%s_p1,%s_p2,%s_p3),"
+               "RooGamma::%s_f2("
+               "SVLMass,%s_p4,%s_p5,%s_p6))"%
+               (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
+
+    #replicate the base signal PDF for different categories
+    #(top masses available)
+    thePDF=ws.factory("SIMCLONE::model_%s("
+                      " simplemodel_%s, $SplitParam({mtop},%s))"%
+                       (tag, tag, sig_mass_cats))
+
+    #fix mass values and create a mapped data hist
+    histMap=ROOT.MappedRooDataHist()
+    for mass in massList:
+        mcat='%d'%int(mass*10)
+        massNodeVar=ws.var('mtop_m%s'%mcat)
+        massNodeVar.setVal(mass)
+        massNodeVar.setConstant(True)
+        binnedData=ws.data('SVLMass_%s_%s'%(tag,mcat))
+        histMap.add('m%s'%mcat,binnedData)
+
+    #the categorized dataset
+    getattr(ws,'import')(
+                 ROOT.RooDataHist("data_%s"%tag,
+                                  "data_%s"%tag,
+                                  ROOT.RooArgList(SVLmass),
+                                  ws.cat('massCat'),
+                                  histMap.get()) )
+    theData = ws.data("data_%s"%tag)
+    theFitResult = thePDF.fitTo(theData,ROOT.RooFit.Save(True))
+    showFitResult(tag=tag, var=SVLmass, pdf=thePDF,
+                  data=theData, cat=ws.cat('massCat'),
+                  catNames=histMap.getCategories(),
+                  outDir=options.outDir)
+
 def parameterizeSignalPermutations(ws,permName,config,SVLmass,options):
 
     print '[parameterizeSignalPermutations] with %s'%permName
@@ -20,86 +101,8 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options):
             for ntrk in trkMultList:
                 tag='%s_%d_%s'%(permName,ntrk,ch)
                 if len(comb)>0 : tag += '_' + comb
-
-                print ' ...processing %s'%tag
-
-                #base correct, signal PDF : free parameters are linear
-                #functions of the top mass
-                ws.factory("RooFormulaVar::%s_p0('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p0[0.0],"
-                           "mtop,"
-                           "offset_%s_p0[0.4,0.1,0.9]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p1('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p1[0.01,0,5],"
-                           "mtop,"
-                           "offset_%s_p1[40,5,150]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p2('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p2[0.01,0.001,5],"
-                           "mtop,"
-                           "offset_%s_p2[15,5,100]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p3('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p3[0.01,0.001,5],"
-                           "mtop,"
-                           "offset_%s_p3[25,5,100]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p4('@0*(@1-172.5)+@2',{"
-                           #"slope_%s_p4[0,-1,1],"
-                           "slope_%s_p4[0],"
-                           "mtop,"
-                           "offset_%s_p4[5,-10,10]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p5('@0*(@1-172.5)+@2',{"
-                           #"slope_%s_p5[0.05,0,2],"
-                           "slope_%s_p5[0],"
-                           "mtop,"
-                           "offset_%s_p5[10,0.5,100]})"%
-                           (tag,tag,tag))
-                ws.factory("RooFormulaVar::%s_p6('@0*(@1-172.5)+@2',{"
-                           "slope_%s_p6[0.05,0,2],"
-                           #"slope_%s_p6[0],"
-                           "mtop,"
-                           "offset_%s_p6[0.5,0.1,100]})"%
-                           (tag,tag,tag))
-
-                ws.factory("SUM::simplemodel_%s("
-                           "%s_p0*RooBifurGauss::%s_f1("
-                           "SVLMass,%s_p1,%s_p2,%s_p3),"
-                           "RooGamma::%s_f2("
-                           "SVLMass,%s_p4,%s_p5,%s_p6))"%
-                           (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
-
-                #replicate the base signal PDF for different categories
-                #(top masses available)
-                thePDF=ws.factory("SIMCLONE::model_%s("
-                                  " simplemodel_%s, $SplitParam({mtop},%s))"%
-                                   (tag, tag, sig_mass_cats))
-
-                #fix mass values and create a mapped data hist
-                histMap=ROOT.MappedRooDataHist()
-                for mass in massList:
-                    mcat='%d'%int(mass*10)
-                    massNodeVar=ws.var('mtop_m%s'%mcat)
-                    massNodeVar.setVal(mass)
-                    massNodeVar.setConstant(True)
-                    binnedData=ws.data('SVLMass_%s_%s'%(tag,mcat))
-                    histMap.add('m%s'%mcat,binnedData)
-
-                #the categorized dataset
-                getattr(ws,'import')(
-                             ROOT.RooDataHist("data_%s"%tag,
-                                              "data_%s"%tag,
-                                              ROOT.RooArgList(SVLmass),
-                                              ws.cat('massCat'),
-                                              histMap.get()) )
-                theData = ws.data("data_%s"%tag)
-                theFitResult = thePDF.fitTo(theData,ROOT.RooFit.Save(True))
-                showFitResult(tag=tag, var=SVLmass, pdf=thePDF,
-                              data=theData, cat=ws.cat('massCat'),
-                              catNames=histMap.getCategories(),
-                              outDir=options.outDir)
+                fitSignalPermutation(ws=ws, tag=tag, massList=massList,
+                                     SVLmass=SVLmass, options=options)
 
 
 def readConfig(diffhistos):
@@ -128,7 +131,7 @@ def readConfig(diffhistos):
 
     chList=list( set(chList) )
     combList=list( set(combList) )
-    massList=list( set(massList) )
+    massList=sorted(list( set(massList) ))
     trkMultList=list( set(trkMultList) )
     return chList, combList, massList, trkMultList
 def buildSigMassCats(massList):
@@ -155,10 +158,10 @@ def createWorkspace(options):
     config = readConfig(diffhistos)
     chList, combList, massList, trkMultList = config
     sig_mass_cats = buildSigMassCats(massList)
-    print 'Channels available :',chList
-    print 'Combinations available: ',combList
-    print 'Masses categories available: ',sig_mass_cats
-    print 'Track multiplicities available: ',trkMultList
+    print 'Channels available :', chList
+    print 'Combinations available: ', combList
+    print 'Mass points available: ', massList
+    print 'Track multiplicities available: ', trkMultList
 
 
     # Initiate a workspace where the observable is the SVLMass

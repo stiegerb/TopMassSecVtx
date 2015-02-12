@@ -2,6 +2,7 @@
 import os, sys
 import ROOT
 from runPlotter import runPlotter, addPlotterOptions
+from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
 
 from makeSVLControlPlots import SELECTIONS, TREENAME, NBINS
 from makeSVLControlPlots import getHistoFromTree
@@ -72,6 +73,12 @@ if __name__ == "__main__":
 	# parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 	# 				  help='Output directory [default: %default]')
 	(opt, args) = parser.parse_args()
+
+	setTDRStyle()
+	gROOT.SetBatch(True)
+	gStyle.SetOptTitle(0)
+	gStyle.SetOptStat(0)
+
 
 	exit(main(args, opt))
 

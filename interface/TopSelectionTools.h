@@ -38,7 +38,7 @@ data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,fl
     bool passLLiso(     relIso < 0.15 );
     bool passLJiso(     relIso < 0.15 );
     bool passLJvetoiso( relIso < 0.15 );
-    bool passLAntiIso(  relIso > 0.15 );
+    bool passLAntiIso(  relIso > 0.20 );
 
     //set the flags
     ele.setVal("reliso",relIso);
@@ -82,7 +82,7 @@ data::PhysicsObject_t getTopSelectionTaggedMuon(data::PhysicsObject_t mu, MuScle
     bool passLLiso(     relIso < 0.12 );
     bool passLJiso(     relIso < 0.12 );
     bool passLJvetoiso( relIso < 0.12 );
-    bool passLAntiIso(  relIso > 0.12 );
+    bool passLAntiIso(  relIso > 0.20 );
 
     //set the flags
     mu.setVal("reliso",relIso);

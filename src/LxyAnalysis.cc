@@ -14,26 +14,26 @@ LxyAnalysis::LxyAnalysis() : outT_(0), outDir_(0)
 void LxyAnalysis::resetBeautyEvent()
 {
     // Reset all the tree variables
-    bev_.run=-999;
-    bev_.event=-999;
-    bev_.lumi=-999;
-    bev_.evcat=-999;
-    bev_.gevcat=-999;
-    bev_.nvtx=-999;
-    bev_.rho=-999.99;
+    bev_.run    = -999;
+    bev_.event  = -999;
+    bev_.lumi   = -999;
+    bev_.evcat  = -999;
+    bev_.gevcat = -999;
+    bev_.nvtx   = -999;
+    bev_.rho    = -999.99;
 
-    bev_.nw=0;
-    bev_.nl=0;
-    bev_.nj=0;
-    bev_.npf=0;
-    bev_.npfb1=0;
+    bev_.nw     = 0;
+    bev_.nl     = 0;
+    bev_.nj     = 0;
+    bev_.npf    = 0;
+    bev_.npfb1  = 0;
 
     for(size_t i=0; i<bev_.gMaxNWeights; i++) {
         bev_.w[i] = -999.99;
     }
     for(size_t i=0; i<bev_.gMaxNLeps; i++) {
-        bev_.lid[i]  = 0;
-        bev_.glid[i] = 0;
+        bev_.lid[i]   = 0;
+        bev_.glid[i]  = 0;
         bev_.lpt[i]   = -999.99;
         bev_.leta[i]  = -999.99;
         bev_.lphi[i]  = -999.99;
@@ -42,7 +42,7 @@ void LxyAnalysis::resetBeautyEvent()
         bev_.glphi[i] = -999.99;
     }
     for(size_t i=0; i<bev_.gMaxNJets; i++) {
-        bev_.jflav[i] = 0;
+        bev_.jflav[i]  = 0;
         bev_.jpt[i]    = -999.99;
         bev_.jeta[i]   = -999.99;
         bev_.jphi[i]   = -999.99;

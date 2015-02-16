@@ -27,8 +27,8 @@ def writeDataMCHistos(tree, processName, outputFile):
 			                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
 			hist.Write(hist.GetName())
 
-def main(args, opt):
-	os.system('mkdir -p %s'%opt.outDir)
+def main(args, options):
+	os.system('mkdir -p %s'%options.outDir)
 	try:
 
 		treefiles = {} # procname -> filename
@@ -41,17 +41,49 @@ def main(args, opt):
 		print "Please provide a valid input directory"
 		return -1
 
-	outputFileName = os.path.join(opt.outDir, 'datamc_histos.root')
-	ofi = ROOT.TFile(outputFileName, 'recreate')
-	for proc,filename in treefiles.iteritems():
-		tree = ROOT.TFile.Open(filename,'READ').Get(TREENAME)
-		writeDataMCHistos(tree, proc, ofi)
+	outputFileName = os.path.join(options.outDir, 'datamc_histos.root')
+	if not options.cached:
+		ofi = ROOT.TFile(outputFileName, 'recreate')
+		for proc,filename in treefiles.iteritems():
+			tree = ROOT.TFile.Open(filename,'READ').Get(TREENAME)
+			writeDataMCHistos(tree, proc, ofi)
 
-	ofi.Write()
-	ofi.Close()
+		ofi.Write()
+		ofi.Close()
 
-	runPlotter(args[0], opt)
-	runPlotter(outputFileName, opt)
+	scaleFactors = {}
+	if options.dySFFile:
+		from extractDYScaleFactor import extractFactors
+		DYSFs = extractFactors(options.dySFFile)
+
+		## Prepare dictionary of (key,tag) -> scale factor
+		dytag = 'DY+Jets'
+
+		## First get a list of all keys that are to be scaled
+		allkeys = []
+
+		## Need the list of processes
+		from runPlotter import getAllPlotsFrom, openTFile
+		tagsToFilter = ['_ee', '_mm', '_mumu']
+		allkeys += getAllPlotsFrom(openTFile(outputFileName),
+			                       tagsToFilter=tagsToFilter,
+			                       filterByProcsFromJSON=options.json)
+
+		allkeys += getAllPlotsFrom(openTFile(os.path.join(args[0],
+			                                 'MC8TeV_SingleT_t.root')),
+			                       tagsToFilter=tagsToFilter)
+
+		print 'Will scale the following histograms for %s:' % dytag
+		for key in allkeys:
+			if '_ee' in key:
+				scaleFactors[(key, dytag)] = DYSFs['ee']
+				print '  %-25s: %5.3f' % (key, DYSFs['ee'])
+			else:
+				scaleFactors[(key, dytag)] = DYSFs['mm']
+				print '  %-25s: %5.3f' % (key, DYSFs['mm'])
+
+	runPlotter(args[0],        options, scaleFactors=scaleFactors)
+	runPlotter(outputFileName, options, scaleFactors=scaleFactors)
 	return 0
 
 
@@ -72,6 +104,11 @@ if __name__ == "__main__":
 	# 				  help='Verbose mode [default: %default (semi-quiet)]')
 	# parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 	# 				  help='Output directory [default: %default]')
+	parser.add_option('--cached', dest='cached', action="store_true",
+	                  help='Read the histos from the previous run')
+
+	parser.add_option('--dySFFile', dest='dySFFile', default='',
+					  help='File for DY scale factors')
 	(opt, args) = parser.parse_args()
 
 	setTDRStyle()

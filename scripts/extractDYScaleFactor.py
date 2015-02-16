@@ -43,6 +43,7 @@ def extractFactors(inputFile):
 		SF = (tot_data-tot_background)/tot_signal
 		print " -> scale factor: %5.3f" % SF
 		scaleFactors[channame] = SF
+	print 30*'-'
 	return scaleFactors
 
 def main(args, opt):

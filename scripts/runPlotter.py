@@ -70,7 +70,17 @@ def openTFile(url):
         return None
     return rootFile
 
-def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],filterByProcList=[]):
+def getListofProcessesFromJSON(procList, chopPrefix=False):
+    returnlist = []
+    for desc in procList[0][1]:
+        for process in desc['data']:
+            listitem = process['dtag']
+            if chopPrefix:
+                listitem = listitem.split('_',1)[1]
+            returnlist.append(str(listitem))
+    return returnlist
+def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],
+                    filterByProcsFromJSON=None):
     """
     Return a list of all keys deriving from TH1 in a file
     """
@@ -80,11 +90,12 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],filterByProcList=[]):
         key = tkey.GetName()
         keepPlot=False
         for tag in tagsToFilter:
-            if key.find(tag)>=0 :
+            if tag in key:
                 keepPlot=True
         if not keepPlot : continue
         obj = tdir.Get(key)
         if obj.InheritsFrom('TDirectory') :
+            ## FIXME: Potential bug with filterByProcsFromJSON
             allKeysInSubdir = getAllPlotsFrom(obj,chopPrefix)
             for subkey in allKeysInSubdir :
                 if not chopPrefix:
@@ -102,10 +113,15 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],filterByProcList=[]):
                 key = key.replace(tdir.GetName()+'_','')
             toReturn.append(key)
 
-    if len(filterByProcList):
+    if filterByProcsFromJSON:
+        jsonFile = open(filterByProcsFromJSON,'r')
+        procList = json.load(jsonFile,encoding = 'utf-8').items()
+        list_of_processes = getListofProcessesFromJSON(procList,
+                                                       chopPrefix=True)
+
         newlist = []
         for key in toReturn:
-            for proc in filterByProcList:
+            for proc in list_of_processes:
                 if key.endswith('_%s'%proc):
                     newkey = key.replace('_%s'%proc,'')
                     newlist.append(newkey)
@@ -179,11 +195,7 @@ def checkMissingFiles(inDir, jsonUrl):
             print filename
         print 20*'-'
 
-def makePlotPacked(packedargs):
-    key, inDir, procList, xsecweights, options = packedargs
-    return makePlot(key, inDir, procList, xsecweights, options)
-
-def makePlot(key, inDir, procList, xsecweights, options):
+def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
@@ -231,7 +243,14 @@ def makePlot(key, inDir, procList, xsecweights, options):
                                 continue
 
                             fixExtremities(ihist,True,True)
+
+                            ## Apply xsec weights
                             ihist.Scale(xsecweights[str(dtag)])
+
+                            ## Apply external scale factor
+                            if (key,str(title)) in scaleFactors:
+                                print ' ... scaling %s,%s by %5.3f' % (key, str(title), scaleFactors[(key, str(title))])
+                                ihist.Scale(scaleFactors[(key,str(title))])
 
                             if hist is None :
                                 hist = ihist.Clone(dtag+'_'+pName)
@@ -258,7 +277,14 @@ def makePlot(key, inDir, procList, xsecweights, options):
                             continue
 
                         fixExtremities(ihist,True,True)
+
+                        ## Apply xsec weights
                         ihist.Scale(xsecweights[str(dtag)])
+
+                        ## Apply external scale factor
+                        if (key,str(title)) in scaleFactors:
+                            print ' ... scaling %s,%s by %5.3f' % (key, str(title), scaleFactors[(key, str(title))])
+                            ihist.Scale(scaleFactors[(key,str(title))])
 
                         if hist is None :
                             hist = ihist.Clone(dtag+'_'+pName)
@@ -387,17 +413,7 @@ def readXSecWeights(inDir, options):
     cachefile.close()
     print '>>> Produced xsec weights and wrote to cache (.xsecweights.pck)'
     return xsecweights
-def getListofProcessesFromJSON(procList, chopPrefix=False):
-    returnlist = []
-    for desc in procList[0][1]:
-        for process in desc['data']:
-            listitem = process['dtag']
-            if chopPrefix:
-                listitem = listitem.split('_',1)[1]
-            returnlist.append(str(listitem))
-    return returnlist
-
-def runPlotter(inDir, options):
+def runPlotter(inDir, options, scaleFactors={}):
     """
     Loop over the inputs and launch jobs
     """
@@ -423,7 +439,7 @@ def runPlotter(inDir, options):
         plots = getAllPlotsFrom(tdir=baseRootFile,
                                 chopPrefix=True,
                                 tagsToFilter=tagsToFilter,
-                                filterByProcList=list_of_processes)
+                                filterByProcsFromJSON=options.json)
 
     # Input is a directory with files for each process containing histograms
     else:
@@ -484,14 +500,16 @@ def runPlotter(inDir, options):
     # Now plot them
     if options.jobs==0:
         for plot in plots:
-            makePlot(plot, inDir, procList, xsecweights, options)
+            makePlot((plot, inDir, procList,
+                      xsecweights, options, scaleFactors))
 
     else:
         from multiprocessing import Pool
         pool = Pool(options.jobs)
 
-        tasklist = [(p, inDir, procList, xsecweights, options) for p in plots]
-        pool.map(makePlotPacked, tasklist)
+        tasklist = [(p, inDir, procList, xsecweights, options, scaleFactors)
+                                                              for p in plots]
+        pool.map(makePlot, tasklist)
 
 
     if baseRootFile is not None: baseRootFile.Close()

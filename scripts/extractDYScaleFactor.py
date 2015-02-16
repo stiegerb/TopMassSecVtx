@@ -4,19 +4,7 @@ import ROOT
 import pickle
 from runPlotter import openTFile, getAllPlotsFrom
 
-TREENAME = 'SVLInfo'
-
 SIGNAL = 'MC8TeV_DYJetsToLL_50toInf'
-DATA = ['Data8TeV_DoubleElectron2012A', 'Data8TeV_DoubleMuon2012A']
-BACKGROUNDS = [
-	'MC8TeV_TTJets_MSDecays_172v5',
-	'MC8TeV_WW',
-	'MC8TeV_W3Jets',
-	'MC8TeV_TTWJets',
-	'MC8TeV_SingleTbar_tW',
-	'MC8TeV_QCDPt350toInf',
-]
-
 HISTSTOPROCESS = [
 	'DY_mll_ee',
 	'DY_mll_mm'
@@ -58,7 +46,8 @@ def extractFactors(inputFile):
 	return scaleFactors
 
 def main(args, opt):
-	extractFactors(args[0])
+	SFs = extractFactors(args[0])
+	print SFs
 	return 0
 
 

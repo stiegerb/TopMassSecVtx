@@ -212,6 +212,10 @@ void LxyTreeAnalysis::BookSVLHistos(){
 	fHMET_mm = new TH1D("MET_mm", "MET (mumu)",      80, 40.,200.); fHistos.push_back(fHMET_mm); fHMET_mm->SetXTitle("Missing ET [GeV]");
 	fHMET_em = new TH1D("MET_em", "MET (emu)",       100, 0, 200.); fHistos.push_back(fHMET_em); fHMET_em->SetXTitle("Missing ET [GeV]");
 
+    fHDY_mll_ee = new TH1D("DY_mll_ee", "m(ll) in DY ee control", 100, 60., 120.); fHistos.push_back(fHDY_mll_ee); fHDY_mll_ee->SetXTitle("Dilepton invariant mass [GeV]");
+    fHDY_mll_mm = new TH1D("DY_mll_mm", "m(ll) in DY mm control", 100, 60., 120.); fHistos.push_back(fHDY_mll_mm); fHDY_mll_mm->SetXTitle("Dilepton invariant mass [GeV]");
+    fHDY_met_ee = new TH1D("DY_met_ee", "MET in DY ee control",   100, 0., 100.);  fHistos.push_back(fHDY_met_ee); fHDY_met_ee->SetXTitle("Missing ET [GeV]");
+    fHDY_met_mm = new TH1D("DY_met_mm", "MET in DY mm control",   100, 0., 100.);  fHistos.push_back(fHDY_met_mm); fHDY_met_mm->SetXTitle("Missing ET [GeV]");
 }
 void LxyTreeAnalysis::BookHistos(){
 	// charm resonance histos:
@@ -613,6 +617,26 @@ bool LxyTreeAnalysis::selectSVLEvent(){
 	return false;
 }
 
+bool LxyTreeAnalysis::selectDYControlEvent(){
+	int nsvjets(0), nbjets(0);
+	for( int i=0; i < nj; i++){
+		// count as bjet either jet with SV or jet with CSVM tag
+		nbjets  += (svlxy[i] > 0 || jcsv[i] > gCSVWPMedium);
+		nsvjets += (svlxy[i] > 0);
+		// this implies nbjets >= nsvjets
+	}
+
+	// Note that there is a MET > 40 cut already applied in the pre-selection
+
+	// At least one SV in any channel
+	if (nsvjets < 1) return false;
+
+	// |mll-mZ| < 15 GeV
+	if (abs(evcat) == 11*11*1000 || abs(evcat) == 13*13*1000) return true;
+
+	return false;
+}
+
 void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree = new TTree("SVLInfo", "SecVtx Lepton Tree");
 	fSVLInfoTree->Branch("Event",     &fTEvent,     "Event/I");
@@ -896,6 +920,22 @@ void LxyTreeAnalysis::analyze(){
 				(lid[svl.lepindex] < 0 && bid[svl.svindex] == -5 ) )  // el+/mu+ / tbar/bbar
 				fTCombInfo = 0; // wrong
 			fSVLInfoTree->Fill();
+		}
+	}
+
+	// Fill DY control histograms
+	if(selectDYControlEvent()){
+		TLorentzVector p_l1, p_l2;
+		p_l1.SetPtEtaPhiM(lpt[0], leta[0], lphi[0], 0.);
+		p_l2.SetPtEtaPhiM(lpt[1], leta[1], lphi[1], 0.);
+		float mll = (p_l1+p_l2).M();
+		if(abs(evcat) == 11*11*1000){
+			fHDY_mll_ee->Fill(mll,   w[1]*w[4]);
+			fHDY_met_ee->Fill(metpt, w[1]*w[4]);
+		}
+		if(abs(evcat) == 13*13*1000){
+			fHDY_mll_mm->Fill(mll,   w[1]*w[4]);
+			fHDY_met_mm->Fill(metpt, w[1]*w[4]);
 		}
 	}
 }

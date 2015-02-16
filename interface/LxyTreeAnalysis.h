@@ -97,6 +97,7 @@ public:
     virtual void analyze();
     virtual bool selectEvent();
     virtual bool selectSVLEvent();
+    virtual bool selectDYControlEvent();
     virtual int firstTrackIndex(int jetindex);
     void fillJPsiHists(int jetindex);
     void fillD0Hists(int jetindex);
@@ -175,6 +176,8 @@ public:
     TH1D *fHNbJets, *fHNbJets_e, *fHNbJets_m, *fHNbJets_ee, *fHNbJets_mm, *fHNbJets_em;
     TH1D *fHMET, *fHMET_e, *fHMET_m, *fHMET_ee, *fHMET_mm, *fHMET_em;
 
+    // Drell-Yan control region
+    TH1D *fHDY_mll_ee, *fHDY_mll_mm, *fHDY_met_ee, *fHDY_met_mm;
 
     TTree *fSVLInfoTree;
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;

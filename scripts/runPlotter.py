@@ -242,14 +242,19 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                                 rootFile.Close()
                                 continue
 
-                            fixExtremities(ihist,True,True)
+                            if not options.cutUnderOverFlow:
+                                fixExtremities(ihist,True,True)
+                            else:
+                                fixExtremities(ihist,False,False)
 
                             ## Apply xsec weights
                             ihist.Scale(xsecweights[str(dtag)])
 
                             ## Apply external scale factor
                             if (key,str(title)) in scaleFactors:
-                                print ' ... scaling %s,%s by %5.3f' % (key, str(title), scaleFactors[(key, str(title))])
+                                print (' ... scaling %s,%s by %5.3f' %
+                                         (key, str(title),
+                                          scaleFactors[(key, str(title))]))
                                 ihist.Scale(scaleFactors[(key,str(title))])
 
                             if hist is None :
@@ -276,14 +281,19 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                             rootFile.Close()
                             continue
 
-                        fixExtremities(ihist,True,True)
+                        if not options.cutUnderOverFlow:
+                            fixExtremities(ihist,True,True)
+                        else:
+                            fixExtremities(ihist,False,False)
 
                         ## Apply xsec weights
                         ihist.Scale(xsecweights[str(dtag)])
 
                         ## Apply external scale factor
                         if (key,str(title)) in scaleFactors:
-                            print ' ... scaling %s,%s by %5.3f' % (key, str(title), scaleFactors[(key, str(title))])
+                            print (' ... scaling %s,%s by %5.3f' %
+                                     (key, str(title),
+                                      scaleFactors[(key, str(title))]))
                             ihist.Scale(scaleFactors[(key,str(title))])
 
                         if hist is None :
@@ -301,8 +311,20 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                     except AttributeError:
                         continue
 
-                    fixExtremities(ihist,True,True)
+                    if not options.cutUnderOverFlow:
+                        fixExtremities(ihist,True,True)
+                    else:
+                        fixExtremities(ihist,False,False)
+
                     ihist.Scale(xsecweights[str(dtag)])
+
+                    ## Apply external scale factor
+                    if (key,str(title)) in scaleFactors:
+                        print (' ... scaling %s,%s by %5.3f' %
+                                 (key, str(title),
+                                  scaleFactors[(key, str(title))]))
+                        ihist.Scale(scaleFactors[(key,str(title))])
+
 
                     if hist is None: ## Check if it is found
                         hist = ihist.Clone(dtag+'_'+pName)
@@ -523,6 +545,10 @@ def addPlotterOptions(parser):
                       action="store_true",
                       help=('Check a directory for missing files (as '
                             'expected from the json file) and exit.'))
+    parser.add_option('--cutUnderOverFlow', dest='cutUnderOverFlow',
+                      action="store_true",
+                      help=('Do not add under and overflow in the '
+                            'first and last bins.'))
     parser.add_option('-d', '--debug', dest='debug', action="store_true",
                       help='Dump the event yields table for each plot')
     parser.add_option('--normToData', dest='normToData', action="store_true",

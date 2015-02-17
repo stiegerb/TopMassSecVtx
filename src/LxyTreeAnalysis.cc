@@ -242,6 +242,7 @@ void LxyTreeAnalysis::WriteHistos(){
 
 void LxyTreeAnalysis::BookCharmTree() {
 	fCharmInfoTree = new TTree("CharmInfo", "Charm Info Tree");
+	fCharmInfoTree->Branch("EvCat",        &fTCharmEvCat,   "EvCat/I");
 	fCharmInfoTree->Branch("CandType",     &fTCandType,     "CandType/I");
 	fCharmInfoTree->Branch("CandMass",     &fTCandMass,     "CandMass/F");
 	fCharmInfoTree->Branch("CandPt",       &fTCandPt,       "CandPt/F");
@@ -258,6 +259,7 @@ void LxyTreeAnalysis::BookCharmTree() {
 	fCharmInfoTree->Branch("SumPzCharged", &fTSumPzCharged, "SumPzCharged/F");
 }
 void LxyTreeAnalysis::ResetCharmTree() {
+	fTCharmEvCat   = -99;
 	fTCandType     = -99;
 	fTCandMass     = -99.99;
 	fTCandPt       = -99.99;
@@ -331,7 +333,8 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 									TLorentzVector p_cand,
 									TLorentzVector p_jet,
 									float hardpt, float softpt){
-	fTCandType = type;
+	fTCandType   = type;
+	fTCharmEvCat = evcat;
 	fTCandMass  = p_cand.M();
 	fTCandPt    = p_cand.Pt();
 	fTCandEta   = p_cand.Eta();

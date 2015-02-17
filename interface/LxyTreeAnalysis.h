@@ -166,7 +166,7 @@ public:
     TH1D *fHMDpme, *fHMDpmmu, *fHMDpmlep;
 
     TTree *fCharmInfoTree;
-    Int_t   fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
+    Int_t   fTCharmEvCat, fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
     Float_t fTCandMass, fTCandPt, fTCandPz, fTCandEta;
     Float_t fTHardTkPt, fTSoftTkPt;
     Float_t fTCandPtRel, fTCandDeltaR;

@@ -348,6 +348,7 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 }
 
 void LxyTreeAnalysis::fillJPsiHists(int jetindex) {
+	if(jetindex < 0) return;
 	TLorentzVector p_track1, p_track2;
 
 	for (int i = 0; i < npf; ++i)
@@ -397,6 +398,7 @@ void LxyTreeAnalysis::fillJPsiHists(int jetindex) {
 	}
 }
 void LxyTreeAnalysis::fillD0Hists(int jetindex){
+	if(jetindex < 0) return;
 	TLorentzVector p_track1, p_track2;
 	int nstart = firstTrackIndex(jetindex);
 
@@ -426,7 +428,7 @@ void LxyTreeAnalysis::fillD0Hists(int jetindex){
 	// less than three tracks for this jet
 	if (pfjetidx[nstart+2]!=jetindex ) return;
 
-	// permutations of hardest three trackmass
+	// permutations of hardest three tracks
 	// including interchanging them!
 	int p1[] = {nstart,   nstart,   nstart+1, nstart+1, nstart+2, nstart+2};
 	int p2[] = {nstart+1, nstart+2, nstart+2, nstart,   nstart,   nstart+1};
@@ -492,6 +494,7 @@ void LxyTreeAnalysis::fillD0Hists(int jetindex){
 	}
 }
 void LxyTreeAnalysis::fillDpmHists(int jetindex){
+	if(jetindex < 0) return;
 	int nstart = firstTrackIndex(jetindex);
 	int ntracks = 3;
 
@@ -719,37 +722,55 @@ void LxyTreeAnalysis::analyze(){
 	// Charm resonance stuff:
 	ResetCharmTree();
 
-	float maxcsv = -1.;
-	int maxind=-1;
-	float second_max=-1.0;
-	int maxind2=-1;
+	float maxcsv(-1.), maxcsv2(-1.);
+	int maxind(-1), maxind2(-1);
 
 	for(int k = 0; k < nj; k++) {
 		// use >= n not just > as max and max2 can have same value. Ex:{1,2,3,3}
 		if(jcsv[k] >= maxcsv) {
-			second_max=maxcsv;
+			maxcsv2=maxcsv;
+			maxind2=maxind;
+
 			maxcsv=jcsv[k];
 			maxind=k;
-			maxind2=maxind;
 		}
-		else if(jcsv[k] > second_max) {
-			second_max=jcsv[k];
+		else if(jcsv[k] > maxcsv2) {
+			maxcsv2=jcsv[k];
 			maxind2=k;
 		}
 	}
 
+	if (maxind < 0 && maxind2 < 0){
+		// In case we didn't find ANY jets with csv > 0,
+		// just take the hardest two jets
+		maxind = 0;
+		maxind2 = 1;
+	}
+	else if (maxind >= 0 && maxind2 < 0){
+		// In case we only found ONE jet with csv > 0,
+		// Take the next-hardest one (or the hardest altogether)
+		// There are only two options:
+		// - the one we found was the hardest one -> take second one
+		if(maxind == 0) maxind2 = 1;
+		// - the one we found was NOT the hardest one -> take the first one
+		else maxind2 = 0;
+	}
+
+
+	// if (maxind < 0 || maxind2 < 0){
+	// 	std::cout << maxind << " " << maxind2 << " " << maxcsv << " " << maxcsv2 << std::endl;
+	// }
+
 	if(selectEvent()){
-		// J/Psi ( + K)
 		fillJPsiHists(maxind);
-		fillJPsiHists(maxind2);
-
-		// D0
 		fillD0Hists(maxind);
-		fillD0Hists(maxind2);
-
-		// D+
 		fillDpmHists(maxind);
-		fillDpmHists(maxind2);
+
+		if(maxind2 != maxind){ // remove double counting
+			fillJPsiHists(maxind2);
+			fillD0Hists(maxind2);
+			fillDpmHists(maxind2);
+		}
 	}
 
 

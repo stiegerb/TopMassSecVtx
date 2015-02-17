@@ -345,7 +345,6 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 	fTSumPzCharged = p_trks.Pz();
 	fCharmInfoTree->Fill();
 	return;
-
 }
 
 void LxyTreeAnalysis::fillJPsiHists(int jetindex) {
@@ -613,6 +612,13 @@ bool LxyTreeAnalysis::selectSVLEvent(){
 		if (nsvjets > 1) return true; // two SV
 		if (nbjets > 1) return true;  // one SV and one CSVM
 		return false;
+	}
+
+	// QCD control sample (non-isolated leptons)
+	if (abs(evcat) == 11*100 || abs(evcat) == 13*100){
+		if (nj < 4) return false;
+		if (nbjets > 1 || nsvjets > 1) return false; // suppress ttbar
+		return true;
 	}
 	return false;
 }

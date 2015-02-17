@@ -202,6 +202,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     newPlot.plotformats = ['pdf', 'png']
     newPlot.ratiorange = (0.4,2.3)
     baseRootFile = None
+    procsToExclude = options.excludeProcesses.split(',')
     if inDir.endswith('.root'):
         baseRootFile = openTFile(inDir)
     for proc_tag in procList:
@@ -215,9 +216,20 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
             data = desc['data']
             mctruthmode = getByLabel(desc,'mctruthmode')
 
+            # Exclude processes specified in options.excludeProcesses
+            skipproc = False
+            for exproc in procsToExclude:
+                if exproc in title: skipproc = True
+            if skipproc: continue
+
             hist = None
             for process in data: # loop on datasets for process
                 dtag = getByLabel(process,'dtag','')
+
+                # Exclude processes specified in options.excludeProcesses
+                for exproc in procsToExclude:
+                    if exproc in dtag: skipproc = True
+                if skipproc: continue
 
                 if baseRootFile is None:
                     if options.split: # Files are split
@@ -443,7 +455,6 @@ def runPlotter(inDir, options, scaleFactors={}):
 
     jsonFile = open(options.json,'r')
     procList = json.load(jsonFile,encoding = 'utf-8').items()
-    list_of_processes = getListofProcessesFromJSON(procList, chopPrefix=True)
 
     # Make a survey of *all* existing plots
     plots = []
@@ -555,6 +566,9 @@ def addPlotterOptions(parser):
                       help='Force normalization to data')
     parser.add_option('-f', '--filter', dest='filter', default="",
                       help='csv list of plots to produce')
+    parser.add_option('-x', '--excludeProcesses', dest='excludeProcesses',
+                      default="",
+                      help='csv list of processes to exclude')
     parser.add_option('-v', '--verbose', dest='verbose', action="store",
                       type='int', default=1,
                       help='Verbose mode [default: %default (semi-quiet)]')

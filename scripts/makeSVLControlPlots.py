@@ -18,18 +18,18 @@ COMMONWEIGHT = "Weight[1]*Weight[4]*JESWeight[0]"
 
 TREENAME = 'SVLInfo'
 SELECTIONS = [
-	('inclusive', '1',              '#geq 1 lepton'),
+	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),
 	('ee',        'EvCat==-121',    'ee'),
 	('emu',       'EvCat==-143',    'e#mu'),
 	('mumu',      'EvCat==-169',    '#mu#mu'),
 	('e',         'abs(EvCat)==11', 'e'),
 	('mu',        'abs(EvCat)==13', '#mu'),
-	('inclusive_mrank1',         '1 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#geq 1 lepton'),
-	('ee_mrank1',      'EvCat==-121 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'ee'),
-	('emu_mrank1',     'EvCat==-143 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'e#mu'),
-	('mumu_mrank1',    'EvCat==-169 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#mu#mu'),
-	('e_mrank1',    'abs(EvCat)==11 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'e'),
-	('mu_mrank1',   'abs(EvCat)==13 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#mu'),
+	('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
+	('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
+	('emu_mrank1',       'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
+	('mumu_mrank1',      'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
+	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
+	('mu_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
 ]
 
 CONTROLVARS = [
@@ -66,7 +66,7 @@ def projectFromTree(hist, varname, sel, tree, option=''):
 	except Exception, e:
 		raise e
 
-def getHistoFromTree(tree, sel, var="SVLMass",
+def getHistoFromTree(tree, sel='', var="SVLMass",
 	         hname="histo",
 	         nbins=NBINS, xmin=XMIN, xmax=XMAX,
 	         titlex='',
@@ -83,7 +83,7 @@ def getHistoFromTree(tree, sel, var="SVLMass",
 	histo.SetDirectory(0)
 	return histo
 
-def getSVLHistos(tree, sel,
+def getSVLHistos(tree, sel='',
 				 var="SVLMass",
 				 tag='', nbins=NBINS, xmin=XMIN, xmax=XMAX,
 				 titlex=''):
@@ -105,7 +105,7 @@ def getSVLHistos(tree, sel,
 	h_unm.SetLineColor(ROOT.kSpring-5)
 	return h_tot, h_cor, h_wro, h_unm
 
-def getTopPtHistos(tree, sel,
+def getTopPtHistos(tree, sel='',
 				 var="SVLMass",
 				 tag='',
 				 nbins=NBINS,xmin=XMIN, xmax=XMAX,
@@ -125,7 +125,7 @@ def getTopPtHistos(tree, sel,
 	h_tup.SetLineColor(ROOT.kRed-6)
 	return h_tpt, h_tup
 
-def getBfragHistos(tree, sel,
+def getBfragHistos(tree, sel='',
 				   var="SVLMass",
 				   tag='',
 				   nbins=NBINS,xmin=XMIN, xmax=XMAX,
@@ -151,7 +151,7 @@ def getBfragHistos(tree, sel,
 	h_bfsof.SetLineColor(ROOT.kGreen)
 	return h_bfrag, h_bfhar, h_bfsof
 
-def getJESHistos(tree, sel,
+def getJESHistos(tree, sel='',
 				 var="SVLMass",
 				 tag='',
 				 nbins=NBINS, xmin=XMIN, xmax=XMAX,
@@ -172,7 +172,7 @@ def getJESHistos(tree, sel,
 
 	return h_jesup, h_jesdn
 
-def getNTrkHistos(tree, sel,
+def getNTrkHistos(tree, sel='',
 		  var="SVLMass",
 		  tag='',
 		  nbins=NBINS, xmin=XMIN, xmax=XMAX,

@@ -89,7 +89,8 @@ public:
                                int trackind2, float mass2,
                                int trackind3, float mass3);
     virtual void FillCharmTree(int type, int jind,
-                               TLorentzVector p_cand, TLorentzVector p_jet);
+                               TLorentzVector p_cand, TLorentzVector p_jet,
+                               float hardpt=-88.88, float softpt=-88.88);
 
     virtual void BookSVLTree();
     virtual void ResetSVLTree();
@@ -165,8 +166,9 @@ public:
     TH1D *fHMDpme, *fHMDpmmu, *fHMDpmlep;
 
     TTree *fCharmInfoTree;
-    Int_t   fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
+    Int_t   fTCharmEvCat, fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
     Float_t fTCandMass, fTCandPt, fTCandPz, fTCandEta;
+    Float_t fTHardTkPt, fTSoftTkPt;
     Float_t fTCandPtRel, fTCandDeltaR;
     Float_t fTJetPt, fTJetEta, fTSumPtCharged, fTJetPz, fTSumPzCharged;
 

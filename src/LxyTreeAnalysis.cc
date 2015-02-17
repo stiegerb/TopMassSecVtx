@@ -243,6 +243,7 @@ void LxyTreeAnalysis::WriteHistos(){
 
 void LxyTreeAnalysis::BookCharmTree() {
 	fCharmInfoTree = new TTree("CharmInfo", "Charm Info Tree");
+	fCharmInfoTree->Branch("EvCat",        &fTCharmEvCat,   "EvCat/I");
 	fCharmInfoTree->Branch("CandType",     &fTCandType,     "CandType/I");
 	fCharmInfoTree->Branch("CandMass",     &fTCandMass,     "CandMass/F");
 	fCharmInfoTree->Branch("CandPt",       &fTCandPt,       "CandPt/F");
@@ -253,10 +254,13 @@ void LxyTreeAnalysis::BookCharmTree() {
 	fCharmInfoTree->Branch("JetPt",        &fTJetPt,        "JetPt/F");
 	fCharmInfoTree->Branch("JetEta",       &fTJetEta,       "JetEta/F");
 	fCharmInfoTree->Branch("JetPz",        &fTJetPz,        "JetPz/F");
+	fCharmInfoTree->Branch("HardTkPt",     &fTHardTkPt,     "HardTkPt/F");
+	fCharmInfoTree->Branch("SoftTkPt",     &fTSoftTkPt,     "SoftTkPt/F");
 	fCharmInfoTree->Branch("SumPtCharged", &fTSumPtCharged, "SumPtCharged/F");
 	fCharmInfoTree->Branch("SumPzCharged", &fTSumPzCharged, "SumPzCharged/F");
 }
 void LxyTreeAnalysis::ResetCharmTree() {
+	fTCharmEvCat   = -99;
 	fTCandType     = -99;
 	fTCandMass     = -99.99;
 	fTCandPt       = -99.99;
@@ -267,6 +271,8 @@ void LxyTreeAnalysis::ResetCharmTree() {
 	fTJetPt        = -99.99;
 	fTJetEta       = -99.99;
 	fTJetPz        = -99.99;
+	fTHardTkPt     = -99.99;
+	fTSoftTkPt     = -99.99;
 	fTSumPtCharged = -99.99;
 	fTSumPzCharged = -99.99;
 }
@@ -295,7 +301,10 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 	p_cand = p_track1+p_track2;
 	p_jet.SetPtEtaPhiM(jpt[jind], jeta[jind], jphi[jind], 0.);
 
-	FillCharmTree(type, jind, p_cand, p_jet);
+	float hardpt = std::max(pfpt[ind1], pfpt[ind2]);
+	float softpt = std::min(pfpt[ind1], pfpt[ind2]);
+
+	FillCharmTree(type, jind, p_cand, p_jet, hardpt, softpt);
 	return;
 }
 void LxyTreeAnalysis::FillCharmTree(int type, int jind,
@@ -315,13 +324,18 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 	p_cand = p_track1+p_track2+p_track3;
 	p_jet.SetPtEtaPhiM(jpt[jind], jeta[jind], jphi[jind], 0.);
 
-	FillCharmTree(type, jind, p_cand, p_jet);
+	float hardpt = std::max(pfpt[ind3], std::max(pfpt[ind1], pfpt[ind2]));
+	float softpt = std::min(pfpt[ind3], std::min(pfpt[ind1], pfpt[ind2]));
+
+	FillCharmTree(type, jind, p_cand, p_jet, hardpt, softpt);
 	return;
 }
 void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 									TLorentzVector p_cand,
-									TLorentzVector p_jet){
-	fTCandType = type;
+									TLorentzVector p_jet,
+									float hardpt, float softpt){
+	fTCandType   = type;
+	fTCharmEvCat = evcat;
 	fTCandMass  = p_cand.M();
 	fTCandPt    = p_cand.Pt();
 	fTCandEta   = p_cand.Eta();
@@ -341,6 +355,9 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 		p_tk.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], gMassPi);
 		p_trks = p_trks + p_tk;
 	}
+
+	fTHardTkPt = hardpt;
+	fTSoftTkPt = softpt;
 
 	fTSumPtCharged = p_trks.Pt();
 	fTSumPzCharged = p_trks.Pz();

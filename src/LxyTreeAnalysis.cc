@@ -12,6 +12,7 @@ const float gMassPi = 0.1396;
 const float gMassMu = 0.1057;
 
 const float gCSVWPMedium = 0.783;
+const float gCSVWPLoose = 0.405;
 
 const int njetbins = 6;
 const int nsvbins = 4;
@@ -597,6 +598,16 @@ void LxyTreeAnalysis::fillDpmHists(int jetindex){
 	}
 }
 bool LxyTreeAnalysis::selectEvent(){
+	float btagWP = gCSVWPLoose;
+	if (abs(evcat) == 11 || abs(evcat) == 13){
+		btagWP = gCSVWPMedium;
+	}
+	int nbjets(0);
+	for( int i=0; i < nj; i++) nbjets += (jcsv[i] > btagWP);
+
+	// Require at least one b-tagged jet (loose for dilep, med for l+jets)
+	if ( nbjets < 1 ) return false;
+
 	if (abs(evcat) == 11*13) return true;                // emu
 	if (abs(evcat) == 11*11 && metpt > 40.) return true; // ee
 	if (abs(evcat) == 13*13 && metpt > 40.) return true; // mumu
@@ -772,11 +783,6 @@ void LxyTreeAnalysis::analyze(){
 		// - the one we found was NOT the hardest one -> take the first one
 		else maxind2 = 0;
 	}
-
-
-	// if (maxind < 0 || maxind2 < 0){
-	// 	std::cout << maxind << " " << maxind2 << " " << maxcsv << " " << maxcsv2 << std::endl;
-	// }
 
 	if(selectEvent()){
 		fillJPsiHists(maxind);

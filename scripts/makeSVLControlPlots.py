@@ -338,6 +338,7 @@ def plotFracVsTopMass(fcor, fwro, funm, tag, subtag, oname):
 	for ext in ['.pdf','.png']:
 		tcanv.SaveAs(oname+ext)
 
+
 def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)
 	try:
@@ -358,8 +359,7 @@ def main(args, opt):
 			massfiles[mass] = os.path.join(args[0],'mass_scan',filename)
 
 		## nominal file
-		massfiles[172.5] = os.path.join(args[0],
-										'MC8TeV_TTJets_MSDecays_172v5.root')
+		massfiles[172.5] = os.path.join(args[0],'MC8TeV_TTJets_MSDecays_172v5.root')
 
 		systfiles = {} # systname -> filename
 		for systname, systtag, systfile in SYSTS:

@@ -1,6 +1,7 @@
 #ifndef LxyTreeAnalysis_cxx
 #define LxyTreeAnalysis_cxx
 #include "UserCode/TopMassSecVtx/interface/LxyTreeAnalysis.h"
+#include "UserCode/TopMassSecVtx/interface/MacroUtils.h"
 
 #include "Math/VectorUtil.h"
 
@@ -213,10 +214,17 @@ void LxyTreeAnalysis::BookSVLHistos(){
 	fHMET_mm = new TH1D("MET_mm", "MET (mumu)",      80, 40.,200.); fHistos.push_back(fHMET_mm); fHMET_mm->SetXTitle("Missing ET [GeV]");
 	fHMET_em = new TH1D("MET_em", "MET (emu)",       100, 0, 200.); fHistos.push_back(fHMET_em); fHMET_em->SetXTitle("Missing ET [GeV]");
 
-    fHDY_mll_ee = new TH1D("DY_mll_ee", "m(ll) in DY ee control", 100, 60., 120.); fHistos.push_back(fHDY_mll_ee); fHDY_mll_ee->SetXTitle("Dilepton invariant mass [GeV]");
-    fHDY_mll_mm = new TH1D("DY_mll_mm", "m(ll) in DY mm control", 100, 60., 120.); fHistos.push_back(fHDY_mll_mm); fHDY_mll_mm->SetXTitle("Dilepton invariant mass [GeV]");
-    fHDY_met_ee = new TH1D("DY_met_ee", "MET in DY ee control",   100, 0., 100.);  fHistos.push_back(fHDY_met_ee); fHDY_met_ee->SetXTitle("Missing ET [GeV]");
-    fHDY_met_mm = new TH1D("DY_met_mm", "MET in DY mm control",   100, 0., 100.);  fHistos.push_back(fHDY_met_mm); fHDY_met_mm->SetXTitle("Missing ET [GeV]");
+	fHMjj  = new TH1D("Mjj",    "Mjj (inclusive);M_{jj} [GeV]",100,0,250);        fHistos.push_back(fHMjj);
+	fHMjj_e  = new TH1D("Mjj_e",    "Mjj (single e);M_{jj} [GeV]",100,0,250);       fHistos.push_back(fHMjj_e);
+	fHMjj_m  = new TH1D("Mjj_m",    "Mjj (single mu);M_{jj} [GeV]",100,0,250);      fHistos.push_back(fHMjj_m);
+	fHMT  = new TH1D("Mt",    "MT (inclusive);M_{T} [GeV]",100,0,250);        fHistos.push_back(fHMT);
+	fHMT_e  = new TH1D("Mt_e",    "MT (single e);M_{T} [GeV]",100,0,250);       fHistos.push_back(fHMT_e);
+	fHMT_m  = new TH1D("Mt_m",    "MT (single mu);M_{T} [GeV]",100,0,250);      fHistos.push_back(fHMT_m);
+
+	fHDY_mll_ee = new TH1D("DY_mll_ee", "m(ll) in DY ee control", 100, 60., 120.); fHistos.push_back(fHDY_mll_ee); fHDY_mll_ee->SetXTitle("Dilepton invariant mass [GeV]");
+	fHDY_mll_mm = new TH1D("DY_mll_mm", "m(ll) in DY mm control", 100, 60., 120.); fHistos.push_back(fHDY_mll_mm); fHDY_mll_mm->SetXTitle("Dilepton invariant mass [GeV]");
+	fHDY_met_ee = new TH1D("DY_met_ee", "MET in DY ee control",   100, 0., 100.);  fHistos.push_back(fHDY_met_ee); fHDY_met_ee->SetXTitle("Missing ET [GeV]");
+	fHDY_met_mm = new TH1D("DY_met_mm", "MET in DY mm control",   100, 0., 100.);  fHistos.push_back(fHDY_met_mm); fHDY_met_mm->SetXTitle("Missing ET [GeV]");
 }
 void LxyTreeAnalysis::BookHistos(){
 	// charm resonance histos:
@@ -805,7 +813,7 @@ void LxyTreeAnalysis::analyze(){
 	std::vector<int> svindices(2,-1);
 	int nsvjets(0), nbjets(0);
 	float lxymax1(0), lxymax2(0);
-
+	std::vector<TLorentzVector> lightJetsP4;
 	for( int i=0; i < nj; i++){
 		if(svlxy[i]>0){
 			nsvjets++;
@@ -823,20 +831,34 @@ void LxyTreeAnalysis::analyze(){
 				}
 			}
 		}
+		else
+		  {
+		    if(jcsv[i] > 0.783) nbjets++;
+		    else {
+		      TLorentzVector p4; p4.SetPtEtaPhiM(jpt[i], jeta[i], jphi[i], 0.);
+		      lightJetsP4.push_back(p4);
+		    }
+		  }
 	}
 	if(svindices[1]<0) svindices.pop_back();
 	if(svindices[0]<0) svindices.pop_back();
-
+	
 	std::vector<TLorentzVector> isoObjects;
 	for (int il = 0; il < nl; ++il) { TLorentzVector p4; p4.SetPtEtaPhiM(lpt[il], leta[il], lphi[il], 0.); isoObjects.push_back(p4); }
 	for (int ij = 0; ij < nj; ++ij) { TLorentzVector p4; p4.SetPtEtaPhiM(jpt[ij], jeta[ij], jphi[ij], 0.); isoObjects.push_back(p4); }
 
+	TLorentzVector metP4; metP4.SetPtEtaPhiM(metpt*cos(metphi),metpt*sin(metphi),0,metpt);
+	float mT(utils::cmssw::getMT<TLorentzVector,TLorentzVector>( isoObjects[0], metP4) );
+	float mjj( lightJetsP4.size()>=2 ? (lightJetsP4[0]+lightJetsP4[1]).M() : -99);
+					     
 	if(selectSVLEvent()){
 		// Fill some control histograms:
 		fHNJets   ->Fill(nj,      w[1]*w[4]);
 		fHNSVJets ->Fill(nsvjets, w[1]*w[4]);
 		fHNbJets  ->Fill(nbjets,  w[1]*w[4]);
 		fHMET     ->Fill(metpt,   w[1]*w[4]);
+		fHMT->Fill(mT, w[1]*w[4]);
+		fHMjj->Fill(mjj, w[1]*w[4]);
 		if (abs(evcat) == 11*13){
 			fHNJets_em   ->Fill(nj,      w[1]*w[4]);
 			fHNSVJets_em ->Fill(nsvjets, w[1]*w[4]);
@@ -857,14 +879,18 @@ void LxyTreeAnalysis::analyze(){
 		}
 		if (abs(evcat) == 11){
 			fHNJets_e   ->Fill(nj,      w[1]*w[4]);
+			fHMjj_e     ->Fill(mjj,     w[1]*w[4]);
 			fHNSVJets_e ->Fill(nsvjets, w[1]*w[4]);
 			fHNbJets_e  ->Fill(nbjets,  w[1]*w[4]);
+			fHMT_e->Fill(mT, w[1]*w[4]);
 			fHMET_e     ->Fill(metpt,   w[1]*w[4]);
 		}
 		if (abs(evcat) == 13){
 			fHNJets_m   ->Fill(nj,      w[1]*w[4]);
+			fHMjj_m     ->Fill(mjj,     w[1]*w[4]);
 			fHNSVJets_m ->Fill(nsvjets, w[1]*w[4]);
 			fHNbJets_m  ->Fill(nbjets,  w[1]*w[4]);
+			fHMT_m->Fill(mT, w[1]*w[4]);
 			fHMET_m     ->Fill(metpt,   w[1]*w[4]);
 		}
 

@@ -89,7 +89,8 @@ public:
                                int trackind2, float mass2,
                                int trackind3, float mass3);
     virtual void FillCharmTree(int type, int jind,
-                               TLorentzVector p_cand, TLorentzVector p_jet);
+                               TLorentzVector p_cand, TLorentzVector p_jet,
+                               float hardpt=-88.88, float softpt=-88.88);
 
     virtual void BookSVLTree();
     virtual void ResetSVLTree();
@@ -97,6 +98,7 @@ public:
     virtual void analyze();
     virtual bool selectEvent();
     virtual bool selectSVLEvent();
+    virtual bool selectDYControlEvent();
     virtual int firstTrackIndex(int jetindex);
     void fillJPsiHists(int jetindex);
     void fillD0Hists(int jetindex);
@@ -164,8 +166,9 @@ public:
     TH1D *fHMDpme, *fHMDpmmu, *fHMDpmlep;
 
     TTree *fCharmInfoTree;
-    Int_t   fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
+    Int_t   fTCharmEvCat, fTCandType; // J/Psi = 443, D0 = 421, D+ = 411
     Float_t fTCandMass, fTCandPt, fTCandPz, fTCandEta;
+    Float_t fTHardTkPt, fTSoftTkPt;
     Float_t fTCandPtRel, fTCandDeltaR;
     Float_t fTJetPt, fTJetEta, fTSumPtCharged, fTJetPz, fTSumPzCharged;
 
@@ -174,8 +177,12 @@ public:
     TH1D *fHNSVJets, *fHNSVJets_e, *fHNSVJets_m, *fHNSVJets_ee, *fHNSVJets_mm, *fHNSVJets_em;
     TH1D *fHNbJets, *fHNbJets_e, *fHNbJets_m, *fHNbJets_ee, *fHNbJets_mm, *fHNbJets_em;
     TH1D *fHMET, *fHMET_e, *fHMET_m, *fHMET_ee, *fHMET_mm, *fHMET_em;
+
     TH1D *fHMjj, *fHMjj_e, *fHMjj_m;
     TH1D *fHMT, *fHMT_e, *fHMT_m;
+
+    // Drell-Yan control region
+    TH1D *fHDY_mll_ee, *fHDY_mll_mm, *fHDY_met_ee, *fHDY_met_mm;
 
     TTree *fSVLInfoTree;
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;

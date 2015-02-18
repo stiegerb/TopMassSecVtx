@@ -13,7 +13,7 @@ struct BeautyEvent_t
   static const unsigned gMaxNJets = 50;
   static const unsigned gMaxNSV = 50;
   static const unsigned gMaxNPFCands = 1000;
-  
+
   Int_t run, lumi, event, evcat, gevcat, nvtx;
   Float_t rho;
   // Weights
@@ -37,7 +37,7 @@ struct BeautyEvent_t
   Float_t svpt[gMaxNSV],sveta[gMaxNSV],svphi[gMaxNSV];
   Float_t svmass[gMaxNSV],svntk[gMaxNSV],svlxy[gMaxNSV],svlxyerr[gMaxNSV];
   // Gen Bhadrons
-  Int_t bid[gMaxNSV],bhadid[gMaxNSV];
+  Int_t bid[gMaxNSV],bhadid[gMaxNSV], bhadneutrino[gMaxNSV];
   Float_t bpt[gMaxNSV],beta[gMaxNSV],bphi[gMaxNSV],bwgt[gMaxNSV][3];
   Float_t bhadpt[gMaxNSV],bhadeta[gMaxNSV],bhadphi[gMaxNSV];
   Float_t bhadmass[gMaxNSV],bhadlxy[gMaxNSV];
@@ -60,7 +60,7 @@ class LxyAnalysis
  public:
   LxyAnalysis();
   void attachToDir(TDirectory *outDir);
-  inline BeautyEvent_t &getBeautyEvent(){ return bev_; }	
+  inline BeautyEvent_t &getBeautyEvent(){ return bev_; }
   void analyze(std::vector<data::PhysicsObject_t *> &leptons, std::vector<data::PhysicsObject_t *> &jets, std::vector<LorentzVector> &mets, data::PhysicsObjectCollection_t &pf, data::PhysicsObjectCollection_t &mctruth);
   void save();
   void resetBeautyEvent();

@@ -682,7 +682,7 @@ data::PhysicsObjectCollection_t DataEventSummaryHandler::getPhysicsObject(int co
             p.set("id",evSummary_.mc_id[imc]);
             p.set("status",evSummary_.mc_status[imc]);
             p.setVal("lxy",evSummary_.mc_lxy[imc]);
-	    p.setFlag("genNeutrino",evSummary_.mc_genNeutrino[imc]);
+            p.setFlag("genNeutrino",evSummary_.mc_genNeutrino[imc]);
             coll.push_back(p);
         }
         break;

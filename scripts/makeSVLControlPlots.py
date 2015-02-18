@@ -2,9 +2,7 @@
 import os, sys
 import ROOT
 import pickle
-from UserCode.TopMassSecVtx.PlotUtils import RatioPlot, getRatio, setMaximums
-from UserCode.TopMassSecVtx.CMS_lumi import CMS_lumi
-from runPlotter import openTFile
+from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
 from numpy import roots
 
 # MASSES = [163.5, 166.5, 169.5, 171.5, 172.5, 173.5, 175.5, 178.5, 181.5]
@@ -16,22 +14,22 @@ MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
 
 #NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
 NTRKBINS = [(2,3), (3,4), (4,1000)]
-
+COMMONWEIGHT = "Weight[1]*Weight[4]*JESWeight[0]"
 
 TREENAME = 'SVLInfo'
 SELECTIONS = [
-	('inclusive', '1',              '#geq 1 lepton'),
+	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),
 	('ee',        'EvCat==-121',    'ee'),
 	('emu',       'EvCat==-143',    'e#mu'),
 	('mumu',      'EvCat==-169',    '#mu#mu'),
 	('e',         'abs(EvCat)==11', 'e'),
 	('mu',        'abs(EvCat)==13', '#mu'),
-	('inclusive_mrank1',         '1 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#geq 1 lepton'),
-	('ee_mrank1',      'EvCat==-121 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'ee'),
-	('emu_mrank1',     'EvCat==-143 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'e#mu'),
-	('mumu_mrank1',    'EvCat==-169 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#mu#mu'),
-	('e_mrank1',    'abs(EvCat)==11 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', 'e'),
-	('mu_mrank1',   'abs(EvCat)==13 && SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0', '#mu'),
+	('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
+	('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
+	('emu_mrank1',       'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
+	('mumu_mrank1',      'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
+	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
+	('mu_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
 ]
 
 CONTROLVARS = [
@@ -40,15 +38,6 @@ CONTROLVARS = [
 	('LPt'       , NBINS, 20 , 100 , 'Lepton pt [GeV]'),
 	('SVPt'      , NBINS, 0  , 100 , 'Sec.Vtx. pt [GeV]'),
 	('JPt'       , NBINS, 30 , 200 , 'Jet pt [GeV]'),
-]
-
-DATAMCPLOTS = [
-	('SVLDeltaR' , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
-	('SVNtrk'    , 8,     2  , 10, 'SV Track Multiplicity'),
-	('LPt'       , NBINS, 20 , 200, 'Lepton pt [GeV]'),
-	('JPt'       , NBINS, 30 , 200, 'Jet pt [GeV]')
-	#('Mjj'       , NBINS, 30 , 200, 'M_{jj} [GeV]'),
-	# ('SVLMass'   , NBINS, XMIN, XMAX, MASSXAXISTITLE),
 ]
 
 SYSTS = [
@@ -77,23 +66,24 @@ def projectFromTree(hist, varname, sel, tree, option=''):
 	except Exception, e:
 		raise e
 
-def getHistoFromTree(tree, sel, var="SVLMass",
+def getHistoFromTree(tree, sel='', var="SVLMass",
 	         hname="histo",
 	         nbins=NBINS, xmin=XMIN, xmax=XMAX,
 	         titlex='',
-	         applyWeights=True):
+	         weight=COMMONWEIGHT):
 	histo = ROOT.TH1D(hname, "histo" , nbins, xmin, xmax)
 	if sel=="": sel = "1"
 	sel = "(%s)" % sel
-	if applyWeights:
-		sel = "%s*(Weight[1]*Weight[4])" % sel
+	if len(weight):
+		sel = "%s*(%s)" % (sel, weight)
 	projectFromTree(histo, var, sel, tree)
 	histo.SetLineWidth(2)
 	histo.GetXaxis().SetTitle(titlex)
 	histo.Sumw2()
+	histo.SetDirectory(0)
 	return histo
 
-def getSVLHistos(tree, sel,
+def getSVLHistos(tree, sel='',
 				 var="SVLMass",
 				 tag='', nbins=NBINS, xmin=XMIN, xmax=XMAX,
 				 titlex=''):
@@ -115,60 +105,74 @@ def getSVLHistos(tree, sel,
 	h_unm.SetLineColor(ROOT.kSpring-5)
 	return h_tot, h_cor, h_wro, h_unm
 
-def getTopPtHistos(tree, sel,
+def getTopPtHistos(tree, sel='',
 				 var="SVLMass",
 				 tag='',
 				 nbins=NBINS,xmin=XMIN, xmax=XMAX,
 				 titlex=''):
-	h_tpt = getHistoFromTree(tree, sel=sel+"*Weight[7]",
+	weight = "%s*Weight[7]" % COMMONWEIGHT
+	h_tpt = getHistoFromTree(tree, sel=sel,
 	                  var=var, hname="%s_toppt_%s"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-	h_tup = getHistoFromTree(tree, sel=sel+"*Weight[8]",
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
+	weight = "%s*Weight[8]" % COMMONWEIGHT
+	h_tup = getHistoFromTree(tree, sel=sel,
 	                  var=var, hname="%s_topptup_%s"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
 
 	h_tpt.SetLineColor(ROOT.kRed)
 	h_tup.SetLineColor(ROOT.kRed-6)
 	return h_tpt, h_tup
 
-def getBfragHistos(tree, sel,
+def getBfragHistos(tree, sel='',
 				   var="SVLMass",
 				   tag='',
 				   nbins=NBINS,xmin=XMIN, xmax=XMAX,
 				   titlex=''):
-	h_bfrag = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[0]",
+	weight = "%s*SVBfragWeight[0]" % COMMONWEIGHT
+	h_bfrag = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_bfrag"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-	h_bfhar = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[1]",
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
+	weight = "%s*SVBfragWeight[1]" % COMMONWEIGHT
+	h_bfhar = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_bfrag_hard"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-	h_bfsof = getHistoFromTree(tree, sel=sel+"*SVBfragWeight[2]",
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
+	weight = "%s*SVBfragWeight[2]" % COMMONWEIGHT
+	h_bfsof = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_bfrag_soft"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
 
 	h_bfrag.SetLineColor(ROOT.kGreen+2)
 	h_bfhar.SetLineColor(ROOT.kGreen+5)
 	h_bfsof.SetLineColor(ROOT.kGreen)
 	return h_bfrag, h_bfhar, h_bfsof
 
-def getJESHistos(tree, sel,
+def getJESHistos(tree, sel='',
 				 var="SVLMass",
 				 tag='',
 				 nbins=NBINS, xmin=XMIN, xmax=XMAX,
 				 titlex=''):
-	h_jesup = getHistoFromTree(tree, sel=sel+"&&JESWeight[1]",
+	weight = COMMONWEIGHT.replace('JESWeight[0]', 'JESWeight[1]')
+	h_jesup = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_jes_up"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-	h_jesdn = getHistoFromTree(tree, sel=sel+"&&JESWeight[2]",
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
+	weight = COMMONWEIGHT.replace('JESWeight[0]', 'JESWeight[2]')
+	h_jesdn = getHistoFromTree(tree, sel=sel,
 		              var=var, hname="%s_tot_%s_jes_dn"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
+	                  weight=weight)
 
 	h_jesup.SetLineColor(ROOT.kBlue+2)
 	h_jesdn.SetLineColor(ROOT.kBlue-6)
 
 	return h_jesup, h_jesdn
 
-def getNTrkHistos(tree, sel,
+def getNTrkHistos(tree, sel='',
 		  var="SVLMass",
 		  tag='',
 		  nbins=NBINS, xmin=XMIN, xmax=XMAX,
@@ -217,25 +221,6 @@ def makeControlPlot(hists, tag, seltag, opt):
 	ctrlplot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
 	ctrlplot.show("control_%s"%tag, opt.outDir)
 	ctrlplot.reset()
-
-def writeDataMCHistos(treefiles, opt):
-	ofi = ROOT.TFile(os.path.join(opt.outDir,'datamc_histos.root'),
-		             'recreate')
-	ofi.cd()
-	for proc in treefiles.keys():
-		tree = ROOT.TFile.Open(treefiles[proc],'READ').Get(TREENAME)
-		print "... processing %s, %d entries" % (proc, tree.GetEntries())
-		for tag,sel,_ in SELECTIONS:
-			for var,nbins,xmin,xmax,titlex in DATAMCPLOTS:
-				hist = getHistoFromTree(tree, sel=sel,
-					              var=var, hname="%s_%s_%s"%(var,tag,proc),
-				                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
-				ofi.cd()
-				hist.Write(hist.GetName())
-
-	ofi.Write()
-	ofi.Close()
-
 
 def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
 	"""
@@ -364,7 +349,6 @@ def main(args, opt):
 			procname = filename.split('_', 1)[1][:-5]
 			treefiles[procname] = os.path.join(args[0],filename)
 
-
 		massfiles = {} # mass -> filename
 		# find mass scan files
 		for filename in os.listdir(os.path.join(args[0],'mass_scan')):
@@ -397,9 +381,6 @@ def main(args, opt):
 
 	for syst,_,_ in SYSTS:
 		systtrees[syst] = ROOT.TFile.Open(systfiles[syst],'READ').Get(TREENAME)
-
-	if opt.writeDataMCHistos:
-		writeDataMCHistos(treefiles, opt)
 
 	if not opt.cache:
 		masshistos = {}     # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
@@ -446,15 +427,6 @@ def main(args, opt):
 								      sel=sel,
 								      var="SVLMass", tag=tag+'_'+syst,
 								      titlex=MASSXAXISTITLE)
-				# fittertkhistos[(tag,syst)] = getNTrkHistos(systtrees[syst],
-				#                                           sel=sel,
-				#                                           tag=htag,
-				# 					    var='SVLMass',
-				# 					    titlex=MASSXAXISTITLE,
-				# 					    combsToProject=[('tot',''),
-				#                                         ('cor','CombInfo==1'),
-				#                                         ('wro','CombInfo==0'),
-				#                                         ('unm','CombInfo==-1')])
 
 			systhistos[(tag,'bfrag')] = getBfragHistos(systtrees[172.5],
 				                        sel=sel, var='SVLMass',
@@ -487,12 +459,12 @@ def main(args, opt):
 
 
 		cachefile = open(".svlhistos.pck", 'w')
-		pickle.dump(masshistos,    cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(masshistos,     cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(fittertkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(systhistos,    cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(ntkhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(massntkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(controlhistos, cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(systhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(ntkhistos,      cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(massntkhistos,  cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(controlhistos,  cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 
 		ofi = ROOT.TFile(os.path.join(opt.outDir,'histos.root'), 'recreate')
@@ -514,12 +486,12 @@ def main(args, opt):
 
 	else:
 		cachefile = open(".svlhistos.pck", 'r')
-		masshistos    = pickle.load(cachefile)
+		masshistos     = pickle.load(cachefile)
 		fittertkhistos = pickle.load(cachefile)
-		systhistos    = pickle.load(cachefile)
-		ntkhistos     = pickle.load(cachefile)
-		massntkhistos = pickle.load(cachefile)
-		controlhistos = pickle.load(cachefile)
+		systhistos     = pickle.load(cachefile)
+		ntkhistos      = pickle.load(cachefile)
+		massntkhistos  = pickle.load(cachefile)
+		controlhistos  = pickle.load(cachefile)
 		cachefile.close()
 
 	ROOT.gStyle.SetOptTitle(0)
@@ -840,9 +812,6 @@ if __name__ == "__main__":
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",
 					  help='Read from cache')
-	parser.add_option('-w', '--writeDataMCHistos', dest='writeDataMCHistos',
-		              action="store_true",
-					  help='Write the Data vs MC histograms')
 	(opt, args) = parser.parse_args()
 
 	exit(main(args, opt))

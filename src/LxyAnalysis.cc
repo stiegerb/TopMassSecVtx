@@ -14,26 +14,26 @@ LxyAnalysis::LxyAnalysis() : outT_(0), outDir_(0)
 void LxyAnalysis::resetBeautyEvent()
 {
     // Reset all the tree variables
-    bev_.run=-999;
-    bev_.event=-999;
-    bev_.lumi=-999;
-    bev_.evcat=-999;
-    bev_.gevcat=-999;
-    bev_.nvtx=-999;
-    bev_.rho=-999.99;
+    bev_.run    = -999;
+    bev_.event  = -999;
+    bev_.lumi   = -999;
+    bev_.evcat  = -999;
+    bev_.gevcat = -999;
+    bev_.nvtx   = -999;
+    bev_.rho    = -999.99;
 
-    bev_.nw=0;
-    bev_.nl=0;
-    bev_.nj=0;
-    bev_.npf=0;
-    bev_.npfb1=0;
+    bev_.nw     = 0;
+    bev_.nl     = 0;
+    bev_.nj     = 0;
+    bev_.npf    = 0;
+    bev_.npfb1  = 0;
 
     for(size_t i=0; i<bev_.gMaxNWeights; i++) {
         bev_.w[i] = -999.99;
     }
     for(size_t i=0; i<bev_.gMaxNLeps; i++) {
-        bev_.lid[i]  = 0;
-        bev_.glid[i] = 0;
+        bev_.lid[i]   = 0;
+        bev_.glid[i]  = 0;
         bev_.lpt[i]   = -999.99;
         bev_.leta[i]  = -999.99;
         bev_.lphi[i]  = -999.99;
@@ -42,7 +42,7 @@ void LxyAnalysis::resetBeautyEvent()
         bev_.glphi[i] = -999.99;
     }
     for(size_t i=0; i<bev_.gMaxNJets; i++) {
-        bev_.jflav[i] = 0;
+        bev_.jflav[i]  = 0;
         bev_.jpt[i]    = -999.99;
         bev_.jeta[i]   = -999.99;
         bev_.jphi[i]   = -999.99;
@@ -69,12 +69,13 @@ void LxyAnalysis::resetBeautyEvent()
 	bev_.beta[i] = -999.99;
 	bev_.bphi[i] = -999.99;
 
-        bev_.bhadid[i] = 0;
-        bev_.bhadpt[i]   = -999.99;
-        bev_.bhadeta[i]  = -999.99;
-        bev_.bhadphi[i]  = -999.99;
-        bev_.bhadmass[i] = -999.99;
-        bev_.bhadlxy[i]  = -999.99;
+        bev_.bhadid[i]       = 0;
+        bev_.bhadpt[i]       = -999.99;
+        bev_.bhadeta[i]      = -999.99;
+        bev_.bhadphi[i]      = -999.99;
+        bev_.bhadmass[i]     = -999.99;
+        bev_.bhadlxy[i]      = -999.99;
+        bev_.bhadneutrino[i] = -999;
 
         bev_.svmass[i]   = -999.99;
         bev_.svpt[i]     = -999.99;
@@ -163,6 +164,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("bhadphi",      bev_.bhadphi,      "bhadphi[nj]/F");
   outT_->Branch("bhadmass",     bev_.bhadmass,     "bhadmass[nj]/F");
   outT_->Branch("bhadlxy",      bev_.bhadlxy,      "bhadlxy[nj]/F");
+  outT_->Branch("bhadneutrino", bev_.bhadneutrino, "bhadneutrino[nj]/I");
   outT_->Branch("npf",         &bev_.npf,          "npf/I");
   outT_->Branch("npfb1",       &bev_.npfb1,        "npfb1/I");
   outT_->Branch("pfid",         bev_.pfid,         "pfid[npf]/I");
@@ -312,12 +314,13 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
             if(deltar > mindr) continue;
             if(deltar > bev_.jbhadmatchdr[i]) continue; // there was no better match previously
             mindr = deltar;
-            bev_.bhadid[i]   = id;
-            bev_.bhadpt[i]   = mctruth[imc].pt();
-            bev_.bhadeta[i]  = mctruth[imc].eta();
-            bev_.bhadphi[i]  = mctruth[imc].phi();
-            bev_.bhadmass[i] = mctruth[imc].mass();
-            bev_.bhadlxy[i]  = mctruth[imc].getVal("lxy");
+            bev_.bhadid[i]       = id;
+            bev_.bhadpt[i]       = mctruth[imc].pt();
+            bev_.bhadeta[i]      = mctruth[imc].eta();
+            bev_.bhadphi[i]      = mctruth[imc].phi();
+            bev_.bhadmass[i]     = mctruth[imc].mass();
+            bev_.bhadlxy[i]      = mctruth[imc].getVal("lxy");
+            bev_.bhadneutrino[i] = mctruth[imc].getFlag("genNeutrino");
             bev_.jbhadmatchdr[i] = deltar;
         }
     }

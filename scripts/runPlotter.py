@@ -70,7 +70,17 @@ def openTFile(url):
         return None
     return rootFile
 
-def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],filterByProcList=[]):
+def getListofProcessesFromJSON(procList, chopPrefix=False):
+    returnlist = []
+    for desc in procList[0][1]:
+        for process in desc['data']:
+            listitem = process['dtag']
+            if chopPrefix:
+                listitem = listitem.split('_',1)[1]
+            returnlist.append(str(listitem))
+    return returnlist
+def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],
+                    filterByProcsFromJSON=None):
     """
     Return a list of all keys deriving from TH1 in a file
     """
@@ -80,11 +90,12 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],filterByProcList=[]):
         key = tkey.GetName()
         keepPlot=False
         for tag in tagsToFilter:
-            if key.find(tag)>=0 :
+            if tag in key:
                 keepPlot=True
         if not keepPlot : continue
         obj = tdir.Get(key)
         if obj.InheritsFrom('TDirectory') :
+            ## FIXME: Potential bug with filterByProcsFromJSON
             allKeysInSubdir = getAllPlotsFrom(obj,chopPrefix)
             for subkey in allKeysInSubdir :
                 if not chopPrefix:
@@ -102,10 +113,15 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],filterByProcList=[]):
                 key = key.replace(tdir.GetName()+'_','')
             toReturn.append(key)
 
-    if len(filterByProcList):
+    if filterByProcsFromJSON:
+        jsonFile = open(filterByProcsFromJSON,'r')
+        procList = json.load(jsonFile,encoding = 'utf-8').items()
+        list_of_processes = getListofProcessesFromJSON(procList,
+                                                       chopPrefix=True)
+
         newlist = []
         for key in toReturn:
-            for proc in filterByProcList:
+            for proc in list_of_processes:
                 if key.endswith('_%s'%proc):
                     newkey = key.replace('_%s'%proc,'')
                     newlist.append(newkey)
@@ -179,17 +195,14 @@ def checkMissingFiles(inDir, jsonUrl):
             print filename
         print 20*'-'
 
-def makePlotPacked(packedargs):
-    key, inDir, procList, xsecweights, options = packedargs
-    return makePlot(key, inDir, procList, xsecweights, options)
-
-def makePlot(key, inDir, procList, xsecweights, options):
+def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
     newPlot.plotformats = ['pdf', 'png']
     newPlot.ratiorange = (0.4,2.3)
     baseRootFile = None
+    procsToExclude = options.excludeProcesses.split(',')
     if inDir.endswith('.root'):
         baseRootFile = openTFile(inDir)
     for proc_tag in procList:
@@ -203,9 +216,20 @@ def makePlot(key, inDir, procList, xsecweights, options):
             data = desc['data']
             mctruthmode = getByLabel(desc,'mctruthmode')
 
+            # Exclude processes specified in options.excludeProcesses
+            skipproc = False
+            for exproc in procsToExclude:
+                if exproc in title: skipproc = True
+            if skipproc: continue
+
             hist = None
             for process in data: # loop on datasets for process
                 dtag = getByLabel(process,'dtag','')
+
+                # Exclude processes specified in options.excludeProcesses
+                for exproc in procsToExclude:
+                    if exproc in dtag: skipproc = True
+                if skipproc: continue
 
                 if baseRootFile is None:
                     if options.split: # Files are split
@@ -230,8 +254,20 @@ def makePlot(key, inDir, procList, xsecweights, options):
                                 rootFile.Close()
                                 continue
 
-                            fixExtremities(ihist,True,True)
+                            if not options.cutUnderOverFlow:
+                                fixExtremities(ihist,True,True)
+                            else:
+                                fixExtremities(ihist,False,False)
+
+                            ## Apply xsec weights
                             ihist.Scale(xsecweights[str(dtag)])
+
+                            ## Apply external scale factor
+                            if (key,str(title)) in scaleFactors:
+                                print (' ... scaling %s,%s by %5.3f' %
+                                         (key, str(title),
+                                          scaleFactors[(key, str(title))]))
+                                ihist.Scale(scaleFactors[(key,str(title))])
 
                             if hist is None :
                                 hist = ihist.Clone(dtag+'_'+pName)
@@ -257,8 +293,20 @@ def makePlot(key, inDir, procList, xsecweights, options):
                             rootFile.Close()
                             continue
 
-                        fixExtremities(ihist,True,True)
+                        if not options.cutUnderOverFlow:
+                            fixExtremities(ihist,True,True)
+                        else:
+                            fixExtremities(ihist,False,False)
+
+                        ## Apply xsec weights
                         ihist.Scale(xsecweights[str(dtag)])
+
+                        ## Apply external scale factor
+                        if (key,str(title)) in scaleFactors:
+                            print (' ... scaling %s,%s by %5.3f' %
+                                     (key, str(title),
+                                      scaleFactors[(key, str(title))]))
+                            ihist.Scale(scaleFactors[(key,str(title))])
 
                         if hist is None :
                             hist = ihist.Clone(dtag+'_'+pName)
@@ -275,8 +323,20 @@ def makePlot(key, inDir, procList, xsecweights, options):
                     except AttributeError:
                         continue
 
-                    fixExtremities(ihist,True,True)
+                    if not options.cutUnderOverFlow:
+                        fixExtremities(ihist,True,True)
+                    else:
+                        fixExtremities(ihist,False,False)
+
                     ihist.Scale(xsecweights[str(dtag)])
+
+                    ## Apply external scale factor
+                    if (key,str(title)) in scaleFactors:
+                        print (' ... scaling %s,%s by %5.3f' %
+                                 (key, str(title),
+                                  scaleFactors[(key, str(title))]))
+                        ihist.Scale(scaleFactors[(key,str(title))])
+
 
                     if hist is None: ## Check if it is found
                         hist = ihist.Clone(dtag+'_'+pName)
@@ -387,17 +447,7 @@ def readXSecWeights(inDir, options):
     cachefile.close()
     print '>>> Produced xsec weights and wrote to cache (.xsecweights.pck)'
     return xsecweights
-def getListofProcessesFromJSON(procList, chopPrefix=False):
-    returnlist = []
-    for desc in procList[0][1]:
-        for process in desc['data']:
-            listitem = process['dtag']
-            if chopPrefix:
-                listitem = listitem.split('_',1)[1]
-            returnlist.append(str(listitem))
-    return returnlist
-
-def runPlotter(inDir, options):
+def runPlotter(inDir, options, scaleFactors={}):
     """
     Loop over the inputs and launch jobs
     """
@@ -405,16 +455,15 @@ def runPlotter(inDir, options):
 
     jsonFile = open(options.json,'r')
     procList = json.load(jsonFile,encoding = 'utf-8').items()
-    list_of_processes = getListofProcessesFromJSON(procList, chopPrefix=True)
 
     # Make a survey of *all* existing plots
     plots = []
 
     # Read the xsection weights (from cache or from the input files)
-    xsecweights = readXSecWeights(inDir=args[0], options=opt)
+    xsecweights = readXSecWeights(inDir=inDir, options=options)
 
     missing_files = []
-    tagsToFilter = opt.filter.split(',')
+    tagsToFilter = options.filter.split(',')
     baseRootFile = None
 
     # Input is a single root file with all histograms
@@ -423,7 +472,7 @@ def runPlotter(inDir, options):
         plots = getAllPlotsFrom(tdir=baseRootFile,
                                 chopPrefix=True,
                                 tagsToFilter=tagsToFilter,
-                                filterByProcList=list_of_processes)
+                                filterByProcsFromJSON=options.json)
 
     # Input is a directory with files for each process containing histograms
     else:
@@ -484,30 +533,21 @@ def runPlotter(inDir, options):
     # Now plot them
     if options.jobs==0:
         for plot in plots:
-            makePlot(plot, inDir, procList, xsecweights, options)
+            makePlot((plot, inDir, procList,
+                      xsecweights, options, scaleFactors))
 
     else:
         from multiprocessing import Pool
         pool = Pool(options.jobs)
 
-        tasklist = [(p, inDir, procList, xsecweights, options) for p in plots]
-        pool.map(makePlotPacked, tasklist)
+        tasklist = [(p, inDir, procList, xsecweights, options, scaleFactors)
+                                                              for p in plots]
+        pool.map(makePlot, tasklist)
 
 
     if baseRootFile is not None: baseRootFile.Close()
 
-
-if __name__ == "__main__":
-    import sys
-    tmpargv  = sys.argv[:]     # [:] for a copy, not reference
-    sys.argv = []
-    from ROOT import gROOT, gStyle
-    sys.argv = tmpargv
-    from optparse import OptionParser
-    usage = """
-    usage: %prog [options] input_directory
-    """
-    parser = OptionParser(usage=usage)
+def addPlotterOptions(parser):
     parser.add_option('-j', '--json', dest='json',
                       default='test/topss2014/samples.json',
                       help='A json file with the samples to analyze'
@@ -516,12 +556,19 @@ if __name__ == "__main__":
                       action="store_true",
                       help=('Check a directory for missing files (as '
                             'expected from the json file) and exit.'))
+    parser.add_option('--cutUnderOverFlow', dest='cutUnderOverFlow',
+                      action="store_true",
+                      help=('Do not add under and overflow in the '
+                            'first and last bins.'))
     parser.add_option('-d', '--debug', dest='debug', action="store_true",
                       help='Dump the event yields table for each plot')
     parser.add_option('--normToData', dest='normToData', action="store_true",
                       help='Force normalization to data')
     parser.add_option('-f', '--filter', dest='filter', default="",
                       help='csv list of plots to produce')
+    parser.add_option('-x', '--excludeProcesses', dest='excludeProcesses',
+                      default="",
+                      help='csv list of processes to exclude')
     parser.add_option('-v', '--verbose', dest='verbose', action="store",
                       type='int', default=1,
                       help='Verbose mode [default: %default (semi-quiet)]')
@@ -546,11 +593,28 @@ if __name__ == "__main__":
                       action="store", type="int", dest="jobs",
                       help=("Run N jobs in parallel."
                             "[default: %default]"))
+
+if __name__ == "__main__":
+    import sys
+    tmpargv  = sys.argv[:]     # [:] for a copy, not reference
+    sys.argv = []
+    from ROOT import gROOT, gStyle
+    sys.argv = tmpargv
+    from optparse import OptionParser
+    usage = """
+    usage: %prog [options] input_directory
+    """
+    parser = OptionParser(usage=usage)
+    addPlotterOptions(parser)
     (opt, args) = parser.parse_args()
 
     if len(args) > 0:
         if opt.checkMissingFiles:
             checkMissingFiles(inDir=args[0], jsonUrl=opt.json)
+            exit(0)
+
+        if opt.rereadXsecWeights:
+            readXSecWeights(inDir=args[0], options=opt)
             exit(0)
 
         setTDRStyle()

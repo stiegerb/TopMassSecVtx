@@ -12,6 +12,9 @@ const float gMassK  = 0.4937;
 const float gMassPi = 0.1396;
 const float gMassMu = 0.1057;
 
+const float gCSVWPMedium = 0.783;
+const float gCSVWPLoose = 0.405;
+
 const int njetbins = 6;
 const int nsvbins = 4;
 
@@ -92,7 +95,6 @@ void LxyTreeAnalysis::RunJob(TString filename){
 	Loop();
 	End(file);
 }
-
 void LxyTreeAnalysis::Begin(TFile *file){
 	// Anything that has to be done once at the beginning
 	file->cd();
@@ -219,6 +221,10 @@ void LxyTreeAnalysis::BookSVLHistos(){
 	fHMT_e  = new TH1D("Mt_e",    "MT (single e);M_{T} [GeV]",100,0,250);       fHistos.push_back(fHMT_e);
 	fHMT_m  = new TH1D("Mt_m",    "MT (single mu);M_{T} [GeV]",100,0,250);      fHistos.push_back(fHMT_m);
 
+	fHDY_mll_ee = new TH1D("DY_mll_ee", "m(ll) in DY ee control", 100, 60., 120.); fHistos.push_back(fHDY_mll_ee); fHDY_mll_ee->SetXTitle("Dilepton invariant mass [GeV]");
+	fHDY_mll_mm = new TH1D("DY_mll_mm", "m(ll) in DY mm control", 100, 60., 120.); fHistos.push_back(fHDY_mll_mm); fHDY_mll_mm->SetXTitle("Dilepton invariant mass [GeV]");
+	fHDY_met_ee = new TH1D("DY_met_ee", "MET in DY ee control",   100, 0., 100.);  fHistos.push_back(fHDY_met_ee); fHDY_met_ee->SetXTitle("Missing ET [GeV]");
+	fHDY_met_mm = new TH1D("DY_met_mm", "MET in DY mm control",   100, 0., 100.);  fHistos.push_back(fHDY_met_mm); fHDY_met_mm->SetXTitle("Missing ET [GeV]");
 }
 void LxyTreeAnalysis::BookHistos(){
 	// charm resonance histos:
@@ -233,7 +239,6 @@ void LxyTreeAnalysis::BookHistos(){
 		(*h)->Sumw2();
 	}
 }
-
 void LxyTreeAnalysis::WriteHistos(){
 	// Write all histos to file, then delete them
 	std::vector<TH1*>::iterator h;
@@ -246,6 +251,7 @@ void LxyTreeAnalysis::WriteHistos(){
 
 void LxyTreeAnalysis::BookCharmTree() {
 	fCharmInfoTree = new TTree("CharmInfo", "Charm Info Tree");
+	fCharmInfoTree->Branch("EvCat",        &fTCharmEvCat,   "EvCat/I");
 	fCharmInfoTree->Branch("CandType",     &fTCandType,     "CandType/I");
 	fCharmInfoTree->Branch("CandMass",     &fTCandMass,     "CandMass/F");
 	fCharmInfoTree->Branch("CandPt",       &fTCandPt,       "CandPt/F");
@@ -256,11 +262,13 @@ void LxyTreeAnalysis::BookCharmTree() {
 	fCharmInfoTree->Branch("JetPt",        &fTJetPt,        "JetPt/F");
 	fCharmInfoTree->Branch("JetEta",       &fTJetEta,       "JetEta/F");
 	fCharmInfoTree->Branch("JetPz",        &fTJetPz,        "JetPz/F");
+	fCharmInfoTree->Branch("HardTkPt",     &fTHardTkPt,     "HardTkPt/F");
+	fCharmInfoTree->Branch("SoftTkPt",     &fTSoftTkPt,     "SoftTkPt/F");
 	fCharmInfoTree->Branch("SumPtCharged", &fTSumPtCharged, "SumPtCharged/F");
 	fCharmInfoTree->Branch("SumPzCharged", &fTSumPzCharged, "SumPzCharged/F");
 }
-
 void LxyTreeAnalysis::ResetCharmTree() {
+	fTCharmEvCat   = -99;
 	fTCandType     = -99;
 	fTCandMass     = -99.99;
 	fTCandPt       = -99.99;
@@ -271,6 +279,8 @@ void LxyTreeAnalysis::ResetCharmTree() {
 	fTJetPt        = -99.99;
 	fTJetEta       = -99.99;
 	fTJetPz        = -99.99;
+	fTHardTkPt     = -99.99;
+	fTSoftTkPt     = -99.99;
 	fTSumPtCharged = -99.99;
 	fTSumPzCharged = -99.99;
 }
@@ -299,10 +309,12 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 	p_cand = p_track1+p_track2;
 	p_jet.SetPtEtaPhiM(jpt[jind], jeta[jind], jphi[jind], 0.);
 
-	FillCharmTree(type, jind, p_cand, p_jet);
+	float hardpt = std::max(pfpt[ind1], pfpt[ind2]);
+	float softpt = std::min(pfpt[ind1], pfpt[ind2]);
+
+	FillCharmTree(type, jind, p_cand, p_jet, hardpt, softpt);
 	return;
 }
-
 void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 									int ind1, float mass1,
 									int ind2, float mass2,
@@ -320,13 +332,18 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 	p_cand = p_track1+p_track2+p_track3;
 	p_jet.SetPtEtaPhiM(jpt[jind], jeta[jind], jphi[jind], 0.);
 
-	FillCharmTree(type, jind, p_cand, p_jet);
+	float hardpt = std::max(pfpt[ind3], std::max(pfpt[ind1], pfpt[ind2]));
+	float softpt = std::min(pfpt[ind3], std::min(pfpt[ind1], pfpt[ind2]));
+
+	FillCharmTree(type, jind, p_cand, p_jet, hardpt, softpt);
 	return;
 }
 void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 									TLorentzVector p_cand,
-									TLorentzVector p_jet){
-	fTCandType = type;
+									TLorentzVector p_jet,
+									float hardpt, float softpt){
+	fTCandType   = type;
+	fTCharmEvCat = evcat;
 	fTCandMass  = p_cand.M();
 	fTCandPt    = p_cand.Pt();
 	fTCandEta   = p_cand.Eta();
@@ -347,14 +364,17 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 		p_trks = p_trks + p_tk;
 	}
 
+	fTHardTkPt = hardpt;
+	fTSoftTkPt = softpt;
+
 	fTSumPtCharged = p_trks.Pt();
 	fTSumPzCharged = p_trks.Pz();
 	fCharmInfoTree->Fill();
 	return;
-
 }
 
 void LxyTreeAnalysis::fillJPsiHists(int jetindex) {
+	if(jetindex < 0) return;
 	TLorentzVector p_track1, p_track2;
 
 	for (int i = 0; i < npf; ++i)
@@ -404,6 +424,7 @@ void LxyTreeAnalysis::fillJPsiHists(int jetindex) {
 	}
 }
 void LxyTreeAnalysis::fillD0Hists(int jetindex){
+	if(jetindex < 0) return;
 	TLorentzVector p_track1, p_track2;
 	int nstart = firstTrackIndex(jetindex);
 
@@ -433,7 +454,7 @@ void LxyTreeAnalysis::fillD0Hists(int jetindex){
 	// less than three tracks for this jet
 	if (pfjetidx[nstart+2]!=jetindex ) return;
 
-	// permutations of hardest three trackmass
+	// permutations of hardest three tracks
 	// including interchanging them!
 	int p1[] = {nstart,   nstart,   nstart+1, nstart+1, nstart+2, nstart+2};
 	int p2[] = {nstart+1, nstart+2, nstart+2, nstart,   nstart,   nstart+1};
@@ -499,6 +520,7 @@ void LxyTreeAnalysis::fillD0Hists(int jetindex){
 	}
 }
 void LxyTreeAnalysis::fillDpmHists(int jetindex){
+	if(jetindex < 0) return;
 	int nstart = firstTrackIndex(jetindex);
 	int ntracks = 3;
 
@@ -584,6 +606,16 @@ void LxyTreeAnalysis::fillDpmHists(int jetindex){
 	}
 }
 bool LxyTreeAnalysis::selectEvent(){
+	float btagWP = gCSVWPLoose;
+	if (abs(evcat) == 11 || abs(evcat) == 13){
+		btagWP = gCSVWPMedium;
+	}
+	int nbjets(0);
+	for( int i=0; i < nj; i++) nbjets += (jcsv[i] > btagWP);
+
+	// Require at least one b-tagged jet (loose for dilep, med for l+jets)
+	if ( nbjets < 1 ) return false;
+
 	if (abs(evcat) == 11*13) return true;                // emu
 	if (abs(evcat) == 11*11 && metpt > 40.) return true; // ee
 	if (abs(evcat) == 13*13 && metpt > 40.) return true; // mumu
@@ -593,14 +625,12 @@ bool LxyTreeAnalysis::selectEvent(){
 }
 
 bool LxyTreeAnalysis::selectSVLEvent(){
-	int nsvjets(0), nbjets(0), nbnosv(0);
+	int nsvjets(0), nbjets(0);
 	for( int i=0; i < nj; i++){
-		if(svlxy[i] > 0) nsvjets++;
-		if(jcsv[i] > 0.783){
-			nbjets++;
-			// Count also jets with b-tag but no SV
-			if(svlxy[i] == 0.) nbnosv++;
-		}
+		// count as bjet either jet with SV or jet with CSVM tag
+		nbjets  += (svlxy[i] > 0 || jcsv[i] > gCSVWPMedium);
+		nsvjets += (svlxy[i] > 0);
+		// this implies nbjets >= nsvjets
 	}
 
 	// At least one SV in any channel
@@ -618,10 +648,37 @@ bool LxyTreeAnalysis::selectSVLEvent(){
 	// For single lepton, at least 4 jets, and either 2 SV or 1 SV + 1 CSVM
 	if (abs(evcat) == 11 || abs(evcat) == 13){
 		if (nj < 4) return false;
-		if (nsvjets > 1) return true;
-		if (nsvjets > 0 && nbnosv > 0) return true;
+		if (nsvjets > 1) return true; // two SV
+		if (nbjets > 1) return true;  // one SV and one CSVM
 		return false;
 	}
+
+	// QCD control sample (non-isolated leptons)
+	if (abs(evcat) == 11*100 || abs(evcat) == 13*100){
+		if (nj < 4) return false;
+		if (nbjets > 1 || nsvjets > 1) return false; // suppress ttbar
+		return true;
+	}
+	return false;
+}
+
+bool LxyTreeAnalysis::selectDYControlEvent(){
+	int nsvjets(0), nbjets(0);
+	for( int i=0; i < nj; i++){
+		// count as bjet either jet with SV or jet with CSVM tag
+		nbjets  += (svlxy[i] > 0 || jcsv[i] > gCSVWPMedium);
+		nsvjets += (svlxy[i] > 0);
+		// this implies nbjets >= nsvjets
+	}
+
+	// Note that there is a MET > 40 cut already applied in the pre-selection
+
+	// At least one SV in any channel
+	if (nsvjets < 1) return false;
+
+	// |mll-mZ| < 15 GeV
+	if (abs(evcat) == 11*11*1000 || abs(evcat) == 13*13*1000) return true;
+
 	return false;
 }
 
@@ -657,7 +714,6 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("SVLMassRank_rot",   &fTSVLMinMassRank_rot, "SVLMassRank_rot/I");
 	fSVLInfoTree->Branch("SVLDeltaRRank_rot", &fTSVLDeltaRRank_rot,  "SVLDeltaRRank_rot/I");
 }
-
 void LxyTreeAnalysis::ResetSVLTree() {
 	fTEvent     = event;
 	fTRun       = run;
@@ -702,37 +758,50 @@ void LxyTreeAnalysis::analyze(){
 	// Charm resonance stuff:
 	ResetCharmTree();
 
-	float maxcsv = -1.;
-	int maxind=-1;
-	float second_max=-1.0;
-	int maxind2=-1;
+	float maxcsv(-1.), maxcsv2(-1.);
+	int maxind(-1), maxind2(-1);
 
 	for(int k = 0; k < nj; k++) {
 		// use >= n not just > as max and max2 can have same value. Ex:{1,2,3,3}
 		if(jcsv[k] >= maxcsv) {
-			second_max=maxcsv;
+			maxcsv2=maxcsv;
+			maxind2=maxind;
+
 			maxcsv=jcsv[k];
 			maxind=k;
-			maxind2=maxind;
 		}
-		else if(jcsv[k] > second_max) {
-			second_max=jcsv[k];
+		else if(jcsv[k] > maxcsv2) {
+			maxcsv2=jcsv[k];
 			maxind2=k;
 		}
 	}
 
+	if (maxind < 0 && maxind2 < 0){
+		// In case we didn't find ANY jets with csv > 0,
+		// just take the hardest two jets
+		maxind = 0;
+		maxind2 = 1;
+	}
+	else if (maxind >= 0 && maxind2 < 0){
+		// In case we only found ONE jet with csv > 0,
+		// Take the next-hardest one (or the hardest altogether)
+		// There are only two options:
+		// - the one we found was the hardest one -> take second one
+		if(maxind == 0) maxind2 = 1;
+		// - the one we found was NOT the hardest one -> take the first one
+		else maxind2 = 0;
+	}
+
 	if(selectEvent()){
-		// J/Psi ( + K)
 		fillJPsiHists(maxind);
-		fillJPsiHists(maxind2);
-
-		// D0
 		fillD0Hists(maxind);
-		fillD0Hists(maxind2);
-
-		// D+
 		fillDpmHists(maxind);
-		fillDpmHists(maxind2);
+
+		if(maxind2 != maxind){ // remove double counting
+			fillJPsiHists(maxind2);
+			fillD0Hists(maxind2);
+			fillDpmHists(maxind2);
+		}
 	}
 
 
@@ -748,7 +817,7 @@ void LxyTreeAnalysis::analyze(){
 	for( int i=0; i < nj; i++){
 		if(svlxy[i]>0){
 			nsvjets++;
-			nbjets++;
+			if(jcsv[i] > gCSVWPMedium) nbjets++;
 			if(svlxyerr[i]!=0){
 				if(svlxy[i]/svlxyerr[i]>lxymax1) {
 					lxymax2=lxymax1;
@@ -860,7 +929,7 @@ void LxyTreeAnalysis::analyze(){
 
 					TLorentzVector p_lep_rot=RotateLepton(p_lep,isoObjects);
 					svl_pairing.svlmass_rot = (p_lep_rot + p_sv).M();
-					svl_pairing.svldeltar = p_lep_rot.DeltaR(p_sv);
+					svl_pairing.svldeltar_rot = p_lep_rot.DeltaR(p_sv);
 
 					svl_pairs.push_back(svl_pairing);
 				}
@@ -881,6 +950,12 @@ void LxyTreeAnalysis::analyze(){
 		fTNCombs = svl_pairs.size();
 		for (size_t isvl = 0; isvl < svl_pairs.size(); ++isvl){
 			SVLInfo svl = svl_pairs[isvl];
+
+			// Apply a Delta R cut to remove fake leptons in the QCD control region
+			if (abs(evcat) == 11*100 || abs(evcat) == 13*100){
+				if ( svl.svldeltar < 0.4 ) continue;
+			}
+
 			fTSVLMass   = svl.svlmass;
 			fTSVLDeltaR = svl.svldeltar;
 			fTSVLMass_rot   = svl.svlmass_rot;
@@ -926,7 +1001,24 @@ void LxyTreeAnalysis::analyze(){
 				(lid[svl.lepindex] > 0 && bid[svl.svindex] == 5  ) || // el-/mu- / t/b
 				(lid[svl.lepindex] < 0 && bid[svl.svindex] == -5 ) )  // el+/mu+ / tbar/bbar
 				fTCombInfo = 0; // wrong
+
 			fSVLInfoTree->Fill();
+		}
+	}
+
+	// Fill DY control histograms
+	if(selectDYControlEvent()){
+		TLorentzVector p_l1, p_l2;
+		p_l1.SetPtEtaPhiM(lpt[0], leta[0], lphi[0], 0.);
+		p_l2.SetPtEtaPhiM(lpt[1], leta[1], lphi[1], 0.);
+		float mll = (p_l1+p_l2).M();
+		if(abs(evcat) == 11*11*1000){
+			fHDY_mll_ee->Fill(mll,   w[1]*w[4]);
+			fHDY_met_ee->Fill(metpt, w[1]*w[4]);
+		}
+		if(abs(evcat) == 13*13*1000){
+			fHDY_mll_mm->Fill(mll,   w[1]*w[4]);
+			fHDY_met_mm->Fill(metpt, w[1]*w[4]);
 		}
 	}
 }

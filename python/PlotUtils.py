@@ -305,7 +305,10 @@ class Plot(object):
         h.SetTitle(title)
 
         if "GeV" in h.GetXaxis().GetTitle():
-            h.GetYaxis().SetTitle("Events / %3.1f GeV" % h.GetBinWidth(1))
+            if h.GetBinWidth(1) > 0.1:
+                h.GetYaxis().SetTitle("Events / %3.1f GeV" % h.GetBinWidth(1))
+            else:
+                h.GetYaxis().SetTitle("Events / %.0f MeV" % (h.GetBinWidth(1)*1000))
         else:
             h.GetYaxis().SetTitle("Events / %3.1f" % h.GetBinWidth(1))
 
@@ -438,6 +441,7 @@ class Plot(object):
 
         ROOT.gStyle.SetOptTitle(0)
         ROOT.gStyle.SetOptStat(0)
+        ROOT.gROOT.SetBatch(1)
 
         canvas = TCanvas('c_'+self.name,'C',800,800)
         canvas.cd()

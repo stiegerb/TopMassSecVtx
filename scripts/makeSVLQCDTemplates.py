@@ -2,18 +2,19 @@
 import os, sys
 import ROOT
 import pickle
-from makeSVLControlPlots import MASSXAXISTITLE, TREENAME
+from UserCode.TopMassSecVtx.PlotUtils import RatioPlot, setTDRStyle
+from makeSVLControlPlots import MASSXAXISTITLE, TREENAME, NTRKBINS
 from makeSVLControlPlots import getHistoFromTree, getNTrkHistos
 
 SELECTIONS = [
-	('e_qcd',         'abs(EvCat)==1100', 'non-isolated e'),
-	('mu_qcd',        'abs(EvCat)==1300', 'non-isolated #mu'),
+	('e_qcd',         'abs(EvCat)==1100', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('mu_qcd',        'abs(EvCat)==1300', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('e_mrank1_qcd',
 	 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1100',
-	 'non-isolated e'),
+	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('mu_mrank1_qcd',
 	 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1300',
-	 'non-isolated #mu'),
+	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 ]
 
 def filterUseless(filename, sel=''):
@@ -119,6 +120,27 @@ def main(args, opt):
 	ofi.Write()
 	ofi.Close()
 
+	for tag,_,seltag in SELECTIONS:
+		templateplot = RatioPlot('qcdtemplates_%s'%tag)
+		for key,hist in sorted(templates.iteritems()):
+			if not tag in key: continue
+
+			if key == tag:
+				templateplot.add(hist, 'Inclusive')
+				templateplot.reference = hist
+			else:
+				templateplot.add(hist, hist.GetTitle())
+
+		templateplot.tag = 'QCD templates'
+		templateplot.subtag = seltag
+		templateplot.ratiotitle = 'Ratio wrt Inclusive'
+		templateplot.extratext = 'Work in Progress'
+		templateplot.ratiorange = (0.2, 2.2)
+		templateplot.colors = [ROOT.kBlack, ROOT.kBlue-8, ROOT.kAzure-2,
+		                       ROOT.kCyan-3]
+		templateplot.show("qcdtemplates_%s"%tag, opt.outDir)
+		templateplot.reset()
+
 
 	return 0
 
@@ -140,6 +162,11 @@ if __name__ == "__main__":
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",
 					  help='Read from cache')
 	(opt, args) = parser.parse_args()
+
+	setTDRStyle()
+	gROOT.SetBatch(True)
+	gStyle.SetOptTitle(0)
+	gStyle.SetOptStat(0)
 
 	exit(main(args, opt))
 

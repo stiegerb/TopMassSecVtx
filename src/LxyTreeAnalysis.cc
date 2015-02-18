@@ -924,6 +924,12 @@ void LxyTreeAnalysis::analyze(){
 		fTNCombs = svl_pairs.size();
 		for (size_t isvl = 0; isvl < svl_pairs.size(); ++isvl){
 			SVLInfo svl = svl_pairs[isvl];
+
+			// Apply a Delta R cut to remove fake leptons in the QCD control region
+			if (abs(evcat) == 11*100 || abs(evcat) == 13*100){
+				if ( svl.svldeltar < 0.4 ) continue;
+			}
+
 			fTSVLMass   = svl.svlmass;
 			fTSVLDeltaR = svl.svldeltar;
 			fTSVLMass_rot   = svl.svlmass_rot;
@@ -969,6 +975,7 @@ void LxyTreeAnalysis::analyze(){
 				(lid[svl.lepindex] > 0 && bid[svl.svindex] == 5  ) || // el-/mu- / t/b
 				(lid[svl.lepindex] < 0 && bid[svl.svindex] == -5 ) )  // el+/mu+ / tbar/bbar
 				fTCombInfo = 0; // wrong
+
 			fSVLInfoTree->Fill();
 		}
 	}

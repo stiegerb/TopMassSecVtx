@@ -37,6 +37,8 @@ There is a version of the trees from Nov14 that is still current in:
 ```
 /afs/cern.ch/work/s/stiegerb/TopSecVtx/SVLInfo/Nov14
 ```
+You can draw the plots with
+runPlotter.py -l 19701  -j test/topss2014/samples.json -o treedir/plots treedir
 
 ------------------------------------------------------
 ### Producing plots and histogram file

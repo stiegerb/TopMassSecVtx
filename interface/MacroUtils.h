@@ -81,11 +81,13 @@ namespace utils
     }
 
     template<class T1, class T2>
-    float getMT(T1 &visible, T2 &invisible, bool setSameMass=false)
+    float getMT(T1 &orig_visible, T2 &orig_invisible, bool setSameMass=false)
     {
       float mt(-1);
+      LorentzVector visible(orig_visible.Px(),orig_visible.Py(),orig_visible.Pz(),orig_visible.E());
+      LorentzVector invisible(orig_invisible.Px(),orig_invisible.Py(),orig_invisible.Pz(),orig_invisible.E());
       if(setSameMass){
-	LorentzVector sum= LorentzVector(visible)+LorentzVector(invisible);
+	LorentzVector sum=visible+invisible;
 	mt= TMath::Power(TMath::Sqrt(TMath::Power(visible.pt(),2)+pow(visible.mass(),2))+TMath::Sqrt(TMath::Power(invisible.pt(),2)+pow(visible.mass(),2)),2);
 	mt-=TMath::Power(sum.pt(),2);
 	mt=TMath::Sqrt(mt);

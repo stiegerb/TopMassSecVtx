@@ -46,7 +46,8 @@ DATAMCPLOTS = [
 	('SVLDeltaR' , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
 	('SVNtrk'    , 8,     2  , 10, 'SV Track Multiplicity'),
 	('LPt'       , NBINS, 20 , 200, 'Lepton pt [GeV]'),
-	('JPt'       , NBINS, 30 , 200, 'Jet pt [GeV]'),
+	('JPt'       , NBINS, 30 , 200, 'Jet pt [GeV]')
+	#('Mjj'       , NBINS, 30 , 200, 'M_{jj} [GeV]'),
 	# ('SVLMass'   , NBINS, XMIN, XMAX, MASSXAXISTITLE),
 ]
 

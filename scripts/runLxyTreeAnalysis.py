@@ -87,6 +87,8 @@ def getListOfTasks(directory, mask=''):
     for filename in file_list:
         ## Skip toppt weight files
         if filename.endswith('_toppt.root'): continue
+        ## Skip pdf weight files
+        if filename.endswith('_pdf.root'): continue
         task_list.append((getBareName(filename), filename))
 
     # task_list = []

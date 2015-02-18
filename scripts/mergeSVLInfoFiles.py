@@ -28,7 +28,6 @@ def getBaseNames(dirname):
                 counters[key] = [number]
             names.add(key)
 
-
         except ValueError:
             print filename,'is single'
             names.add(filename)
@@ -59,31 +58,31 @@ for basename, numbers in counters.iteritems():
 
     # merging:
     print '... processing', basename
-    cmd = 'hadd %s %s' % (target, filenames)
+    cmd = 'hadd -f %s %s' % (target, filenames)
     os.system(cmd)
 
     # cleanup:
     cmd = '/bin/mv %s %s' % (filenames, chunkdir)
     os.system(cmd)
 
-# merge also the nominal sample
-basenames = getBaseNames(inputdir)
-nomname = 'MC8TeV_TTJets_MSDecays_172v5'
-if (nomname in basenames and nomname+"_v2" in basenames):
-    files = [os.path.join(inputdir,"%s.root"%nomname),
-             os.path.join(inputdir,"%s_v2.root"%nomname)]
-    filenames = " ".join(files)
+# # merge also the nominal sample
+# basenames = getBaseNames(inputdir)
+# nomname = 'MC8TeV_TTJets_MSDecays_172v5'
+# if (nomname in basenames and nomname+"_v2" in basenames):
+#     files = [os.path.join(inputdir,"%s.root"%nomname),
+#              os.path.join(inputdir,"%s_v2.root"%nomname)]
+#     filenames = " ".join(files)
 
-    target = os.path.join(outputdir,"%s_nom.root" % nomname)
-    cmd = 'hadd %s %s' % (target, filenames)
-    os.system(cmd)
+#     target = os.path.join(outputdir,"%s_nom.root" % nomname)
+#     cmd = 'hadd %s %s' % (target, filenames)
+#     os.system(cmd)
 
-    cmd = '/bin/mv %s %s' % (filenames, chunkdir)
-    os.system(cmd)
+#     cmd = '/bin/mv %s %s' % (filenames, chunkdir)
+#     os.system(cmd)
 
-    target2 = os.path.join(outputdir,"%s.root" % nomname)
-    cmd = '/bin/mv %s %s' % (target, target2)
-    os.system(cmd)
+#     target2 = os.path.join(outputdir,"%s.root" % nomname)
+#     cmd = '/bin/mv %s %s' % (target, target2)
+#     os.system(cmd)
 
 
 

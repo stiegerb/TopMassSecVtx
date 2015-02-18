@@ -83,6 +83,35 @@ def getHistoFromTree(tree, sel='', var="SVLMass",
 	histo.SetDirectory(0)
 	return histo
 
+def getNTrkHistos(tree, sel='', var="SVLMass", tag='',
+		          nbins=NBINS, xmin=XMIN, xmax=XMAX,
+		          titlex='', combsToProject=[('tot','')]):
+	hists = []
+	for ntk1,ntk2 in NTRKBINS:
+		title = "%d #leq N_{trk.} < %d" %(ntk1, ntk2)
+		if ntk2 > 100:
+			title = "%d #leq N_{trk.}" %(ntk1)
+
+
+		for comb,combSel in combsToProject:
+			hist = ROOT.TH1D("%s_%s_%d_%s"%(var,comb,ntk1,tag),
+				             title, nbins, xmin, xmax)
+			tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
+			finalSel=sel
+			if finalSel=="": finalSel = "1"
+			if combSel=="" : finalSel = "(%s)"%finalSel
+			else           : finalSel = "(%s && %s)"%(finalSel,combSel)
+			finalSel=finalSel+"&&"+tksel
+			projectFromTree(hist, var, finalSel, tree)
+			hists.append(hist)
+
+	for x in hists:
+		x.SetLineWidth(2)
+		x.GetXaxis().SetTitle(titlex)
+		x.Sumw2()
+
+	return hists
+
 def getSVLHistos(tree, sel='',
 				 var="SVLMass",
 				 tag='', nbins=NBINS, xmin=XMIN, xmax=XMAX,
@@ -171,38 +200,6 @@ def getJESHistos(tree, sel='',
 	h_jesdn.SetLineColor(ROOT.kBlue-6)
 
 	return h_jesup, h_jesdn
-
-def getNTrkHistos(tree, sel='',
-		  var="SVLMass",
-		  tag='',
-		  nbins=NBINS, xmin=XMIN, xmax=XMAX,
-		  titlex='',
-		  combsToProject=[('tot','')]
-		  ):
-	hists = []
-	for ntk1,ntk2 in NTRKBINS:
-		title = "%d #leq N_{trk.} < %d" %(ntk1, ntk2)
-		if ntk2 > 100:
-			title = "%d #leq N_{trk.}" %(ntk1)
-
-
-		for comb,combSel in combsToProject:
-			hist = ROOT.TH1D("%s_%s_%d_%s"%(var,comb,ntk1,tag), title, NBINS, xmin, xmax)
-			tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
-			finalSel=sel
-			if finalSel=="": finalSel = "1"
-			if combSel=="" : finalSel = "(%s)"%finalSel
-			else           : finalSel = "(%s && %s)"%(finalSel,combSel)
-			finalSel=finalSel+"&&"+tksel
-			projectFromTree(hist, var, finalSel, tree)
-			hists.append(hist)
-
-	for x in hists:
-		x.SetLineWidth(2)
-		x.GetXaxis().SetTitle(titlex)
-		x.Sumw2()
-
-	return hists
 
 def makeControlPlot(hists, tag, seltag, opt):
 	h_tot, h_cor, h_wro, h_unm = hists

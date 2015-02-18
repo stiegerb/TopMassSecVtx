@@ -178,13 +178,16 @@ public:
     TH1D *fHNbJets, *fHNbJets_e, *fHNbJets_m, *fHNbJets_ee, *fHNbJets_mm, *fHNbJets_em;
     TH1D *fHMET, *fHMET_e, *fHMET_m, *fHMET_ee, *fHMET_mm, *fHMET_em;
 
+    TH1D *fHMjj, *fHMjj_e, *fHMjj_m;
+    TH1D *fHMT, *fHMT_e, *fHMT_m;
+
     // Drell-Yan control region
     TH1D *fHDY_mll_ee, *fHDY_mll_mm, *fHDY_met_ee, *fHDY_met_mm;
 
     TTree *fSVLInfoTree;
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
     Float_t fTWeight[10], fTJESWeight[3];
-    Float_t fTSVLMass, fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot, fTLPt, fTSVPt, fTSVLxy, fTJPt, fTJEta;
+    Float_t fTSVLMass, fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot, fTLPt, fTSVPt, fTSVLxy, fTJPt, fTJEta, fMjj;
     Float_t fTSVBfragWeight[3];
     Int_t fTSVLMinMassRank, fTSVLDeltaRRank, fTSVLMinMassRank_rot, fTSVLDeltaRRank_rot;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;

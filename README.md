@@ -37,6 +37,8 @@ There is a version of the trees from Feb10 that is still current in:
 ```
 /afs/cern.ch/work/s/stiegerb/TopSecVtx/SVLInfo/Feb10
 ```
+You can draw the plots with
+runPlotter.py -l 19701  -j test/topss2014/samples.json -o treedir/plots treedir
 
 ------------------------------------------------------
 ### Producing systematics plots and mass scans

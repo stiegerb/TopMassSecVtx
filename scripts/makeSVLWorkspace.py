@@ -94,7 +94,10 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options):
             for ntrk in trkMultList:
                 tag='%s_%d_%s'%(permName,ntrk,ch)
                 if len(comb)>0 : tag += '_' + comb
+
                 tasklist.append((ws, tag, massList, SVLmass, options))
+                # fitSignalPermutation(ws=ws, tag=tag, massList=massList,
+                #                      SVLmass=SVLmass, options=options)
 
     if options.jobs > 1:
         import multiprocessing

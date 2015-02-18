@@ -67,6 +67,7 @@ class RatioPlot(object):
         self.garbageList = []
         self.tag = None
         self.subtag = None
+        self.extratext = 'Simulation'
         self.plotformats = ['.pdf', '.png']
         self.colors = [ ## rainbow ('gay flag')
             ROOT.kViolet-6,
@@ -227,7 +228,7 @@ class RatioPlot(object):
             tlat.SetTextSize(20)
             tlat.DrawLatex(0.85, 0.78, self.subtag)
 
-        CMS_lumi(pad=p1,iPeriod=2,iPosX=0,extraText='Simulation')
+        CMS_lumi(pad=p1,iPeriod=2,iPosX=0,extraText=self.extratext)
 
         redrawBorder(p1)
         p2.cd()

@@ -186,8 +186,10 @@ public:
 
     TTree *fSVLInfoTree;
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
+    Float_t fTMET, fTNJets;
     Float_t fTWeight[10], fTJESWeight[3];
-    Float_t fTSVLMass, fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot, fTLPt, fTSVPt, fTSVLxy, fTJPt, fTJEta, fMjj;
+    Float_t fTSVLMass, fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot;
+    Float_t fTLPt, fTSVPt, fTSVLxy, fTJPt, fTJEta, fMjj;
     Float_t fTSVBfragWeight[3];
     Int_t fTSVLMinMassRank, fTSVLDeltaRRank, fTSVLMinMassRank_rot, fTSVLDeltaRRank_rot;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;

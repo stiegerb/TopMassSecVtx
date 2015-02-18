@@ -50,6 +50,7 @@ def main(args, opt):
 
 	if not opt.cache:
 		masshistos = {}     # (selection tag, process) -> histo
+		methistos  = {}     # (selection tag, process) -> histo
 		fittertkhistos = {} # (selection tag, process) -> [h_ntk1, h_ntk2, ...]
 		for tag,sel,_ in SELECTIONS:
 			for proc, tree in svltrees.iteritems():
@@ -62,6 +63,12 @@ def main(args, opt):
 		                                           hname="SVLMass_%s"%(htag),
 		                                           titlex=MASSXAXISTITLE)
 
+				methistos[(tag, proc)] =  getHistoFromTree(tree, sel=sel,
+					                               var='MET',
+		                                           hname="MET_%s"%(htag),
+		                                           xmin=0,xmax=200,
+		                                           titlex="Missing E_{T} [GeV]")
+
 				fittertkhistos[(tag,proc)] = getNTrkHistos(tree, sel=sel,
 									   tag=htag,
 									   var='SVLMass',
@@ -70,6 +77,7 @@ def main(args, opt):
 
 		cachefile = open(".svlqcdtemplates.pck", 'w')
 		pickle.dump(masshistos,     cachefile, pickle.HIGHEST_PROTOCOL)
+		pickle.dump(methistos,      cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(fittertkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 
@@ -77,6 +85,7 @@ def main(args, opt):
 	else:
 		cachefile = open(".svlqcdtemplates.pck", 'r')
 		masshistos     = pickle.load(cachefile)
+		methistos      = pickle.load(cachefile)
 		fittertkhistos = pickle.load(cachefile)
 		cachefile.close()
 
@@ -109,6 +118,17 @@ def main(args, opt):
 					tkhist.SetName('%s_template'%tktag)
 				else:
 					templates[tktag].Add(tkhist)
+
+			## MET templates:
+			hist = methistos[(tag,proc)]
+			mettag = "met_%s"%tag
+			if not mettag in templates:
+				templates[mettag] = hist
+				hist.SetName('%s_template'%mettag)
+			else:
+				templates[mettag].Add(hist)
+
+
 
 	ofi = ROOT.TFile(os.path.join(opt.outDir,'qcd_templates.root'), 'recreate')
 	ofi.cd()

@@ -691,6 +691,8 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("Weight",     fTWeight,    "Weight[10]/F");
 	fSVLInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[3]/F");
 	fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[3]/F");
+	fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
+	fSVLInfoTree->Branch("MET",       &fTMET,       "MET/F");
 	fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
 	fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
 	fSVLInfoTree->Branch("SVLMass",   &fTSVLMass,   "SVLMass/F");
@@ -719,6 +721,9 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	fTRun       = run;
 	fTLumi      = lumi;
 	fTEvCat     = evcat;
+	fTMET       = metpt;
+	fTNJets     = nj;
+	fTNPVtx     = nvtx;
 	for (int i = 0; i < 10; ++i){
 		fTWeight[i] = w[i];
 	}
@@ -726,7 +731,6 @@ void LxyTreeAnalysis::ResetSVLTree() {
 		fTJESWeight[i] = -99.99;
 		fTSVBfragWeight[i] = -99.99;
 	}
-	fTNPVtx          = nvtx;
 	fTNCombs         = -99.99;
 	fTSVLMass        = -99.99;
 	fTSVLDeltaR      = -99.99;
@@ -842,7 +846,7 @@ void LxyTreeAnalysis::analyze(){
 	}
 	if(svindices[1]<0) svindices.pop_back();
 	if(svindices[0]<0) svindices.pop_back();
-	
+
 	std::vector<TLorentzVector> isoObjects;
 	for (int il = 0; il < nl; ++il) { TLorentzVector p4; p4.SetPtEtaPhiM(lpt[il], leta[il], lphi[il], 0.); isoObjects.push_back(p4); }
 	for (int ij = 0; ij < nj; ++ij) { TLorentzVector p4; p4.SetPtEtaPhiM(jpt[ij], jeta[ij], jphi[ij], 0.); isoObjects.push_back(p4); }
@@ -850,7 +854,7 @@ void LxyTreeAnalysis::analyze(){
 	TLorentzVector metP4; metP4.SetPtEtaPhiM(metpt*cos(metphi),metpt*sin(metphi),0,metpt);
 	float mT(utils::cmssw::getMT<TLorentzVector,TLorentzVector>( isoObjects[0], metP4) );
 	float mjj( lightJetsP4.size()>=2 ? (lightJetsP4[0]+lightJetsP4[1]).M() : -99);
-					     
+
 	if(selectSVLEvent()){
 		// Fill some control histograms:
 		fHNJets   ->Fill(nj,      w[1]*w[4]);

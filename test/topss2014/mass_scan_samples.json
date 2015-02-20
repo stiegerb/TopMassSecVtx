@@ -101,6 +101,46 @@
       ]
     },
     {
+      "tag":"Single top169.5",
+      "isdata":false,
+      "color":824,
+      "lcolor":1,
+      "data":[
+        { "dtag":"MC8TeV_SingleTbar_t_169v5" , "split":1, "xsec":30.7, "br":[ 1.0 ], "dset":""},
+        { "dtag":"MC8TeV_SingleT_t_169v5"    , "split":1, "xsec":56.4, "br":[ 1.0 ], "dset":""}
+      ]
+    },
+    {
+      "tag":"Single top171.5",
+      "isdata":false,
+      "color":824,
+      "lcolor":1,
+      "data":[
+        { "dtag":"MC8TeV_SingleTbar_t_171v5" , "split":1, "xsec":30.7, "br":[ 1.0 ], "dset":""},
+        { "dtag":"MC8TeV_SingleT_t_171v5"    , "split":1, "xsec":56.4, "br":[ 1.0 ], "dset":""}
+      ]
+    },
+    {
+      "tag":"Single top173.5",
+      "isdata":false,
+      "color":824,
+      "lcolor":1,
+      "data":[
+        { "dtag":"MC8TeV_SingleTbar_t_173v5" , "split":1, "xsec":30.7, "br":[ 1.0 ], "dset":""},
+        { "dtag":"MC8TeV_SingleT_t_173v5"    , "split":1, "xsec":56.4, "br":[ 1.0 ], "dset":""}
+      ]
+    },
+    {
+      "tag":"Single top175.5",
+      "isdata":false,
+      "color":824,
+      "lcolor":1,
+      "data":[
+        { "dtag":"MC8TeV_SingleTbar_t_175v5" , "split":1, "xsec":30.7, "br":[ 1.0 ], "dset":""},
+        { "dtag":"MC8TeV_SingleT_t_175v5"    , "split":1, "xsec":56.4, "br":[ 1.0 ], "dset":""}
+      ]
+    },
+    {
       "tag":"Single top178.5",
       "isdata":false,
       "color":824,

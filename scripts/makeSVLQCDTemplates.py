@@ -57,7 +57,7 @@ def main(args, opt):
 				if not filterUseless(treefiles[proc], sel): continue
 
 				htag = ("%s_%s"%(tag, proc)).replace('.','')
-				print ' ... processing %s %s htag=%s' % (proc, sel, htag)
+				print ' ... processing %-30s %s htag=%s' % (proc, sel, htag)
 				masshistos[(tag, proc)] = getHistoFromTree(tree, sel=sel,
 					                               var='SVLMass',
 		                                           hname="SVLMass_%s"%(htag),
@@ -130,6 +130,15 @@ def main(args, opt):
 
 
 
+	ofi = ROOT.TFile(os.path.join(opt.outDir,'qcd_DataMCHists.root'), 'recreate')
+	ofi.cd()
+	for hist in [h for h in masshistos.values() + methistos.values()]:
+		hist.Write(hist.GetName())
+	for hist in [h for hists in fittertkhistos.values() for h in hists]:
+		hist.Write(hist.GetName())
+	ofi.Write()
+	ofi.Close()
+
 	ofi = ROOT.TFile(os.path.join(opt.outDir,'qcd_templates.root'), 'recreate')
 	ofi.cd()
 	# for hist in [h for h in masshistos.values()]:
@@ -144,6 +153,7 @@ def main(args, opt):
 		templateplot = RatioPlot('qcdtemplates_%s'%tag)
 		for key,hist in sorted(templates.iteritems()):
 			if not tag in key: continue
+			if 'met' in key: continue
 
 			if key == tag:
 				templateplot.add(hist, 'Inclusive')

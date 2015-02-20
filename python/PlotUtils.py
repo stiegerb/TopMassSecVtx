@@ -432,7 +432,7 @@ class Plot(object):
 
     def show(self, outDir):
         if len(self.mc)==0:
-            print '%s is empty' % self.name
+            print '%s has no MC!' % self.name
             return
 
         htype=self.mc[0].ClassName()

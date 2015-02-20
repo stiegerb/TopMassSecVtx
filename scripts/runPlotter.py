@@ -69,6 +69,21 @@ def openTFile(url):
         ## Failed to open url (file doesn't exist)
         return None
     return rootFile
+def getHistogramFromFile(key, tfile, options):
+    ihist = tfile.Get(key)
+    try:
+        if ihist.Integral() <= 0:
+            if options.verbose > 0:
+                print ("   empty histogram: %s in %s" %
+                           (ihist.GetName(), tfile.GetName()))
+            return None
+
+    except AttributeError:
+        if options.verbose > 0:
+            print ("   failed to load: %s from %s" %
+                          (key, tfile.GetName()))
+        return None
+    return ihist
 
 def getListofProcessesFromJSON(procList, chopPrefix=False):
     returnlist = []
@@ -202,7 +217,11 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     newPlot.plotformats = ['pdf', 'png']
     newPlot.ratiorange = (0.4,2.3)
     baseRootFile = None
+
     procsToExclude = options.excludeProcesses.split(',')
+    if len(procsToExclude) == 1 and '' in procsToExclude:
+        procsToExclude = []
+
     if inDir.endswith('.root'):
         baseRootFile = openTFile(inDir)
     for proc_tag in procList:
@@ -220,7 +239,10 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
             skipproc = False
             for exproc in procsToExclude:
                 if exproc in title: skipproc = True
-            if skipproc: continue
+            if skipproc:
+                if options.verbose > 0:
+                    print '   skipping %s' % title
+                continue
 
             hist = None
             for process in data: # loop on datasets for process
@@ -229,7 +251,10 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                 # Exclude processes specified in options.excludeProcesses
                 for exproc in procsToExclude:
                     if exproc in dtag: skipproc = True
-                if skipproc: continue
+                if skipproc:
+                    if options.verbose > 0:
+                        print '   skipping %s' % dtag
+                    continue
 
                 if baseRootFile is None:
                     if options.split: # Files are split
@@ -245,12 +270,8 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                             rootFile = openTFile(rootFileUrl)
                             if rootFile is None: continue
 
-                            ihist = rootFile.Get(key)
-                            try: ## Check if it is found
-                                if ihist.Integral() <= 0:
-                                    rootFile.Close()
-                                    continue
-                            except AttributeError:
+                            ihist = getHistogramFromFile(key, rootFile, options)
+                            if not ihist:
                                 rootFile.Close()
                                 continue
 
@@ -284,12 +305,8 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                         rootFile = openTFile(rootFileUrl)
                         if rootFile is None: continue
 
-                        ihist = rootFile.Get(key)
-                        try: ## Check if it is found
-                            if ihist.Integral() <= 0:
-                                rootFile.Close()
-                                continue
-                        except AttributeError:
+                        ihist = getHistogramFromFile(key, rootFile, options)
+                        if not ihist:
                             rootFile.Close()
                             continue
 
@@ -317,11 +334,10 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
 
                 else:
                     # ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
-                    ihist = baseRootFile.Get('%s_%s' % (key,dtag.split('_',1)[1]))
-                    try:
-                        if ihist.Integral() <= 0: continue
-                    except AttributeError:
-                        continue
+                    histkey = '%s_%s' % (key,dtag.split('_',1)[1])
+                    ihist = getHistogramFromFile(histkey, baseRootFile,
+                                                 options)
+                    if not ihist: continue
 
                     if not options.cutUnderOverFlow:
                         fixExtremities(ihist,True,True)
@@ -347,6 +363,10 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
             if hist is None: continue
             if not isData:
                 hist.Scale(options.lumi)
+            if options.verbose > 0:
+                print ("  adding %s (Integral: %s) (Color %d) (Isdata %d)" %
+                        (hist.GetName(), hist.Integral(), color, isData))
+
             newPlot.add(hist,title,color,isData)
 
     if options.normToData :
@@ -530,6 +550,10 @@ def runPlotter(inDir, options, scaleFactors={}):
 
     plots.sort()
 
+    if options.verbose > 0:
+        print " Processing the following plots:"
+        print plots
+
     # Now plot them
     if options.jobs==0:
         for plot in plots:
@@ -570,7 +594,7 @@ def addPlotterOptions(parser):
                       default="",
                       help='csv list of processes to exclude')
     parser.add_option('-v', '--verbose', dest='verbose', action="store",
-                      type='int', default=1,
+                      type='int', default=0,
                       help='Verbose mode [default: %default (semi-quiet)]')
     parser.add_option('-m', '--plotMask', dest='plotMask',
                       default='',

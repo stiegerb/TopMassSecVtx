@@ -18,7 +18,7 @@ data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,fl
     float sceta = ele.getVal("sceta");
     bool isInEB2EE    ( fabs(sceta) > 1.4442 && fabs(sceta) < 1.5660 );
     bool passLLkin    ( ele.pt()>20 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
-    bool passLJkin    ( ele.pt()>30 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
+    bool passLJkin    ( ele.pt()>33 && fabs(ele.eta()) < 2.1 && !isInEB2EE);
     bool passLJvetokin( ele.pt()>20 && fabs(ele.eta()) < 2.5 && !isInEB2EE);
 
     //id
@@ -26,19 +26,22 @@ data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,fl
     if( ele.getFlag("isconv") )              passIdBaseQualityCuts=false;
     if( fabs(ele.getVal("tk_d0"))>0.04 )     passIdBaseQualityCuts=false;
     if( ele.getVal("tk_lostInnerHits") > 0 ) passIdBaseQualityCuts=false;
+    if( fabs(ele.getVal("tk_dz"))>0.5)       passIdBaseQualityCuts=false;
     bool passLLid(     ele.getVal("mvatrig")>0.5 && passIdBaseQualityCuts);
-    bool passLJid(     ele.getVal("mvatrig")>0.5 && passIdBaseQualityCuts);
-    bool passLJvetoid( ele.getVal("mvatrig")>0.5 );
+    bool passLJid(     ele.getVal("mvatrig")>0.5 && passIdBaseQualityCuts && fabs(ele.getVal("tk_d0"))<0.02);
+    bool passLJvetoid( ele.getVal("mvatrig")>0 );
 
     // Isolation
     Float_t gIso = ele.getVal("gIso03");
     Float_t chIso = ele.getVal("chIso03");
+    Float_t puchIso = ele.getVal("puchIso03");
     Float_t nhIso = ele.getVal("nhIso03");
-    float relIso = (TMath::Max(nhIso+gIso-rho*utils::cmssw::getEffectiveArea(11,sceta,3),Float_t(0.))+chIso)/ele.pt();
-    bool passLLiso(     relIso < 0.15 );
-    bool passLJiso(     relIso < 0.15 );
-    bool passLJvetoiso( relIso < 0.15 );
-    bool passLAntiIso(  relIso > 0.20 );
+    float relIso = (TMath::Max(Float_t(nhIso+gIso-rho*utils::cmssw::getEffectiveArea(11,sceta,3)),Float_t(0.))+chIso)/ele.pt();
+    bool passLLiso( relIso < 0.15 );
+    float relIsoDeltaBeta = (TMath::Max(Float_t(nhIso+gIso-0.5*puchIso),Float_t(0.))+chIso)/ele.pt();
+    bool passLJiso( relIsoDeltaBeta < 0.1 );
+    bool passLJvetoiso( relIsoDeltaBeta < 0.15 );
+    bool passLAntiIso(  relIsoDeltaBeta > 0.20 );
 
     //set the flags
     ele.setVal("reliso",relIso);

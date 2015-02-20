@@ -13,7 +13,7 @@ synchdir="/store/cmst3/group/top/summer2014/synchEx"
 plotsdir="${HOME}/public/html/TopMassSecVtx/"
 cfg="$CMSSW_BASE/src/UserCode/TopMassSecVtx/test/runAnalysis_cfg.py.templ"
 queue=1nd
-hash=e1fa735
+hash=a176401
 
 #prepare output directories
 mkdir -p ${outdir}/summary/
@@ -43,13 +43,13 @@ fi
 
 if [ "$step" == "syst" ]; then
     echo "Submitting systematic samples"
-    runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/syst_samples.json  -d ${indir} -o ${outdir}/summary_systs/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash} -t SemiLep;
+    runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/syst_samples.json  -d ${indir} -o ${outdir}/summary_systs/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
     echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
 fi
 
 if [ "$step" == "mass" ]; then
     echo "Submitting mass scan samples"
-    runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/mass_scan_samples.json  -d ${indir} -o ${outdir}/mass_scan/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash} -t 171;
+    runLocalAnalysisOverSamples.py -e runTopAnalysis -j ${outdir}/mass_scan_samples.json  -d ${indir} -o ${outdir}/mass_scan/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
     echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
 fi
 

@@ -42,9 +42,12 @@ for i in `seq 0 ${totalstep}`; do
 	    outputList="${outputList} ${newFile}"
 	fi
     done
-    hadd -f -k /tmp/psilva/${crab_working_dir}_${i}.root ${outputList}
-    #cmsStage -f /tmp/psilva/${crab_working_dir}_${i}.root ${output_dir} 
-    #rm /tmp/psilva/${crab_working_dir}_${i}.root
+    outFile="${crab_working_dir}_${i}"
+    outFile="${outFile/central/172v5}"
+
+    hadd -f -k /tmp/psilva/${outFile}.root ${outputList}
+    cmsStage -f /tmp/psilva/${outFile}.root ${output_dir} 
+    rm /tmp/psilva/${outFile}.root
 done
 
 

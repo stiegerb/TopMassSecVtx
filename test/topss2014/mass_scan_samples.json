@@ -45,18 +45,6 @@
       ]
     },
     {
-      "tag":"t#bar{t}172.5",
-      "isdata":false,
-      "color":1,
-      "lcolor":1,
-      "fill":0,
-      "spimpose":1,
-      "lwidth":1,
-      "data":[
-        { "dtag":"MC8TeV_TTJets_172v5"               , "split":20,  "xsec":1.0         , "br":[ 1.0 ]                 , "dset":"Unknown"        },
-      ]
-    },
-    {
       "tag":"t#bar{t}173.5",
       "isdata":false,
       "color":6,
@@ -110,6 +98,46 @@
         { "dtag":"MC8TeV_SingleT_tW_166v5"   , "split":1, "xsec":11.1, "br":[ 1.0 ], "dset":""},
         { "dtag":"MC8TeV_SingleTbar_t_166v5" , "split":1, "xsec":30.7, "br":[ 1.0 ], "dset":""},
         { "dtag":"MC8TeV_SingleT_t_166v5"    , "split":1, "xsec":56.4, "br":[ 1.0 ], "dset":""}
+      ]
+    },
+    {
+      "tag":"Single top169.5",
+      "isdata":false,
+      "color":824,
+      "lcolor":1,
+      "data":[
+        { "dtag":"MC8TeV_SingleTbar_t_169v5" , "split":1, "xsec":30.7, "br":[ 1.0 ], "dset":""},
+        { "dtag":"MC8TeV_SingleT_t_169v5"    , "split":1, "xsec":56.4, "br":[ 1.0 ], "dset":""}
+      ]
+    },
+    {
+      "tag":"Single top171.5",
+      "isdata":false,
+      "color":824,
+      "lcolor":1,
+      "data":[
+        { "dtag":"MC8TeV_SingleTbar_t_171v5" , "split":1, "xsec":30.7, "br":[ 1.0 ], "dset":""},
+        { "dtag":"MC8TeV_SingleT_t_171v5"    , "split":1, "xsec":56.4, "br":[ 1.0 ], "dset":""}
+      ]
+    },
+    {
+      "tag":"Single top173.5",
+      "isdata":false,
+      "color":824,
+      "lcolor":1,
+      "data":[
+        { "dtag":"MC8TeV_SingleTbar_t_173v5" , "split":1, "xsec":30.7, "br":[ 1.0 ], "dset":""},
+        { "dtag":"MC8TeV_SingleT_t_173v5"    , "split":1, "xsec":56.4, "br":[ 1.0 ], "dset":""}
+      ]
+    },
+    {
+      "tag":"Single top175.5",
+      "isdata":false,
+      "color":824,
+      "lcolor":1,
+      "data":[
+        { "dtag":"MC8TeV_SingleTbar_t_175v5" , "split":1, "xsec":30.7, "br":[ 1.0 ], "dset":""},
+        { "dtag":"MC8TeV_SingleT_t_175v5"    , "split":1, "xsec":56.4, "br":[ 1.0 ], "dset":""}
       ]
     },
     {

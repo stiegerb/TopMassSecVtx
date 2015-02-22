@@ -307,9 +307,10 @@ class Plot(object):
 
         if "GeV" in h.GetXaxis().GetTitle():
             if h.GetBinWidth(1) > 0.1:
-                h.GetYaxis().SetTitle("Events / %3.1f GeV" % h.GetBinWidth(1))
+                h.GetYaxis().SetTitle("Events / %3.1f GeV" %h.GetBinWidth(1))
             else:
-                h.GetYaxis().SetTitle("Events / %.0f MeV" % (h.GetBinWidth(1)*1000))
+                h.GetYaxis().SetTitle("Events / %.0f MeV" %
+                                                 (h.GetBinWidth(1)*1000))
         else:
             h.GetYaxis().SetTitle("Events / %3.1f" % h.GetBinWidth(1))
 
@@ -333,14 +334,11 @@ class Plot(object):
             self.mc.append(h)
 
     def appendTo(self,outUrl):
-        #if file does not exist it is created
-        outF=ROOT.TFile.Open(outUrl,'UPDATE')
-        try:
-            outF.cd(self.name)
-        except Exception, e:
-            outDir=outF.mkdir(self.name)
+        # If file does not exist it is created
+        outF = ROOT.TFile.Open(outUrl,'UPDATE')
+        if not outF.cd(self.name):
+            outDir = outF.mkdir(self.name)
             outDir.cd()
-            raise e
 
         for m in self.mc :
             if m :
@@ -432,7 +430,7 @@ class Plot(object):
 
     def show(self, outDir):
         if len(self.mc)==0:
-            print '%s is empty' % self.name
+            print '%s has no MC!' % self.name
             return
 
         htype=self.mc[0].ClassName()

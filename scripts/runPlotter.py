@@ -103,14 +103,20 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],
     allKeys = tdir.GetListOfKeys()
     for tkey in allKeys:
         key = tkey.GetName()
-        keepPlot=False
+
+        keepPlot = False
+        antifilter = False
         for tag in tagsToFilter:
+            if tag == '!':
+                antifilter = True
             if tag in key:
-                keepPlot=True
+                keepPlot = True
+
+        if antifilter: keepPlot = not keepPlot
         if not keepPlot : continue
+
         obj = tdir.Get(key)
         if obj.InheritsFrom('TDirectory') :
-            ## FIXME: Potential bug with filterByProcsFromJSON
             allKeysInSubdir = getAllPlotsFrom(obj, chopPrefix=chopPrefix,
                                 tagsToFilter=tagsToFilter,
                                 filterByProcsFromJSON=filterByProcsFromJSON)

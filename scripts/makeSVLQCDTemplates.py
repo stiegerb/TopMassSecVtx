@@ -106,17 +106,6 @@ def main(args, options):
 	ofi.Write()
 	ofi.Close()
 
-	## DY Scale factors?
-	## Not really necessary for single lepton channels, but can use this
-	## code snippet elsewhere
-	scaleFactors = {}
-	if options.dySFFile:
-		from extractDYScaleFactor import prepareDYScaleFactors
-		scaleFactors = prepareDYScaleFactors(options.dySFFile,
-			                                 plotfile=outputFileName,
-			                                 inputdir=args[0],
-			                                 options=options)
-
 	## Run the plotter to get scaled MET plots
 	## Can then use those to subtract non-QCD backgrounds from data template
 	## Overwrite some of the options

@@ -1,24 +1,24 @@
 #! /usr/bin/env python
 import os, sys
 import ROOT
+from copy import deepcopy
 from runPlotter import runPlotter, addPlotterOptions
 from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
 
 from makeSVLControlPlots import SELECTIONS, TREENAME, NBINS
 from makeSVLControlPlots import getHistoFromTree
-
-MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
+from makeSVLControlPlots import XMIN, XMAX, MASSXAXISTITLE
 
 DATAMCPLOTS = [
 	('SVLDeltaR' , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
 	('SVNtrk'    , 8,     2  , 10, 'SV Track Multiplicity'),
 	('LPt'       , NBINS, 20 , 200, 'Lepton pt [GeV]'),
 	('JPt'       , NBINS, 30 , 200, 'Jet pt [GeV]'),
-	# ('SVLMass'   , NBINS, XMIN, XMAX, MASSXAXISTITLE),
+	('SVLMass'   , NBINS, XMIN, XMAX, MASSXAXISTITLE),
 ]
 
 def writeDataMCHistos(tree, processName, outputFile):
-	print " processing %s, %d entries ..." % (processName, tree.GetEntries())
+	print " processing %-30s %7d entries ..." % (processName, tree.GetEntries())
 	outputFile.cd()
 	for tag,sel,_ in SELECTIONS:
 		for var,nbins,xmin,xmax,titlex in DATAMCPLOTS:
@@ -51,16 +51,40 @@ def main(args, options):
 		ofi.Write()
 		ofi.Close()
 
-	scaleFactors = {}
-	if options.dySFFile:
-		from extractDYScaleFactor import prepareDYScaleFactors
-		scaleFactors = prepareDYScaleFactors(options.dySFFile,
-			                                 plotfile=outputFileName,
-			                                 inputdir=args[0],
-			                                 options=options)
+	# print 80*'='
+	# print ' Producing charm peak control plots from histograms'
+	# charmoptions = deepcopy(options)
+	# charmoptions.filter = 'JPsi,D0,Dpm,DMDs,Ds2010' ## charm plots
+	# charmoptions.excludeProcesses = 'QCD'
+	# charmoptions.cutUnderOverFlow = True
+	# runPlotter(args[0], charmoptions)
 
-	runPlotter(args[0],        options, scaleFactors=scaleFactors)
+	print 80*'='
+	print ' Producing DY control plots for scale factors'
+	dycontroldir = os.path.join(options.outDir, 'dy_control')
+	os.system('mkdir -p %s'% dycontroldir)
+	dyoptions = deepcopy(options)
+	dyoptions.outDir = dycontroldir
+	dyoptions.filter = 'DY'
+	runPlotter(args[0], dyoptions)
+
+	scaleFactors = {}
+	from extractDYScaleFactor import prepareDYScaleFactors
+	scaleFactors = prepareDYScaleFactors(os.path.join(dycontroldir,
+		                                              'plotter.root'),
+		                                 plotfile=outputFileName,
+		                                 inputdir=args[0],
+		                                 options=options)
+
+	print 80*'='
+	print ' Producing (DY-scaled) control plots from histograms'
+	options.filter = '!,JPsi,D0,Dpm,DMDs,Ds2010' ## not the charm plots
+	runPlotter(args[0], options, scaleFactors=scaleFactors)
+
+	print 80*'='
+	print ' Producing plots from SVLInfo trees'
 	runPlotter(outputFileName, options, scaleFactors=scaleFactors)
+
 	return 0
 
 

@@ -5,6 +5,8 @@ import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot, setTDRStyle
 from makeSVLControlPlots import MASSXAXISTITLE, TREENAME, NTRKBINS
 from makeSVLControlPlots import getHistoFromTree, getNTrkHistos
+from makeSVLDataMCPlots import addDataMCPlotOptions
+from runPlotter import runPlotter, addPlotterOptions, openTFile
 
 SELECTIONS = [
 	('e_qcd',         'abs(EvCat)==1100', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
@@ -25,8 +27,8 @@ def filterUseless(filename, sel=''):
 	if '1300' in sel and not 'SingleMu'       in filename: return False
 	return True
 
-def main(args, opt):
-	os.system('mkdir -p %s'%opt.outDir)
+def main(args, options):
+	os.system('mkdir -p %s'%options.outDir)
 	try:
 		treefiles = {} # procname -> filename
 		for filename in os.listdir(args[0]):
@@ -42,13 +44,15 @@ def main(args, opt):
 		print "Need to provide an input directory"
 		return -1
 
+	## Collect all the trees
 	svltrees = {} # proc -> tree
 	for proc in treefiles.keys():
 		tfile = ROOT.TFile.Open(treefiles[proc], 'READ')
 		if not filterUseless(treefiles[proc]): continue
 		svltrees[proc] = tfile.Get(TREENAME)
 
-	if not opt.cache:
+	## Produce all the relevant histograms
+	if not options.cached:
 		masshistos = {}     # (selection tag, process) -> histo
 		methistos  = {}     # (selection tag, process) -> histo
 		fittertkhistos = {} # (selection tag, process) -> [h_ntk1, h_ntk2, ...]
@@ -90,47 +94,10 @@ def main(args, opt):
 		cachefile.close()
 
 
-	## Build the templates from the single histograms
-	templates = {} # selection tag -> template histo
-	for tag,sel,_ in SELECTIONS:
-		for proc in svltrees.keys():
-			if not filterUseless(treefiles[proc], sel): continue
-			if not 'Data8TeV' in treefiles[proc]: continue
-
-			hist = masshistos[(tag,proc)]
-			if not tag in templates:
-				templates[tag] = hist
-				hist.SetName('%s_template'%tag)
-			else:
-				templates[tag].Add(hist)
-
-			for tkhist in fittertkhistos[(tag,proc)]:
-				try:
-					tkbin = int(tkhist.GetName().split('_')[2])
-				except ValueError:
-					print ('Failed to extract track bin from histo name:%s' %
-						                              tkhist.GetName())
-					continue
-				tktag = '%s_%d' % (tag, tkbin)
-
-				if not tktag in templates:
-					templates[tktag] = tkhist
-					tkhist.SetName('%s_template'%tktag)
-				else:
-					templates[tktag].Add(tkhist)
-
-			## MET templates:
-			hist = methistos[(tag,proc)]
-			mettag = "met_%s"%tag
-			if not mettag in templates:
-				templates[mettag] = hist
-				hist.SetName('%s_template'%mettag)
-			else:
-				templates[mettag].Add(hist)
-
-
-
-	ofi = ROOT.TFile(os.path.join(opt.outDir,'qcd_DataMCHists.root'), 'recreate')
+	#########################################################
+	## Write out the histograms, make data/mc plots
+	outputFileName = os.path.join(options.outDir,'qcd_DataMCHists.root')
+	ofi = ROOT.TFile(outputFileName, 'recreate')
 	ofi.cd()
 	for hist in [h for h in masshistos.values() + methistos.values()]:
 		hist.Write(hist.GetName())
@@ -139,21 +106,93 @@ def main(args, opt):
 	ofi.Write()
 	ofi.Close()
 
-	ofi = ROOT.TFile(os.path.join(opt.outDir,'qcd_templates.root'), 'recreate')
+	## DY Scale factors?
+	## Not really necessary for single lepton channels, but can use this
+	## code snippet elsewhere
+	scaleFactors = {}
+	if options.dySFFile:
+		from extractDYScaleFactor import prepareDYScaleFactors
+		scaleFactors = prepareDYScaleFactors(options.dySFFile,
+			                                 plotfile=outputFileName,
+			                                 inputdir=args[0],
+			                                 options=options)
+
+	## Run the plotter to get scaled MET plots
+	## Can then use those to subtract non-QCD backgrounds from data template
+	## Overwrite some of the options
+	options.filter = 'SVLMass,MET' ## only run SVLMass and MET plots
+	options.excludeProcesses = 'QCD'
+	options.outFile = 'scaled_met_inputs.root'
+	options.cutUnderOverFlow = True
+	os.system('rm %s' % os.path.join(options.outDir, options.outFile))
+	runPlotter(outputFileName, options, scaleFactors=scaleFactors)
+
+	#########################################################
+	## Build the actual templates from the single histograms
+	templates = {} # selection tag -> template histo
+	inputfile = openTFile(os.path.join(options.outDir, options.outFile))
+
+	for tag,sel,_ in SELECTIONS:
+		categories = ['MET', 'SVLMass']
+		for x,_ in NTRKBINS:
+			categories.append('SVLMass_tot_%d'%int(x))
+
+		for category in categories:
+			plotdirname = '%s_%s'%(category,tag)
+			plotdir = inputfile.Get(plotdirname)
+			h_bg = None
+			h_data = None
+			for tkey in plotdir.GetListOfKeys():
+				key = tkey.GetName()
+				if key.startswith('Graph_from'): continue
+				if key.startswith('MC8TeV_QCD'): continue
+
+				hist = inputfile.Get('%s/%s'%(plotdirname,key))
+				if key.startswith('MC8TeV'):
+					if not h_bg:
+						h_bg = hist.Clone("%s_BGs" % tag)
+					else:
+						h_bg.Add(hist)
+
+				if key.startswith('Data8TeV'):
+					h_data = hist.Clone("%s_Data" % tag)
+
+			## Determine a suitable output name
+			histname = '%s_template'%tag
+			if category == 'MET': histname = "%s_%s" % ('met',histname)
+			if 'tot' in category:
+				tkbin = int(category.split('_')[2])
+				histname = "%s_%d" % (histname, tkbin)
+			h_data_subtr = h_data.Clone(histname)
+
+			## Now subtract the combined MC from the data
+			h_data_subtr.Add(h_bg, -1)
+
+			dicttag = tag
+			if category == 'MET':
+				dicttag = 'met_%s'%tag
+			if '_tot_' in category:
+				dicttag = '%s_%d' % (tag, tkbin)
+			templates[dicttag] = h_data_subtr
+
+	ofi = ROOT.TFile(os.path.join(options.outDir,'qcd_templates.root'),
+		             'recreate')
 	ofi.cd()
-	# for hist in [h for h in masshistos.values()]:
-	# 	hist.Write(hist.GetName())
-	# for hist in [h for hists in fittertkhistos.values() for h in hists]:
-	# 	hist.Write(hist.GetName())
 	for hist in templates.values(): hist.Write(hist.GetName())
 	ofi.Write()
 	ofi.Close()
 
+	for key,hist in sorted(templates.iteritems()):
+		print key
+
+
+	#########################################################
+	## Make a plot comparing the templates
 	for tag,_,seltag in SELECTIONS:
 		templateplot = RatioPlot('qcdtemplates_%s'%tag)
 		for key,hist in sorted(templates.iteritems()):
 			if not tag in key: continue
-			if 'met' in key: continue
+			if key.startswith('met'): continue
 
 			if key == tag:
 				templateplot.add(hist, 'Inclusive')
@@ -168,7 +207,7 @@ def main(args, opt):
 		templateplot.ratiorange = (0.2, 2.2)
 		templateplot.colors = [ROOT.kBlack, ROOT.kBlue-8, ROOT.kAzure-2,
 		                       ROOT.kCyan-3]
-		templateplot.show("qcdtemplates_%s"%tag, opt.outDir)
+		templateplot.show("qcdtemplates_%s"%tag, options.outDir)
 		templateplot.reset()
 
 
@@ -187,10 +226,8 @@ if __name__ == "__main__":
 	usage: %prog [options] input_directory
 	"""
 	parser = OptionParser(usage=usage)
-	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
-					  help='Output directory [default: %default]')
-	parser.add_option('-c', '--cache', dest='cache', action="store_true",
-					  help='Read from cache')
+	addPlotterOptions(parser)
+	addDataMCPlotOptions(parser)
 	(opt, args) = parser.parse_args()
 
 	setTDRStyle()

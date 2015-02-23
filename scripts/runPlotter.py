@@ -73,13 +73,13 @@ def getHistogramFromFile(key, tfile, options):
     ihist = tfile.Get(key)
     try:
         if ihist.Integral() <= 0:
-            if options.verbose > 0:
+            if options.verbose > 1:
                 print ("   empty histogram: %s in %s" %
                            (ihist.GetName(), tfile.GetName()))
             return None
 
     except AttributeError:
-        if options.verbose > 0:
+        if options.verbose > 1:
             print ("   failed to load: %s from %s" %
                           (key, tfile.GetName()))
         return None
@@ -111,7 +111,9 @@ def getAllPlotsFrom(tdir, chopPrefix=False,tagsToFilter=[],
         obj = tdir.Get(key)
         if obj.InheritsFrom('TDirectory') :
             ## FIXME: Potential bug with filterByProcsFromJSON
-            allKeysInSubdir = getAllPlotsFrom(obj,chopPrefix)
+            allKeysInSubdir = getAllPlotsFrom(obj, chopPrefix=chopPrefix,
+                                tagsToFilter=tagsToFilter,
+                                filterByProcsFromJSON=filterByProcsFromJSON)
             for subkey in allKeysInSubdir :
                 if not chopPrefix:
                     toReturn.append( key +'/'+subkey )
@@ -376,7 +378,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
         newPlot.show(options.outDir)
         if options.debug or newPlot.name.find('flow')>=0  :
             newPlot.showTable(options.outDir)
-    newPlot.appendTo(options.outDir+'/plotter.root')
+    newPlot.appendTo(os.path.join(options.outDir, options.outFile))
     newPlot.reset()
 
 def readXSecWeights(inDir, options):
@@ -606,6 +608,9 @@ def addPlotterOptions(parser):
                            ' [default: %default]')
     parser.add_option('-o', '--outDir', dest='outDir', default='plots',
                       help='Output directory [default: %default]')
+    parser.add_option('--outFile', dest='outFile', default='plotter.root',
+                      help=('Output file (in output directory) '
+                            '[default: %default]'))
     parser.add_option('-s', '--silent', dest='silent', action="store_true",
                       help='Silent mode (no plots) [default: %default]')
     parser.add_option('--split', dest='split', action="store_true",
@@ -647,7 +652,7 @@ if __name__ == "__main__":
         gStyle.SetOptStat(0)
 
         os.system('mkdir -p %s'%opt.outDir)
-        os.system('rm %s/plotter.root'%opt.outDir)
+        os.system('rm %s'%os.path.join(opt.outDir,opt.outFile))
         runPlotter(inDir=args[0], options=opt)
         print 'Plots have been saved to %s' % opt.outDir
         exit(0)

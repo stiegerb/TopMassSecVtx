@@ -6,19 +6,17 @@ treedir=/afs/cern.ch/work/s/stiegerb/TopSecVtx/SVLInfo/${TAG}/
 
 mkdir -p ${treedir}
 
-# hash="a176401"
-hash="e1fa735"
+hash="a176401"
+#hash="e1fa735"
 
 echo "Running on "${treedir}
 
 case $WHAT in
 	TREES )
 		./scripts/runLxyTreeAnalysis.py -o ${treedir} -p MC8TeV   -j 8 /store/cmst3/group/top/summer2014/${hash}/
-		hash="a176401"
 		./scripts/runLxyTreeAnalysis.py -o ${treedir} -p Data8TeV -j 8 /store/cmst3/group/top/summer2014/${hash}/
 		;;
 	DATATREES )
-		hash="a176401"
 		./scripts/runLxyTreeAnalysis.py -o ${treedir} -p Data8TeV -j 8 /store/cmst3/group/top/summer2014/${hash}/
 		;;
 	ALLTREES )

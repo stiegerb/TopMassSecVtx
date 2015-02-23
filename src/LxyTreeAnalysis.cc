@@ -699,6 +699,7 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("SVLDeltaR", &fTSVLDeltaR, "SVLDeltaR/F");
 	fSVLInfoTree->Branch("SVLMass_rot",   &fTSVLMass_rot,   "SVLMass_rot/F");
 	fSVLInfoTree->Branch("SVLDeltaR_rot", &fTSVLDeltaR_rot, "SVLDeltaR_rot/F");
+	fSVLInfoTree->Branch("BHadNeutrino", &fTBHadNeutrino, "BHadNeutrino/I");
 	fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
 	fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
 	fSVLInfoTree->Branch("SVLxy",     &fTSVLxy,     "SVLxy/F");
@@ -736,6 +737,7 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	fTSVLDeltaR      = -99.99;
 	fTSVLMass_rot    = -99.99;
 	fTSVLDeltaR_rot  = -99.99;
+	fTBHadNeutrino   = -99;
 	fTLPt            = -99.99;
 	fTSVPt           = -99.99;
 	fTSVLxy          = -99.99;
@@ -863,7 +865,7 @@ void LxyTreeAnalysis::analyze(){
 			fHNbJets    ->Fill(nbjets,  w[1]*w[4]);
 			fHMET       ->Fill(metpt,   w[1]*w[4]);
 			fHMT        ->Fill(mT,      w[1]*w[4]);
-			fHMjj       ->Fill(mjj,     w[1]*w[4]);
+			if(mjj>=0.) fHMjj->Fill(mjj,     w[1]*w[4]); // only fill if there are 2 light jets
 		}
 		if (abs(evcat) == 11*13){
 			fHNJets_em  ->Fill(nj,      w[1]*w[4]);
@@ -991,6 +993,10 @@ void LxyTreeAnalysis::analyze(){
 			fTJPt          = jpt  [svl.svindex];
 			fTJEta         = jeta [svl.svindex];
 			fTSVNtrk       = svntk[svl.svindex];
+			fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1
+			if(fTBHadNeutrino < 0) fTBHadNeutrino = -1; // set -999 to -1
+
+
 			fTJESWeight[0] = svl.jesweights[0]; // nominal
 			fTJESWeight[1] = svl.jesweights[1]; // jes up
 			fTJESWeight[2] = svl.jesweights[2]; // jes down

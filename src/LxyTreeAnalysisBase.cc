@@ -104,6 +104,7 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("bhadphi", bhadphi, &b_bhadphi);
    fChain->SetBranchAddress("bhadmass", bhadmass, &b_bhadmass);
    fChain->SetBranchAddress("bhadlxy", bhadlxy, &b_bhadlxy);
+   fChain->SetBranchAddress("bhadneutrino", bhadneutrino, &b_bhadneutrino);
    fChain->SetBranchAddress("npf", &npf, &b_npf);
    fChain->SetBranchAddress("npfb1", &npfb1, &b_npfb1);
    fChain->SetBranchAddress("pfid", pfid, &b_pfid);

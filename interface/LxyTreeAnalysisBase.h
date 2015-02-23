@@ -77,6 +77,7 @@ public :
    Float_t         bhadphi[50];   //[nj]
    Float_t         bhadmass[50];   //[nj]
    Float_t         bhadlxy[50];   //[nj]
+   Int_t           bhadneutrino[50];   //[nj]
    Int_t           npf;
    Int_t           npfb1;
    Int_t           pfid[1000];   //[npf]
@@ -149,6 +150,7 @@ public :
    TBranch        *b_bhadphi;   //!
    TBranch        *b_bhadmass;   //!
    TBranch        *b_bhadlxy;   //!
+   TBranch        *b_bhadneutrino;   //!
    TBranch        *b_npf;   //!
    TBranch        *b_npfb1;   //!
    TBranch        *b_pfid;   //!

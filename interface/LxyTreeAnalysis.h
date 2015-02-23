@@ -191,6 +191,7 @@ public:
     Float_t fTSVLMass, fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot;
     Float_t fTLPt, fTSVPt, fTSVLxy, fTJPt, fTJEta, fMjj;
     Float_t fTSVBfragWeight[3];
+    Int_t fTBHadNeutrino;
     Int_t fTSVLMinMassRank, fTSVLDeltaRRank, fTSVLMinMassRank_rot, fTSVLDeltaRRank_rot;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
 

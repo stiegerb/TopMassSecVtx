@@ -122,9 +122,22 @@ def gatherHistosFromFiles(histonames, dirname):
 	histos = {}
 	for filename in os.listdir(dirname):
 		if not os.path.splitext(filename)[1] == '.root': continue
-		tfile = openTFile(filename)
-		for keys, hname in histonames:
-			histos[keys] = tfile.Get(hname)
+		tfile = ROOT.TFile.Open(os.path.join(dirname,filename), 'READ')
+		for keys, hname in histonames.iteritems():
+
+			## Skip files with wrong mass points
+			if not str(keys[2]).replace('.','') in filename: continue
+			## or wrong channel (this still leaves some overlap)
+			if not CHANNAMES[keys[1]] in filename: continue
+			try:
+				histo = tfile.Get(hname)
+				try:
+					histo.SetDirectory(0)
+					histos[keys] = histo
+				except AttributeError: pass
+
+			except ReferenceError:
+				print hname, "not found in", filename
 
 	return histos
 
@@ -135,34 +148,33 @@ def main(args, opt):
 
 	histonames = {}
 
-	if not opt.cache:
-		tasklist = {} ## tree -> tasklist
-		for (mass,chan) in masstrees.keys():
-			tasks = []
-			if chan == 's': continue
-			for tag,sel,_ in SELECTIONS:
+	tasklist = {} ## (mass,chan) -> tasklist
+	for (mass,chan) in masstrees.keys():
+		tasks = []
+		if chan == 's': continue
+		for tag,sel,_ in SELECTIONS:
 
-				htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
-				if not chan == 'tt':
-					htag = ("%s_%s_%5.1f"%(tag,chan,mass)).replace('.','')
+			htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
+			if not chan == 'tt':
+				htag = ("%s_%s_%5.1f"%(tag,chan,mass)).replace('.','')
 
-				for comb,combsel in COMBINATIONS:
-					hname = "SVLMass_%s_%s" % (comb, htag)
-					finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT,sel,combsel)
+			for comb,combsel in COMBINATIONS:
+				hname = "SVLMass_%s_%s" % (comb, htag)
+				finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT,sel,combsel)
+				tasks.append((hname, finalsel))
+				histonames[(tag, chan, mass, comb)] = hname
+
+				for ntk1,ntk2 in NTRKBINS:
+					tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
+					finalsel = "%s*(%s&&%s&&%s)"%(COMMONWEIGHT, sel,
+						                          combsel,tksel)
+					hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
 					tasks.append((hname, finalsel))
-					histonames[(tag, chan, mass, comb)] = hname
+					histonames[(tag, chan, mass, comb, ntk1)] = hname
 
-					for ntk1,ntk2 in NTRKBINS:
-						tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
-						finalsel = "%s*(%s&&%s&&%s)"%(COMMONWEIGHT, sel,
-							                          combsel,tksel)
-						hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
-						tasks.append((hname, finalsel))
-						histonames[(tag, chan, mass, comb, ntk1)] = hname
+		tasklist[(mass,chan)] = tasks
 
-			tasklist[(mass,chan)] = tasks
-
-
+	if not opt.cache:
 		runTasks(massfiles, tasklist, opt)
 
 		## Retrieve the histograms from the individual files
@@ -181,21 +193,24 @@ def main(args, opt):
 		masshistos    = pickle.load(cachefile)
 		cachefile.close()
 
-		ofi = ROOT.TFile(os.path.join(opt.outDir,'masshistos.root'),
-															   'recreate')
-		ofi.cd()
 
-		for tag,chan,mass in masshistos.keys():
-			if not ofi.cd(tag):
-				outDir = ofi.mkdir(tag)
-				outDir.cd()
 
-			for hist in masshistos[(tag,chan,mass)]:
-				hist.Write(hist.GetName())
-			for hist in massntkhistos[(tag,chan,mass)]:
-				hist.Write(hist.GetName())
-		ofi.Write()
-		ofi.Close()
+		# ofi = ROOT.TFile(os.path.join(opt.outDir,'masshistos.root'),
+		# 													   'recreate')
+		# ofi.cd()
+
+		# for key in masshistos.keys():
+		# 	tag, chan, mass = key[0],key[1],key[2]
+		# 	if not ofi.cd(tag):
+		# 		outDir = ofi.mkdir(tag)
+		# 		outDir.cd()
+
+		# 	for comb,_ in COMBINATIONS:
+		# 		masshistos[(tag,chan,mass,comb)].Write()
+		# 		for ntk,_ in NTRKBINS:
+		# 			masshistos[(tag,chan,mass,comb,ntk)].Write()
+		# ofi.Write()
+		# ofi.Close()
 
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gStyle.SetOptStat(0)
@@ -206,19 +221,17 @@ def main(args, opt):
 	for tag,sel,seltag in SELECTIONS:
 		print "... processing %s"%tag
 
-		for chan in [x for _,x in masstrees.keys()]: ## tt, t, tW, s
-			if chan == 's': continue
-
+		for chan in ['tt', 't']:
 			ratplot = RatioPlot('ratioplot')
 
 			ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
 			ratplot.ratiorange = (0.5, 1.5)
 
-			ratplot.reference = masshistos[(tag,chan,172.5)][0]
+			ratplot.reference = masshistos[(tag,chan,172.5,'tot')]
 
 			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
-				try: ratplot.add(masshistos[(tag,chan,mass)][0], legentry)
+				try: ratplot.add(masshistos[(tag,chan,mass,'tot')], legentry)
 				except KeyError: pass
 
 
@@ -237,31 +250,31 @@ def main(args, opt):
 			# 							drawfit=False)
 			ratplot.reset()
 
-			ratplot.reference = masshistos[(tag,chan,172.5)][1]
+			ratplot.reference = masshistos[(tag,chan,172.5,'cor')]
 
 			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
-				try: ratplot.add(masshistos[(tag,chan,mass)][1], legentry)
+				try: ratplot.add(masshistos[(tag,chan,mass,'cor')], legentry)
 				except KeyError: pass
 			ratplot.tag = 'Correct combinations'
 			ratplot.subtag = '%s %s' % (seltag, chan)
 			ratplot.show("massscan_%s_%s_cor"%(tag,chan), opt.outDir)
 			ratplot.reset()
 
-			ratplot.reference = masshistos[(tag,chan,172.5)][2]
+			ratplot.reference = masshistos[(tag,chan,172.5,'wro')]
 			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
-				try: ratplot.add(masshistos[(tag,chan,mass)][2], legentry)
+				try: ratplot.add(masshistos[(tag,chan,mass,'wro')], legentry)
 				except KeyError: pass
 			ratplot.tag = 'Wrong combinations'
 			ratplot.subtag = '%s %s' % (seltag, chan)
 			ratplot.show("massscan_%s_%s_wro"%(tag,chan), opt.outDir)
 			ratplot.reset()
 
-			ratplot.reference = masshistos[(tag,chan,172.5)][3]
+			ratplot.reference = masshistos[(tag,chan,172.5,'unm')]
 			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
-				try: ratplot.add(masshistos[(tag,chan,mass)][3], legentry)
+				try: ratplot.add(masshistos[(tag,chan,mass,'unm')], legentry)
 				except KeyError: pass
 			ratplot.tag = 'Unmatched combinations'
 			ratplot.subtag = '%s %s' % (seltag, chan)

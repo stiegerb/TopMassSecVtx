@@ -7,9 +7,23 @@ from makeSVLControlPlots import NBINS, XMIN, XMAX, MASSXAXISTITLE
 from makeSVLControlPlots import NTRKBINS, COMMONWEIGHT
 from makeSVLControlPlots import SELECTIONS, TREENAME
 from makeSVLControlPlots import getSVLHistos, getNTrkHistos, makeControlPlot
+from runPlotter import openTFile
 
+COMBINATIONS = [
+	('tot', '1'),
+	('cor', 'CombInfo==1'),
+	('wro', 'CombInfo==0'),
+	('unm', 'CombInfo==-1'),
+]
 
-def addTopMassTreesFromDir(dirname, ttbar, singlet, singletW, singlets):
+CHANNAMES = {
+	'tt':'TTbar',
+	't':'SingleT_t',
+	'tW':'SingleT_tW',
+	's':'SingleT_s'
+}
+
+def addTopMassTreesFromDir(dirname, trees, files):
 	for filename in os.listdir(dirname):
 		if not os.path.splitext(filename)[1] == '.root': continue
 
@@ -21,50 +35,33 @@ def addTopMassTreesFromDir(dirname, ttbar, singlet, singletW, singlets):
 		if matchres: mass = float(matchres.group(1)) + 0.5
 		else: mass = 172.5
 
-		tfile = ROOT.TFile.Open(os.path.join(dirname,filename),'READ')
+		treefile = os.path.join(dirname, filename)
+		tfile = ROOT.TFile.Open(treefile,'READ')
 		tree = tfile.Get(TREENAME)
 
-		if "TTJets" in filename:
-			# print "Found ttbar channel", filename
-			ttbar[mass] = tree
-		elif 'SingleT' in filename and '_tW' in filename:
-			# print "Found tW channel", filename
-			if not mass in singletW:
-				singletW[mass] = ROOT.TChain(TREENAME)
-			singletW[mass].Add(os.path.join(dirname, filename))
+		chan = 'tt'
+
+		if 'SingleT' in filename and '_tW' in filename:
+			chan = 'tW'
 		elif 'SingleT' in filename and '_t' in filename:
-			# print "Found t channel", filename
-			if not mass in singlet:
-				singlet[mass] = ROOT.TChain(TREENAME)
-			singlet[mass].Add(os.path.join(dirname, filename))
+			chan = 't'
 		elif 'SingleT' in filename and '_s' in filename:
-			# print "Found s channel", filename
-			if not mass in singlets:
-				singlets[mass] = ROOT.TChain(TREENAME)
-			singlets[mass].Add(os.path.join(dirname, filename))
+			chan = 's'
+
+		if not (mass,chan) in trees:
+			trees[(mass, chan)] = ROOT.TChain(TREENAME)
+			files[(mass, chan)] = []
+		trees[(mass,chan)].Add(treefile)
+		files[(mass,chan)].append(treefile)
 def getMassTrees(inputdir, verbose=True):
-	ttbar    = {}  # mass -> tree
-	singlet  = {}  # mass -> tree
-	singletW = {}  # mass -> tree
-	singlets = {}  # mass -> tree
+	alltrees = {} # (mass,chan) -> chain
+	allfiles = {} # (mass,chan) -> [locations]
 
-	addTopMassTreesFromDir(inputdir, ttbar, singlet, singletW, singlets)
+	addTopMassTreesFromDir(inputdir, alltrees, allfiles)
 	addTopMassTreesFromDir(os.path.join(inputdir, 'mass_scan'),
-	                                 ttbar, singlet, singletW, singlets)
+									 alltrees, allfiles)
 
-	allmasses = list(set(sorted(ttbar.keys() + singlet.keys() +
-		                        singletW.keys() + singlets.keys() )))
-
-	alltrees = {} # (mass, tt/t/tW/s) -> tree
-	for mass in allmasses:
-		if mass in ttbar:
-			alltrees[(mass,'tt')] = ttbar[mass]
-		if mass in singlet:
-			alltrees[(mass,'t')]  = singlet[mass]
-		if mass in singletW:
-			alltrees[(mass,'tW')] = singletW[mass]
-		if mass in singlets:
-			alltrees[(mass,'s')]  = singlets[mass]
+	allmasses = sorted(list(set([mass for mass,_ in alltrees.keys()])))
 
 	if verbose:
 		print 80*'-'
@@ -82,60 +79,123 @@ def getMassTrees(inputdir, verbose=True):
 			print line
 		print 80*'-'
 
-	return alltrees
+	return alltrees, allfiles
+
+def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
+	taskname = os.path.basename(outputfile)[:-5]
+	chain = ROOT.TChain(TREENAME)
+	for filename in treefiles: chain.Add(filename)
+	print ' ... processing %s for %d histos from %7d entries' %(
+		              taskname, len(histos), chain.GetEntries())
+
+	from ROOT import gSystem
+	gSystem.Load('libUserCodeTopMassSecVtx.so')
+	from ROOT import SVLInfoTreeAnalysis
+	ana = SVLInfoTreeAnalysis(chain)
+
+	for hname,sel in histos:
+		ana.AddPlot(hname, "SVLMass", sel, NBINS, XMIN, XMAX)
+	ana.RunJob(outputfile)
+
+def runTasks(massfiles, tasklist, opt):
+	tasks = []
+
+	os.system('mkdir -p %s' % os.path.join(opt.outDir,'mass_histos/'))
+
+	for mass, chan in sorted(tasklist.keys()):
+		treefiles = massfiles[(mass,chan)]
+		histos = tasklist[(mass,chan)]
+		filename = ('%s_%s' % (CHANNAMES[chan],str(mass))).replace('.','')
+		filename += '.root'
+		outputfile = os.path.join(opt.outDir, 'mass_histos', filename)
+		tasks.append((treefiles, histos, outputfile))
+
+	if opt.jobs > 1:
+		import multiprocessing as MP
+		pool = MP.Pool(opt.jobs)
+		pool.map(runSVLInfoTreeAnalysis, tasks)
+	else:
+		for task in tasks:
+			runSVLInfoTreeAnalysis(task)
+
+def gatherHistosFromFiles(histonames, dirname):
+	histos = {}
+	for filename in os.listdir(dirname):
+		if not os.path.splitext(filename)[1] == '.root': continue
+		tfile = openTFile(filename)
+		for keys, hname in histonames:
+			histos[keys] = tfile.Get(hname)
+
+	return histos
 
 def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)
-	masstrees = getMassTrees(args[0], verbose=True)
+	masstrees, massfiles = getMassTrees(args[0], verbose=True)
+	masspoints = sorted([mass for mass,_ in masstrees.keys()])
+
+	histonames = {}
 
 	if not opt.cache:
-		masshistos = {}    # (tag, chan, mass) -> h_tot, h_cor, h_wro, h_unm
-		massntkhistos = {} # (tag, chan, mass) -> h_tot, h_cor, h_wro, h_unm
+		tasklist = {} ## tree -> tasklist
+		for (mass,chan) in masstrees.keys():
+			tasks = []
+			if chan == 's': continue
+			for tag,sel,_ in SELECTIONS:
 
-		totaltasks, taskcounter = (len(SELECTIONS) * len(masstrees)), 0
-		for tag,sel,_ in SELECTIONS:
-			for (mass,chan) in masstrees.keys():
-				taskcounter += 1
-				tree = masstrees[(mass,chan)]
 				htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
 				if not chan == 'tt':
 					htag = ("%s_%s_%5.1f"%(tag,chan,mass)).replace('.','')
-				print (' ... processing %3d/%3d: tag=%-25s entries: %7d'%
-					                    (taskcounter, totaltasks,
-					                     htag, tree.GetEntries()))
-				hists = getSVLHistos(tree, sel, var="SVLMass", tag=htag,
-								     titlex=MASSXAXISTITLE)
-				masshistos[(tag, chan, mass)] = hists
 
-				hists = getNTrkHistos(tree, sel=sel, tag=htag, var='SVLMass',
-				                      titlex=MASSXAXISTITLE,
-								      combsToProject=[('tot',''),
-								                     ('cor','CombInfo==1'),
-								                     ('wro','CombInfo==0'),
-								                     ('unm','CombInfo==-1')])
-				massntkhistos[(tag, chan, mass)] = hists
+				for comb,combsel in COMBINATIONS:
+					hname = "SVLMass_%s_%s" % (comb, htag)
+					finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT,sel,combsel)
+					tasks.append((hname, finalsel))
+					histonames[(tag, chan, mass, comb)] = hname
+
+					for ntk1,ntk2 in NTRKBINS:
+						tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
+						finalsel = "%s*(%s&&%s&&%s)"%(COMMONWEIGHT, sel,
+							                          combsel,tksel)
+						hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
+						tasks.append((hname, finalsel))
+						histonames[(tag, chan, mass, comb, ntk1)] = hname
+
+			tasklist[(mass,chan)] = tasks
 
 
-		cachefile = open(".svlhistos.pck", 'w')
-		pickle.dump(masshistos,     cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(massntkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
+		runTasks(massfiles, tasklist, opt)
+
+		## Retrieve the histograms from the individual files
+		# (tag, chan, mass, comb)      -> histo
+		# (tag, chan, mass, comb, ntk) -> histo
+		masshistos = gatherHistosFromFiles(histonames,
+			                              os.path.join(opt.outDir,
+			                              'mass_histos'))
+
+		cachefile = open(".svlmasshistos.pck", 'w')
+		pickle.dump(masshistos, cachefile, pickle.HIGHEST_PROTOCOL)
+		cachefile.close()
+
+	else:
+		cachefile = open(".svlmasshistos.pck", 'r')
+		masshistos    = pickle.load(cachefile)
 		cachefile.close()
 
 		ofi = ROOT.TFile(os.path.join(opt.outDir,'masshistos.root'),
-			                                                   'recreate')
+															   'recreate')
 		ofi.cd()
-		for hist in [h for hists in masshistos.values() for h in hists]:
-			hist.Write(hist.GetName())
-		for hist in [h for hists in massntkhistos.values() for h in hists]:
-			hist.Write(hist.GetName())
+
+		for tag,chan,mass in masshistos.keys():
+			if not ofi.cd(tag):
+				outDir = ofi.mkdir(tag)
+				outDir.cd()
+
+			for hist in masshistos[(tag,chan,mass)]:
+				hist.Write(hist.GetName())
+			for hist in massntkhistos[(tag,chan,mass)]:
+				hist.Write(hist.GetName())
 		ofi.Write()
 		ofi.Close()
-
-	else:
-		cachefile = open(".svlhistos.pck", 'r')
-		masshistos     = pickle.load(cachefile)
-		massntkhistos = pickle.load(cachefile)
-		cachefile.close()
 
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gStyle.SetOptStat(0)
@@ -154,50 +214,58 @@ def main(args, opt):
 			ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
 			ratplot.ratiorange = (0.5, 1.5)
 
-			ratplot.reference = masshistos[(tag,172.5)][0]
-			for mass in sorted(massfiles.keys()):
+			ratplot.reference = masshistos[(tag,chan,172.5)][0]
+
+			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
-				ratplot.add(masshistos[(tag,mass)][0], legentry)
+				try: ratplot.add(masshistos[(tag,chan,mass)][0], legentry)
+				except KeyError: pass
+
+
 			ratplot.tag = 'All combinations'
-			ratplot.subtag = seltag
-			ratplot.show("massscan_%s_tot"%tag, opt.outDir)
+			ratplot.subtag = '%s %s' % (seltag, chan)
+			ratplot.show("massscan_%s_%s_tot"%(tag,chan), opt.outDir)
 
-			chi2s = ratplot.getChiSquares(rangex=FITRANGE)
-			chi2stofit = []
-			for legentry in sorted(chi2s.keys()):
-				chi2stofit.append((float(legentry[8:-4]), chi2s[legentry]))
-			errorGetters[tag] = fitChi2(chi2stofit,
-										tag=seltag,
-										oname=os.path.join(opt.outDir,
-									    "chi2_simple_fit_%s.pdf"%tag),
-										drawfit=False)
+			# chi2s = ratplot.getChiSquares(rangex=FITRANGE)
+			# chi2stofit = []
+			# for legentry in sorted(chi2s.keys()):
+			# 	chi2stofit.append((float(legentry[8:-4]), chi2s[legentry]))
+			# errorGetters[tag] = fitChi2(chi2stofit,
+			# 							tag=seltag,
+			# 							oname=os.path.join(opt.outDir,
+			# 						    "chi2_simple_fit_%s.pdf"%tag),
+			# 							drawfit=False)
 			ratplot.reset()
 
-			ratplot.reference = masshistos[(tag,172.5)][1]
-			for mass in sorted(massfiles.keys()):
+			ratplot.reference = masshistos[(tag,chan,172.5)][1]
+
+			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
-				ratplot.add(masshistos[(tag,mass)][1], legentry)
+				try: ratplot.add(masshistos[(tag,chan,mass)][1], legentry)
+				except KeyError: pass
 			ratplot.tag = 'Correct combinations'
-			ratplot.subtag = seltag
-			ratplot.show("massscan_%s_cor"%tag, opt.outDir)
+			ratplot.subtag = '%s %s' % (seltag, chan)
+			ratplot.show("massscan_%s_%s_cor"%(tag,chan), opt.outDir)
 			ratplot.reset()
 
-			ratplot.reference = masshistos[(tag,172.5)][2]
-			for mass in sorted(massfiles.keys()):
+			ratplot.reference = masshistos[(tag,chan,172.5)][2]
+			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
-				ratplot.add(masshistos[(tag,mass)][2], legentry)
+				try: ratplot.add(masshistos[(tag,chan,mass)][2], legentry)
+				except KeyError: pass
 			ratplot.tag = 'Wrong combinations'
-			ratplot.subtag = seltag
-			ratplot.show("massscan_%s_wro"%tag, opt.outDir)
+			ratplot.subtag = '%s %s' % (seltag, chan)
+			ratplot.show("massscan_%s_%s_wro"%(tag,chan), opt.outDir)
 			ratplot.reset()
 
-			ratplot.reference = masshistos[(tag,172.5)][3]
-			for mass in sorted(massfiles.keys()):
+			ratplot.reference = masshistos[(tag,chan,172.5)][3]
+			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
-				ratplot.add(masshistos[(tag,mass)][3], legentry)
+				try: ratplot.add(masshistos[(tag,chan,mass)][3], legentry)
+				except KeyError: pass
 			ratplot.tag = 'Unmatched combinations'
-			ratplot.subtag = seltag
-			ratplot.show("massscan_%s_unm"%tag, opt.outDir)
+			ratplot.subtag = '%s %s' % (seltag, chan)
+			ratplot.show("massscan_%s_%s_unm"%(tag,chan), opt.outDir)
 			ratplot.reset()
 
 	return 0
@@ -216,6 +284,9 @@ if __name__ == "__main__":
 	"""
 	parser = OptionParser(usage=usage)
 	parser.add_option('-v', '--verbose', dest='verbose', action="store",
+					  type='int', default=1,
+					  help='Verbose mode [default: %default (semi-quiet)]')
+	parser.add_option('-j', '--jobs', dest='jobs', action="store",
 					  type='int', default=1,
 					  help='Verbose mode [default: %default (semi-quiet)]')
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',

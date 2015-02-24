@@ -94,7 +94,7 @@ def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 	ana = SVLInfoTreeAnalysis(chain)
 
 	for hname,sel in histos:
-		ana.AddPlot(hname, "SVLMass", sel, NBINS, XMIN, XMAX)
+		ana.AddPlot(hname, "SVLMass", sel, NBINS, XMIN, XMAX, MASSXAXISTITLE)
 	ana.RunJob(outputfile)
 
 def runTasks(massfiles, tasklist, opt):

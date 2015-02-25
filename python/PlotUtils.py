@@ -69,7 +69,7 @@ class RatioPlot(object):
         self.subtag = None
         self.extratext = 'Simulation'
         self.plotformats = ['.pdf', '.png']
-        self.colors = [ ## rainbow ('gay flag')
+        self.colors1 = [ ## rainbow ('gay flag')
             ROOT.kViolet-6,
             ROOT.kBlue+2,
             ROOT.kAzure-2,
@@ -160,9 +160,15 @@ class RatioPlot(object):
     def show(self, outname, outdir):
         if not os.path.isdir(outdir):
             os.system('mkdir -p %s' % outdir)
-        colors = self.colors
+
+        # Automatic coloring
+        colors = self.colors1
         if len(self.histos) <= 6:
             colors = self.colors2
+        # Custom coloring
+        if hasattr(self, 'colors'):
+            colors = self.colors
+
         for hist,color in zip(self.histos, colors):
             hist.SetLineColor(color)
             hist.SetLineWidth(2)

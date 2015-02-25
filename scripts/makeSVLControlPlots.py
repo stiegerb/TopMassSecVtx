@@ -5,7 +5,8 @@ import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
 from makeSVLMassHistos import NBINS, XMIN, XMAX, MASSXAXISTITLE
 from makeSVLMassHistos import NTRKBINS, COMMONWEIGHT, TREENAME
-from makeSVLMassHistos import SELECTIONS
+from makeSVLMassHistos import SELECTIONS, COMBINATIONS
+from makeSVLMassHistos import runSVLInfoTreeAnalysis
 from makeSVLDataMCPlots import projectFromTree, getHistoFromTree
 from numpy import roots
 
@@ -18,7 +19,7 @@ CONTROLVARS = [
 	('JPt'       , NBINS, 30 , 200 , 'Jet pt [GeV]'),
 ]
 
-SYSTS = [
+SYSTSFROMFILES = [
 	('scaleup', 'Q^{2} Scale up',
 		'MC8TeV_TTJets_MSDecays_scaleup.root'),
 	('scaledown', 'Q^{2} Scale down',
@@ -35,6 +36,21 @@ SYSTS = [
 		'MC8TeV_TTJets_TuneP11TeV.root'),
 	('p11mpihi', 'P11 high multi-parton interaction',
 		'MC8TeV_TTJets_TuneP11mpiHi.root'),
+	('powherw', 'Powhew/HERWIG AUET2',
+		'MC8TeV_TT_AUET2_powheg_herwig.root'),
+	('powpyth', 'Powhew/PYTHIA Z2*',
+		'MC8TeV_TT_Z2star_powheg_pythia.root'),
+]
+
+SYSTSFROMWEIGHTS = [
+	('nominal', 'Nominal',                  '1'),
+	('toppt',   'Top p_{T} weight applied', 'Weight[7]'),
+	('topptup', 'Top p_{T} weight up',      'Weight[8]'),
+	('bfrag',   'rb LEP weighted',          'SVBfragWeight[0]'),
+	('bfragup', 'rb LEP hard weighted',     'SVBfragWeight[1]'),
+	('bfragdn', 'rb LEP soft weighted',     'SVBfragWeight[2]'),
+	('jesup',   'Jet energy scale up',      'JESWeight[1]'),
+	('jesdn',   'Jet energy scale down',    'JESWeight[2]'),
 ]
 
 def getNTrkHistos(tree, sel='', var="SVLMass", tag='',
@@ -155,7 +171,8 @@ def getJESHistos(tree, sel='',
 
 	return h_jesup, h_jesdn
 
-def makeControlPlot(hists, tag, seltag, opt):
+def makeControlPlot(systhistos, syst, tag, seltag, opt):
+	hists = tuple([systhistos[(tag, syst, c)] for c,_ in COMBINATIONS])
 	h_tot, h_cor, h_wro, h_unm = hists
 
 	h_tot.Scale(1./h_tot.Integral())
@@ -170,7 +187,7 @@ def makeControlPlot(hists, tag, seltag, opt):
 	ctrlplot.ratiotitle = 'Ratio wrt Total'
 	ctrlplot.ratiorange = (0., 3.0)
 	ctrlplot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
-	ctrlplot.show("control_%s"%tag, opt.outDir)
+	ctrlplot.show("control_%s_%s"%(syst,tag), opt.outDir)
 	ctrlplot.reset()
 
 def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
@@ -289,161 +306,155 @@ def plotFracVsTopMass(fcor, fwro, funm, tag, subtag, oname):
 	for ext in ['.pdf','.png']:
 		tcanv.SaveAs(oname+ext)
 
+def makeSystTask(tag, sel, syst, histonames, weight='1'):
+	tasks = []
+	htag = "%s_%s"%(tag,syst)
+	for comb,combsel in COMBINATIONS:
+		hname = "SVLMass_%s_%s" % (comb, htag)
+		finalsel = "%s*%s*(%s&&%s)"%(COMMONWEIGHT, weight, sel, combsel)
+		## Fix the duplicate weight in case of JESWeight
+		if syst in ['jesup', 'jesdn']:
+			finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
+				                        'JESWeight[')
+
+		tasks.append((hname, 'SVLMass', finalsel,
+			          NBINS, XMIN, XMAX, MASSXAXISTITLE))
+		histonames[(tag, syst, comb)] = hname
+
+		for ntk1,ntk2 in NTRKBINS:
+			tksel = "(SVNtrk>=%d&&SVNtrk<%d)"%(ntk1,ntk2)
+			finalsel = "%s*%s*(%s&&%s&&%s)"%(COMMONWEIGHT, weight,
+				                             sel, combsel,tksel)
+			## Fix the duplicate weight in case of JESWeight
+			if syst in ['jesup', 'jesdn']:
+				finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
+					                        'JESWeight[')
+			hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
+			tasks.append((hname, 'SVLMass', finalsel,
+				          NBINS, XMIN, XMAX, MASSXAXISTITLE))
+			histonames[(tag, syst, comb, ntk1)] = hname
+	return tasks
+
+def runTasks(systfiles, tasklist, opt):
+	tasks = []
+
+	os.system('mkdir -p %s' % os.path.join(opt.outDir,'syst_histos/'))
+
+	for syst,task in tasklist.iteritems():
+		ofilename = '%s.root' % (syst)
+		outputfile = os.path.join(opt.outDir, 'syst_histos', ofilename)
+		tasks.append(([systfiles[syst]], task, outputfile))
+
+	if opt.jobs > 1:
+		import multiprocessing as MP
+		pool = MP.Pool(opt.jobs)
+		pool.map(runSVLInfoTreeAnalysis, tasks)
+	else:
+		for task in tasks:
+			runSVLInfoTreeAnalysis(task)
+
+def gatherHistosFromFiles(histonames, dirname):
+	histos = {}
+	for filename in os.listdir(dirname):
+		if not os.path.splitext(filename)[1] == '.root': continue
+		tfile = ROOT.TFile.Open(os.path.join(dirname,filename), 'READ')
+
+		for keys, hname in histonames.iteritems():
+			if (filename[:-5] == keys[1] or
+				(filename[:-5] == 'nominal' and
+				 keys[1] in [x for x,_,_,_,_ in CONTROLVARS]) ):
+
+				histo = tfile.Get(hname)
+				histo.SetDirectory(0)
+				histos[keys] = histo
+
+	return histos
+
 
 def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)
+	systfiles = {} # procname -> filename
 	try:
-
-		treefiles = {} # procname -> filename
-		for filename in os.listdir(args[0]):
+		for filename in os.listdir(os.path.join(args[0],'syst')):
 			if not os.path.splitext(filename)[1] == '.root': continue
-			procname = filename.split('_', 1)[1][:-5]
-			treefiles[procname] = os.path.join(args[0],filename)
+			for syst,_,systfile in SYSTSFROMFILES:
+				if filename == systfile:
+					systfiles[syst] = os.path.join(args[0], 'syst', filename)
 
-		massfiles = {} # mass -> filename
-		# find mass scan files
-		for filename in os.listdir(os.path.join(args[0],'mass_scan')):
-			if not os.path.splitext(filename)[1] == '.root': continue
-			masspos = 3 if 'MSDecays' in filename else 2
-			mass = float(filename.split('_')[masspos][:3]) + 0.5
-			if mass == 172.5: continue
-			massfiles[mass] = os.path.join(args[0],'mass_scan',filename)
-
-		## nominal file
-		massfiles[172.5] = os.path.join(args[0],'MC8TeV_TTJets_MSDecays_172v5.root')
-
-		systfiles = {} # systname -> filename
-		for systname, systtag, systfile in SYSTS:
-			if not systfile in os.listdir(os.path.join(args[0],'syst')):
-				print ("File %s not found in %s" %
-							  (systfile, os.path.join(args[0]), 'syst'))
-				continue
-			systfiles[systname] = os.path.join(args[0],'syst',systfile)
+		systfiles['nominal'] = os.path.join(args[0],
+			                   'MC8TeV_TTJets_MSDecays_172v5.root')
 
 	except IndexError:
 		print "Please provide a valid input directory"
 		exit(-1)
 
-	systtrees = {} # mass/systname -> tree
-	for mass in sorted(massfiles.keys()):
-		tfile = ROOT.TFile.Open(massfiles[mass],'READ')
-		tree = tfile.Get(TREENAME)
-		systtrees[mass] = tree
+	# if opt.verbose:
+	# 	systtrees = {} # mass/systname -> tree
+	# 	for syst in sorted(systfiles.keys()):
+	# 		tfile = ROOT.TFile.Open(systfiles[syst],'READ')
+	# 		tree = tfile.Get(TREENAME)
+	# 		systtrees[syst] = tree
 
-	for syst,_,_ in SYSTS:
-		systtrees[syst] = ROOT.TFile.Open(systfiles[syst],'READ').Get(TREENAME)
+	# 	print 'Found the following systematics samples:'
+	# 	print '  %-15s: %7d' % ('nominal', systtrees['nominal'].GetEntries())
+	# 	for syst in sorted(systtrees.keys()):
+	# 		if syst == 'nominal': continue
+	# 		print '  %-15s: %7d' % (syst, systtrees[syst].GetEntries())
+
+	histonames = {} # (tag, syst, comb) -> histo
+	tasklist = {} # treefile -> tasklist
+
+	for fsyst,_ in systfiles.iteritems():
+		if not fsyst in tasklist: tasklist[fsyst] = []
+		for tag,sel,_ in SELECTIONS:
+			## Only interested in inclusive selections
+			if not 'inclusive' in tag: continue
+
+			if fsyst == 'nominal':
+				for syst,_,weight in SYSTSFROMWEIGHTS:
+					tasks = makeSystTask(tag, sel, syst,
+						                 histonames, weight=weight)
+					tasklist[fsyst] += tasks
+
+				tasks = []
+				for var,nbins,xmin,xmax,titlex in CONTROLVARS:
+					for comb,combsel in COMBINATIONS:
+						hname = "%s_%s_%s" % (var, comb, tag)
+						finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT, sel, combsel)
+						tasks.append((hname, var, finalsel,
+							                 nbins, xmin, xmax, titlex))
+						histonames[(tag, var, comb)] = hname
+				tasklist[fsyst] += tasks
+
+
+			else:
+				tasks = makeSystTask(tag, sel, fsyst, histonames)
+				tasklist[fsyst] += tasks
 
 	if not opt.cache:
-		masshistos = {}     # (tag, mass) -> h_tot, h_cor, h_wro, h_unm
-		fittertkhistos = {} # (tag, mass or syst) -> h_tot, h_cor, h_wro, h_unm
-		systhistos = {}     # (tag) -> h_tptw, h_tptup, h_tptdn
-		massntkhistos = {}  # (tag) -> (h_ntk1, h_ntk2, h_ntk3, ..)
-		ntkhistos = {}      # (tag) -> h_ntk_tot, h_ntk_cor, h_ntk_wro, h_ntk_unm
-		for tag,sel,_ in SELECTIONS:
-			for mass, tree in systtrees.iteritems():
-				if not mass in massfiles.keys(): continue
-				htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
-				print ' ... processing %5.1f GeV %s tag=%s' % (mass, sel,htag)
-				masshistos[(tag, mass)] = getSVLHistos(tree, sel,
-								       var="SVLMass", tag=htag,
-								       titlex=MASSXAXISTITLE)
+		# print '  Will process the following tasks:'
+		# for filename,tasks in sorted(tasklist.iteritems()):
+		# 	print filename
+		# 	for task in tasks:
+		# 		print task
 
-				fittertkhistos[(tag,mass)] = getNTrkHistos(tree,
-									   sel=sel,
-									   tag=htag,
-									   var='SVLMass',
-									   titlex=MASSXAXISTITLE,
-									   combsToProject=[('tot',''),
-									                   ('cor','CombInfo==1'),
-									                   ('wro','CombInfo==0'),
-									                   ('unm','CombInfo==-1')])
+		runTasks(systfiles, tasklist, opt)
 
-			systhistos[(tag,'ptt_tot')] = getTopPtHistos(systtrees[172.5],
-											  sel=sel,
-											  var="SVLMass", tag=tag,
-											  titlex=MASSXAXISTITLE)
+	systhistos = {} # (tag, syst, comb) -> histo
+	systhistos = gatherHistosFromFiles(histonames,
+		                               os.path.join(opt.outDir, 'syst_histos'))
 
-			systhistos[(tag,'ptt_cor')] = getTopPtHistos(systtrees[172.5],
-											  sel=sel+'&&(CombInfo==1)',
-											  var="SVLMass", tag=tag+'_cor',
-											  titlex=MASSXAXISTITLE)
+	# cachefile = open(".svlsysthistos.pck", 'w')
+	# pickle.dump(systhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
+	# cachefile.close()
 
-			systhistos[(tag,'ptt_wro')] = getTopPtHistos(systtrees[172.5],
-											  sel=sel+'&&(CombInfo==0)',
-											  var="SVLMass", tag=tag+'_wro',
-											  titlex=MASSXAXISTITLE)
-
-			for syst,_,_ in SYSTS:
-				systhistos[(tag,syst)] = getSVLHistos(systtrees[syst],
-								      sel=sel,
-								      var="SVLMass", tag=tag+'_'+syst,
-								      titlex=MASSXAXISTITLE)
-
-			systhistos[(tag,'bfrag')] = getBfragHistos(systtrees[172.5],
-				                        sel=sel, var='SVLMass',
-				                        tag=tag+'_bfrag',
-				                        titlex=MASSXAXISTITLE)
-
-			systhistos[(tag,'jes')] = getJESHistos(systtrees[172.5],
-				                        sel=sel, var='SVLMass',
-				                        tag=tag+'_jes',
-				                        titlex=MASSXAXISTITLE)
-
-			massntkhistos[tag] = getNTrkHistos(systtrees[172.5],
-							   sel=sel,
-							   tag=tag,
-							   var='SVLMass',
-							   titlex=MASSXAXISTITLE)
+	# cachefile = open(".svlsysthistos.pck", 'r')
+	# masshistos     = pickle.load(cachefile)
+	# cachefile.close()
 
 
-			ntkhistos[tag] = getSVLHistos(systtrees[172.5], sel,
-										  var='SVNtrk', tag="_ntk_%s"%tag,
-										  nbins=8, xmin=2, xmax=10,
-										  titlex='Track Multiplicity')
-
-		controlhistos = {} # (var) -> h_tot, h_cor, h_wro, h_unm
-		for var,nbins,xmin,xmax,titlex in CONTROLVARS:
-			controlhistos[var] = getSVLHistos(systtrees[172.5],"1",
-											  var=var, tag="incl",
-											  nbins=nbins,xmin=xmin, xmax=xmax,
-											  titlex=titlex)
-
-
-		cachefile = open(".svlhistos.pck", 'w')
-		pickle.dump(masshistos,     cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(fittertkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(systhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(ntkhistos,      cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(massntkhistos,  cachefile, pickle.HIGHEST_PROTOCOL)
-		pickle.dump(controlhistos,  cachefile, pickle.HIGHEST_PROTOCOL)
-		cachefile.close()
-
-		ofi = ROOT.TFile(os.path.join(opt.outDir,'histos.root'), 'recreate')
-		ofi.cd()
-		for hist in [h for hists in masshistos.values() for h in hists]:
-			hist.Write(hist.GetName())
-		for hist in [h for hists in fittertkhistos.values() for h in hists]:
-			hist.Write(hist.GetName())
-		for hist in [h for hists in systhistos.values() for h in hists]:
-			hist.Write(hist.GetName())
-		for hist in [h for hists in controlhistos.values() for h in hists]:
-			hist.Write(hist.GetName())
-		for hist in [h for hists in massntkhistos.values() for h in hists]:
-			hist.Write(hist.GetName())
-		for hist in [h for hists in ntkhistos.values() for h in hists]:
-			hist.Write(hist.GetName())
-		ofi.Write()
-		ofi.Close()
-
-	else:
-		cachefile = open(".svlhistos.pck", 'r')
-		masshistos     = pickle.load(cachefile)
-		fittertkhistos = pickle.load(cachefile)
-		systhistos     = pickle.load(cachefile)
-		ntkhistos      = pickle.load(cachefile)
-		massntkhistos  = pickle.load(cachefile)
-		controlhistos  = pickle.load(cachefile)
-		cachefile.close()
+	# from pprint import pprint
+	# pprint(histonames)
 
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gStyle.SetOptStat(0)
@@ -451,62 +462,19 @@ def main(args, opt):
 
 
 	for var,_,_,_,_ in CONTROLVARS:
-		makeControlPlot(controlhistos[var], var, 'Fully Inclusive', opt)
+		makeControlPlot(systhistos, var, 'inclusive', 'Fully Inclusive', opt)
+		makeControlPlot(systhistos, var, 'inclusive_mrank1', 'Mass ranked', opt)
+
+	makeControlPlot(systhistos, 'nominal', 'inclusive', 'Fully Inclusive', opt)
+	makeControlPlot(systhistos, 'nominal', 'inclusive_mrank1', 'Fully Inclusive', opt)
+
+	return 0
 
 	errorGetters = {} # tag -> function(chi2) -> error
 	systematics = {} # (seltag, systname) -> error
 	for tag,sel,seltag in SELECTIONS:
 		print "... processing %s"%tag
 		makeControlPlot(masshistos[(tag, 172.5)], tag, seltag, opt)
-
-		ratplot = RatioPlot('ratioplot')
-		ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
-		ratplot.ratiorange = (0.5, 1.5)
-		ratplot.reference = masshistos[(tag,172.5)][0]
-		for mass in sorted(massfiles.keys()):
-			legentry = 'm_{t} = %5.1f GeV' % mass
-			ratplot.add(masshistos[(tag,mass)][0], legentry)
-		ratplot.tag = 'All combinations'
-		ratplot.subtag = seltag
-		ratplot.show("massscan_%s_tot"%tag, opt.outDir)
-
-		chi2s = ratplot.getChiSquares(rangex=FITRANGE)
-		chi2stofit = []
-		for legentry in sorted(chi2s.keys()):
-			chi2stofit.append((float(legentry[8:-4]), chi2s[legentry]))
-		errorGetters[tag] = fitChi2(chi2stofit,
-									tag=seltag,
-									oname=os.path.join(opt.outDir,
-								    "chi2_simple_fit_%s.pdf"%tag),
-									drawfit=False)
-		ratplot.reset()
-
-		ratplot.reference = masshistos[(tag,172.5)][1]
-		for mass in sorted(massfiles.keys()):
-			legentry = 'm_{t} = %5.1f GeV' % mass
-			ratplot.add(masshistos[(tag,mass)][1], legentry)
-		ratplot.tag = 'Correct combinations'
-		ratplot.subtag = seltag
-		ratplot.show("massscan_%s_cor"%tag, opt.outDir)
-		ratplot.reset()
-
-		ratplot.reference = masshistos[(tag,172.5)][2]
-		for mass in sorted(massfiles.keys()):
-			legentry = 'm_{t} = %5.1f GeV' % mass
-			ratplot.add(masshistos[(tag,mass)][2], legentry)
-		ratplot.tag = 'Wrong combinations'
-		ratplot.subtag = seltag
-		ratplot.show("massscan_%s_wro"%tag, opt.outDir)
-		ratplot.reset()
-
-		ratplot.reference = masshistos[(tag,172.5)][3]
-		for mass in sorted(massfiles.keys()):
-			legentry = 'm_{t} = %5.1f GeV' % mass
-			ratplot.add(masshistos[(tag,mass)][3], legentry)
-		ratplot.tag = 'Unmatched combinations'
-		ratplot.subtag = seltag
-		ratplot.show("massscan_%s_unm"%tag, opt.outDir)
-		ratplot.reset()
 
 		topptplot = RatioPlot('topptplot_%s'%tag)
 		topptplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
@@ -756,6 +724,10 @@ if __name__ == "__main__":
 	usage: %prog [options] input_directory
 	"""
 	parser = OptionParser(usage=usage)
+	parser.add_option('-j', '--jobs', dest='jobs', action="store",
+				  type='int', default=1,
+				  help=('Number of jobs to run in parallel '
+				  	    '[default: single]'))
 	parser.add_option('-v', '--verbose', dest='verbose', action="store",
 					  type='int', default=1,
 					  help='Verbose mode [default: %default (semi-quiet)]')

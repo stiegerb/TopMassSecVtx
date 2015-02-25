@@ -106,7 +106,11 @@ def getMassTrees(inputdir, verbose=True):
 def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 	taskname = os.path.basename(outputfile)[:-5]
 	chain = ROOT.TChain(TREENAME)
-	for filename in treefiles: chain.Add(filename)
+	for filename in treefiles:
+		if not os.path.exists(filename):
+			print "ERROR: file %s does not exist! Aborting" % filename
+			return -1
+		chain.Add(filename)
 	print ' ... processing %s for %d histos from %7d entries' %(
 		              taskname, len(histos), chain.GetEntries())
 
@@ -115,8 +119,8 @@ def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 	from ROOT import SVLInfoTreeAnalysis
 	ana = SVLInfoTreeAnalysis(chain)
 
-	for hname,var,sel in histos:
-		ana.AddPlot(hname, var, sel, NBINS, XMIN, XMAX, MASSXAXISTITLE)
+	for hname,var,sel,nbins,xmin,xmax,xtitle in histos:
+		ana.AddPlot(hname, var, sel, nbins, xmin, xmax, xtitle)
 	ana.RunJob(outputfile)
 
 def runTasks(massfiles, tasklist, opt):
@@ -183,7 +187,8 @@ def main(args, opt):
 			for comb,combsel in COMBINATIONS:
 				hname = "SVLMass_%s_%s" % (comb, htag)
 				finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT,sel,combsel)
-				tasks.append((hname, 'SVLMass', finalsel))
+				tasks.append((hname, 'SVLMass', finalsel,
+					          NBINS, XMIN, XMAX, MASSXAXISTITLE))
 				histonames[(tag, chan, mass, comb)] = hname
 
 				for ntk1,ntk2 in NTRKBINS:
@@ -191,7 +196,8 @@ def main(args, opt):
 					finalsel = "%s*(%s&&%s&&%s)"%(COMMONWEIGHT, sel,
 						                          combsel,tksel)
 					hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
-					tasks.append((hname, 'SVLMass', finalsel))
+					tasks.append((hname, 'SVLMass', finalsel,
+						          NBINS, XMIN, XMAX, MASSXAXISTITLE))
 					histonames[(tag, chan, mass, comb, ntk1)] = hname
 
 		tasklist[(mass,chan)] = tasks
@@ -333,7 +339,8 @@ if __name__ == "__main__":
 					  help='Verbose mode [default: %default (semi-quiet)]')
 	parser.add_option('-j', '--jobs', dest='jobs', action="store",
 					  type='int', default=1,
-					  help='Verbose mode [default: %default (semi-quiet)]')
+					  help=('Number of jobs to run in parallel '
+					  	    '[default: single]'))
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",

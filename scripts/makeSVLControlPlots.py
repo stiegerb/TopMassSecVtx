@@ -20,16 +20,16 @@ TREENAME = 'SVLInfo'
 SELECTIONS = [
 	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),
 	('ee',        'EvCat==-121',    'ee'),
-	('emu',       'EvCat==-143',    'e#mu'),
-	('mumu',      'EvCat==-169',    '#mu#mu'),
+	('em',        'EvCat==-143',    'e#mu'),
+	('mm',        'EvCat==-169',    '#mu#mu'),
 	('e',         'abs(EvCat)==11', 'e'),
-	('mu',        'abs(EvCat)==13', '#mu'),
+	('m',         'abs(EvCat)==13', '#mu'),
 	('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
 	('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
-	('emu_mrank1',       'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
-	('mumu_mrank1',      'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
+	('em_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
+	('mm_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
 	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
-	('mu_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
+	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
 ]
 
 CONTROLVARS = [

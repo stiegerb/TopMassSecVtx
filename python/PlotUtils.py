@@ -80,6 +80,17 @@ class RatioPlot(object):
             ROOT.kRed+1,
             ROOT.kRed+3,
         ]
+        self.colors2 = [ ## reduced rainbow ('gay flag')
+            # ROOT.kViolet-6,
+            ROOT.kBlue+2,
+            ROOT.kAzure-2,
+            ROOT.kGreen+3,
+            ROOT.kGreen-3,
+            # ROOT.kSpring-9,
+            ROOT.kOrange+8,
+            ROOT.kRed+1,
+            # ROOT.kRed+3,
+        ]
         # self.colors = [ ## shades of blue
         #     ROOT.kViolet-7,
         #     ROOT.kViolet-6,
@@ -149,8 +160,12 @@ class RatioPlot(object):
     def show(self, outname, outdir):
         if not os.path.isdir(outdir):
             os.system('mkdir -p %s' % outdir)
-        for hist,color in zip(self.histos, self.colors):
+        colors = self.colors
+        if len(self.histos) <= 6:
+            colors = self.colors2
+        for hist,color in zip(self.histos, colors):
             hist.SetLineColor(color)
+            hist.SetLineWidth(2)
 
         if self.normalized:
             for hist in self.histos:

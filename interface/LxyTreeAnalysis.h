@@ -12,56 +12,8 @@
 #include <iostream>
 
 #include "UserCode/TopMassSecVtx/interface/LxyTreeAnalysisBase.h"
-
-class Plot {
-public:
-    Plot() {};
-    Plot(TString name, TString var, TString selection,
-         Int_t nbins, Float_t minx, Float_t maxx, TTree *tree=0) {
-        fName = name;
-        fHisto = new TH1D(name, name, nbins, minx, maxx);
-        fHisto->Sumw2();
-        fHisto->SetXTitle(var);
-        fVariable  = new TTreeFormula("Variable", var, tree);
-        fSelection = new TTreeFormula("Formula", selection, tree);
-    };
-
-    virtual ~Plot() {
-        fHisto->Delete();
-        fVariable->Delete();
-        fSelection->Delete();
-    };
-
-    virtual void Fill() {
-        float weight = fSelection->EvalInstance();
-        if( weight == 0. ) return;
-        float var = fVariable->EvalInstance();
-        fHisto->Fill(var, weight);
-    }
-
-    virtual void Print() {
-        std::cout << "fName=" << fName.Data()
-                  << " fBranchName=\"" << fVariable->GetExpFormula().Data()
-                  << "\" fSelection=\"" << fSelection->GetExpFormula().Data()
-                  << "\"" << std::endl;
-    };
-
-    virtual void SetTree(TTree *tree) {
-        fSelection->SetTree(tree);
-        fVariable->SetTree(tree);
-    }
-
-    virtual void Notify() {
-        fSelection->Notify();
-        fVariable->Notify();
-    }
-
-    TString fName;
-    TH1D *fHisto;
-    TTreeFormula *fSelection;
-    TTreeFormula *fVariable;
-private:
-};
+ // Plot class defined here
+#include "UserCode/TopMassSecVtx/interface/SVLInfoTreeAnalysis.h"
 
 class LxyTreeAnalysis : public LxyTreeAnalysisBase {
 public:
@@ -124,9 +76,10 @@ public:
    /////////////////////////////////////////////
    // Plot class interface:
    virtual void AddPlot(TString name, TString var, TString sel,
-                        Int_t nbins, Float_t minx, Float_t maxx){
+                        Int_t nbins, Float_t minx, Float_t maxx,
+                        TString axistitle){
       // Add a plot through the external interface
-      Plot *plot = new Plot(name, var, sel, nbins, minx, maxx, fChain);
+      Plot *plot = new Plot(name, var, sel, nbins, minx, maxx, axistitle, fChain);
       fPlotList.push_back(plot);
    }
 

@@ -115,8 +115,8 @@ def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 	from ROOT import SVLInfoTreeAnalysis
 	ana = SVLInfoTreeAnalysis(chain)
 
-	for hname,sel in histos:
-		ana.AddPlot(hname, "SVLMass", sel, NBINS, XMIN, XMAX, MASSXAXISTITLE)
+	for hname,var,sel in histos:
+		ana.AddPlot(hname, var, sel, NBINS, XMIN, XMAX, MASSXAXISTITLE)
 	ana.RunJob(outputfile)
 
 def runTasks(massfiles, tasklist, opt):
@@ -183,7 +183,7 @@ def main(args, opt):
 			for comb,combsel in COMBINATIONS:
 				hname = "SVLMass_%s_%s" % (comb, htag)
 				finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT,sel,combsel)
-				tasks.append((hname, finalsel))
+				tasks.append((hname, 'SVLMass', finalsel))
 				histonames[(tag, chan, mass, comb)] = hname
 
 				for ntk1,ntk2 in NTRKBINS:
@@ -191,7 +191,7 @@ def main(args, opt):
 					finalsel = "%s*(%s&&%s&&%s)"%(COMMONWEIGHT, sel,
 						                          combsel,tksel)
 					hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
-					tasks.append((hname, finalsel))
+					tasks.append((hname, 'SVLMass', finalsel))
 					histonames[(tag, chan, mass, comb, ntk1)] = hname
 
 		tasklist[(mass,chan)] = tasks

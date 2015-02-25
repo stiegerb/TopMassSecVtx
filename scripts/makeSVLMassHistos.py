@@ -6,8 +6,6 @@ from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
 from makeSVLControlPlots import NBINS, XMIN, XMAX, MASSXAXISTITLE
 from makeSVLControlPlots import NTRKBINS, COMMONWEIGHT
 from makeSVLControlPlots import SELECTIONS, TREENAME
-from makeSVLControlPlots import getSVLHistos, getNTrkHistos, makeControlPlot
-from runPlotter import openTFile
 
 COMBINATIONS = [
 	('tot', '1'),
@@ -144,7 +142,7 @@ def gatherHistosFromFiles(histonames, dirname):
 def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)
 	masstrees, massfiles = getMassTrees(args[0], verbose=True)
-	masspoints = sorted([mass for mass,_ in masstrees.keys()])
+	masspoints = sorted(list(set([mass for mass,_ in masstrees.keys()])))
 
 	histonames = {}
 
@@ -218,12 +216,19 @@ def main(args, opt):
 
 	errorGetters = {} # tag -> function(chi2) -> error
 	systematics = {} # (seltag, systname) -> error
+	mass_scan_dir = os.path.join(opt.outDir, 'mass_scans')
 	for tag,sel,seltag in SELECTIONS:
 		print "... processing %s"%tag
 
-		for chan in ['tt', 't']:
-			ratplot = RatioPlot('ratioplot')
+		for chan in ['tt', 't', 'tW']:
+			# print "   %s channel" % chan
+			## Skip some useless combinations:
+			if chan == 't' and ('ee' in tag or 'mm' in tag or 'em' in tag):
+				continue
+			if chan == 'tW' and tag in ['e', 'm', 'e_mrank1', 'm_mrank1']:
+				continue
 
+			ratplot = RatioPlot('ratioplot')
 			ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
 			ratplot.ratiorange = (0.5, 1.5)
 
@@ -231,13 +236,17 @@ def main(args, opt):
 
 			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
-				try: ratplot.add(masshistos[(tag,chan,mass,'tot')], legentry)
+				try:
+					histo = masshistos[(tag,chan,mass,'tot')]
+					# print histo.GetName(), histo.GetEntries()
+					ratplot.add(histo, legentry)
 				except KeyError: pass
+					# print "Can't find ", (tag,chan,mass,'tot')
 
 
 			ratplot.tag = 'All combinations'
 			ratplot.subtag = '%s %s' % (seltag, chan)
-			ratplot.show("massscan_%s_%s_tot"%(tag,chan), opt.outDir)
+			ratplot.show("massscan_%s_%s_tot"%(tag,chan), mass_scan_dir)
 
 			# chi2s = ratplot.getChiSquares(rangex=FITRANGE)
 			# chi2stofit = []
@@ -245,20 +254,19 @@ def main(args, opt):
 			# 	chi2stofit.append((float(legentry[8:-4]), chi2s[legentry]))
 			# errorGetters[tag] = fitChi2(chi2stofit,
 			# 							tag=seltag,
-			# 							oname=os.path.join(opt.outDir,
+			# 							oname=os.path.join(mass_scan_dir,
 			# 						    "chi2_simple_fit_%s.pdf"%tag),
 			# 							drawfit=False)
 			ratplot.reset()
 
 			ratplot.reference = masshistos[(tag,chan,172.5,'cor')]
-
 			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
 				try: ratplot.add(masshistos[(tag,chan,mass,'cor')], legentry)
 				except KeyError: pass
 			ratplot.tag = 'Correct combinations'
 			ratplot.subtag = '%s %s' % (seltag, chan)
-			ratplot.show("massscan_%s_%s_cor"%(tag,chan), opt.outDir)
+			ratplot.show("massscan_%s_%s_cor"%(tag,chan), mass_scan_dir)
 			ratplot.reset()
 
 			ratplot.reference = masshistos[(tag,chan,172.5,'wro')]
@@ -268,7 +276,7 @@ def main(args, opt):
 				except KeyError: pass
 			ratplot.tag = 'Wrong combinations'
 			ratplot.subtag = '%s %s' % (seltag, chan)
-			ratplot.show("massscan_%s_%s_wro"%(tag,chan), opt.outDir)
+			ratplot.show("massscan_%s_%s_wro"%(tag,chan), mass_scan_dir)
 			ratplot.reset()
 
 			ratplot.reference = masshistos[(tag,chan,172.5,'unm')]
@@ -278,7 +286,7 @@ def main(args, opt):
 				except KeyError: pass
 			ratplot.tag = 'Unmatched combinations'
 			ratplot.subtag = '%s %s' % (seltag, chan)
-			ratplot.show("massscan_%s_%s_unm"%(tag,chan), opt.outDir)
+			ratplot.show("massscan_%s_%s_unm"%(tag,chan), mass_scan_dir)
 			ratplot.reset()
 
 	return 0

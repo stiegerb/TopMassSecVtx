@@ -17,9 +17,9 @@ Note: the ntuplizer is running without pileup jet id and IVF-related b-tagging v
 ### Producing the trees
 
 ```
-./scripts/runLxyTreeAnalysis.py -o treedir -j 8 /store/cmst3/group/top/summer2014/e1fa735/
-./scripts/runLxyTreeAnalysis.py -o treedir/syst/ -j 8 /store/cmst3/group/top/summer2014/e1fa735/syst/
-./scripts/runLxyTreeAnalysis.py -o treedir/mass_scan/ -j 8 /store/cmst3/group/top/summer2014/e1fa735/mass_scan/
+./scripts/runLxyTreeAnalysis.py -o treedir -j 8 /store/cmst3/group/top/summer2014/a176401/
+./scripts/runLxyTreeAnalysis.py -o treedir/syst/ -j 8 /store/cmst3/group/top/summer2014/a176401/syst/
+./scripts/runLxyTreeAnalysis.py -o treedir/mass_scan/ -j 8 /store/cmst3/group/top/summer2014/a176401/mass_scan/
 
 ```
 

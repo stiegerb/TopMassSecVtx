@@ -346,17 +346,41 @@ def main(args, opt):
 			procname = filename.split('_', 1)[1][:-5]
 			treefiles[procname] = os.path.join(args[0],filename)
 
-		massfiles = {} # mass -> filename
 		# find mass scan files
+		massfiles = {} # mass -> filename
+		stmassfiles={}
 		for filename in os.listdir(os.path.join(args[0],'mass_scan')):
 			if not os.path.splitext(filename)[1] == '.root': continue
-			masspos = 3 if 'MSDecays' in filename else 2
+			isSingleTop = False
+			if 'SingleT' in filename : isSingleTop=True
+			
+			masspos = 2 
+			if 'MSDecays' in filename or isSingleTop: masspos=3
 			mass = float(filename.split('_')[masspos][:3]) + 0.5
-			if mass == 172.5: continue
-			massfiles[mass] = os.path.join(args[0],'mass_scan',filename)
+			
+			if isSingleTop:
+				if mass in stmassfiles:
+					stmassfiles[mass].append(os.path.join(args[0],'mass_scan',filename))
+				else:
+					stmassfiles[mass]=[os.path.join(args[0],'mass_scan',filename)]
+			else:
+				if mass == 172.5: continue
+				massfiles[mass] = os.path.join(args[0],'mass_scan',filename)
 
 		## nominal file
 		massfiles[172.5] = os.path.join(args[0],'MC8TeV_TTJets_MSDecays_172v5.root')
+		stmassfiles[172.5] = [
+			os.path.join(args[0],'MC8TeV_SingleT_t.root'),
+			os.path.join(args[0],'MC8TeV_SingleTbar_t.root'),
+			os.path.join(args[0],'MC8TeV_SingleT_tW.root'),
+			os.path.join(args[0],'MC8TeV_SingleTbar_tW.root')
+			]
+		
+		print massfiles
+		print stmassfiles
+		raw_input()
+
+		
 
 		systfiles = {} # systname -> filename
 		for systname, systtag, systfile in SYSTS:

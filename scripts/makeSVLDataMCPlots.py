@@ -7,7 +7,7 @@ from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
 
 from makeSVLMassHistos import SELECTIONS, TREENAME, NBINS
 from makeSVLMassHistos import XMIN, XMAX, MASSXAXISTITLE
-from makeSVLControlPlots import getHistoFromTree
+from makeSVLMassHistos import COMMONWEIGHT
 
 DATAMCPLOTS = [
 	('SVLDeltaR' , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),

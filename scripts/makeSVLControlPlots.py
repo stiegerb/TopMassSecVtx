@@ -51,125 +51,58 @@ SYSTSFROMWEIGHTS = [
 	('bfragdn', 'rb LEP soft weighted',     'SVBfragWeight[2]'),
 	('jesup',   'Jet energy scale up',      'JESWeight[1]'),
 	('jesdn',   'Jet energy scale down',    'JESWeight[2]'),
+	('bfnuup',   'B hadron semi-lep BF up',
+	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))'),
+	('bfnudn',   'B hadron semi-lep BF down',
+	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))'),
 ]
 
-def getNTrkHistos(tree, sel='', var="SVLMass", tag='',
-		          nbins=NBINS, xmin=XMIN, xmax=XMAX,
-		          titlex='', combsToProject=[('tot','')]):
-	hists = []
-	for ntk1,ntk2 in NTRKBINS:
-		title = "%d #leq N_{trk.} < %d" %(ntk1, ntk2)
-		if ntk2 > 100:
-			title = "%d #leq N_{trk.}" %(ntk1)
+SYSTNAMES = dict([(syst,name) for syst,name,_ in
+	                            SYSTSFROMFILES+SYSTSFROMWEIGHTS])
+SYSTNAMES['nominal'] = "Nominal"
 
+SELNAMES = dict([(tag,name) for tag,_,name in SELECTIONS])
 
-		for comb,combSel in combsToProject:
-			hist = ROOT.TH1D("%s_%s_%d_%s"%(var,comb,ntk1,tag),
-				             title, nbins, xmin, xmax)
-			tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
-			finalSel=sel
-			if finalSel=="": finalSel = "1"
-			if combSel=="" : finalSel = "(%s)"%finalSel
-			else           : finalSel = "(%s && %s)"%(finalSel,combSel)
-			finalSel=finalSel+"&&"+tksel
-			projectFromTree(hist, var, finalSel, tree)
-			hists.append(hist)
+SYSTPLOTS = [
+	('toppt', 'Top p_{T} reweighting',
+	 ['nominal', 'toppt', 'topptup'],
+	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'tot'),
 
-	for x in hists:
-		x.SetLineWidth(2)
-		x.GetXaxis().SetTitle(titlex)
-		x.Sumw2()
+	('toppt', 'Top p_{T} reweighting',
+	 ['nominal', 'toppt', 'topptup'],
+	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'cor'),
 
-	return hists
+	('toppt', 'Top p_{T} reweighting',
+	 ['nominal', 'toppt', 'topptup'],
+	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'wro'),
 
-def getSVLHistos(tree, sel='',
-				 var="SVLMass",
-				 tag='', nbins=NBINS, xmin=XMIN, xmax=XMAX,
-				 titlex=''):
-	h_tot = getHistoFromTree(tree, sel,
-		             var=var, hname="%s_tot_%s"%(var,tag),
-		             nbins=nbins, xmin=xmin, xmax=xmax, titlex=titlex)
-	h_cor = getHistoFromTree(tree, sel+'&&CombInfo==1',
-		             var=var, hname="%s_cor_%s"%(var,tag),
-		             nbins=nbins, xmin=xmin, xmax=xmax, titlex=titlex)
-	h_wro = getHistoFromTree(tree, sel+'&&CombInfo==0',
-		             var=var, hname="%s_wro_%s"%(var,tag),
-		             nbins=nbins, xmin=xmin, xmax=xmax, titlex=titlex)
-	h_unm = getHistoFromTree(tree, sel+'&&CombInfo==-1',
-		             var=var, hname="%s_unm_%s"%(var,tag),
-		             nbins=nbins, xmin=xmin, xmax=xmax, titlex=titlex)
-	h_tot.SetLineColor(ROOT.kBlack)
-	h_cor.SetLineColor(ROOT.kBlue)
-	h_wro.SetLineColor(ROOT.kRed)
-	h_unm.SetLineColor(ROOT.kSpring-5)
-	return h_tot, h_cor, h_wro, h_unm
+	('scale', 'Q^{2} Scale',
+	 ['nominal', 'scaleup', 'scaledown'],
+	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
 
-def getTopPtHistos(tree, sel='',
-				 var="SVLMass",
-				 tag='',
-				 nbins=NBINS,xmin=XMIN, xmax=XMAX,
-				 titlex=''):
-	weight = "%s*Weight[7]" % COMMONWEIGHT
-	h_tpt = getHistoFromTree(tree, sel=sel,
-	                  var=var, hname="%s_toppt_%s"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
-	                  weight=weight)
-	weight = "%s*Weight[8]" % COMMONWEIGHT
-	h_tup = getHistoFromTree(tree, sel=sel,
-	                  var=var, hname="%s_topptup_%s"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
-	                  weight=weight)
+	('matching', 'ME/PS matching scale',
+	 ['nominal', 'matchingup', 'matchingdown'],
+	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
 
-	h_tpt.SetLineColor(ROOT.kRed)
-	h_tup.SetLineColor(ROOT.kRed-6)
-	return h_tpt, h_tup
+	('uecr', 'Underlying event / Color reconnection',
+	 ['p11', 'p11tev', 'p11mpihi', 'p11nocr', 'nominal'],
+	 [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
+	  ROOT.kViolet+2, ROOT.kBlack],'tot'),
 
-def getBfragHistos(tree, sel='',
-				   var="SVLMass",
-				   tag='',
-				   nbins=NBINS,xmin=XMIN, xmax=XMAX,
-				   titlex=''):
-	weight = "%s*SVBfragWeight[0]" % COMMONWEIGHT
-	h_bfrag = getHistoFromTree(tree, sel=sel,
-		              var=var, hname="%s_tot_%s_bfrag"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
-	                  weight=weight)
-	weight = "%s*SVBfragWeight[1]" % COMMONWEIGHT
-	h_bfhar = getHistoFromTree(tree, sel=sel,
-		              var=var, hname="%s_tot_%s_bfrag_hard"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
-	                  weight=weight)
-	weight = "%s*SVBfragWeight[2]" % COMMONWEIGHT
-	h_bfsof = getHistoFromTree(tree, sel=sel,
-		              var=var, hname="%s_tot_%s_bfrag_soft"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
-	                  weight=weight)
+	('bfrag', 'b fragmentation',
+	 ['nominal', 'bfrag', 'bfragup', 'bfragdn'],
+	 [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,
+      ROOT.kMagenta-9, ROOT.kViolet+2],'tot'),
 
-	h_bfrag.SetLineColor(ROOT.kGreen+2)
-	h_bfhar.SetLineColor(ROOT.kGreen+5)
-	h_bfsof.SetLineColor(ROOT.kGreen)
-	return h_bfrag, h_bfhar, h_bfsof
+	('jes', 'Jet energy scale',
+	 ['nominal', 'jesup', 'jesdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
-def getJESHistos(tree, sel='',
-				 var="SVLMass",
-				 tag='',
-				 nbins=NBINS, xmin=XMIN, xmax=XMAX,
-				 titlex=''):
-	weight = COMMONWEIGHT.replace('JESWeight[0]', 'JESWeight[1]')
-	h_jesup = getHistoFromTree(tree, sel=sel,
-		              var=var, hname="%s_tot_%s_jes_up"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
-	                  weight=weight)
-	weight = COMMONWEIGHT.replace('JESWeight[0]', 'JESWeight[2]')
-	h_jesdn = getHistoFromTree(tree, sel=sel,
-		              var=var, hname="%s_tot_%s_jes_dn"%(var,tag),
-	                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex,
-	                  weight=weight)
+	('bfnu', 'B-hadron branching fractions',
+	 ['nominal', 'bfnuup', 'bfnudn'],
+	 [ROOT.kBlack, ROOT.kYellow-3, ROOT.kYellow+3],'tot'),
+]
 
-	h_jesup.SetLineColor(ROOT.kBlue+2)
-	h_jesdn.SetLineColor(ROOT.kBlue-6)
-
-	return h_jesup, h_jesdn
 
 def makeControlPlot(systhistos, syst, tag, seltag, opt):
 	hists = tuple([systhistos[(tag, syst, c)] for c,_ in COMBINATIONS])
@@ -362,7 +295,9 @@ def gatherHistosFromFiles(histonames, dirname):
 		for keys, hname in histonames.iteritems():
 			if (filename[:-5] == keys[1] or
 				(filename[:-5] == 'nominal' and
-				 keys[1] in [x for x,_,_,_,_ in CONTROLVARS]) ):
+				 keys[1] in [x for x,_,_,_,_ in CONTROLVARS]) or
+				(filename[:-5] == 'nominal' and
+				 keys[1] in [x for x,_,_ in SYSTSFROMWEIGHTS]) ):
 
 				histo = tfile.Get(hname)
 				histo.SetDirectory(0)
@@ -454,7 +389,7 @@ def main(args, opt):
 
 
 	# from pprint import pprint
-	# pprint(histonames)
+	# pprint(systhistos)
 
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gStyle.SetOptStat(0)
@@ -462,252 +397,74 @@ def main(args, opt):
 
 
 	for var,_,_,_,_ in CONTROLVARS:
-		makeControlPlot(systhistos, var, 'inclusive', 'Fully Inclusive', opt)
-		makeControlPlot(systhistos, var, 'inclusive_mrank1', 'Mass ranked', opt)
+		makeControlPlot(systhistos, var,
+			            'inclusive', 'Fully Inclusive', opt)
+		makeControlPlot(systhistos, var,
+			            'inclusive_mrank1', 'Mass ranked', opt)
 
-	makeControlPlot(systhistos, 'nominal', 'inclusive', 'Fully Inclusive', opt)
-	makeControlPlot(systhistos, 'nominal', 'inclusive_mrank1', 'Fully Inclusive', opt)
+	makeControlPlot(systhistos, 'nominal',
+		            'inclusive', 'Fully Inclusive', opt)
+	makeControlPlot(systhistos, 'nominal',
+		            'inclusive_mrank1', 'Fully Inclusive', opt)
 
-	return 0
-
-	errorGetters = {} # tag -> function(chi2) -> error
-	systematics = {} # (seltag, systname) -> error
-	for tag,sel,seltag in SELECTIONS:
+	for tag,_,_ in SELECTIONS:
+		if not tag in ['inclusive', 'inclusive_mrank1']: continue
 		print "... processing %s"%tag
-		makeControlPlot(masshistos[(tag, 172.5)], tag, seltag, opt)
 
-		topptplot = RatioPlot('topptplot_%s'%tag)
-		topptplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
-		topptplot.add(systhistos[(tag,'ptt_tot')][0], 'top pt weighted')
-		topptplot.add(systhistos[(tag,'ptt_tot')][1], 'top pt weight up')
-		topptplot.tag = 'Top pt systematic'
-		topptplot.subtag = seltag
-		topptplot.ratiotitle = 'Ratio wrt Nominal'
-		topptplot.ratiorange = (0.5, 1.5)
-		topptplot.colors = [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6]
-		topptplot.show("toppt_%s"%tag, opt.outDir)
-		topptchi2 = max(topptplot.getChiSquares(rangex=FITRANGE).values())
-		systematics[(tag,'toppt')] = (errorGetters[tag](topptchi2), topptchi2)
-		topptplot.reset()
+		for name, title, systs, colors, comb in SYSTPLOTS:
+			plot = RatioPlot('%s_%s'%(name,comb))
 
-		topptplot.add(masshistos[(tag, 172.5)][1], 'Nominal')
-		topptplot.reference = masshistos[(tag, 172.5)][1]
-		topptplot.add(systhistos[(tag,'ptt_cor')][0], 'top pt weighted')
-		topptplot.add(systhistos[(tag,'ptt_cor')][1], 'top pt weight up')
-		topptplot.tag = 'Top pt systematic (correct comb.)'
-		topptplot.subtag = seltag
-		topptplot.ratiotitle = 'Ratio wrt Nominal'
-		topptplot.ratiorange = (0.5, 1.5)
-		topptplot.colors = [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6]
-		topptplot.show("toppt_cor_%s"%tag, opt.outDir)
-		topptplot.reset()
+			for syst in systs:
+				plot.add(systhistos[(tag,syst,comb)], SYSTNAMES[syst])
 
-		topptplot.add(masshistos[(tag, 172.5)][2], 'Nominal')
-		topptplot.reference = masshistos[(tag, 172.5)][2]
-		topptplot.add(systhistos[(tag,'ptt_wro')][0], 'top pt weighted')
-		topptplot.add(systhistos[(tag,'ptt_wro')][1], 'top pt weight up')
-		topptplot.tag = 'Top pt systematic (wrong comb.)'
-		topptplot.subtag = seltag
-		topptplot.ratiotitle = 'Ratio wrt Nominal'
-		topptplot.ratiorange = (0.5, 1.5)
-		topptplot.colors = [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6]
-		topptplot.show("toppt_wro_%s"%tag, opt.outDir)
-		topptplot.reset()
+			plot.tag = title
+			subtag = (SELNAMES[tag] + {'tot':'',
+			                           'cor':' (Correct comb.)',
+			                           'wro':' (Wrong comb.)',
+			                           'unm':' (Unmatched comb.)'}[comb])
+			plot.subtag = subtag
+			plot.ratiotitle = 'Ratio wrt %s' % SYSTNAMES[systs[0]]
+			plot.ratiorange = (0.85, 1.15)
+			plot.colors = colors
+			filename = "%s_%s"%(name,tag)
+			if comb != 'tot': filename += '_%s'%comb
+			plot.show(filename, opt.outDir)
+			plot.reset()
 
-		scaleplot = RatioPlot('scaleplot_%s'%tag)
-		scaleplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
-		scaleplot.add(systhistos[(tag,'scaleup')][0],   'Q^{2} Scale up')
-		scaleplot.add(systhistos[(tag,'scaledown')][0], 'Q^{2} Scale down')
-		scaleplot.tag = 'Q^{2} Scale systematic'
-		scaleplot.subtag = seltag
-		scaleplot.ratiotitle = 'Ratio wrt Nominal'
-		scaleplot.ratiorange = (0.5, 1.5)
-		scaleplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
-		scaleplot.show("scale_%s"%tag, opt.outDir)
-		scalechi2 = max(scaleplot.getChiSquares(rangex=FITRANGE).values())
-		systematics[(tag,'scale')] = (errorGetters[tag](scalechi2),
-																 scalechi2)
-		scaleplot.reset()
 
-		matchplot = RatioPlot('matchplot_%s'%tag)
-		matchplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
-		matchplot.add(systhistos[(tag,'matchingup')][0],
-								  'Matching up')
-		matchplot.add(systhistos[(tag,'matchingdown')][0],
-								  'Matching down')
-		matchplot.tag = 'ME/PS matching scale systematic'
-		matchplot.subtag = seltag
-		matchplot.ratiotitle = 'Ratio wrt Nominal'
-		matchplot.ratiorange = (0.5, 1.5)
-		matchplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
-		matchplot.show("matching_%s"%tag, opt.outDir)
-		matchchi2 = max(matchplot.getChiSquares(rangex=FITRANGE).values())
-		systematics[(tag,'matching')] = (errorGetters[tag](matchchi2),
-																 matchchi2)
-		matchplot.reset()
 
-		matchplot.reference = masshistos[(tag, 172.5)][1]
-		matchplot.add(masshistos[(tag, 172.5)][1], 'Correct')
-		matchplot.add(systhistos[(tag,'matchingup')][1],
-								  'Matching up')
-		matchplot.add(systhistos[(tag,'matchingdown')][1],
-								  'Matching down')
-		matchplot.tag = 'ME/PS matching scale systematic'
-		matchplot.subtag = seltag+', correct comb.'
-		matchplot.ratiotitle = 'Ratio wrt Nominal'
-		matchplot.ratiorange = (0.5, 1.5)
-		matchplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
-		matchplot.show("matching_cor_%s"%tag, opt.outDir)
-		matchplot.reset()
+	# for tag,sel,seltag in SELECTIONS:
+	# 	print 70*'-'
+	# 	print '%-10s: %s' % (tag, sel)
+	# 	fcor, fwro, funm = {}, {}, {}
+	# 	for mass in sorted(massfiles.keys()):
+	# 	# mass = 172.5
+	# 		hists = masshistos[(tag, mass)]
+	# 		n_tot, n_cor, n_wro, n_unm = (x.GetEntries() for x in hists)
+	# 		fcor[mass] = 100.*(n_cor/float(n_tot))
+	# 		fwro[mass] = 100.*(n_wro/float(n_tot))
+	# 		funm[mass] = 100.*(n_unm/float(n_tot))
+	# 		print ('  %5.1f GeV: %7d entries \t'
+	# 			   '(%4.1f%% corr, %4.1f%% wrong, %4.1f%% unmatched)' %
+	# 			   (mass, n_tot, fcor[mass], fwro[mass], funm[mass]))
 
-		matchplot.reference = masshistos[(tag, 172.5)][2]
-		matchplot.add(masshistos[(tag, 172.5)][2], 'Wrong')
-		matchplot.add(systhistos[(tag,'matchingup')][2],
-								  'Matching up')
-		matchplot.add(systhistos[(tag,'matchingdown')][2],
-								  'Matching down')
-		matchplot.tag = 'ME/PS matching scale systematic'
-		matchplot.subtag = seltag+', wrong comb.'
-		matchplot.ratiotitle = 'Ratio wrt Nominal'
-		matchplot.ratiorange = (0.5, 1.5)
-		matchplot.colors = [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1]
-		matchplot.show("matching_wro_%s"%tag, opt.outDir)
-		matchplot.reset()
+	# 	oname = os.path.join(opt.outDir, 'fracvsmt_%s'%tag)
+	# 	plotFracVsTopMass(fcor, fwro, funm, tag, seltag, oname)
 
-		uecrplot = RatioPlot('uecrplot_%s'%tag)
-		uecrplot.add(masshistos[(tag, 172.5)][0], 'Nominal (Z2*)')
-		uecrplot.add(systhistos[(tag,'p11')][0],
-								  'P11 Nominal')
-		uecrplot.add(systhistos[(tag,'p11tev')][0],
-								  'P11 Tevatron tune')
-		uecrplot.add(systhistos[(tag,'p11mpihi')][0],
-								  'P11 MPI High')
-		uecrplot.add(systhistos[(tag,'p11nocr')][0],
-								  'P11 No CR')
-		uecrplot.tag = 'Underlying event / Color reconnection'
-		uecrplot.subtag = seltag
-		uecrplot.ratiotitle = 'Ratio wrt P11'
-		uecrplot.ratiorange = (0.5, 1.5)
-		uecrplot.reference = systhistos[(tag,'p11')][0]
-		uecrplot.colors = [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,
-							ROOT.kMagenta-9, ROOT.kViolet+2]
-		uecrplot.show("uecr_%s"%tag, opt.outDir)
-		uecrchi2s = uecrplot.getChiSquares(rangex=FITRANGE)
-		uecrchi2 = max([uecrchi2s['P11 Nominal'],
-						uecrchi2s['P11 Tevatron tune'],
-						uecrchi2s['P11 MPI High'],
-						uecrchi2s['P11 No CR']])
-		systematics[(tag,'uecr')] = (errorGetters[tag](uecrchi2), uecrchi2)
-		uecrplot.reset()
-
-		bfragplot = RatioPlot('bfragplot_%s'%tag)
-		bfragplot.add(masshistos[(tag, 172.5)][0], 'Nominal (Z2*)')
-		bfragplot.add(systhistos[(tag,'bfrag')][0],
-								  'rb LEP weighted')
-		bfragplot.add(systhistos[(tag,'bfrag')][1],
-								  'rb LEP hard weighted')
-		bfragplot.add(systhistos[(tag,'bfrag')][2],
-								  'rb LEP soft weighted')
-		bfragplot.tag = 'B fragmentation'
-		bfragplot.subtag = seltag
-		bfragplot.ratiotitle = 'Ratio wrt Nominal'
-		bfragplot.ratiorange = (0.5, 1.5)
-		bfragplot.colors = [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,
-							ROOT.kMagenta-9, ROOT.kViolet+2]
-		bfragplot.show("bfrag_%s"%tag, opt.outDir)
-		bfragchi2s = bfragplot.getChiSquares(rangex=FITRANGE)
-		bfragchi2 = max([bfragchi2s['rb LEP weighted'],
-						 bfragchi2s['rb LEP hard weighted'],
-						 bfragchi2s['rb LEP soft weighted']])
-		systematics[(tag,'bfrag')] = (errorGetters[tag](bfragchi2), bfragchi2)
-		bfragplot.reset()
-
-		jesplot = RatioPlot('jesplot_%s'%tag)
-		jesplot.add(masshistos[(tag, 172.5)][0], 'Nominal')
-		jesplot.add(systhistos[(tag,'jes')][0],
-								  'JES up')
-		jesplot.add(systhistos[(tag,'jes')][1],
-								  'JES down')
-		jesplot.tag = 'Jet energy scales'
-		jesplot.subtag = seltag
-		jesplot.ratiotitle = 'Ratio wrt Nominal'
-		jesplot.ratiorange = (0.5, 1.5)
-		jesplot.colors = [ROOT.kBlack, ROOT.kBlue+2, ROOT.kBlue-6]
-		jesplot.show("jes_%s"%tag, opt.outDir)
-		jeschi2s = jesplot.getChiSquares(rangex=FITRANGE)
-		jeschi2 = max([jeschi2s['JES up'], jeschi2s['JES down']])
-		systematics[(tag,'jes')] = (errorGetters[tag](jeschi2), jeschi2)
-		jesplot.reset()
-
-		ntkmassplot = RatioPlot('ntkmassplot_%s'%tag)
-		ntkmassplot.add(masshistos[(tag, 172.5)][0], 'Sum')
-		for hist in massntkhistos[tag]:
-			ntkmassplot.add(hist, hist.GetTitle())
-		ntkmassplot.colors = [ROOT.kOrange+10, ROOT.kGreen+4, ROOT.kGreen+2,
-							  ROOT.kGreen, ROOT.kGreen-7, ROOT.kGreen-8]
-		ntkmassplot.ratiorange = (0,3.0)
-		ntkmassplot.ratiotitle = "Ratio wrt Sum"
-		ntkmassplot.tag = 'm_{t} = 172.5 GeV'
-		ntkmassplot.subtag = seltag
-		ntkmassplot.show("ntkscan_%s"%tag, opt.outDir)
-		ntkmassplot.reset()
-
-	ntkplot = RatioPlot('ntkplot')
-	ntkplot.colors = [ROOT.kGreen+2,
-					  ROOT.kBlue, ROOT.kAzure-4, ROOT.kViolet+7,
-					  ROOT.kRed-4, ROOT.kOrange-3, ROOT.kPink+7]
-	ntkplot.ratiorange = (0.8,1.3)
-	ntkplot.titlex = 'SV Track Multiplicity'
-	ntkplot.ratiotitle = "Ratio wrt Incl."
-	ntkplot.tag = 'm_{t} = 172.5 GeV'
-
-	for tag,_,_ in SELECTIONS:
-		ntkplot.add(ntkhistos[tag][0], tag)
-	ntkplot.reference = ntkhistos['inclusive'][0]
-	ntkplot.subtag = '(All combinations)'
-	ntkplot.show("ntks_tot", opt.outDir)
-	ntkplot.reset()
-
-	for tag,_,_ in SELECTIONS:
-		ntkplot.add(ntkhistos[tag][1], tag)
-	ntkplot.reference = ntkhistos['inclusive'][1]
-	ntkplot.subtag = '(Correct combinations)'
-	ntkplot.show("ntks_cor", opt.outDir)
-	ntkplot.reset()
-
-	for tag,sel,seltag in SELECTIONS:
-		print 70*'-'
-		print '%-10s: %s' % (tag, sel)
-		fcor, fwro, funm = {}, {}, {}
-		for mass in sorted(massfiles.keys()):
-		# mass = 172.5
-			hists = masshistos[(tag, mass)]
-			n_tot, n_cor, n_wro, n_unm = (x.GetEntries() for x in hists)
-			fcor[mass] = 100.*(n_cor/float(n_tot))
-			fwro[mass] = 100.*(n_wro/float(n_tot))
-			funm[mass] = 100.*(n_unm/float(n_tot))
-			print ('  %5.1f GeV: %7d entries \t'
-				   '(%4.1f%% corr, %4.1f%% wrong, %4.1f%% unmatched)' %
-				   (mass, n_tot, fcor[mass], fwro[mass], funm[mass]))
-
-		oname = os.path.join(opt.outDir, 'fracvsmt_%s'%tag)
-		plotFracVsTopMass(fcor, fwro, funm, tag, seltag, oname)
-
-	print 112*'-'
-	print 'Estimated systematics (from a crude chi2 fit)'
-	print '%20s | %-15s | %-15s | %-15s | %-15s | %-15s' % (
-										 'selection', 'bfrag', 'scale',
-										 'toppt', 'matching', 'uecr')
-	for tag,_,_ in SELECTIONS:
-			sys.stdout.write("%20s | " % tag)
-			for syst in ['bfrag', 'scale', 'toppt', 'matching', 'uecr']:
-				err, chi2 = systematics[(tag,syst)]
-				sys.stdout.write('%4.1f (%4.1f GeV)' % (chi2*1e5, err))
-				# sys.stdout.write('%4.1f (%4.1f GeV)' % (chi2, err))
-				sys.stdout.write(' | ')
-			sys.stdout.write('\n')
-	print 112*'-'
-
+	# print 112*'-'
+	# print 'Estimated systematics (from a crude chi2 fit)'
+	# print '%20s | %-15s | %-15s | %-15s | %-15s | %-15s' % (
+	# 									 'selection', 'bfrag', 'scale',
+	# 									 'toppt', 'matching', 'uecr')
+	# for tag,_,_ in SELECTIONS:
+	# 		sys.stdout.write("%20s | " % tag)
+	# 		for syst in ['bfrag', 'scale', 'toppt', 'matching', 'uecr']:
+	# 			err, chi2 = systematics[(tag,syst)]
+	# 			sys.stdout.write('%4.1f (%4.1f GeV)' % (chi2*1e5, err))
+	# 			# sys.stdout.write('%4.1f (%4.1f GeV)' % (chi2, err))
+	# 			sys.stdout.write(' | ')
+	# 		sys.stdout.write('\n')
+	# print 112*'-'
 
 	return 0
 

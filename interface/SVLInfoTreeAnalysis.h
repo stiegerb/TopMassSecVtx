@@ -24,7 +24,9 @@ public:
         fHisto->Sumw2();
         fHisto->SetXTitle(xtitle);
         fVariable  = new TTreeFormula("Variable", var, tree);
+        fVariable->SetQuickLoad(1);
         fSelection = new TTreeFormula("Formula", selection, tree);
+        fSelection->SetQuickLoad(1);
     };
 
     virtual ~Plot() {

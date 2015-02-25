@@ -52,8 +52,8 @@ def addTopMassTreesFromDir(dirname, trees, files):
 		## Select top samples
 		if not "TTJets" in filename and not "SingleT" in filename: continue
 
-		## Extract the mass
-		matchres = re.match(r'.*([0-9]{3})v5\.root', filename)
+		## Extract the mass (and splitting index, if it's there)
+		matchres = re.match(r'.*([0-9]{3})v5\_?([0-9]+)?\.root', filename)
 		if matchres: mass = float(matchres.group(1)) + 0.5
 		else: mass = 172.5
 
@@ -68,7 +68,7 @@ def addTopMassTreesFromDir(dirname, trees, files):
 		elif 'SingleT' in filename and '_t' in filename:
 			chan = 't'
 		elif 'SingleT' in filename and '_s' in filename:
-			chan = 's'
+			continue
 
 		if not (mass,chan) in trees:
 			trees[(mass, chan)] = ROOT.TChain(TREENAME)
@@ -96,8 +96,6 @@ def getMassTrees(inputdir, verbose=True):
 				line += ' (t: %5d) '  % alltrees[(mass, 't')].GetEntries()
 			if (mass, 'tW') in alltrees:
 				line += ' (tW: %6d) ' % alltrees[(mass, 'tW')].GetEntries()
-			if (mass, 's') in alltrees:
-				line += ' (s: %6d) ' % alltrees[(mass, 's')].GetEntries()
 			print line
 		print 80*'-'
 
@@ -122,6 +120,7 @@ def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 	for hname,var,sel,nbins,xmin,xmax,xtitle in histos:
 		ana.AddPlot(hname, var, sel, nbins, xmin, xmax, xtitle)
 	ana.RunJob(outputfile)
+	print '         %s done' % taskname
 
 def runTasks(massfiles, tasklist, opt):
 	tasks = []

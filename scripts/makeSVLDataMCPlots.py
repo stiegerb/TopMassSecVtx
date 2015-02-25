@@ -5,9 +5,9 @@ from copy import deepcopy
 from runPlotter import runPlotter, addPlotterOptions
 from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
 
-from makeSVLControlPlots import SELECTIONS, TREENAME, NBINS
+from makeSVLMassHistos import SELECTIONS, TREENAME, NBINS
+from makeSVLMassHistos import XMIN, XMAX, MASSXAXISTITLE
 from makeSVLControlPlots import getHistoFromTree
-from makeSVLControlPlots import XMIN, XMAX, MASSXAXISTITLE
 
 DATAMCPLOTS = [
 	('SVLDeltaR' , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
@@ -16,6 +16,32 @@ DATAMCPLOTS = [
 	('JPt'       , NBINS, 30 , 200, 'Jet pt [GeV]'),
 	('SVLMass'   , NBINS, XMIN, XMAX, MASSXAXISTITLE),
 ]
+
+def projectFromTree(hist, varname, sel, tree, option=''):
+	try:
+		tree.Project(hist.GetName(),varname, sel, option)
+		return True
+	except Exception, e:
+		raise e
+
+
+def getHistoFromTree(tree, sel='', var="SVLMass",
+	         hname="histo",
+	         nbins=NBINS, xmin=XMIN, xmax=XMAX,
+	         titlex='',
+	         weight=COMMONWEIGHT):
+	histo = ROOT.TH1D(hname, "histo" , nbins, xmin, xmax)
+	if sel=="": sel = "1"
+	sel = "(%s)" % sel
+	if len(weight):
+		sel = "%s*(%s)" % (sel, weight)
+	projectFromTree(histo, var, sel, tree)
+	histo.SetLineWidth(2)
+	histo.GetXaxis().SetTitle(titlex)
+	histo.Sumw2()
+	histo.SetDirectory(0)
+	return histo
+
 
 def writeDataMCHistos(tree, processName, outputFile):
 	print " processing %-30s %7d entries ..." % (processName, tree.GetEntries())

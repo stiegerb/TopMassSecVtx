@@ -3,9 +3,33 @@ import os, sys, re
 import ROOT
 import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
-from makeSVLControlPlots import NBINS, XMIN, XMAX, MASSXAXISTITLE
-from makeSVLControlPlots import NTRKBINS, COMMONWEIGHT
-from makeSVLControlPlots import SELECTIONS, TREENAME
+
+# MASSES = [163.5, 166.5, 169.5, 171.5, 172.5, 173.5, 175.5, 178.5, 181.5]
+NBINS = 100
+XMIN = 5.
+XMAX = 200.
+FITRANGE = (20., 140.)
+MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
+
+#NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
+NTRKBINS = [(2,3), (3,4), (4,1000)]
+COMMONWEIGHT = "Weight[1]*Weight[4]*JESWeight[0]"
+
+TREENAME = 'SVLInfo'
+SELECTIONS = [
+	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),
+	('ee',        'EvCat==-121',    'ee'),
+	('em',        'EvCat==-143',    'e#mu'),
+	('mm',        'EvCat==-169',    '#mu#mu'),
+	('e',         'abs(EvCat)==11', 'e'),
+	('m',         'abs(EvCat)==13', '#mu'),
+	('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
+	('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
+	('em_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
+	('mm_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
+	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
+	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
+]
 
 COMBINATIONS = [
 	('tot', '1'),

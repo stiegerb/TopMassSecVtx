@@ -3,34 +3,12 @@ import os, sys
 import ROOT
 import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
+from makeSVLMassHistos import NBINS, XMIN, XMAX, MASSXAXISTITLE
+from makeSVLMassHistos import NTRKBINS, COMMONWEIGHT, TREENAME
+from makeSVLMassHistos import SELECTIONS
+from makeSVLDataMCPlots import projectFromTree, getHistoFromTree
 from numpy import roots
 
-# MASSES = [163.5, 166.5, 169.5, 171.5, 172.5, 173.5, 175.5, 178.5, 181.5]
-NBINS = 100
-XMIN = 5.
-XMAX = 200.
-FITRANGE = (20., 140.)
-MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
-
-#NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
-NTRKBINS = [(2,3), (3,4), (4,1000)]
-COMMONWEIGHT = "Weight[1]*Weight[4]*JESWeight[0]"
-
-TREENAME = 'SVLInfo'
-SELECTIONS = [
-	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),
-	('ee',        'EvCat==-121',    'ee'),
-	('em',        'EvCat==-143',    'e#mu'),
-	('mm',        'EvCat==-169',    '#mu#mu'),
-	('e',         'abs(EvCat)==11', 'e'),
-	('m',         'abs(EvCat)==13', '#mu'),
-	('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
-	('em_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
-	('mm_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
-	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
-	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
-]
 
 CONTROLVARS = [
 	('SVLDeltaR' , NBINS, 0  , 5   , '#Delta R(Sec.Vtx., lepton)'),
@@ -58,30 +36,6 @@ SYSTS = [
 	('p11mpihi', 'P11 high multi-parton interaction',
 		'MC8TeV_TTJets_TuneP11mpiHi.root'),
 ]
-
-def projectFromTree(hist, varname, sel, tree, option=''):
-	try:
-		tree.Project(hist.GetName(),varname, sel, option)
-		return True
-	except Exception, e:
-		raise e
-
-def getHistoFromTree(tree, sel='', var="SVLMass",
-	         hname="histo",
-	         nbins=NBINS, xmin=XMIN, xmax=XMAX,
-	         titlex='',
-	         weight=COMMONWEIGHT):
-	histo = ROOT.TH1D(hname, "histo" , nbins, xmin, xmax)
-	if sel=="": sel = "1"
-	sel = "(%s)" % sel
-	if len(weight):
-		sel = "%s*(%s)" % (sel, weight)
-	projectFromTree(histo, var, sel, tree)
-	histo.SetLineWidth(2)
-	histo.GetXaxis().SetTitle(titlex)
-	histo.Sumw2()
-	histo.SetDirectory(0)
-	return histo
 
 def getNTrkHistos(tree, sel='', var="SVLMass", tag='',
 		          nbins=NBINS, xmin=XMIN, xmax=XMAX,

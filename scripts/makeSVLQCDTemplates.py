@@ -3,7 +3,7 @@ import os, sys
 import ROOT
 import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot, setTDRStyle
-from makeSVLControlPlots import MASSXAXISTITLE, TREENAME, NTRKBINS
+from makeSVLMassHistos import MASSXAXISTITLE, TREENAME, NTRKBINS
 from makeSVLControlPlots import getHistoFromTree, getNTrkHistos
 from makeSVLDataMCPlots import addDataMCPlotOptions
 from runPlotter import runPlotter, addPlotterOptions, openTFile

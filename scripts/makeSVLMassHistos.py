@@ -122,17 +122,17 @@ def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 	ana.RunJob(outputfile)
 	print '         %s done' % taskname
 
-def runTasks(massfiles, tasklist, opt):
+def runTasks(inputfiles, tasklist, opt, subdir):
+	assert set(inputfiles.keys()) == set(tasklist.keys())
 	tasks = []
 
-	os.system('mkdir -p %s' % os.path.join(opt.outDir,'mass_histos/'))
+	os.system('mkdir -p %s' % os.path.join(opt.outDir, subdir))
 
-	for mass, chan in sorted(tasklist.keys()):
-		histos = tasklist[(mass,chan)]
-		for ifilep in massfiles[(mass,chan)]:
+	for key, task in tasklist.iteritems():
+		for ifilep in inputfiles[key]:
 			ofilen = os.path.basename(ifilep)
-			ofilep = os.path.join(opt.outDir, 'mass_histos', ofilen)
-			tasks.append(([ifilep], histos, ofilep))
+			ofilep = os.path.join(opt.outDir, subdir, ofilen)
+			tasks.append(([ifilep], task, ofilep))
 
 	if opt.jobs > 1:
 		import multiprocessing as MP
@@ -212,7 +212,7 @@ def main(args, opt):
 		tasklist[(mass,chan)] = tasks
 
 	if not opt.cache:
-		runTasks(massfiles, tasklist, opt)
+		runTasks(massfiles, tasklist, opt, 'mass_histos')
 
 	## Retrieve the histograms from the individual files
 	# (tag, chan, mass, comb)      -> histo

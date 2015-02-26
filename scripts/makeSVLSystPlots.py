@@ -60,8 +60,13 @@ SYSTSFROMWEIGHTS = [
 SYSTNAMES = dict([(syst,name) for syst,name,_ in
 	                            SYSTSFROMFILES+SYSTSFROMWEIGHTS])
 SYSTNAMES['nominal'] = "Nominal"
-
 SELNAMES = dict([(tag,name) for tag,_,name in SELECTIONS])
+COMBNAMES = {
+	'tot':'',
+	'cor':' (Correct comb.)',
+	'wro':' (Wrong comb.)',
+	'unm':' (Unmatched comb.)'
+}
 
 SYSTPLOTS = [
 	('toppt', 'Top p_{T} reweighting',
@@ -344,13 +349,22 @@ def main(args, opt):
 					tasklist[fsyst] += tasks
 
 				tasks = []
-				for var,nbins,xmin,xmax,titlex in CONTROLVARS:
-					for comb,combsel in COMBINATIONS:
+				for comb,combsel in COMBINATIONS:
+					for var,nbins,xmin,xmax,titlex in CONTROLVARS:
 						hname = "%s_%s_%s" % (var, comb, tag)
 						finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT, sel, combsel)
 						tasks.append((hname, var, finalsel,
 							                 nbins, xmin, xmax, titlex))
 						hname_to_keys[hname] = (tag, var, comb)
+
+					for name, nus in [('nu', 1), ('nonu', 0), ('nuunm', -1)]:
+						hname = "SVLMass_%s_%s_%s" % (comb, tag, name)
+						finalsel = "%s*(%s&&%s&&BHadNeutrino==%d)"%(
+							                 COMMONWEIGHT, sel, combsel, nus)
+						tasks.append((hname, 'SVLMass', finalsel,
+							          NBINS, XMIN, XMAX, MASSXAXISTITLE))
+						hname_to_keys[hname] = (tag, name, comb)
+
 				tasklist[fsyst] += tasks
 
 
@@ -404,6 +418,21 @@ def main(args, opt):
 		if not tag in ['inclusive', 'inclusive_mrank1']: continue
 		print "... processing %s"%tag
 
+		# Make plot of mass with and without neutrino:
+		for comb,_ in COMBINATIONS:
+			plot = RatioPlot('neutrino_%s'%tag)
+			plot.add(systhistos[(tag,'nonu', comb)], 'Without neutrino')
+			plot.add(systhistos[(tag,'nu',   comb)], 'With neutrino')
+			plot.add(systhistos[(tag,'nuunm',comb)], 'Unmatched')
+			plot.reference = systhistos[(tag,'nominal',comb)]
+			plot.tag = "Mass shape with and without neutrinos"
+			plot.subtag = SELNAMES[tag] + COMBNAMES[comb]
+			plot.ratiotitle = 'Ratio wrt Total'
+			plot.ratiorange = (0.7, 1.3)
+			plot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
+			plot.show("neutrino_%s_%s"%(tag,comb), opt.outDir)
+			plot.reset()
+
 		for name, title, systs, colors, comb in SYSTPLOTS:
 			plot = RatioPlot('%s_%s'%(name,comb))
 
@@ -411,10 +440,7 @@ def main(args, opt):
 				plot.add(systhistos[(tag,syst,comb)], SYSTNAMES[syst])
 
 			plot.tag = title
-			subtag = (SELNAMES[tag] + {'tot':'',
-			                           'cor':' (Correct comb.)',
-			                           'wro':' (Wrong comb.)',
-			                           'unm':' (Unmatched comb.)'}[comb])
+			subtag = SELNAMES[tag] + COMBNAMES[comb]
 			plot.subtag = subtag
 			plot.ratiotitle = 'Ratio wrt %s' % SYSTNAMES[systs[0]]
 			plot.ratiorange = (0.85, 1.15)

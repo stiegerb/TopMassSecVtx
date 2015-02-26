@@ -1,12 +1,12 @@
 #! /usr/bin/env python
-import os, sys
+import os, sys, re
 import ROOT
 import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
 from makeSVLMassHistos import NBINS, XMIN, XMAX, MASSXAXISTITLE
 from makeSVLMassHistos import NTRKBINS, COMMONWEIGHT, TREENAME
 from makeSVLMassHistos import SELECTIONS, COMBINATIONS
-from makeSVLMassHistos import runSVLInfoTreeAnalysis
+from makeSVLMassHistos import runSVLInfoTreeAnalysis, runTasks
 from makeSVLDataMCPlots import projectFromTree, getHistoFromTree
 from numpy import roots
 
@@ -239,7 +239,7 @@ def plotFracVsTopMass(fcor, fwro, funm, tag, subtag, oname):
 	for ext in ['.pdf','.png']:
 		tcanv.SaveAs(oname+ext)
 
-def makeSystTask(tag, sel, syst, histonames, weight='1'):
+def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 	tasks = []
 	htag = "%s_%s"%(tag,syst)
 	for comb,combsel in COMBINATIONS:
@@ -252,7 +252,7 @@ def makeSystTask(tag, sel, syst, histonames, weight='1'):
 
 		tasks.append((hname, 'SVLMass', finalsel,
 			          NBINS, XMIN, XMAX, MASSXAXISTITLE))
-		histonames[(tag, syst, comb)] = hname
+		hname_to_keys[hname] = (tag, syst, comb)
 
 		for ntk1,ntk2 in NTRKBINS:
 			tksel = "(SVNtrk>=%d&&SVNtrk<%d)"%(ntk1,ntk2)
@@ -265,78 +265,70 @@ def makeSystTask(tag, sel, syst, histonames, weight='1'):
 			hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
 			tasks.append((hname, 'SVLMass', finalsel,
 				          NBINS, XMIN, XMAX, MASSXAXISTITLE))
-			histonames[(tag, syst, comb, ntk1)] = hname
+			hname_to_keys[hname] = (tag, syst, comb, ntk1)
 	return tasks
 
-def runTasks(systfiles, tasklist, opt):
-	tasks = []
+def gatherHistosFromFiles(tasklist, files, dirname, hname_to_keys):
+	## First extract a list of ALL histogram names from the tasklist
+	hnames = [t[0] for tasks in tasklist.values() for t in tasks]
 
-	os.system('mkdir -p %s' % os.path.join(opt.outDir,'syst_histos/'))
-
-	for syst,task in tasklist.iteritems():
-		ofilename = '%s.root' % (syst)
-		outputfile = os.path.join(opt.outDir, 'syst_histos', ofilename)
-		tasks.append(([systfiles[syst]], task, outputfile))
-
-	if opt.jobs > 1:
-		import multiprocessing as MP
-		pool = MP.Pool(opt.jobs)
-		pool.map(runSVLInfoTreeAnalysis, tasks)
-	else:
-		for task in tasks:
-			runSVLInfoTreeAnalysis(task)
-
-def gatherHistosFromFiles(histonames, dirname):
 	histos = {}
-	for filename in os.listdir(dirname):
-		if not os.path.splitext(filename)[1] == '.root': continue
-		tfile = ROOT.TFile.Open(os.path.join(dirname,filename), 'READ')
+	for ifilen in os.listdir(dirname):
+		if not os.path.splitext(ifilen)[1] == '.root': continue
+		ifile = ROOT.TFile.Open(os.path.join(dirname,ifilen), 'READ')
 
-		for keys, hname in histonames.iteritems():
-			if (filename[:-5] == keys[1] or
-				(filename[:-5] == 'nominal' and
-				 keys[1] in [x for x,_,_,_,_ in CONTROLVARS]) or
-				(filename[:-5] == 'nominal' and
-				 keys[1] in [x for x,_,_ in SYSTSFROMWEIGHTS]) ):
+		for hname in hnames:
+			keys = hname_to_keys[hname]
+			syst = keys[1]
 
-				histo = tfile.Get(hname)
-				histo.SetDirectory(0)
-				histos[keys] = histo
+			## Skip histo names that are not in this file
+			if syst in [x[0] for x in SYSTSFROMFILES]:
+				tfilens = [os.path.basename(x) for x in files[syst]]
+				if not ifilen in tfilens: continue
 
+			if syst in [x[0] for x in SYSTSFROMWEIGHTS]:
+				tfilens = [os.path.basename(x) for x in files['nominal']]
+				if not ifilen in tfilens: continue
+
+			try:
+				histo = ifile.Get(hname)
+				try:
+					histo.SetDirectory(0)
+
+					## Add histograms with same names
+					if not keys in histos:
+						histos[keys] = histo
+					else:
+						histos[keys].Add(histo)
+				except AttributeError: pass
+
+			except ReferenceError:
+				print hname, "not found in", ifilen
 	return histos
-
 
 def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)
 	systfiles = {} # procname -> filename
 	try:
-		for filename in os.listdir(os.path.join(args[0],'syst')):
-			if not os.path.splitext(filename)[1] == '.root': continue
+		for fname in os.listdir(os.path.join(args[0],'syst')):
+			if not os.path.splitext(fname)[1] == '.root': continue
 			for syst,_,systfile in SYSTSFROMFILES:
-				if filename == systfile:
-					systfiles[syst] = os.path.join(args[0], 'syst', filename)
+				if fname == systfile:
+					systfiles[syst] = [os.path.join(args[0], 'syst', fname)]
 
-		systfiles['nominal'] = os.path.join(args[0],
-			                   'MC8TeV_TTJets_MSDecays_172v5.root')
+		systfiles['nominal'] = []
+		for fname in os.listdir(args[0]):
+			matchres = re.match(
+				r'MC8TeV_TTJets.*([0-9]{3})v5\_?([0-9]+)?\.root', fname)
+			if not matchres: continue # is ttbar file
+			if not len(matchres.groups()) > 0: continue # file is split
+			systfiles['nominal'].append(os.path.join(args[0],fname))
 
 	except IndexError:
 		print "Please provide a valid input directory"
 		exit(-1)
 
-	# if opt.verbose:
-	# 	systtrees = {} # mass/systname -> tree
-	# 	for syst in sorted(systfiles.keys()):
-	# 		tfile = ROOT.TFile.Open(systfiles[syst],'READ')
-	# 		tree = tfile.Get(TREENAME)
-	# 		systtrees[syst] = tree
-
-	# 	print 'Found the following systematics samples:'
-	# 	print '  %-15s: %7d' % ('nominal', systtrees['nominal'].GetEntries())
-	# 	for syst in sorted(systtrees.keys()):
-	# 		if syst == 'nominal': continue
-	# 		print '  %-15s: %7d' % (syst, systtrees[syst].GetEntries())
-
-	histonames = {} # (tag, syst, comb) -> histo
+	hname_to_keys = {} # hname -> (tag, syst, comb)
 	tasklist = {} # treefile -> tasklist
 
 	for fsyst,_ in systfiles.iteritems():
@@ -348,7 +340,7 @@ def main(args, opt):
 			if fsyst == 'nominal':
 				for syst,_,weight in SYSTSFROMWEIGHTS:
 					tasks = makeSystTask(tag, sel, syst,
-						                 histonames, weight=weight)
+						                 hname_to_keys, weight=weight)
 					tasklist[fsyst] += tasks
 
 				tasks = []
@@ -358,12 +350,12 @@ def main(args, opt):
 						finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT, sel, combsel)
 						tasks.append((hname, var, finalsel,
 							                 nbins, xmin, xmax, titlex))
-						histonames[(tag, var, comb)] = hname
+						hname_to_keys[hname] = (tag, var, comb)
 				tasklist[fsyst] += tasks
 
 
 			else:
-				tasks = makeSystTask(tag, sel, fsyst, histonames)
+				tasks = makeSystTask(tag, sel, fsyst, hname_to_keys)
 				tasklist[fsyst] += tasks
 
 	if not opt.cache:
@@ -373,11 +365,12 @@ def main(args, opt):
 		# 	for task in tasks:
 		# 		print task
 
-		runTasks(systfiles, tasklist, opt)
+		runTasks(systfiles, tasklist, opt, 'syst_histos')
 
 	systhistos = {} # (tag, syst, comb) -> histo
-	systhistos = gatherHistosFromFiles(histonames,
-		                               os.path.join(opt.outDir, 'syst_histos'))
+	systhistos = gatherHistosFromFiles(tasklist, systfiles,
+		                           os.path.join(opt.outDir, 'syst_histos'),
+		                           hname_to_keys)
 
 	# cachefile = open(".svlsysthistos.pck", 'w')
 	# pickle.dump(systhistos,     cachefile, pickle.HIGHEST_PROTOCOL)

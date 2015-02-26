@@ -128,12 +128,11 @@ def runTasks(massfiles, tasklist, opt):
 	os.system('mkdir -p %s' % os.path.join(opt.outDir,'mass_histos/'))
 
 	for mass, chan in sorted(tasklist.keys()):
-		treefiles = massfiles[(mass,chan)]
 		histos = tasklist[(mass,chan)]
-		filename = ('%s_%s' % (CHANNAMES[chan],str(mass))).replace('.','')
-		filename += '.root'
-		outputfile = os.path.join(opt.outDir, 'mass_histos', filename)
-		tasks.append((treefiles, histos, outputfile))
+		for ifilep in massfiles[(mass,chan)]:
+			ofilen = os.path.basename(ifilep)
+			ofilep = os.path.join(opt.outDir, 'mass_histos', ofilen)
+			tasks.append(([ifilep], histos, ofilep))
 
 	if opt.jobs > 1:
 		import multiprocessing as MP
@@ -143,27 +142,39 @@ def runTasks(massfiles, tasklist, opt):
 		for task in tasks:
 			runSVLInfoTreeAnalysis(task)
 
-def gatherHistosFromFiles(histonames, dirname):
-	histos = {}
-	for filename in os.listdir(dirname):
-		if not os.path.splitext(filename)[1] == '.root': continue
-		tfile = ROOT.TFile.Open(os.path.join(dirname,filename), 'READ')
-		for keys, hname in histonames.iteritems():
+def gatherHistosFromFiles(tasklist, massfiles, dirname, hname_to_keys):
+	## First extract a list of ALL histogram names from the tasklist
+	hnames = [t[0] for tasks in tasklist.values() for t in tasks]
 
-			## Skip files with wrong mass points
-			if not str(keys[2]).replace('.','') in filename: continue
-			## or wrong channel (this still leaves some overlap)
-			if not CHANNAMES[keys[1]] in filename: continue
+	histos = {}
+	for ifilen in os.listdir(dirname):
+		if not os.path.splitext(ifilen)[1] == '.root': continue
+		ifile = ROOT.TFile.Open(os.path.join(dirname,ifilen), 'READ')
+
+		for hname in hnames:
+			keys = hname_to_keys[hname]
+			tag = keys[0]
+			chan = keys[1]
+			mass = keys[2]
+
+			## Skip histo names that are not in this file
+			tfilens = [os.path.basename(x) for x in massfiles[(mass,chan)]]
+			if not ifilen in tfilens: continue
+
 			try:
-				histo = tfile.Get(hname)
+				histo = ifile.Get(hname)
 				try:
 					histo.SetDirectory(0)
-					histos[keys] = histo
+
+					## Add histograms with same names
+					if not keys in histos:
+						histos[keys] = histo
+					else:
+						histos[keys].Add(histo)
 				except AttributeError: pass
 
 			except ReferenceError:
-				print hname, "not found in", filename
-
+				print hname, "not found in", ifilen
 	return histos
 
 def main(args, opt):
@@ -171,12 +182,11 @@ def main(args, opt):
 	masstrees, massfiles = getMassTrees(args[0], verbose=True)
 	masspoints = sorted(list(set([mass for mass,_ in masstrees.keys()])))
 
-	histonames = {}
+	hname_to_keys = {} # hname -> (tag, chan, mass, comb, [ntk1])
 
-	tasklist = {} ## (mass,chan) -> tasklist
+	tasklist = {} ## (mass,chan) -> tasks
 	for (mass,chan) in masstrees.keys():
 		tasks = []
-		if chan == 's': continue
 		for tag,sel,_ in SELECTIONS:
 
 			htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
@@ -188,7 +198,7 @@ def main(args, opt):
 				finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT,sel,combsel)
 				tasks.append((hname, 'SVLMass', finalsel,
 					          NBINS, XMIN, XMAX, MASSXAXISTITLE))
-				histonames[(tag, chan, mass, comb)] = hname
+				hname_to_keys[hname] = (tag, chan, mass, comb)
 
 				for ntk1,ntk2 in NTRKBINS:
 					tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
@@ -197,47 +207,41 @@ def main(args, opt):
 					hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
 					tasks.append((hname, 'SVLMass', finalsel,
 						          NBINS, XMIN, XMAX, MASSXAXISTITLE))
-					histonames[(tag, chan, mass, comb, ntk1)] = hname
+					hname_to_keys[hname] = (tag, chan, mass, comb, ntk1)
 
 		tasklist[(mass,chan)] = tasks
 
 	if not opt.cache:
 		runTasks(massfiles, tasklist, opt)
 
-		## Retrieve the histograms from the individual files
-		# (tag, chan, mass, comb)      -> histo
-		# (tag, chan, mass, comb, ntk) -> histo
-		masshistos = gatherHistosFromFiles(histonames,
-			                              os.path.join(opt.outDir,
-			                              'mass_histos'))
+	## Retrieve the histograms from the individual files
+	# (tag, chan, mass, comb)      -> histo
+	# (tag, chan, mass, comb, ntk) -> histo
+	masshistos = gatherHistosFromFiles(tasklist, massfiles,
+		                              os.path.join(opt.outDir,
+		                              'mass_histos'),
+		                              hname_to_keys)
 
-		cachefile = open(".svlmasshistos.pck", 'w')
-		pickle.dump(masshistos, cachefile, pickle.HIGHEST_PROTOCOL)
-		cachefile.close()
+	cachefile = open(".svlmasshistos.pck", 'w')
+	pickle.dump(masshistos, cachefile, pickle.HIGHEST_PROTOCOL)
+	cachefile.close()
 
-	else:
-		cachefile = open(".svlmasshistos.pck", 'r')
-		masshistos    = pickle.load(cachefile)
-		cachefile.close()
+	# ofi = ROOT.TFile(os.path.join(opt.outDir,'masshistos.root'),
+	# 													   'recreate')
+	# ofi.cd()
 
+	# for key in masshistos.keys():
+	# 	tag, chan, mass = key[0],key[1],key[2]
+	# 	if not ofi.cd(tag):
+	# 		outDir = ofi.mkdir(tag)
+	# 		outDir.cd()
 
-
-		# ofi = ROOT.TFile(os.path.join(opt.outDir,'masshistos.root'),
-		# 													   'recreate')
-		# ofi.cd()
-
-		# for key in masshistos.keys():
-		# 	tag, chan, mass = key[0],key[1],key[2]
-		# 	if not ofi.cd(tag):
-		# 		outDir = ofi.mkdir(tag)
-		# 		outDir.cd()
-
-		# 	for comb,_ in COMBINATIONS:
-		# 		masshistos[(tag,chan,mass,comb)].Write()
-		# 		for ntk,_ in NTRKBINS:
-		# 			masshistos[(tag,chan,mass,comb,ntk)].Write()
-		# ofi.Write()
-		# ofi.Close()
+	# 	for comb,_ in COMBINATIONS:
+	# 		masshistos[(tag,chan,mass,comb)].Write()
+	# 		for ntk,_ in NTRKBINS:
+	# 			masshistos[(tag,chan,mass,comb,ntk)].Write()
+	# ofi.Write()
+	# ofi.Close()
 
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gStyle.SetOptStat(0)

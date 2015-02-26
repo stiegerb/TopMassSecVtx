@@ -225,6 +225,7 @@ def main(args, opt):
 	cachefile = open(".svlmasshistos.pck", 'w')
 	pickle.dump(masshistos, cachefile, pickle.HIGHEST_PROTOCOL)
 	cachefile.close()
+	print 'Wrote .svlmasshistos.pck with all the mass histos'
 
 	# ofi = ROOT.TFile(os.path.join(opt.outDir,'masshistos.root'),
 	# 													   'recreate')

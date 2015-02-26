@@ -363,11 +363,11 @@ class Plot(object):
 
         for m in self.mc :
             if m :
-                m.Write()
+                m.Write(m.GetName(), ROOT.TObject.kOverwrite)
         if self.data :
-            self.data.Write()
+            self.data.Write(self.data.GetName(), ROOT.TObject.kOverwrite)
         if self.dataH :
-            self.dataH.Write()
+            self.dataH.Write(self.dataH.GetName(), ROOT.TObject.kOverwrite)
         outF.Close()
 
     def normToData(self):

@@ -4,7 +4,7 @@ import ROOT
 import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot, setTDRStyle
 from makeSVLMassHistos import MASSXAXISTITLE, TREENAME, NTRKBINS
-from makeSVLControlPlots import getHistoFromTree, getNTrkHistos
+from makeSVLDataMCPlots import getHistoFromTree
 from makeSVLDataMCPlots import addDataMCPlotOptions
 from runPlotter import runPlotter, addPlotterOptions, openTFile
 
@@ -26,6 +26,35 @@ def filterUseless(filename, sel=''):
 	if '1100' in sel and not 'SingleElectron' in filename: return False
 	if '1300' in sel and not 'SingleMu'       in filename: return False
 	return True
+
+def getNTrkHistos(tree, sel='', var="SVLMass", tag='',
+		          nbins=NBINS, xmin=XMIN, xmax=XMAX,
+		          titlex='', combsToProject=[('tot','')]):
+	hists = []
+	for ntk1,ntk2 in NTRKBINS:
+		title = "%d #leq N_{trk.} < %d" %(ntk1, ntk2)
+		if ntk2 > 100:
+			title = "%d #leq N_{trk.}" %(ntk1)
+
+
+		for comb,combSel in combsToProject:
+			hist = ROOT.TH1D("%s_%s_%d_%s"%(var,comb,ntk1,tag),
+				             title, nbins, xmin, xmax)
+			tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
+			finalSel=sel
+			if finalSel=="": finalSel = "1"
+			if combSel=="" : finalSel = "(%s)"%finalSel
+			else           : finalSel = "(%s && %s)"%(finalSel,combSel)
+			finalSel=finalSel+"&&"+tksel
+			projectFromTree(hist, var, finalSel, tree)
+			hists.append(hist)
+
+	for x in hists:
+		x.SetLineWidth(2)
+		x.GetXaxis().SetTitle(titlex)
+		x.Sumw2()
+
+	return hists
 
 def main(args, options):
 	os.system('mkdir -p %s'%options.outDir)

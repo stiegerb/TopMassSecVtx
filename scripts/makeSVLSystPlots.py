@@ -421,7 +421,7 @@ def main(args, opt):
 			plot.colors = colors
 			filename = "%s_%s"%(name,tag)
 			if comb != 'tot': filename += '_%s'%comb
-			plot.show(filename, opt.outDir)
+			plot.show(filename, os.path.join(opt.outDir,'syst_plots'))
 			plot.reset()
 
 

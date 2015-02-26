@@ -44,10 +44,10 @@ runPlotter.py -l 19701  -j test/topss2014/samples.json -o treedir/plots treedir
 ### Producing systematics plots and mass scans
 
 ```
-./scripts/makeSVLControlPlots.py treedir/
-
+./scripts/makeSVLSystPlots.py treedir/
+./scripts/makeSVLMassHistos.py treedir/
 ```
-Will run the plots and put them in svlplots/ by default. Also produces a histos.root file to be used for the further analysis. Also saves the histograms in a cachefile. To rerun only the plotting part, run with -c option.
+Will run the plots and put them in svlplots/ by default. Also saves the histograms in a cachefile. To rerun only the plotting part, run with -c option.
 
 
 ------------------------------------------------------

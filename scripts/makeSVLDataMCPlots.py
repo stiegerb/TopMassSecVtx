@@ -53,15 +53,33 @@ def writeDataMCHistos(tree, processName, outputFile):
 			                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
 			hist.Write(hist.GetName())
 
+def resolveFilename(fname):
+	import re
+	matchres = re.match(
+	       r'(Data8TeV|MC8TeV)_([\w]+?)(?:_([0-9]{1,2}))?\.root', fname)
+
+	if not matchres:
+		print 'resolveFilename::file does not match template: %s' % fname
+		return None
+
+	# print fname, matchres.groups()
+	isdata = (matchres.group(1) == 'Data8TeV')
+	procname = matchres.group(2)
+	splitno = matchres.group(3)
+	return isdata, procname, splitno
+
 def main(args, options):
 	os.system('mkdir -p %s'%options.outDir)
 	try:
 
-		treefiles = {} # procname -> filename
+		treefiles = {} # procname -> [filename1, filename2, ...]
 		for filename in os.listdir(args[0]):
 			if not os.path.splitext(filename)[1] == '.root': continue
-			procname = filename.split('_', 1)[1][:-5]
-			treefiles[procname] = os.path.join(args[0],filename)
+
+			isdata, pname, splitno = resolveFilename(filename)
+
+			if not pname in treefiles: treefiles[pname] = []
+			treefiles[pname].append(os.path.join(args[0],filename))
 
 	except IndexError:
 		print "Please provide a valid input directory"

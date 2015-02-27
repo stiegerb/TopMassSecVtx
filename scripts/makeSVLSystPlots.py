@@ -7,7 +7,7 @@ from makeSVLMassHistos import NBINS, XMIN, XMAX, MASSXAXISTITLE
 from makeSVLMassHistos import NTRKBINS, COMMONWEIGHT, TREENAME
 from makeSVLMassHistos import SELECTIONS, COMBINATIONS
 from makeSVLMassHistos import runSVLInfoTreeAnalysis, runTasks
-from makeSVLDataMCPlots import projectFromTree, getHistoFromTree
+from makeSVLDataMCPlots import resolveFilename
 from numpy import roots
 
 
@@ -57,9 +57,8 @@ SYSTSFROMWEIGHTS = [
 	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))'),
 ]
 
-SYSTNAMES = dict([(syst,name) for syst,name,_ in
-	                            SYSTSFROMFILES+SYSTSFROMWEIGHTS])
-SYSTNAMES['nominal'] = "Nominal"
+ALLSYSTS = SYSTSFROMFILES + SYSTSFROMWEIGHTS
+SYSTNAMES = dict([(syst,name) for syst,name,_ in ALLSYSTS])
 SELNAMES = dict([(tag,name) for tag,_,name in SELECTIONS])
 COMBNAMES = {
 	'tot':'',
@@ -323,10 +322,11 @@ def main(args, opt):
 
 		systfiles['nominal'] = []
 		for fname in os.listdir(args[0]):
-			matchres = re.match(
-				r'MC8TeV_TTJets.*([0-9]{3})v5\_?([0-9]+)?\.root', fname)
-			if not matchres: continue # is ttbar file
-			if not len(matchres.groups()) > 0: continue # file is split
+			if not os.path.splitext(fname)[1] == '.root': continue
+			isdata,procname,splitno = resolveFilename(fname)
+			if not procname == 'TTJets_MSDecays_172v5': continue
+			if not splitno: continue # file is split
+
 			systfiles['nominal'].append(os.path.join(args[0],fname))
 
 	except IndexError:
@@ -336,12 +336,9 @@ def main(args, opt):
 	hname_to_keys = {} # hname -> (tag, syst, comb)
 	tasklist = {} # treefile -> tasklist
 
-	for fsyst,_ in systfiles.iteritems():
+	for fsyst in systfiles.keys():
 		if not fsyst in tasklist: tasklist[fsyst] = []
 		for tag,sel,_ in SELECTIONS:
-			## Only interested in inclusive selections
-			if not 'inclusive' in tag: continue
-
 			if fsyst == 'nominal':
 				for syst,_,weight in SYSTSFROMWEIGHTS:
 					tasks = makeSystTask(tag, sel, syst,
@@ -386,12 +383,12 @@ def main(args, opt):
 		                           os.path.join(opt.outDir, 'syst_histos'),
 		                           hname_to_keys)
 
-	# cachefile = open(".svlsysthistos.pck", 'w')
-	# pickle.dump(systhistos,     cachefile, pickle.HIGHEST_PROTOCOL)
-	# cachefile.close()
+	cachefile = open(".svlsysthistos.pck", 'w')
+	pickle.dump(systhistos, cachefile, pickle.HIGHEST_PROTOCOL)
+	cachefile.close()
 
 	# cachefile = open(".svlsysthistos.pck", 'r')
-	# masshistos     = pickle.load(cachefile)
+	# systhistos = pickle.load(cachefile)
 	# cachefile.close()
 
 
@@ -486,7 +483,6 @@ def main(args, opt):
 	# print 112*'-'
 
 	return 0
-
 
 
 if __name__ == "__main__":

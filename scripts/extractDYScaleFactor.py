@@ -61,6 +61,14 @@ def prepareDYScaleFactors(filename, plotfile, inputdir, options,
 
 def extractFactors(inputFile, options):
 	try:
+		cachefile = open('.svldyscalefactors.pck','r')
+		scaleFactors = pickle.load(cachefile)
+		cachefile.close()
+		return scaleFactors
+	except IOError:
+		pass
+
+	try:
 		tfile = openTFile(inputFile)
 	except ReferenceError:
 		print "Please provide a valid input file"
@@ -95,6 +103,10 @@ def extractFactors(inputFile, options):
 			print " -> scale factor: %5.3f" % SF
 		scaleFactors[channame] = SF
 	if options.verbose>0: print 30*'-'
+
+	cachefile = open(".svldyscalefactors.pck", 'w')
+	pickle.dump(scaleFactors, cachefile, pickle.HIGHEST_PROTOCOL)
+	cachefile.close()
 	return scaleFactors
 
 def main(args, opt):

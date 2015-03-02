@@ -14,13 +14,15 @@ LxyAnalysis::LxyAnalysis() : outT_(0), outDir_(0)
 void LxyAnalysis::resetBeautyEvent()
 {
     // Reset all the tree variables
-    bev_.run    = -999;
-    bev_.event  = -999;
-    bev_.lumi   = -999;
-    bev_.evcat  = -999;
-    bev_.gevcat = -999;
-    bev_.nvtx   = -999;
-    bev_.rho    = -999.99;
+    bev_.run      = -999;
+    bev_.event    = -999;
+    bev_.lumi     = -999;
+    bev_.evcat    = -999;
+    bev_.gevcat   = -999;
+    bev_.nvtx     = -999;
+    bev_.rho      = -999.99;
+    bev_.instLumi = -999.99;
+    bev_.ngenTruepu = -999;
 
     bev_.nw     = 0;
     bev_.nl     = 0;
@@ -116,6 +118,8 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("gevcat",      &bev_.gevcat,       "gevcat/I");
   outT_->Branch("nvtx",        &bev_.nvtx,         "nvtx/I");
   outT_->Branch("rho",         &bev_.rho,          "rho/F");
+  outT_->Branch("instLumi",    &bev_.instLumi,     "instLumi/F");
+  outT_->Branch("ngenTruepu",  &bev_.ngenTruepu,   "ngenTruepu/I");
   outT_->Branch("qscale",      &bev_.qscale,       "qscale/F");
   outT_->Branch("x1",          &bev_.x1,           "x1/F");
   outT_->Branch("x2",          &bev_.x2,           "x2/F");

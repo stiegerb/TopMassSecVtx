@@ -621,6 +621,8 @@ int main(int argc, char* argv[])
         bev.lumi=ev.lumi;
         bev.nvtx=ev.nvtx;
         bev.rho=ev.rho;
+        bev.instLumi=ev.instLumi;
+        bev.ngenTruepu=ev.ngenTruepu;
         bev.nw=10;
         bev.w[0]=genWeight;
         bev.w[1]=puWeight;

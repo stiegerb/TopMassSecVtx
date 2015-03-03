@@ -9,6 +9,7 @@
 #include "UserCode/TopMassSecVtx/interface/LxyAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/UEAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/TopPtWeighter.h"
+#include "UserCode/TopMassSecVtx/interface/PileUpJSONParser.h"
 #include "UserCode/TopMassSecVtx/interface/BfragWeighter.h"
 #include "UserCode/TopMassSecVtx/interface/LeptonEfficiencySF.h"
 #include "UserCode/TopMassSecVtx/interface/MuScleFitCorrector.h"
@@ -47,6 +48,7 @@
 
 //correctors
 TopPtWeighter *fTopPtWgt=0;
+PileUpJSONParser *fPileUpJSONParser=0;
 BfragWeighter *fBfragWgt=0;
 LeptonEfficiencySF fLepEff;
 FactorizedJetCorrector *fJesCor=0;
@@ -194,7 +196,9 @@ int main(int argc, char* argv[])
         "AbsoluteMPFBias", //in-situ correlation group
         "RelativeFSR",     //JEC inter-calibration
         "PileUpDataMC", "PileUpPtBB", "PileUpPtEC", "PileUpPtHF",      //Pileup
-        "AbsoluteStat", "AbsoluteScale","HighPtExtra", "SinglePionECAL", "SinglePionHCAL", "RelativeJEREC1", "RelativeJEREC2", "RelativeJERHF", "RelativePtBB", "RelativePtEC1",  "RelativePtEC2", "RelativePtHF", "RelativeStatEC2", "RelativeStatHF", //JEC uncorrelated
+        "AbsoluteStat", "AbsoluteScale","HighPtExtra", "SinglePionECAL", "SinglePionHCAL",
+        "RelativeJEREC1", "RelativeJEREC2", "RelativeJERHF", "RelativePtBB", "RelativePtEC1",
+        "RelativePtEC2", "RelativePtHF", "RelativeStatEC2", "RelativeStatHF", //JEC uncorrelated
         "FlavorPureGluon", "FlavorPureQuark", "FlavorPureCharm", "FlavorPureBottom" //flavor JES
     };
     const int nsrc = sizeof(srcnames)/sizeof(TString);
@@ -324,6 +328,12 @@ int main(int argc, char* argv[])
         }
     }
 
+    if(!isMC){
+        fPileUpJSONParser = new PileUpJSONParser("data/lumiinfo/pileup_px_v2.txt",
+                                                 "data/lumiinfo/pileup_hf_v2.txt",
+                                                 "data/lumiinfo/rereco_json.txt");
+    }
+
     //control the sec vtx analysis
     LxyAnalysis lxyAn;
 
@@ -351,6 +361,11 @@ int main(int argc, char* argv[])
         ueAn.attachToDir(spyDir);
     }
 
+
+    // Save the last lumi section to do certain calls
+    // only for every NEW lumi section
+    Int_t lastLumiSection = -1;
+    bool newLumiSection = false;
 
     //
     // analyze (puf...)
@@ -609,6 +624,18 @@ int main(int argc, char* argv[])
 
         //save selected event
         if(!saveSummaryTree || !passPreSelection) continue;
+
+        // Check if this is a new lumisection
+        if(lastLumiSection == ev.lumi){
+            newLumiSection = false;
+        }
+        else{
+            newLumiSection = true;
+            lastLumiSection = ev.lumi;
+        }
+
+
+
         lxyAn.resetBeautyEvent();
         BeautyEvent_t &bev=lxyAn.getBeautyEvent();
         int evCatSummary(box.cat);
@@ -621,8 +648,29 @@ int main(int argc, char* argv[])
         bev.lumi=ev.lumi;
         bev.nvtx=ev.nvtx;
         bev.rho=ev.rho;
-        bev.instLumi=ev.instLumi;
-        bev.ngenTruepu=ev.ngenTruepu;
+
+        // Save pileup info
+        if(!isMC){
+            bev.ngenTruepu = -99;
+            if(newLumiSection){
+                // bev.pxlumi  = fPileUpJSONParser->getPxLumi( ev.run, ev.lumi);
+                // bev.hflumi  = fPileUpJSONParser->getHFLumi( ev.run, ev.lumi);
+
+                bev.mupx    = fPileUpJSONParser->getMuPx(   ev.run, ev.lumi);
+                bev.murmspx = fPileUpJSONParser->getMuRMSPx(ev.run, ev.lumi);
+                bev.muhf    = fPileUpJSONParser->getMuHF(   ev.run, ev.lumi);
+                bev.murmshf = fPileUpJSONParser->getMuRMSHF(ev.run, ev.lumi);
+            }
+
+        }
+        else{
+            bev.ngenTruepu = ev.ngenTruepu;
+            bev.mupx     = -99.99;
+            bev.murmspx  = -99.99;
+            bev.muhf     = -99.99;
+            bev.murmshf  = -99.99;
+        }
+
         bev.nw=10;
         bev.w[0]=genWeight;
         bev.w[1]=puWeight;

@@ -29,6 +29,8 @@ public :
    Int_t           gevcat;
    Int_t           nvtx;
    Float_t         rho;
+   Float_t         instLumi;
+   Int_t           ngenTruepu;
    Float_t         qscale;
    Float_t         x1;
    Float_t         x2;
@@ -102,6 +104,8 @@ public :
    TBranch        *b_gevcat;   //!
    TBranch        *b_nvtx;   //!
    TBranch        *b_rho;   //!
+   TBranch        *b_instLumi;   //!
+   TBranch        *b_ngenTruepu;   //!
    TBranch        *b_qscale;   //!
    TBranch        *b_x1;   //!
    TBranch        *b_x2;   //!

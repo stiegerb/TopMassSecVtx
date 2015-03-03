@@ -21,8 +21,16 @@ void LxyAnalysis::resetBeautyEvent()
     bev_.gevcat   = -999;
     bev_.nvtx     = -999;
     bev_.rho      = -999.99;
-    bev_.instLumi = -999.99;
+    // bev_.instLumi = -999.99;
     bev_.ngenTruepu = -999;
+
+    // Pileup not reset on purpose, only change once per lumi
+    // bev_.mupx     = -999.99;
+    // bev_.murmspx  = -999.99;
+    // bev_.muhf     = -999.99;
+    // bev_.murmshf  = -999.99;
+    // bev_.pxlumi   = -999.99;
+    // bev_.hflumi   = -999.99;
 
     bev_.nw     = 0;
     bev_.nl     = 0;
@@ -118,7 +126,13 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("gevcat",      &bev_.gevcat,       "gevcat/I");
   outT_->Branch("nvtx",        &bev_.nvtx,         "nvtx/I");
   outT_->Branch("rho",         &bev_.rho,          "rho/F");
-  outT_->Branch("instLumi",    &bev_.instLumi,     "instLumi/F");
+  // outT_->Branch("instLumi",    &bev_.instLumi,     "instLumi/F");
+  // outT_->Branch("pxlumi",      &bev_.pxlumi,       "pxlumi/F");
+  // outT_->Branch("hflumi",      &bev_.hflumi,       "hflumi/F");
+  outT_->Branch("mupx",        &bev_.mupx,         "mupx/F");
+  outT_->Branch("murmspx",     &bev_.murmspx,      "murmspx/F");
+  outT_->Branch("muhf",        &bev_.muhf,         "muhf/F");
+  outT_->Branch("murmshf",     &bev_.murmshf,      "murmshf/F");
   outT_->Branch("ngenTruepu",  &bev_.ngenTruepu,   "ngenTruepu/I");
   outT_->Branch("qscale",      &bev_.qscale,       "qscale/F");
   outT_->Branch("x1",          &bev_.x1,           "x1/F");

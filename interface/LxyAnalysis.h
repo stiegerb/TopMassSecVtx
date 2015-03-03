@@ -15,7 +15,7 @@ struct BeautyEvent_t
   static const unsigned gMaxNPFCands = 1000;
 
   Int_t run, lumi, event, evcat, gevcat, nvtx, ngenTruepu;
-  Float_t rho, instLumi;
+  Float_t rho, mupx, murmspx, muhf, murmshf; //, instLumi, pxlumi, hflumi;
   // Weights
   Int_t nw;
   Float_t w[gMaxNWeights];

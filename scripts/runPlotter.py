@@ -166,6 +166,7 @@ def checkMissingFiles(inDir, jsonUrl):
     total_expected = 0
     missing_files = []
     suspicious_files = []
+    recovered_files = []
 
     protocol = 'local'
     if inDir.startswith('/store/'):
@@ -200,6 +201,11 @@ def checkMissingFiles(inDir, jsonUrl):
                         missing_files.append(filename)
                     elif (cmsInRootFile.size() < 1024):
                         suspicious_files.append(filename)
+                    else:
+                        tfile = openTFile(rootFileUrl)
+                        if tfile.TestBit(ROOT.TFile.kRecovered):
+                            recovered_files.append(filename)
+                        tfile.Close()
                     continue
 
     print 20*'-'
@@ -217,6 +223,13 @@ def checkMissingFiles(inDir, jsonUrl):
         for filename in suspicious_files:
             print filename
         print 20*'-'
+    if len(recovered_files):
+        print "The following files are recovered:"
+        print "(%d out of %d expected)"% (len(recovered_files), total_expected)
+        for filename in recovered_files:
+            print filename
+        print 20*'-'
+
 
 def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     print "... processing", key
@@ -352,6 +365,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                     else:
                         fixExtremities(ihist,False,False)
 
+                    ## Apply xsec weights
                     ihist.Scale(xsecweights[str(dtag)])
 
                     ## Apply external scale factor

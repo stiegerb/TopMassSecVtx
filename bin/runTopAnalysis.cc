@@ -233,9 +233,9 @@ int main(int argc, char* argv[])
         }
         std::vector<float> mcPileupDistribution;
         if(isMC) {
-            TString puDist(baseDir+"/pileup");
+            TString puDist(baseDir+"/pileuptrue");
             TH1F* histo = (TH1F *) inF->Get(puDist);
-            if(!histo)std::cout<<"pileup histogram is null!!!\n";
+            if(!histo)std::cout<<"pileuptrue histogram is null!!!\n";
             for(int i=1; i<=histo->GetNbinsX(); i++) {
                 mcPileupDistribution.push_back(histo->GetBinContent(i));
             }
@@ -460,9 +460,9 @@ int main(int argc, char* argv[])
         //pileup weight
         float puWeight(1.0), puWeightUp(1.0), puWeightDown(1.0);
         if(isMC && fLumiWeights) {
-            puWeight     = fLumiWeights->weight(ev.ngenITpu);
-            puWeightUp   = puWeight*fPUshifters[utils::cmssw::PUUP]->Eval(ev.ngenITpu);
-            puWeightDown = puWeight*fPUshifters[utils::cmssw::PUDOWN]->Eval(ev.ngenITpu);
+            puWeight     = fLumiWeights->weight(ev.ngenTruepu);
+            puWeightUp   = puWeight*fPUshifters[utils::cmssw::PUUP]->Eval(ev.ngenTruepu);
+            puWeightDown = puWeight*fPUshifters[utils::cmssw::PUDOWN]->Eval(ev.ngenTruepu);
         }
 
         //top pT weights and MC truth

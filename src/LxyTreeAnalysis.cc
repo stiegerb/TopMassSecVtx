@@ -233,11 +233,21 @@ void LxyTreeAnalysis::BookHistos(){
 	// lepton sec vertex histos:
 	BookSVLHistos();
 
+	fHMuPx = new TH1D("MuPx", "Mu from pixel lumi (ttbar dilepton)", 30, 0, 50); fHistos.push_back(fHMuPx); fHMuPx->SetXTitle("#mu (Pixel)");
+	fHRho  = new TH1D("Rho",  "Rho (ttbar dilepton)",                50, 0, 50); fHistos.push_back(fHRho);  fHRho->SetXTitle("#rho");
+	fHNVtx = new TH1D("NVtx", "N_PV (ttbar dilepton)",               50, 0, 50); fHistos.push_back(fHNVtx); fHNVtx->SetXTitle("N_{PV}-N_{HS}");
+
 	// Call Sumw2() for all of them
 	std::vector<TH1*>::iterator h;
 	for(h = fHistos.begin(); h != fHistos.end(); ++h) {
 		(*h)->Sumw2();
 	}
+
+	fP_rho_mu = new TProfile("Profile_rho_mu", "Profile of <rho> vs mu", 30, 0, 50);
+	fP_nvx_mu = new TProfile("Profile_nvx_mu", "Profile of <nvtx> vs mu", 30, 0, 50);
+	fHistos.push_back(fP_rho_mu);
+	fHistos.push_back(fP_nvx_mu);
+
 }
 void LxyTreeAnalysis::WriteHistos(){
 	// Write all histos to file, then delete them
@@ -810,6 +820,19 @@ void LxyTreeAnalysis::analyze(){
 		}
 	}
 
+
+	///////////////////////////////////////////////////
+	// Mikko's plots
+	if(selectEvent()){
+		float mu = 0;
+		if(ngenTruepu>0) mu = ngenTruepu; // MC
+		else             mu = mupx;       // Data
+		fP_rho_mu->Fill(mu, rho,    w[1]);
+		fP_nvx_mu->Fill(mu, nvtx-1, w[1]);
+		fHMuPx   ->Fill(mu,         w[1]);
+		fHRho    ->Fill(rho,        w[1]);
+		fHNVtx   ->Fill(nvtx-1,     w[1]);
+	}
 
 	///////////////////////////////////////////////////
 	// Lepton + Secondary Vertex stuff:

@@ -4,6 +4,7 @@
 #include <TFile.h>
 #include <TH1D.h>
 #include <TH2D.h>
+#include <TProfile.h>
 #include <TRandom3.h>
 #include <TString.h>
 #include <TTreeFormula.h>
@@ -107,6 +108,10 @@ public:
     Long64_t fMaxevents;
 
     std::vector<TH1*> fHistos;
+
+    // Mikko's plot:
+    TProfile *fP_rho_mu, *fP_nvx_mu;
+    TH1D *fHRho, *fHMuPx, *fHNVtx;
 
     // Charm resonance histos
     TH1D *fHMJPsi, *fHMJPsimu, *fHMJPsie, *fHMJPsiK;

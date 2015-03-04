@@ -56,7 +56,10 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("gevcat", &gevcat, &b_gevcat);
    fChain->SetBranchAddress("nvtx", &nvtx, &b_nvtx);
    fChain->SetBranchAddress("rho", &rho, &b_rho);
-   fChain->SetBranchAddress("instLumi", &instLumi, &b_instLumi);
+   fChain->SetBranchAddress("mupx", &mupx, &b_mupx);
+   fChain->SetBranchAddress("murmspx", &murmspx, &b_murmspx);
+   fChain->SetBranchAddress("muhf", &muhf, &b_muhf);
+   fChain->SetBranchAddress("murmshf", &murmshf, &b_murmshf);
    fChain->SetBranchAddress("ngenTruepu", &ngenTruepu, &b_ngenTruepu);
    fChain->SetBranchAddress("qscale", &qscale, &b_qscale);
    fChain->SetBranchAddress("x1", &x1, &b_x1);

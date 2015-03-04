@@ -112,6 +112,8 @@ public:
     // Mikko's plot:
     TProfile *fP_rho_mu, *fP_nvx_mu;
     TH1D *fHRho, *fHMuPx, *fHNVtx;
+    TProfile *fP_rho_mu_dilep, *fP_nvx_mu_dilep;
+    TH1D *fHRho_dilep, *fHMuPx_dilep, *fHNVtx_dilep;
 
     // Charm resonance histos
     TH1D *fHMJPsi, *fHMJPsimu, *fHMJPsie, *fHMJPsiK;

@@ -233,20 +233,28 @@ void LxyTreeAnalysis::BookHistos(){
 	// lepton sec vertex histos:
 	BookSVLHistos();
 
-	fHMuPx = new TH1D("MuPx", "Mu from pixel lumi (ttbar dilepton)", 30, 0, 50); fHistos.push_back(fHMuPx); fHMuPx->SetXTitle("#mu (Pixel)");
-	fHRho  = new TH1D("Rho",  "Rho (ttbar dilepton)",                50, 0, 50); fHistos.push_back(fHRho);  fHRho->SetXTitle("#rho");
-	fHNVtx = new TH1D("NVtx", "N_PV (ttbar dilepton)",               50, 0, 50); fHistos.push_back(fHNVtx); fHNVtx->SetXTitle("N_{PV}-N_{HS}");
+	fHMuPx = new TH1D("MuPx", "Mu from pixel lumi (ttbar inclusive)", 50, 0, 50); fHistos.push_back(fHMuPx); fHMuPx->SetXTitle("#mu (Pixel)");
+	fHRho  = new TH1D("Rho",  "Rho (ttbar inclusive)",                50, 0, 50); fHistos.push_back(fHRho);  fHRho->SetXTitle("#rho");
+	fHNVtx = new TH1D("NVtx", "N_PV (ttbar inclusive)",               50, 0, 50); fHistos.push_back(fHNVtx); fHNVtx->SetXTitle("N_{PV}-N_{HS}");
+
+	fHMuPx_dilep = new TH1D("MuPx_dilep", "Mu from pixel lumi (ttbar dilepton)", 50, 0, 50); fHistos.push_back(fHMuPx_dilep); fHMuPx_dilep->SetXTitle("#mu (Pixel)");
+	fHRho_dilep  = new TH1D("Rho_dilep",  "Rho (ttbar dilepton)",                50, 0, 50); fHistos.push_back(fHRho_dilep);  fHRho_dilep->SetXTitle("#rho");
+	fHNVtx_dilep = new TH1D("NVtx_dilep", "N_PV (ttbar dilepton)",               50, 0, 50); fHistos.push_back(fHNVtx_dilep); fHNVtx_dilep->SetXTitle("N_{PV}-N_{HS}");
+
+	fP_rho_mu = new TProfile("Profile_rho_mu", "Profile of <rho> vs mu",  50, 0, 50);
+	fP_nvx_mu = new TProfile("Profile_nvx_mu", "Profile of <nvtx> vs mu", 50, 0, 50);
+	fP_rho_mu_dilep = new TProfile("Profile_rho_mu_dilep", "Profile of <rho> vs mu",  50, 0, 50);
+	fP_nvx_mu_dilep = new TProfile("Profile_nvx_mu_dilep", "Profile of <nvtx> vs mu", 50, 0, 50);
+	fHistos.push_back(fP_rho_mu);
+	fHistos.push_back(fP_nvx_mu);
+	fHistos.push_back(fP_rho_mu_dilep);
+	fHistos.push_back(fP_nvx_mu_dilep);
 
 	// Call Sumw2() for all of them
 	std::vector<TH1*>::iterator h;
 	for(h = fHistos.begin(); h != fHistos.end(); ++h) {
 		(*h)->Sumw2();
 	}
-
-	fP_rho_mu = new TProfile("Profile_rho_mu", "Profile of <rho> vs mu", 30, 0, 50);
-	fP_nvx_mu = new TProfile("Profile_nvx_mu", "Profile of <nvtx> vs mu", 30, 0, 50);
-	fHistos.push_back(fP_rho_mu);
-	fHistos.push_back(fP_nvx_mu);
 
 }
 void LxyTreeAnalysis::WriteHistos(){
@@ -832,6 +840,14 @@ void LxyTreeAnalysis::analyze(){
 		fHMuPx   ->Fill(mu,         w[1]);
 		fHRho    ->Fill(rho,        w[1]);
 		fHNVtx   ->Fill(nvtx-1,     w[1]);
+
+		if(abs(evcat) >= 121){ // Dilepton
+			fP_rho_mu_dilep->Fill(mu, rho,    w[1]);
+			fP_nvx_mu_dilep->Fill(mu, nvtx-1, w[1]);
+			fHMuPx_dilep   ->Fill(mu,         w[1]);
+			fHRho_dilep    ->Fill(rho,        w[1]);
+			fHNVtx_dilep   ->Fill(nvtx-1,     w[1]);
+		}
 	}
 
 	///////////////////////////////////////////////////

@@ -8,8 +8,10 @@ from makeSVLDataMCPlots import resolveFilename
 PROFNAMES = [
 	'Profile_nvx_mu',
 	'Profile_nvx_mu_dilep',
+	'Profile_nvx_mu_emu',
 	'Profile_rho_mu',
 	'Profile_rho_mu_dilep',
+	'Profile_rho_mu_emu',
 ]
 
 LUMI = 17123
@@ -64,7 +66,7 @@ def makeRhoVsNVtxProfile(args, options):
 	datarange = range(2,35)
 	for isdata in [True, False]:
 		cat = 'data' if isdata else 'mc'
-		for selection in ['', '_dilep']:
+		for selection in ['', '_dilep', '_emu']:
 			print ' ... processing',cat,selection
 			prof_nvx = merged_profiles[(isdata, 'Profile_nvx_mu%s'%selection)]
 			prof_rho = merged_profiles[(isdata, 'Profile_rho_mu%s'%selection)]
@@ -89,6 +91,8 @@ def makeRhoVsNVtxProfile(args, options):
 
 			markerstyle = {True:20, False:24}[isdata]
 			graph.SetMarkerStyle(markerstyle)
+			graph.SetMarkerColor(ROOT.kGreen-2)
+			graph.SetLineColor(ROOT.kGreen-2)
 			graph.GetXaxis().SetTitle("#LTN_{PV,good} - N_{HS}#GT")
 			graph.GetYaxis().SetTitle("#LT#rho#GT (GeV)")
 
@@ -97,7 +101,7 @@ def makeRhoVsNVtxProfile(args, options):
 	ROOT.gROOT.SetBatch(True)
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gStyle.SetOptStat(0)
-	for selection in ['', '_dilep']:
+	for selection in ['', '_dilep', '_emu']:
 		canv = ROOT.TCanvas("canv%s"%selection, 'CANVAS', 800, 800)
 		canv.cd()
 
@@ -108,7 +112,24 @@ def makeRhoVsNVtxProfile(args, options):
 		dprofiles[(selection, 'mc')].Draw("P")
 		dprofiles[(selection, 'data')].Draw("P")
 
-		canv.SaveAs(os.path.join(args[0],'graph%s.pdf'%selection))
+		tleg = ROOT.TLegend(0.15, 0.80, .40, .89)
+		tleg.SetBorderSize(0)
+		tleg.SetFillColor(0)
+		tleg.SetFillStyle(0)
+		tleg.SetShadowColor(0)
+		tleg.SetTextFont(43)
+		tleg.SetTextSize(20)
+
+		tleg.AddEntry(dprofiles[(selection,'data')], 'Data (t#bar{t})', 'p')
+		tleg.AddEntry(dprofiles[(selection,'mc')],   'MC (t#bar{t})', 'p')
+		tleg.Draw()
+
+		line = ROOT.TLine(0.,0.,30.,30.)
+		line.SetLineStyle(3)
+		line.Draw()
+
+		canv.SaveAs(os.path.join(args[0],'NpvRho%s.png'%selection))
+		canv.SaveAs(os.path.join(args[0],'NpvRho%s.pdf'%selection))
 
 	ofile = ROOT.TFile(os.path.join(args[0],'graphs.root'), 'recreate')
 	ofile.cd()

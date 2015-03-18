@@ -8,9 +8,13 @@ import pickle
 """
 parameterize the signal permutations
 """
-def fitSignalPermutation((ws, tag, massList, SVLmass, options)):
-    sig_mass_cats = buildSigMassCats(massList)
-    print ' ...processing %s'%tag
+def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, options)):
+
+    print ' ...processing ch=%s #tk=%d for %s permutations'%(ch,ntrk,permName)
+    procName='tt'
+    if singleTop : procName='t'
+    tag='%s_%d_%s_%s'%(ch,ntrk,permName,procName)
+
     # Base correct, signal PDF :
     # free parameters are linear functions of the top mass
     ws.factory("RooFormulaVar::%s_p0('@0*(@1-172.5)+@2',{"
@@ -45,59 +49,83 @@ def fitSignalPermutation((ws, tag, massList, SVLmass, options)):
                "mtop,"
                "offset_%s_p6[0.5,0.1,100]})"% (tag,tag,tag))
 
-    # Fit model:
-    ws.factory("SUM::simplemodel_%s("
-               "%s_p0*RooBifurGauss::%s_f1(SVLMass,%s_p1,%s_p2,%s_p3),"
-                          "RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
-               (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
+    # build the PDF
+    sig_mass_cats=buildSigMassCats(massList,singleTop,permName)
+    massCatName=sig_mass_cats.split('[')[0]
+    thePDF,theData=None,None
+    if 'unm' in tag:
+        #freeze the top mass dependent slopes to 0 if unmatched permutations are in the tag
+        print 'Freezing all mtop-dependent slopes for %s'%tag
+        for i in xrange(0,6):
+            ws.var('slope_%s_p%d'%(tag,i)).setVal(0)
+            ws.var('slope_%s_p%d'%(tag,i)).setRange(0,0)
+        thePDF = ws.factory("SUM::model_%s("
+                            "%s_p0*RooBifurGauss::%s_f1(SVLMass,%s_p1,%s_p2,%s_p3),"
+                            "RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
+                            (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
 
-    # Replicate the base signal PDF for different categories
-    # (top masses available)
-    thePDF = ws.factory("SIMCLONE::model_%s("
-                        " simplemodel_%s, $SplitParam({mtop},%s))"%
-                       (tag, tag, sig_mass_cats))
+    else:
+        #base PDF
+        ws.factory("SUM::simplemodel_%s("
+                   "%s_p0*RooBifurGauss::%s_f1(SVLMass,%s_p1,%s_p2,%s_p3),"
+                   "RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
+                   (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
 
-    # Fix mass values and create a mapped data hist
-    histMap=ROOT.MappedRooDataHist()
-    for mass in massList:
-        mcat='%d'%int(mass*10)
-        massNodeVar=ws.var('mtop_m%s'%mcat)
-        massNodeVar.setVal(mass)
-        massNodeVar.setConstant(True)
-        binnedData=ws.data('SVLMass_%s_%s'%(tag,mcat))
-        histMap.add('m%s'%mcat,binnedData)
+        # Replicate the base signal PDF for different categories
+        # (top masses available)
+        thePDF = ws.factory("SIMCLONE::model_%s("
+                            " simplemodel_%s, $SplitParam({mtop},%s))"%
+                            (tag, tag, sig_mass_cats))
 
-    # The categorized dataset
-    getattr(ws,'import')(
-                 ROOT.RooDataHist("data_%s"%tag,
-                                  "data_%s"%tag,
-                                  ROOT.RooArgList(SVLmass),
-                                  ws.cat('massCat'),
-                                  histMap.get()) )
-    theData = ws.data("data_%s"%tag)
+
+        # Fix mass values and create a mapped data hist
+        histMap=ROOT.MappedRooDataHist()
+        for mass in massList:
+            mcat='%d'%int(mass*10)
+            if not(mcat in sig_mass_cats): continue
+            massNodeVar=ws.var('mtop_m%s'%mcat)
+            massNodeVar.setVal(mass)
+            massNodeVar.setConstant(True)
+            binnedData=ws.data('SVLMass_%s_%s_%s_%d_%s'%(permName,ch,mcat,ntrk,procName))
+            print binnedData
+            histMap.add('m%s'%mcat,binnedData)
+
+        # The categorized dataset
+        getattr(ws,'import')(
+            ROOT.RooDataHist("data_%s"%tag,
+                             "data_%s"%tag,
+                             ROOT.RooArgList(SVLmass),
+                             ws.cat(massCatName),
+                             histMap.get()) )
+        theData = ws.data("data_%s"%tag)
+
     theFitResult = thePDF.fitTo(theData,ROOT.RooFit.Save(True))
     showFitResult(tag=tag, var=SVLmass, pdf=thePDF,
-                  data=theData, cat=ws.cat('massCat'),
+                  data=theData, cat=ws.cat(massCatName),
                   catNames=histMap.getCategories(),
                   outDir=options.outDir)
 
-def parameterizeSignalPermutations(ws,permName,config,SVLmass,options):
+"""
+instantiates the PDFs needed to parameterize the SVLmass histo in a given category for signal events
+"""
+def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop):
 
+    chselList,  massList, trkMultList, combList, procList = config
     print '[parameterizeSignalPermutations] with %s'%permName
-    chList, combList, massList, trkMultList = config
-    sig_mass_cats = buildSigMassCats(massList)
-
+    if singleTop: 
+        print ' \t single top quark mode enabled',
+        if not ('t' in procList or 'tW' in procList):
+            print ' but process not found in ',procList
+            return
+        print ''
+    
     tasklist = []
-    for ch in chList:
-        if ch=='inclusive': continue
-        for comb in combList:
-            for ntrk in trkMultList:
-                tag='%s_%d_%s'%(permName,ntrk,ch)
-                if len(comb)>0 : tag += '_' + comb
-
-                tasklist.append((ws, tag, massList, SVLmass, options))
-                # fitSignalPermutation(ws=ws, tag=tag, massList=massList,
-                #                      SVLmass=SVLmass, options=options)
+    for ch in chselList:
+        for ntrk in trkMultList:
+            tasklist.append((ws, ch, ntrk, permName, massList, singleTop, SVLmass, options))
+            break
+        break
+        
 
     if options.jobs > 1:
         import multiprocessing
@@ -112,35 +140,42 @@ def readConfig(diffhistos):
     track multiplicity bins from the dictionary containing
     the histograms.
     """
-    chList=[]
-    combList=[]
-    massList=[]
-    trkMultList=[]
+    chselList, procList, massList, trkMultList, combList = [], [], [], [], []
     for key,histos in diffhistos.iteritems():
-        chTags=key[0].split('_')
-        chList.append( chTags[0] )
+        try:
+            if len(key)<5: continue
+            if 'inclusive' in key[0]: continue
+            if 'tot' in key[3]: continue
 
-        combType=''
-        if len(chTags)>1 : combType=chTags[1]
-        combList.append(combType)
+            chselList.append( key[0] )
+            procList.append( key[1] )
+            massList.append( key[2] )
+            combList.append( key[3] )
+            trkMultList.append( key[4] )
+        except:
+            print key
 
-        massList.append( key[1] )
+    chselList   = list( set(chselList) )
+    massList    = sorted(list( set(massList) ))
+    trkMultList = sorted(list( set(trkMultList) ))
+    combList    = list( set(combList) )
+    procList    = sorted(list(set(procList)) )
+    return chselList, massList, trkMultList, combList, procList
 
-        for h in histos:
-            hname=h.GetName()
-            trkMultList.append( int(hname.split('_')[2]) )
-
-    chList=list( set(chList) )
-    combList=list( set(combList) )
-    massList=sorted(list( set(massList) ))
-    trkMultList=list( set(trkMultList) )
-    return chList, combList, massList, trkMultList
-def buildSigMassCats(massList):
-    sig_mass_cats='massCat['
-    for m in sorted(massList):
-        sig_mass_cats+='m%d,'%int(m*10)
-    sig_mass_cats = sig_mass_cats[:-1]+']'
+"""
+Creates a string with mass categories to be used
+"""
+def buildSigMassCats(massList,singleTop,permName):
+    sig_mass_cats='massCat%s%d['%(permName,singleTop)
+    if 'unm' in permName : 
+        sig_mass_cats+='minc]'
+    else :
+        for m in sorted(massList):
+            if singleTop and not m in [166.5,172.5,178.5]: continue
+            sig_mass_cats+='m%d,'%int(m*10)
+        sig_mass_cats = sig_mass_cats[:-1]+']'
     return sig_mass_cats
+
 def createWorkspace(options):
     """
     Reads out the histograms from the pickle file and converts them
@@ -151,19 +186,17 @@ def createWorkspace(options):
 
     # Read file
     cachefile = open(options.input,'r')
-    inchistos  = pickle.load(cachefile)
-    diffhistos = pickle.load(cachefile)
+    masshistos = pickle.load(cachefile)
     cachefile.close()
 
     # Extract the configurations from the diffhistos dictionary
-    config = readConfig(diffhistos)
-    chList, combList, massList, trkMultList = config
-    sig_mass_cats = buildSigMassCats(massList)
-    print 'Channels available :', chList
-    print 'Combinations available: ', combList
+    config = readConfig(masshistos)
+    chselList, massList, trkMultList, combList,procList = config
+    print 'Selected channels available :', chselList
     print 'Mass points available: ', massList
     print 'Track multiplicities available: ', trkMultList
-
+    print 'Combinations available: ', combList
+    print 'Processes available: ' , procList
 
     # Initiate a workspace where the observable is the SVLMass
     # and the variable to fit is mtop
@@ -172,18 +205,68 @@ def createWorkspace(options):
     mtop    = ws.factory('mtop[172.5,100,200]')
 
     # Import binned PDFs from histograms read from file
-    for histos in diffhistos.values():
-        for h in histos:
-            getattr(ws,'import')(ROOT.RooDataHist(h.GetName(), h.GetTitle(),
-                                 ROOT.RooArgList(SVLmass), h))
+    for chsel in chselList:
+            for trk in trkMultList:
+                for comb in ['cor','wro']:
+                    for mass in massList:
+                        htt=masshistos[(chsel,'tt',mass,comb,trk)]
+                        getattr(ws,'import')(ROOT.RooDataHist(htt.GetName()+'_tt', htt.GetTitle(), ROOT.RooArgList(SVLmass), htt))
+
+                        if comb!='cor': continue
+                        ht=None
+                        try:
+                            h=masshistos[(chsel,'t',mass,comb,trk)]
+                            ht=h.Clone()
+                        except:
+                            pass
+                        try:
+                            h=masshistos[(chsel,'tW',mass,comb,trk)]
+                            if ht is None:
+                                ht=h.Clone("SVLMass_%s_%s_%d_%d"%(comb,chsel,10*mass,trk))
+                            else:
+                                ht.Add(h)
+                        except:
+                            pass
+                        if ht is None : continue
+                        getattr(ws,'import')(ROOT.RooDataHist(ht.GetName()+'_t', ht.GetTitle(), ROOT.RooArgList(SVLmass), ht))
+
+                htt_unm, ht_wrounm = None, None
+                for mass in massList:
+                    htt=masshistos[(chsel,'tt',mass,'unm',trk)]
+                    if htt_unm is None : htt_unm=htt.Clone("SVLMass_unm_%s_%d"%(chsel,trk))
+                    else               : htt_unm.Add(htt)
+
+                    for comb in ['unm','wro']:
+                        try:
+                            h=masshistos[(chsel,'t',mass,comb,trk)]
+                            if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_%d"%(chsel,trk))
+                            else                 : ht_wrounm.Add(h)
+                        except:
+                            pass
+                        try:
+                            h=masshistos[(chsel,'tW',mass,comb,trk)]
+                            if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_%d"%(chsel,trk))
+                            else                 : ht_wrounm.Add(h)
+                        except:
+                            pass
+                
+                getattr(ws,'import')(ROOT.RooDataHist(htt_unm.GetName()+'_tt',  htt_unm.GetTitle(),   ROOT.RooArgList(SVLmass), htt_unm))
+                getattr(ws,'import')(ROOT.RooDataHist(ht_wrounm.GetName()+'_t', ht_wrounm.GetTitle(), ROOT.RooArgList(SVLmass), ht_wrounm))
+                
 
     # Run signal parameterization cycles
+    #parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
+    #                               SVLmass=SVLmass, options=options, singleTop=False)
+    #parameterizeSignalPermutations(ws=ws, permName='wro', config=config,
+    #                               SVLmass=SVLmass, options=options, singleTop=False)
+    #parameterizeSignalPermutations(ws=ws, permName='unm', config=config,
+    #                               SVLmass=SVLmass, options=options, singleTop=False)
     parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
-                                   SVLmass=SVLmass, options=options)
-    parameterizeSignalPermutations(ws=ws, permName='wro', config=config,
-                                   SVLmass=SVLmass, options=options)
-    parameterizeSignalPermutations(ws=ws, permName='unm', config=config,
-                                   SVLmass=SVLmass, options=options)
+                                   SVLmass=SVLmass, options=options, singleTop=True)
+    #parameterizeSignalPermutations(ws=ws, permName='wrounm', config=config,
+    #                               SVLmass=SVLmass, options=options, singleTop=True)
+
+    return
 
     # Save all to file
     ws.saveSnapshot("model_params", ws.allVars(), True)
@@ -251,7 +334,7 @@ def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
         p1.SetGridx(True)
         frame   = var.frame()
         redData = data.reduce(ROOT.RooFit.Cut(
-                                 "massCat==massCat::%s"%catName))
+                                 "%s==%s::%s"%(cat.GetName(),cat.GetName(),catName)))
         redData.plotOn(frame)
         cat.setLabel(catName)
         pdf.plotOn(frame,
@@ -317,6 +400,8 @@ def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
         for ext in ['png', 'pdf']:
             c.SaveAs(os.path.join(plotdir, "%s_%s.%s"%(tag,catName,ext)))
 
+    c.Clear()
+    c.Delete()
 
 def runPseudoExperiments(ws,peFileName,nTotal,fCorrect,nPexp,options):
     """
@@ -413,7 +498,7 @@ def main():
                        help=('Selection type. [mrank, drrank, mrankinc, '
                              ' drrankinc, mrank12, drrank12]'))
     parser.add_option('-i', '--input', dest='input',
-                       default='.svlhistos.pck',
+                       default='.svlmasshistos.pck',
                        help='input file with histograms.')
     parser.add_option('-w', '--ws', dest='wsFile', default=None,
                        help='ROOT file with previous workspace.')

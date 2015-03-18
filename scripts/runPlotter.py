@@ -493,7 +493,9 @@ def makeXSecWeights(inDir, jsonfiles, options):
                     if dtag not in xsecweights.keys():
                         try:
                             ngen = tot_ngen[dset]
-                            xsecweights[str(dtag)] = brratio[0]*xsec/ngen
+                            finalBR=1.0
+                            for br in brratio : finalBR *= br
+                            xsecweights[str(dtag)] = finalBR*xsec/ngen
                         except ZeroDivisionError:
                             if isData:
                                 xsecweights[str(dtag)] = 1.0

@@ -101,6 +101,9 @@ void LxyTreeAnalysis::Begin(TFile *file){
 	BookHistos();
 	BookCharmTree();
 	BookSVLTree();
+
+	fTXSWeight = -99.99;
+
 }
 
 void LxyTreeAnalysis::End(TFile *file){
@@ -690,6 +693,7 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
 	fSVLInfoTree->Branch("Weight",     fTWeight,    "Weight[10]/F");
 	fSVLInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[3]/F");
+	fSVLInfoTree->Branch("XSWeight",  &fTXSWeight,  "XSWeight/F");
 	fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[3]/F");
 	fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
 	fSVLInfoTree->Branch("MET",       &fTMET,       "MET/F");

@@ -396,85 +396,109 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
 
     if not options.silent :
         newPlot.show(options.outDir)
-        if options.debug or newPlot.name.find('flow')>=0  :
+        if options.debug or 'flow' in newPlot.name:
             newPlot.showTable(options.outDir)
     newPlot.appendTo(os.path.join(options.outDir, options.outFile))
     newPlot.reset()
 
 def readXSecWeights(inDir, options):
     """
-    Loop over the inputs and fill in a xsecweights dictionary
+    read the pre-stored xsecweights dictionary
     """
-
     try:
-        if options.rereadXsecWeights:
-            # trigger re-reading of weights
-            raise IOError
-
         cachefile = open(".xsecweights.pck", 'r')
         xsecweights = pickle.load(cachefile)
         cachefile.close()
-        print '>>> Read xsec weights from cache (.xsecweights.pck)'
+        print '>>> Reading xsec weights from cache (.xsecweights.pck)'
         return xsecweights
     except IOError:
-        pass
+        print '>>> Failed to read .xsecweights.pck file'
+        raise RuntimeError
+
+    ## Should check that all the dtags in the given json file are in the dictionary
 
     jsonFile = open(options.json,'r')
     procList = json.load(jsonFile,encoding = 'utf-8').items()
 
-    # Make a survey of *all* existing plots
-    xsecweights = {}
-    tot_ngen = {}
-    missing_files = []
     for proc_tag in procList:
         for desc in proc_tag[1]:
             data = desc['data']
             isData = getByLabel(desc,'isdata',False)
-            mctruthmode = getByLabel(desc,'mctruthmode')
             for process in data:
                 dtag = getByLabel(process,'dtag','')
-                split = getByLabel(process,'split',1)
-                dset = getByLabel(process,'dset',dtag)
+                if not str(dtag) in xsecweights:
+                    print '>>> Missing entry in xsecweights: %s' % str(dtag)
 
-                try:
-                    ngen = tot_ngen[dset]
-                except KeyError:
-                    ngen = 0
+    return xsecweights
 
-                for segment in range(0,split):
-                    eventsFile = dtag
-                    if split > 1:
-                        eventsFile = dtag + '_' + str(segment)
-                    if mctruthmode:
-                        eventsFile += '_filt%d' % mctruthmode
-                    rootFileUrl = inDir+'/'+eventsFile+'.root'
-                    rootFile = openTFile(rootFileUrl)
-                    if rootFile is None:
-                        missing_files.append(eventsFile+'.root')
-                        continue
+def makeXSecWeights(inDir, jsonfiles, options):
+    """
+    Loop over a list of json files and fill in a xsecweights dictionary
+    """
 
-                    ngen_seg,_ = getNormalization(rootFile)
-                    if not isData: ngen += ngen_seg
+    xsecweights = {}
+    tot_ngen = {}
+    missing_files = []
+    for jfname in jsonfiles:
+        ## Rootfiles are in subdirs for the syst and mass_scan samples:
+        dirname = inDir
+        if 'syst'      in jfname: dirname = os.path.join(inDir,'syst')
+        if 'mass_scan' in jfname: dirname = os.path.join(inDir,'mass_scan')
+        jsonFile = open(jfname,'r')
+        procList = json.load(jsonFile,encoding = 'utf-8').items()
 
-                    rootFile.Close()
+        # Make a survey of *all* existing plots
+        for proc_tag in procList:
+            for desc in proc_tag[1]:
+                data = desc['data']
+                isData = getByLabel(desc,'isdata',False)
+                mctruthmode = getByLabel(desc,'mctruthmode')
+                for process in data:
+                    dtag = getByLabel(process,'dtag','')
+                    split = getByLabel(process,'split',1)
+                    dset = getByLabel(process,'dset',dtag)
 
-                tot_ngen[dset] = ngen
+                    print "... processing %s"%dtag
 
-            # Calculate weights:
-            for process in data:
-                dtag = getByLabel(process,'dtag','')
-                dset = getByLabel(process,'dset',dtag)
-                brratio = getByLabel(process,'br',[1])
-                xsec = getByLabel(process,'xsec',1)
-                if dtag not in xsecweights.keys():
                     try:
                         ngen = tot_ngen[dset]
-                        xsecweights[str(dtag)] = brratio[0]*xsec/ngen
-                    except ZeroDivisionError:
-                        if isData:
-                            xsecweights[str(dtag)] = 1.0
-                        else:
-                            print "ngen not properly set for", dtag
+                    except KeyError:
+                        ngen = 0
+
+                    for segment in range(0,split):
+                        eventsFile = dtag
+                        if split > 1:
+                            eventsFile = dtag + '_' + str(segment)
+                        if mctruthmode:
+                            eventsFile += '_filt%d' % mctruthmode
+                        rootFileUrl = dirname+'/'+eventsFile+'.root'
+                        rootFile = openTFile(rootFileUrl)
+                        if rootFile is None:
+                            missing_files.append(eventsFile+'.root')
+                            continue
+
+                        ngen_seg,_ = getNormalization(rootFile)
+                        if not isData: ngen += ngen_seg
+
+                        rootFile.Close()
+
+                    tot_ngen[dset] = ngen
+
+                # Calculate weights:
+                for process in data:
+                    dtag = getByLabel(process,'dtag','')
+                    dset = getByLabel(process,'dset',dtag)
+                    brratio = getByLabel(process,'br',[1])
+                    xsec = getByLabel(process,'xsec',1)
+                    if dtag not in xsecweights.keys():
+                        try:
+                            ngen = tot_ngen[dset]
+                            xsecweights[str(dtag)] = brratio[0]*xsec/ngen
+                        except ZeroDivisionError:
+                            if isData:
+                                xsecweights[str(dtag)] = 1.0
+                            else:
+                                print ">>> ERROR: ngen not set for", dtag
 
 
     if len(missing_files) and options.verbose>0:
@@ -488,7 +512,7 @@ def readXSecWeights(inDir, options):
     pickle.dump(xsecweights, cachefile, pickle.HIGHEST_PROTOCOL)
     cachefile.close()
     print '>>> Produced xsec weights and wrote to cache (.xsecweights.pck)'
-    return xsecweights
+    return 0
 def runPlotter(inDir, options, scaleFactors={}):
     """
     Loop over the inputs and launch jobs
@@ -663,8 +687,9 @@ if __name__ == "__main__":
             exit(0)
 
         if opt.rereadXsecWeights:
-            readXSecWeights(inDir=args[0], options=opt)
-            exit(0)
+            indir = args[0]
+            jsonfiles = opt.json.split(',')
+            exit(makeXSecWeights(indir, jsonfiles, options=opt))
 
         setTDRStyle()
         gROOT.SetBatch(True)

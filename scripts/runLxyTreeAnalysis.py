@@ -21,6 +21,37 @@ def getBareName(path):
     barename, ext = os.path.splitext(filename)
     return barename
 
+def getProcessBRatio(procname):
+    import json
+    basedir = os.path.dirname(os.path.realpath(__file__)) ## scripts/ dir
+    basedir = basedir[:-7]
+    basedir = os.path.join(basedir, 'test', 'topss2014')
+    jsonfiles = [os.path.join(basedir,f) for f in ['samples.json',
+                                                   'syst_samples.json',
+                                                   'mass_scan_samples.json']]
+
+    if procname.startswith('Data8TeV'): return 1.0
+    searchtag = procname
+    if(re.search(r'.*_[0-9]{1,2}?$', procname)): ## ends with a split number
+        searchtag = procname.rsplit('_', 1)[0]
+
+    for jfname in jsonfiles:
+        jsonFile = open(jfname,'r')
+        procList = json.load(jsonFile,encoding = 'utf-8').items()[0][1]
+
+        for desc in procList:
+            if desc['isdata']: continue
+            for process in desc['data']:
+                if not process['dtag'] == searchtag: continue
+                try:
+                    return float(process['br'][0])
+                except KeyError:
+                    continue
+
+    print (">>> WARNING: Failed to extract branching ratio for %s "
+           "(setting to 1.0)"%procname)
+    return 1.0
+
 def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms'):
     from subprocess import Popen, PIPE
     '''Takes a directory on eos (starting from /store/...) and returns
@@ -183,6 +214,9 @@ def runLxyTreeAnalysis(name, location, treeloc, maxevents=-1):
     ana = LxyTreeAnalysis(ch)
     if maxevents > 0:
         ana.setMaxEvents(maxevents)
+
+    ## Get the branching ratio from the json file(s):
+    ana.setProcessBRatio(getProcessBRatio(name))
 
     ## Add the plots to LxyTreeAnalysis
     for varname, branch, selection, nbins, minx, maxx in PLOTS:

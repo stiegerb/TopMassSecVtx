@@ -20,7 +20,7 @@ class LxyTreeAnalysis : public LxyTreeAnalysisBase {
 public:
     LxyTreeAnalysis(TTree *tree=0):LxyTreeAnalysisBase(tree) {
         fMaxevents = -1;
-        fProcessBRatio = 1.0;
+        fProcessNorm = 1.0;
     }
     virtual ~LxyTreeAnalysis() {}
     virtual void RunJob(TString);
@@ -59,20 +59,13 @@ public:
     void fillDpmHists(int jetindex);
 
     inline virtual void setMaxEvents(Long64_t max) { fMaxevents = max; }
-    inline virtual void setProcessBRatio(Float_t bratio) { fProcessBRatio = bratio;}
+    inline virtual void setProcessNormalization(Float_t norm) { fProcessNorm = norm;}
 
     virtual Bool_t Notify() {
         // Called when a new tree is loaded in the chain
         // std::cout << "New tree (" << fCurrent
         //           << ") from "
         //           << fChain->GetCurrentFile()->GetName() << std::endl;
-        TVectorD *constVals;
-        fChain->GetCurrentFile()->GetObject("constVals", constVals);
-        if(constVals){
-          if( (*constVals)[0] > 0 ) fTXSWeight = fProcessBRatio*(*constVals)[1]/(*constVals)[0];
-          else fTXSWeight = -77.77;
-        }
-        else fTXSWeight = -88.88;
         for (size_t i = 0; i < fPlotList.size(); ++i) {
             fPlotList[i]->SetTree(fChain->GetTree());
             fPlotList[i]->Notify();
@@ -112,7 +105,7 @@ public:
     /////////////////////////////////////////////
     std::vector<Plot*> fPlotList;
     Long64_t fMaxevents;
-    Float_t fProcessBRatio;
+    Float_t fProcessNorm;
 
     std::vector<TH1*> fHistos;
 

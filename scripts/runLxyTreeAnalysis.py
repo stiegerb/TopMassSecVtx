@@ -2,6 +2,8 @@
 import os,re
 import pprint
 
+from runPlotter import readXSecWeights
+
 PLOTS = [
 ##  ('name',  'branch', 'selection/weight', nbins, minx, maxx)
     # ('jpt',    'jpt[0]',
@@ -21,35 +23,17 @@ def getBareName(path):
     barename, ext = os.path.splitext(filename)
     return barename
 
-def getProcessBRatio(procname):
-    import json
-    basedir = os.path.dirname(os.path.realpath(__file__)) ## scripts/ dir
-    basedir = basedir[:-7]
-    basedir = os.path.join(basedir, 'test', 'topss2014')
-    jsonfiles = [os.path.join(basedir,f) for f in ['samples.json',
-                                                   'syst_samples.json',
-                                                   'mass_scan_samples.json']]
-
+def getProcessNormalization(procname, xsecweights):
     if procname.startswith('Data8TeV'): return 1.0
     searchtag = procname
     if(re.search(r'.*_[0-9]{1,2}?$', procname)): ## ends with a split number
-        searchtag = procname.rsplit('_', 1)[0]
+        searchtag = procname.rsplit('_', 1)[0] ## corresponds to dtag in json
 
-    for jfname in jsonfiles:
-        jsonFile = open(jfname,'r')
-        procList = json.load(jsonFile,encoding = 'utf-8').items()[0][1]
-
-        for desc in procList:
-            if desc['isdata']: continue
-            for process in desc['data']:
-                if not process['dtag'] == searchtag: continue
-                try:
-                    return float(process['br'][0])
-                except KeyError:
-                    continue
-
-    print (">>> WARNING: Failed to extract branching ratio for %s "
-           "(setting to 1.0)"%procname)
+    try:
+        return xsecweights[searchtag]
+    except KeyError:
+        print (">>> WARNING: Failed to extract normalization for %s "
+               "(setting to 1.0)"%procname)
     return 1.0
 
 def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms'):
@@ -175,16 +159,17 @@ def copyObject(keyname, from_here, to_here):
     infile.Close()
 
 def runLxyTreeAnalysisPacked(args):
-    name, location, treeloc, maxevents = args
+    name, location, treeloc, xsecweights, maxevents = args
     try:
-        return runLxyTreeAnalysis(name, location, treeloc, maxevents)
+        return runLxyTreeAnalysis(name, location, treeloc,
+                                  xsecweights, maxevents)
     except ReferenceError:
         print 50*'<'
         print "  Problem with", name, "continuing without"
         print 50*'<'
         return False
 
-def runLxyTreeAnalysis(name, location, treeloc, maxevents=-1):
+def runLxyTreeAnalysis(name, location, treeloc, xsecweights, maxevents=-1):
     from ROOT import gSystem, TChain
 
     ## Load the previously compiled shared object library into ROOT
@@ -216,7 +201,7 @@ def runLxyTreeAnalysis(name, location, treeloc, maxevents=-1):
         ana.setMaxEvents(maxevents)
 
     ## Get the branching ratio from the json file(s):
-    ana.setProcessBRatio(getProcessBRatio(name))
+    ana.setProcessNormalization(getProcessNormalization(name, xsecweights))
 
     ## Add the plots to LxyTreeAnalysis
     for varname, branch, selection, nbins, minx, maxx in PLOTS:
@@ -272,6 +257,8 @@ if __name__ == "__main__":
     (opt, args) = parser.parse_args()
 
     if len(args)>0:
+        xsecweights = readXSecWeights(jsonfile=None)
+
         if len(args) == 1:
             tasks = getListOfTasks(args[0], mask=opt.processOnly)
         else:
@@ -282,13 +269,14 @@ if __name__ == "__main__":
                 runLxyTreeAnalysis(name=name,
                                    location=task,
                                    treeloc=opt.treeLoc,
+                                   xsecweights=xsecweights,
                                    maxevents=opt.maxEvents)
         else:
             from multiprocessing import Pool
             pool = Pool(opt.jobs)
 
-            tasklist = [(name, task, opt.treeLoc, opt.maxEvents) for name,
-                                                                     task in tasks]
+            tasklist = [(name, task, opt.treeLoc, xsecweights, opt.maxEvents)
+                               for name,task in tasks]
             pool.map(runLxyTreeAnalysisPacked, tasklist)
 
         exit(0)

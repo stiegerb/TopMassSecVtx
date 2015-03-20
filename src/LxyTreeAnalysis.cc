@@ -102,8 +102,7 @@ void LxyTreeAnalysis::Begin(TFile *file){
 	BookCharmTree();
 	BookSVLTree();
 
-	fTXSWeight = -99.99;
-
+	fTXSWeight = fProcessNorm;
 }
 
 void LxyTreeAnalysis::End(TFile *file){

@@ -395,13 +395,15 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
         newPlot.normToData()
 
     if not options.silent :
+        if 'flow' in newPlot.name:
+            newPlot.savelog = True
         newPlot.show(options.outDir)
         if options.debug or 'flow' in newPlot.name:
             newPlot.showTable(options.outDir)
     newPlot.appendTo(os.path.join(options.outDir, options.outFile))
     newPlot.reset()
 
-def readXSecWeights(inDir, options):
+def readXSecWeights(jsonfile=None):
     """
     read the pre-stored xsecweights dictionary
     """
@@ -416,18 +418,18 @@ def readXSecWeights(inDir, options):
         raise RuntimeError
 
     ## Should check that all the dtags in the given json file are in the dictionary
+    if jsonfile:
+        jsonFile = open(jsonfile,'r')
+        procList = json.load(jsonFile,encoding = 'utf-8').items()
 
-    jsonFile = open(options.json,'r')
-    procList = json.load(jsonFile,encoding = 'utf-8').items()
-
-    for proc_tag in procList:
-        for desc in proc_tag[1]:
-            data = desc['data']
-            isData = getByLabel(desc,'isdata',False)
-            for process in data:
-                dtag = getByLabel(process,'dtag','')
-                if not str(dtag) in xsecweights:
-                    print '>>> Missing entry in xsecweights: %s' % str(dtag)
+        for proc_tag in procList:
+            for desc in proc_tag[1]:
+                data = desc['data']
+                isData = getByLabel(desc,'isdata',False)
+                for process in data:
+                    dtag = getByLabel(process,'dtag','')
+                    if not str(dtag) in xsecweights:
+                        print '>>> Missing entry in xsecweights: %s' % str(dtag)
 
     return xsecweights
 
@@ -526,7 +528,7 @@ def runPlotter(inDir, options, scaleFactors={}):
     plots = []
 
     # Read the xsection weights (from cache or from the input files)
-    xsecweights = readXSecWeights(inDir=inDir, options=options)
+    xsecweights = readXSecWeights(jsonfile=options.json)
 
     missing_files = []
     tagsToFilter = options.filter.split(',')

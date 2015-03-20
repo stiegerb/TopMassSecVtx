@@ -454,16 +454,18 @@ def makeXSecWeights(inDir, jsonfiles, options):
             for desc in proc_tag[1]:
                 data = desc['data']
                 isData = getByLabel(desc,'isdata',False)
+                if isData:
+                    xsecweights[str(dtag)] = 1.0
+                    continue
                 mctruthmode = getByLabel(desc,'mctruthmode')
                 for process in data:
                     dtag = getByLabel(process,'dtag','')
                     split = getByLabel(process,'split',1)
-                    dset = getByLabel(process,'dset',dtag)
 
                     print "... processing %s"%dtag
 
                     try:
-                        ngen = tot_ngen[dset]
+                        ngen = tot_ngen[dtag]
                     except KeyError:
                         ngen = 0
 
@@ -484,17 +486,16 @@ def makeXSecWeights(inDir, jsonfiles, options):
 
                         rootFile.Close()
 
-                    tot_ngen[dset] = ngen
+                    tot_ngen[dtag] = ngen
 
                 # Calculate weights:
                 for process in data:
                     dtag = getByLabel(process,'dtag','')
-                    dset = getByLabel(process,'dset',dtag)
                     brratio = getByLabel(process,'br',[1])
                     xsec = getByLabel(process,'xsec',1)
                     if dtag not in xsecweights.keys():
                         try:
-                            ngen = tot_ngen[dset]
+                            ngen = tot_ngen[dtag]
                             xsecweights[str(dtag)] = brratio[0]*xsec/ngen
                         except ZeroDivisionError:
                             if isData:

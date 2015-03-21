@@ -479,7 +479,6 @@ def makeXSecWeights(inDir, jsonfiles, options):
 
                         ngen_seg,_ = getNormalization(rootFile)
                         if not isData: ngen += ngen_seg
-
                         rootFile.Close()
 
                     tot_ngen[dset] = ngen

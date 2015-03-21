@@ -59,7 +59,6 @@ public:
     void fillDpmHists(int jetindex);
 
     inline virtual void setMaxEvents(Long64_t max) { fMaxevents = max; }
-    inline virtual void setProcessBRatio(Float_t bratio) { fProcessBRatio = bratio;}
 
     virtual Bool_t Notify() {
         // Called when a new tree is loaded in the chain
@@ -69,7 +68,7 @@ public:
         TVectorD *constVals;
         fChain->GetCurrentFile()->GetObject("constVals", constVals);
         if(constVals){
-          if( (*constVals)[0] > 0 ) fTXSWeight = fProcessBRatio*(*constVals)[1]/(*constVals)[0];
+          if( (*constVals)[0] > 0 ) fTXSWeight = (*constVals)[1]/(*constVals)[0]; 
           else fTXSWeight = -77.77;
         }
         else fTXSWeight = -88.88;

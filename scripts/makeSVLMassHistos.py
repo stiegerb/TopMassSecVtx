@@ -13,7 +13,7 @@ MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
 
 #NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
 NTRKBINS = [(2,3), (3,4), (4,1000)]
-COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*JESWeight[0]"  #gen. weight (BR correction) x pu weight x lep. selection weight x JES weight 
+COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*JESWeight[0]*XSWeight"  #gen. weight (BR correction) x pu weight x lep. selection weight x JES weight x XS weight
 TREENAME = 'SVLInfo'
 SELECTIONS = [
 	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),
@@ -38,7 +38,7 @@ COMBINATIONS = [
 ]
 
 
-def addTopMassTreesFromDir(dirname, xsecweights, trees, files,treeWeights):
+def addTopMassTreesFromDir(dirname, trees, files):
 	for filename in os.listdir(dirname):
 		if not os.path.splitext(filename)[1] == '.root': continue
 
@@ -68,25 +68,18 @@ def addTopMassTreesFromDir(dirname, xsecweights, trees, files,treeWeights):
 		if not (mass,chan) in trees:
 			trees[(mass, chan)] = ROOT.TChain(TREENAME)
 			files[(mass, chan)] = []
-			treeWeights[ (mass,chan) ] = 1
 		trees[(mass,chan)].Add(treefile)
 		files[(mass,chan)].append(treefile)
-		if not(xsecweights is None):
-			procTag=os.path.basename(os.path.splitext(treefile)[0])
-			try:
-				treeWeights[(mass,chan)]=xsecweights[procTag]
-			except:
-				pass
 
 """
 build a map with available trees and files
 """
-def getMassTrees(inputdir, xsecweights, verbose=True):
+def getMassTrees(inputdir, verbose=True):
 	alltrees = {} # (mass,chan) -> chain
 	allfiles = {} # (mass,chan) -> [locations]
-	alltreeweights= {}
-	addTopMassTreesFromDir(inputdir,xsecweights, alltrees, allfiles,alltreeweights)
-	addTopMassTreesFromDir(os.path.join(inputdir, 'mass_scan'),xsecweights,alltrees, allfiles, alltreeweights)
+
+	addTopMassTreesFromDir(inputdir, alltrees, allfiles)
+	addTopMassTreesFromDir(os.path.join(inputdir, 'mass_scan'),alltrees, allfiles)
 
 	allmasses = sorted(list(set([mass for mass,_ in alltrees.keys()])))
 	if verbose:
@@ -107,9 +100,9 @@ def getMassTrees(inputdir, xsecweights, verbose=True):
 			print line
 		print 80*'-'
 
-	return alltrees, allfiles,alltreeweights
+	return alltrees, allfiles
 
-def runSVLInfoTreeAnalysis((treefiles, treeWeight, histos, outputfile)):
+def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 	taskname = os.path.basename(outputfile)[:-5]
 	chain = ROOT.TChain(TREENAME)
 	for filename in treefiles:
@@ -117,18 +110,18 @@ def runSVLInfoTreeAnalysis((treefiles, treeWeight, histos, outputfile)):
 			print "ERROR: file %s does not exist! Aborting" % filename
 			return -1
 		chain.Add(filename)
-	print ' ... processing %s for %d histos from %7d entries assigning as tree weight %f' %(taskname, len(histos), chain.GetEntries(),treeWeight)
+	print ' ... processing %s for %d histos from %7d entries' %(taskname, len(histos), chain.GetEntries())
 
 	from ROOT import gSystem
 	gSystem.Load('libUserCodeTopMassSecVtx.so')
 	from ROOT import SVLInfoTreeAnalysis
-	ana = SVLInfoTreeAnalysis(chain,treeWeight)
+	ana = SVLInfoTreeAnalysis(chain)
 	for hname,var,sel,nbins,xmin,xmax,xtitle in histos:
 		ana.AddPlot(hname, var, sel, nbins, xmin, xmax, xtitle)
 	ana.RunJob(outputfile)
 	print '         %s done' % taskname
 
-def runTasks(inputfiles,massWeights, tasklist, opt, subdir):
+def runTasks(inputfiles, tasklist, opt, subdir):
 	assert set(inputfiles.keys()) == set(tasklist.keys())
 	tasks = []
 
@@ -138,7 +131,7 @@ def runTasks(inputfiles,massWeights, tasklist, opt, subdir):
 		for ifilep in inputfiles[key]:
 			ofilen = os.path.basename(ifilep)
 			ofilep = os.path.join(opt.outDir, subdir, ofilen)
-			tasks.append(([ifilep],massWeights[key], task, ofilep))
+			tasks.append(([ifilep], task, ofilep))
 
 	if opt.jobs > 1:
 		import multiprocessing as MP
@@ -187,15 +180,10 @@ def gatherHistosFromFiles(tasklist, massfiles, dirname, hname_to_keys):
 """
 def main(args, opt):
 
-	## read the xsec weights for proper normalization
-	cachefile = open(".xsecweights.pck", 'r')
-	xsecweights = pickle.load(cachefile)
-	cachefile.close()
-	print '>>> Read xsec weights from cache (.xsecweights.pck)'
 
 
 	os.system('mkdir -p %s'%opt.outDir)
-	masstrees, massfiles, massWeights = getMassTrees(args[0], xsecweights=xsecweights, verbose=True)
+	masstrees, massfiles = getMassTrees(args[0], verbose=True)
 	masspoints = sorted(list(set([mass for mass,_ in masstrees.keys()])))
 
 	hname_to_keys = {} # hname -> (tag, chan, mass, comb, [ntk1])
@@ -228,7 +216,7 @@ def main(args, opt):
 		tasklist[(mass,chan)] = tasks
 
 	if not opt.cache:
-		runTasks(massfiles,massWeights, tasklist, opt, 'mass_histos')
+		runTasks(massfiles, tasklist, opt, 'mass_histos')
 
 	## Retrieve the histograms from the individual files
 	# (tag, chan, mass, comb)      -> histo

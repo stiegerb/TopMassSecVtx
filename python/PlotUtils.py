@@ -621,7 +621,7 @@ class Plot(object):
         if self.savelog:
             t1.cd()
             t1.SetLogy()
-            frame.GetYaxis().SetRangeUser(0.5,4*maxY)
+            frame.GetYaxis().SetRangeUser(1000,10*maxY)
             canvas.cd()
             for ext in self.plotformats : canvas.SaveAs(os.path.join(outDir, self.name+'_log.'+ext))
 

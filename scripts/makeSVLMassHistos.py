@@ -10,10 +10,11 @@ XMIN = 5.
 XMAX = 200.
 FITRANGE = (20., 140.)
 MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
+LUMI = 19701
 
 #NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
 NTRKBINS = [(2,3), (3,4), (4,1000)]
-COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*JESWeight[0]*XSWeight"  #gen. weight (BR correction) x pu weight x lep. selection weight x JES weight x XS weight
+COMMONWEIGHT = "%f*Weight[0]*Weight[1]*Weight[4]*JESWeight[0]*XSWeight"%LUMI  #gen. weight (BR correction) x pu weight x lep. selection weight x JES weight x XS weight
 TREENAME = 'SVLInfo'
 SELECTIONS = [
 	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),

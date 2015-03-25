@@ -188,7 +188,7 @@ def createWorkspace(options):
     cachefile = open(options.input,'r')
     masshistos = pickle.load(cachefile)
     cachefile.close()
-
+    print masshistos
     # Extract the configurations from the diffhistos dictionary
     config = readConfig(masshistos)
     chselList, massList, trkMultList, combList,procList = config
@@ -255,14 +255,14 @@ def createWorkspace(options):
                 
 
     # Run signal parameterization cycles
-    #parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
-    #                               SVLmass=SVLmass, options=options, singleTop=False)
+    parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
+                                   SVLmass=SVLmass, options=options, singleTop=False)
     #parameterizeSignalPermutations(ws=ws, permName='wro', config=config,
     #                               SVLmass=SVLmass, options=options, singleTop=False)
     #parameterizeSignalPermutations(ws=ws, permName='unm', config=config,
     #                               SVLmass=SVLmass, options=options, singleTop=False)
-    parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
-                                   SVLmass=SVLmass, options=options, singleTop=True)
+    #parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
+    #                               SVLmass=SVLmass, options=options, singleTop=True)
     #parameterizeSignalPermutations(ws=ws, permName='wrounm', config=config,
     #                               SVLmass=SVLmass, options=options, singleTop=True)
 

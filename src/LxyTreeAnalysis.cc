@@ -842,7 +842,7 @@ void LxyTreeAnalysis::analyze(){
 		}
 		else
 		  {
-		    if(jcsv[i] > 0.783) nbjets++;
+		    if(jcsv[i] > gCSVWPMedium) nbjets++;
 		    else {
 		      TLorentzVector p4; p4.SetPtEtaPhiM(jpt[i], jeta[i], jphi[i], 0.);
 		      lightJetsP4.push_back(p4);

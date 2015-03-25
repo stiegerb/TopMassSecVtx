@@ -35,11 +35,11 @@ public:
         fSelection->Delete();
     };
 
-    virtual void Fill() {
-        float weight = fSelection->EvalInstance();
-        if( weight == 0. ) return;
-        float var = fVariable->EvalInstance();
-        fHisto->Fill(var, weight);
+    virtual void Fill(Float_t selfWeight=1.0) {
+      float weight = selfWeight*(fSelection->EvalInstance());
+      if( weight == 0. ) return;
+      float var = fVariable->EvalInstance();
+      fHisto->Fill(var, weight);
     }
 
     virtual void Print() {
@@ -68,8 +68,9 @@ private:
 
 class SVLInfoTreeAnalysis : public SVLInfoTreeAnalysisBase {
 public:
-    SVLInfoTreeAnalysis(TTree *tree=0):SVLInfoTreeAnalysisBase(tree) {
+   SVLInfoTreeAnalysis(TTree *tree=0,Float_t treeWeight=1.0):SVLInfoTreeAnalysisBase(tree) {
         fMaxevents = -1;
+	fTreeWeight=treeWeight;
     }
     virtual ~SVLInfoTreeAnalysis() {}
     virtual void RunJob(TString);
@@ -114,7 +115,7 @@ public:
 
     virtual void FillPlots() {
         for (size_t i = 0; i < fPlotList.size(); ++i) {
-            fPlotList[i]->Fill();
+            fPlotList[i]->Fill(fTreeWeight);
         }
     }
 
@@ -133,6 +134,7 @@ public:
     /////////////////////////////////////////////
     std::vector<Plot*> fPlotList;
     Long64_t fMaxevents;
+    Float_t fTreeWeight;
 
 };
 #endif

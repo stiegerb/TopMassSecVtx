@@ -10,11 +10,11 @@ XMIN = 5.
 XMAX = 200.
 FITRANGE = (20., 140.)
 MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
+LUMI = 19701
 
 #NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
 NTRKBINS = [(2,3), (3,4), (4,1000)]
-COMMONWEIGHT = "Weight[1]*Weight[4]*JESWeight[0]"
-
+COMMONWEIGHT = "%f*Weight[0]*Weight[1]*Weight[4]*JESWeight[0]*XSWeight"%LUMI  #gen. weight (BR correction) x pu weight x lep. selection weight x JES weight x XS weight
 TREENAME = 'SVLInfo'
 SELECTIONS = [
 	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),
@@ -38,12 +38,6 @@ COMBINATIONS = [
 	('unm', 'CombInfo==-1'),
 ]
 
-CHANNAMES = {
-	'tt':'TTbar',
-	't':'SingleT_t',
-	'tW':'SingleT_tW',
-	's':'SingleT_s'
-}
 
 def addTopMassTreesFromDir(dirname, trees, files):
 	for filename in os.listdir(dirname):
@@ -63,10 +57,12 @@ def addTopMassTreesFromDir(dirname, trees, files):
 
 		chan = 'tt'
 
-		if 'SingleT' in filename and '_tW' in filename:
-			chan = 'tW'
-		elif 'SingleT' in filename and '_t' in filename:
-			chan = 't'
+		if '_tW' in filename:
+			if 'SingleTbar' in filename : chan = 'tbarW'
+			else                        : chan = 'tW'
+		elif '_t' in filename:
+			if 'SingleTbar' in filename : chan = 'tbar'
+			else                        : chan = 't'
 		elif 'SingleT' in filename and '_s' in filename:
 			continue
 
@@ -75,16 +71,18 @@ def addTopMassTreesFromDir(dirname, trees, files):
 			files[(mass, chan)] = []
 		trees[(mass,chan)].Add(treefile)
 		files[(mass,chan)].append(treefile)
+
+"""
+build a map with available trees and files
+"""
 def getMassTrees(inputdir, verbose=True):
 	alltrees = {} # (mass,chan) -> chain
 	allfiles = {} # (mass,chan) -> [locations]
 
 	addTopMassTreesFromDir(inputdir, alltrees, allfiles)
-	addTopMassTreesFromDir(os.path.join(inputdir, 'mass_scan'),
-									 alltrees, allfiles)
+	addTopMassTreesFromDir(os.path.join(inputdir, 'mass_scan'),alltrees, allfiles)
 
 	allmasses = sorted(list(set([mass for mass,_ in alltrees.keys()])))
-
 	if verbose:
 		print 80*'-'
 		print "Found the following mass points (#entries):"
@@ -94,8 +92,12 @@ def getMassTrees(inputdir, verbose=True):
 				line += ' (tt: %7d) '     % alltrees[(mass, 'tt')].GetEntries()
 			if (mass, 't') in alltrees:
 				line += ' (t: %5d) '  % alltrees[(mass, 't')].GetEntries()
+			if (mass, 'tbar') in alltrees:
+				line += ' (tbar: %5d) '  % alltrees[(mass, 'tbar')].GetEntries()
 			if (mass, 'tW') in alltrees:
 				line += ' (tW: %6d) ' % alltrees[(mass, 'tW')].GetEntries()
+			if (mass, 'tbarW') in alltrees:
+				line += ' (tbarW: %6d) ' % alltrees[(mass, 'tbarW')].GetEntries()
 			print line
 		print 80*'-'
 
@@ -109,14 +111,12 @@ def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 			print "ERROR: file %s does not exist! Aborting" % filename
 			return -1
 		chain.Add(filename)
-	print ' ... processing %s for %d histos from %7d entries' %(
-		              taskname, len(histos), chain.GetEntries())
+	print ' ... processing %s for %d histos from %7d entries' %(taskname, len(histos), chain.GetEntries())
 
 	from ROOT import gSystem
 	gSystem.Load('libUserCodeTopMassSecVtx.so')
 	from ROOT import SVLInfoTreeAnalysis
 	ana = SVLInfoTreeAnalysis(chain)
-
 	for hname,var,sel,nbins,xmin,xmax,xtitle in histos:
 		ana.AddPlot(hname, var, sel, nbins, xmin, xmax, xtitle)
 	ana.RunJob(outputfile)
@@ -177,7 +177,12 @@ def gatherHistosFromFiles(tasklist, massfiles, dirname, hname_to_keys):
 				print hname, "not found in", ifilen
 	return histos
 
+"""
+"""
 def main(args, opt):
+
+
+
 	os.system('mkdir -p %s'%opt.outDir)
 	masstrees, massfiles = getMassTrees(args[0], verbose=True)
 	masspoints = sorted(list(set([mass for mass,_ in masstrees.keys()])))
@@ -189,9 +194,9 @@ def main(args, opt):
 		tasks = []
 		for tag,sel,_ in SELECTIONS:
 
-			htag = ("%s_%5.1f"%(tag,mass)).replace('.','')
-			if not chan == 'tt':
-				htag = ("%s_%s_%5.1f"%(tag,chan,mass)).replace('.','')
+			#htag = ("%s_%5.1f_tt"%(tag,mass)).replace('.','')
+			#if not chan == 'tt':
+			htag = ("%s_%5.1f_%s"%(tag,mass,chan)).replace('.','')
 
 			for comb,combsel in COMBINATIONS:
 				hname = "SVLMass_%s_%s" % (comb, htag)
@@ -254,15 +259,19 @@ def main(args, opt):
 	for tag,sel,seltag in SELECTIONS:
 		print "... processing %s"%tag
 
-		for chan in ['tt', 't', 'tW']:
+		for chan in ['tt', 't', 'tbar', 'tW', 'tbarW']:
 			# print "   %s channel" % chan
 			## Skip some useless combinations:
-			if chan == 't' and ('ee' in tag or 'mm' in tag or 'em' in tag):
+			chanTitle=chan
+			if chanTitle=='tt' : chanTitle='ttbar'
+			chanTitle=chanTitle.replace('tbar','#bar{t}')
+			if chan in ['t','tbar'] and ('ee' in tag or 'mm' in tag or 'em' in tag):
 				continue
-			if chan == 'tW' and tag in ['e', 'm', 'e_mrank1', 'm_mrank1']:
+			if chan in ['tW','tbarW'] and tag in ['e', 'm', 'e_mrank1', 'm_mrank1']:
 				continue
 
 			ratplot = RatioPlot('ratioplot')
+			ratplot.normalized=False
 			ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
 			ratplot.ratiorange = (0.5, 1.5)
 
@@ -279,7 +288,7 @@ def main(args, opt):
 
 
 			ratplot.tag = 'All combinations'
-			ratplot.subtag = '%s %s' % (seltag, chan)
+			ratplot.subtag = '%s %s' % (seltag, chanTitle)
 			ratplot.show("massscan_%s_%s_tot"%(tag,chan), mass_scan_dir)
 
 			# chi2s = ratplot.getChiSquares(rangex=FITRANGE)
@@ -299,7 +308,7 @@ def main(args, opt):
 				try: ratplot.add(masshistos[(tag,chan,mass,'cor')], legentry)
 				except KeyError: pass
 			ratplot.tag = 'Correct combinations'
-			ratplot.subtag = '%s %s' % (seltag, chan)
+			ratplot.subtag = '%s %s' % (seltag, chanTitle)
 			ratplot.show("massscan_%s_%s_cor"%(tag,chan), mass_scan_dir)
 			ratplot.reset()
 
@@ -309,7 +318,7 @@ def main(args, opt):
 				try: ratplot.add(masshistos[(tag,chan,mass,'wro')], legentry)
 				except KeyError: pass
 			ratplot.tag = 'Wrong combinations'
-			ratplot.subtag = '%s %s' % (seltag, chan)
+			ratplot.subtag = '%s %s' % (seltag, chanTitle)
 			ratplot.show("massscan_%s_%s_wro"%(tag,chan), mass_scan_dir)
 			ratplot.reset()
 
@@ -319,7 +328,7 @@ def main(args, opt):
 				try: ratplot.add(masshistos[(tag,chan,mass,'unm')], legentry)
 				except KeyError: pass
 			ratplot.tag = 'Unmatched combinations'
-			ratplot.subtag = '%s %s' % (seltag, chan)
+			ratplot.subtag = '%s %s' % (seltag, chanTitle)
 			ratplot.show("massscan_%s_%s_unm"%(tag,chan), mass_scan_dir)
 			ratplot.reset()
 

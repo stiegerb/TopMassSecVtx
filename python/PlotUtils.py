@@ -216,7 +216,10 @@ class RatioPlot(object):
         mainframe.GetYaxis().SetLabelFont(43)
 
         if not self.titley:
-            mainframe.GetYaxis().SetTitle('a.u.')
+            if self.normalized: 
+                mainframe.GetYaxis().SetTitle('a.u.')
+            else : 
+                mainframe.GetYaxis().SetTitle('Events')
         else:
             mainframe.GetXaxis().SetTitle(self.titley)
         mainframe.GetYaxis().SetLabelSize(22)

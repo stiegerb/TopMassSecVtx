@@ -42,7 +42,7 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, 
                #"slope_%s_p5[0.05,0,2],"
                "slope_%s_p5[0],"
                "mtop,"
-               "offset_%s_p5[10,0.5,100]})"% (tag,tag,tag))
+               "offset_%s_p5[10,1,100]})"% (tag,tag,tag))
     ws.factory("RooFormulaVar::%s_p6('@0*(@1-172.5)+@2',{"
                "slope_%s_p6[0.05,0,2],"
                #"slope_%s_p6[0],"
@@ -52,17 +52,22 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, 
     # build the PDF
     sig_mass_cats=buildSigMassCats(massList,singleTop,permName)
     massCatName=sig_mass_cats.split('[')[0]
-    thePDF,theData=None,None
+    thePDF,theData,catNames=None,None,None
     if 'unm' in tag:
         #freeze the top mass dependent slopes to 0 if unmatched permutations are in the tag
         print 'Freezing all mtop-dependent slopes for %s'%tag
         for i in xrange(0,6):
             ws.var('slope_%s_p%d'%(tag,i)).setVal(0)
             ws.var('slope_%s_p%d'%(tag,i)).setRange(0,0)
+        ws.var('offset_%s_p4'%tag).setRange(2,100)
+        ws.var('offset_%s_p5'%tag).setRange(1,100)
+
         thePDF = ws.factory("SUM::model_%s("
                             "%s_p0*RooBifurGauss::%s_f1(SVLMass,%s_p1,%s_p2,%s_p3),"
                             "RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
                             (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
+        theData=ws.data('SVLMass_%s_%s_%s_%d'%(permName,ch,procName,ntrk))
+        catNames=['']
 
     else:
         #base PDF
@@ -71,12 +76,16 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, 
                    "RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
                    (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
 
+        if 'cor' in permName and singleTop==True:
+            ws.var('slope_%s_p0'%tag).setRange(0,0)
+            ws.var('offset_%s_p0'%tag).setRange(0.4,1.0)
+
+
         # Replicate the base signal PDF for different categories
         # (top masses available)
         thePDF = ws.factory("SIMCLONE::model_%s("
                             " simplemodel_%s, $SplitParam({mtop},%s))"%
                             (tag, tag, sig_mass_cats))
-
 
         # Fix mass values and create a mapped data hist
         histMap=ROOT.MappedRooDataHist()
@@ -86,8 +95,7 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, 
             massNodeVar=ws.var('mtop_m%s'%mcat)
             massNodeVar.setVal(mass)
             massNodeVar.setConstant(True)
-            binnedData=ws.data('SVLMass_%s_%s_%s_%d_%s'%(permName,ch,mcat,ntrk,procName))
-            print binnedData
+            binnedData=ws.data('SVLMass_%s_%s_%s_%s_%d'%(permName,ch,mcat,procName,ntrk))
             histMap.add('m%s'%mcat,binnedData)
 
         # The categorized dataset
@@ -98,11 +106,13 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, 
                              ws.cat(massCatName),
                              histMap.get()) )
         theData = ws.data("data_%s"%tag)
+        catNames=histMap.getCategories()
 
     theFitResult = thePDF.fitTo(theData,ROOT.RooFit.Save(True))
+    #theFitResult = thePDF.fitTo(theData,ROOT.RooFit.Save(True),ROOT.RooFit.SumW2Error(True))
     showFitResult(tag=tag, var=SVLmass, pdf=thePDF,
                   data=theData, cat=ws.cat(massCatName),
-                  catNames=histMap.getCategories(),
+                  catNames=catNames,
                   outDir=options.outDir)
 
 """
@@ -123,9 +133,6 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop)
     for ch in chselList:
         for ntrk in trkMultList:
             tasklist.append((ws, ch, ntrk, permName, massList, singleTop, SVLmass, options))
-            break
-        break
-        
 
     if options.jobs > 1:
         import multiprocessing
@@ -176,19 +183,19 @@ def buildSigMassCats(massList,singleTop,permName):
         sig_mass_cats = sig_mass_cats[:-1]+']'
     return sig_mass_cats
 
+"""
+Reads out the histograms from the pickle file and converts them
+to a RooDataHist
+Prepare PDFs
+Save all to a RooWorkspace
+"""
 def createWorkspace(options):
-    """
-    Reads out the histograms from the pickle file and converts them
-    to a RooDataHist
-    Prepare PDFs
-    Save all to a RooWorkspace
-    """
 
     # Read file
     cachefile = open(options.input,'r')
     masshistos = pickle.load(cachefile)
     cachefile.close()
-    print masshistos
+    
     # Extract the configurations from the diffhistos dictionary
     config = readConfig(masshistos)
     chselList, massList, trkMultList, combList,procList = config
@@ -209,62 +216,58 @@ def createWorkspace(options):
             for trk in trkMultList:
                 for comb in ['cor','wro']:
                     for mass in massList:
-                        htt=masshistos[(chsel,'tt',mass,comb,trk)]
-                        getattr(ws,'import')(ROOT.RooDataHist(htt.GetName()+'_tt', htt.GetTitle(), ROOT.RooArgList(SVLmass), htt))
 
+                        #ttbar
+                        htt=masshistos[(chsel,'tt',mass,comb,trk)]
+                        getattr(ws,'import')(ROOT.RooDataHist(htt.GetName(), htt.GetTitle(), ROOT.RooArgList(SVLmass), htt))
+
+                        #correct combinations for single top
                         if comb!='cor': continue
                         ht=None
-                        try:
-                            h=masshistos[(chsel,'t',mass,comb,trk)]
-                            ht=h.Clone()
-                        except:
-                            pass
-                        try:
-                            h=masshistos[(chsel,'tW',mass,comb,trk)]
-                            if ht is None:
-                                ht=h.Clone("SVLMass_%s_%s_%d_%d"%(comb,chsel,10*mass,trk))
-                            else:
-                                ht.Add(h)
-                        except:
-                            pass
+                        for stProc in ['t','tbar','tW','tbarW']:
+                            try:
+                                h=masshistos[(chsel,stProc,mass,comb,trk)]
+                                if ht is None:
+                                    ht=h.Clone("SVLMass_%s_%s_%d_t_%d"%(comb,chsel,10*mass,trk))
+                                else:
+                                    ht.Add(h)
+                            except:
+                                pass
                         if ht is None : continue
-                        getattr(ws,'import')(ROOT.RooDataHist(ht.GetName()+'_t', ht.GetTitle(), ROOT.RooArgList(SVLmass), ht))
+                        getattr(ws,'import')(ROOT.RooDataHist(ht.GetName(), ht.GetTitle(), ROOT.RooArgList(SVLmass), ht))
 
+                #unmatched for tt and wrong+unmatched for single top are merged
                 htt_unm, ht_wrounm = None, None
                 for mass in massList:
                     htt=masshistos[(chsel,'tt',mass,'unm',trk)]
-                    if htt_unm is None : htt_unm=htt.Clone("SVLMass_unm_%s_%d"%(chsel,trk))
+                    if htt_unm is None : htt_unm=htt.Clone("SVLMass_unm_%s_tt_%d"%(chsel,trk))
                     else               : htt_unm.Add(htt)
 
                     for comb in ['unm','wro']:
-                        try:
-                            h=masshistos[(chsel,'t',mass,comb,trk)]
-                            if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_%d"%(chsel,trk))
-                            else                 : ht_wrounm.Add(h)
-                        except:
-                            pass
-                        try:
-                            h=masshistos[(chsel,'tW',mass,comb,trk)]
-                            if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_%d"%(chsel,trk))
-                            else                 : ht_wrounm.Add(h)
-                        except:
-                            pass
-                
-                getattr(ws,'import')(ROOT.RooDataHist(htt_unm.GetName()+'_tt',  htt_unm.GetTitle(),   ROOT.RooArgList(SVLmass), htt_unm))
-                getattr(ws,'import')(ROOT.RooDataHist(ht_wrounm.GetName()+'_t', ht_wrounm.GetTitle(), ROOT.RooArgList(SVLmass), ht_wrounm))
+                        for stProc in ['t','tbar','tW','tbarW']:
+                            try:
+                                h=masshistos[(chsel,stProc,mass,comb,trk)]
+                                if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_t_%d"%(chsel,trk))
+                                else                 : ht_wrounm.Add(h)
+                            except:
+                                pass
+                if not (htt_unm is None):
+                    getattr(ws,'import')(ROOT.RooDataHist(htt_unm.GetName(),  htt_unm.GetTitle(),   ROOT.RooArgList(SVLmass), htt_unm))
+                if not (ht_wrounm is None):
+                    getattr(ws,'import')(ROOT.RooDataHist(ht_wrounm.GetName(), ht_wrounm.GetTitle(), ROOT.RooArgList(SVLmass), ht_wrounm))
                 
 
     # Run signal parameterization cycles
     parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
                                    SVLmass=SVLmass, options=options, singleTop=False)
-    #parameterizeSignalPermutations(ws=ws, permName='wro', config=config,
-    #                               SVLmass=SVLmass, options=options, singleTop=False)
-    #parameterizeSignalPermutations(ws=ws, permName='unm', config=config,
-    #                               SVLmass=SVLmass, options=options, singleTop=False)
-    #parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
-    #                               SVLmass=SVLmass, options=options, singleTop=True)
-    #parameterizeSignalPermutations(ws=ws, permName='wrounm', config=config,
-    #                               SVLmass=SVLmass, options=options, singleTop=True)
+    parameterizeSignalPermutations(ws=ws, permName='wro', config=config,
+                                   SVLmass=SVLmass, options=options, singleTop=False)
+    parameterizeSignalPermutations(ws=ws, permName='unm', config=config,
+                                   SVLmass=SVLmass, options=options, singleTop=False)
+    parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
+                                   SVLmass=SVLmass, options=options, singleTop=True)
+    parameterizeSignalPermutations(ws=ws, permName='wrounm', config=config,
+                                   SVLmass=SVLmass, options=options, singleTop=True)
 
     return
 
@@ -333,19 +336,29 @@ def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
         p1.SetBottomMargin(0.2)
         p1.SetGridx(True)
         frame   = var.frame()
-        redData = data.reduce(ROOT.RooFit.Cut(
-                                 "%s==%s::%s"%(cat.GetName(),cat.GetName(),catName)))
-        redData.plotOn(frame)
-        cat.setLabel(catName)
-        pdf.plotOn(frame,
-                   ROOT.RooFit.Slice(cat,catName),
-                   ROOT.RooFit.ProjWData(redData),
-                   ROOT.RooFit.Components('*f1*'),
-                   ROOT.RooFit.LineColor(920),
-                   ROOT.RooFit.LineWidth(1))
-        pdf.plotOn(frame,
-                   ROOT.RooFit.Slice(cat,catName),
-                   ROOT.RooFit.ProjWData(redData))
+        if len(catName)>0 :
+            redData = data.reduce(ROOT.RooFit.Cut("%s==%s::%s"%(cat.GetName(),cat.GetName(),catName)))
+            redData.plotOn(frame)
+            cat.setLabel(catName)
+            pdf.plotOn(frame,
+                       ROOT.RooFit.Slice(cat,catName),
+                       ROOT.RooFit.ProjWData(redData),
+                       ROOT.RooFit.Components('*f1*'),
+                       ROOT.RooFit.LineColor(920),
+                       ROOT.RooFit.LineWidth(1))
+            pdf.plotOn(frame,
+                       ROOT.RooFit.Slice(cat,catName),
+                       ROOT.RooFit.ProjWData(redData))
+        else:
+            data.plotOn(frame)
+            pdf.plotOn(frame,
+                       ROOT.RooFit.ProjWData(data),
+                       ROOT.RooFit.Components('*f1*'),
+                       ROOT.RooFit.LineColor(920),
+                       ROOT.RooFit.LineWidth(1))
+            pdf.plotOn(frame,
+                       ROOT.RooFit.ProjWData(data))
+
         frame.Draw()
         frame.GetYaxis().SetTitle("Entries")
         frame.GetYaxis().SetTitleOffset(1.0)
@@ -358,8 +371,9 @@ def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
         label.SetTextFont(42)
         label.SetTextSize(0.04)
         label.DrawLatex(0.6,0.92,'#bf{CMS} #it{simulation}')
-        massVal=float( catName.replace('m','') )/10.
-        label.DrawLatex(0.6,0.86,'#it{m_{t}=%3.1f GeV}'%massVal)
+        if len(catName)>0:
+            massVal=float( catName.replace('m','') )/10.
+            label.DrawLatex(0.6,0.86,'#it{m_{t}=%3.1f GeV}'%massVal)
         subTags=tag.split('_')
         permTitle='#it{correct permutations}'
         if subTags[0]=='wro' : permTitle='#it{wrong permutations}'

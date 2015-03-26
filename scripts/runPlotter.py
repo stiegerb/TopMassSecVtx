@@ -454,15 +454,16 @@ def makeXSecWeights(inDir, jsonfiles, options):
             for desc in proc_tag[1]:
                 data = desc['data']
                 isData = getByLabel(desc,'isdata',False)
-                if isData:
-                    xsecweights[str(dtag)] = 1.0
-                    continue
                 mctruthmode = getByLabel(desc,'mctruthmode')
                 for process in data:
                     dtag = getByLabel(process,'dtag','')
-                    split = getByLabel(process,'split',1)
-
                     print "... processing %s"%dtag
+
+                    if isData:
+                        xsecweights[str(dtag)] = 1.0
+                        continue
+
+                    split = getByLabel(process,'split',1)
 
                     try:
                         ngen = tot_ngen[dtag]

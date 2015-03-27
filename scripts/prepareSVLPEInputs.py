@@ -144,7 +144,6 @@ def main(args, opt):
 	cachefile.close()
 	print '>>> Read DY scale factors from cache (.svldyscalefactors.pck)'
 
-
 	cachefile = open(".svlqcdtemplates.pck", 'r')
 	qcdTemplates = pickle.load(cachefile)
 	cachefile.close()
@@ -181,8 +180,10 @@ def main(args, opt):
 					bghistos_added[(tag, ntk)].Add(qcdTemplates[(sel,ntk,cat)])
 
 
-
-
+	## Save the background only shapes separately as templates for the fit
+	cachefile = open(".svlbgtemplates.pck", 'w')
+	pickle.dump(bghistos_added, cachefile, pickle.HIGHEST_PROTOCOL)
+	cachefile.close()
 
 	## Read syst histos:
 	cachefile = open(".svlsysthistos.pck", 'r')

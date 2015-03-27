@@ -65,10 +65,14 @@ Produces a number of data/MC comparison plots (both from the SVLInfo trees, and 
 
 
 ------------------------------------------------------
-### Running the fits (work in progress...)
+### Running the fits 
 
 ```
-./scripts/makeSVLWorkspace.py -i .svlhistos.pck
+./scripts/runSVLFits.py
+```
+Prepares the workspace for the fits
+```
+./scripts/runSVLFits.py -w SVLWorkspace.root -i /afs/cern.ch/work/s/stiegerb/public/forPedro/pe_inputs.root --spy
 ```
 Will run the fits and put the RooFit workspace and plots in svlfits/ by default.
 

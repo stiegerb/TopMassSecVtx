@@ -209,15 +209,10 @@ def main(args, options) :
 			                                               qcdSF[cat][1]) )
 
 	print '-'*50
-	cachefile = open('.svlqcdscalefactors.pck','w')
-	pickle.dump(qcdSF, cachefile, pickle.HIGHEST_PROTOCOL)
-	cachefile.close()
-	print ' >>> Stored scale factors in .svlqcdscalefactors.pck'
-
 
 	#now rescale the templates for QCD
 	fQCD = ROOT.TFile.Open(args[1])
-	finalTemplates = []
+	finalTemplates = {}
 	for cat in CATEGORIES:
 		inc = fQCD.Get('%s_qcd_template'%cat)
 		totalIncSideBand = inc.Integral()
@@ -230,18 +225,21 @@ def main(args, options) :
 				finalNorm = frac*totalInc
 				h_ntk.Scale(finalNorm/iniNorm)
 
-				finalTemplates.append(h_ntk.Clone())
-				finalTemplates[-1].SetDirectory(0)
-				# print cat,sel,ntk,finalNorm
+				finalTemplates[(sel,ntk,cat)] = h_ntk.Clone()
+				finalTemplates[(sel,ntk,cat)].SetDirectory(0)
 	fQCD.Close()
 
 	#dump to a file
+	cachefile = open('.svlqcdtemplates.pck','w')
+	pickle.dump(finalTemplates, cachefile, pickle.HIGHEST_PROTOCOL)
+	cachefile.close()
+	print ' >>> Stored qcd templates in .svlqcdtemplates.pck'
+
 	fOut=ROOT.TFile.Open(os.path.join(OUTDIR,'scaled_qcd_templates.root'),'recreate')
-	for h in finalTemplates :  h.Write()
+	for h in finalTemplates.values() :  h.Write(h.GetName())
 	fOut.Close()
 
-	print 'Plots stored in %s/' % OUTDIR
-	print 'Templates stored in %s' % os.path.join(OUTDIR,'scaled_qcd_templates.root')
+	print ' >>> Plots saved to %s/' % OUTDIR
 	return 0
 
 if __name__ == "__main__":

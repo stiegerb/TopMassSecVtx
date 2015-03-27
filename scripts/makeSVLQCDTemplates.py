@@ -3,18 +3,18 @@ import os, sys
 import ROOT
 import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot, setTDRStyle
-from makeSVLMassHistos import MASSXAXISTITLE, TREENAME, NTRKBINS
-from makeSVLDataMCPlots import getHistoFromTree
+from makeSVLMassHistos import MASSXAXISTITLE, TREENAME, NTRKBINS, NBINS, XMIN, XMAX
+from makeSVLDataMCPlots import getHistoFromTree, projectFromTree
 from makeSVLDataMCPlots import addDataMCPlotOptions
 from runPlotter import runPlotter, addPlotterOptions, openTFile
 
 SELECTIONS = [
-	('e_qcd',         'abs(EvCat)==1100', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
-	('mu_qcd',        'abs(EvCat)==1300', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('e_qcd',        'abs(EvCat)==1100', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('m_qcd',        'abs(EvCat)==1300', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('e_mrank1_qcd',
 	 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1100',
 	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
-	('mu_mrank1_qcd',
+	('m_mrank1_qcd',
 	 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1300',
 	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 ]
@@ -139,11 +139,11 @@ def main(args, options):
 	## Can then use those to subtract non-QCD backgrounds from data template
 	## Overwrite some of the options
 	options.filter = 'SVLMass,MET' ## only run SVLMass and MET plots
-	options.excludeProcesses = 'QCD'
+	# options.excludeProcesses = 'QCD'
 	options.outFile = 'scaled_met_inputs.root'
 	options.cutUnderOverFlow = True
 	os.system('rm %s' % os.path.join(options.outDir, options.outFile))
-	runPlotter(outputFileName, options, scaleFactors=scaleFactors)
+	runPlotter(outputFileName, options)
 
 	#########################################################
 	## Build the actual templates from the single histograms

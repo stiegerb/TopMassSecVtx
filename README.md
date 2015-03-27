@@ -65,6 +65,8 @@ Produces a number of data/MC comparison plots (both from the SVLInfo trees, and 
 
 
 ------------------------------------------------------
+### Running the fits 
+=======
 ### Producing QCD Templates
 makeSVLQCDTemplates.py produces MET and m(l,SV) distributions from the non-isolated data control region and stores them in qcd_templates.root.
 qcdFitter.py fits the MET distribution in the l+jets signal region, using the shapes from the non-isolated region produced by makeSVLQCDTemplates.py and produces m(l,SV) templates scaled according to the outcome of the fit.
@@ -73,12 +75,11 @@ It takes as input a plotter.root file (from makeSVLDataMCPlots.py) with properly
 ./scripts/makeSVLQCDTemplates.py treedir/
 ./test/topss2014/qcdFitter.py plotter.root qcd_templates.root
 ```
-
-------------------------------------------------------
-### Running the fits (work in progress...)
-
+./scripts/runSVLFits.py
 ```
-./scripts/makeSVLWorkspace.py -i .svlhistos.pck
+Prepares the workspace for the fits
+```
+./scripts/runSVLFits.py -w SVLWorkspace.root -i /afs/cern.ch/work/s/stiegerb/public/forPedro/pe_inputs.root --spy
 ```
 Will run the fits and put the RooFit workspace and plots in svlfits/ by default.
 

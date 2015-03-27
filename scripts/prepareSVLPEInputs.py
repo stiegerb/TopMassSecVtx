@@ -11,7 +11,16 @@ from makeSVLMassHistos import runSVLInfoTreeAnalysis, runTasks
 from makeSVLDataMCPlots import resolveFilename
 from makeSVLSystPlots import ALLSYSTS
 
-LUMI = 17123
+LUMI = 19701
+
+QCDTEMPLATESTOADD = {
+	'inclusive'        : ('',       ['e', 'm']),
+	'inclusive_mrank1' : ('_mrank1',['e', 'm']),
+	'e'                : ('',       ['e']),
+	'm'                : ('',       ['m']),
+	'e_mrank1'         : ('_mrank1',['e']),
+	'm_mrank1'         : ('_mrank1',['m']),
+}
 
 def makeSystTask(tag, sel, pname, hname_to_keys, weight='1'):
 	tasks = []
@@ -110,7 +119,7 @@ def main(args, opt):
 			if not osp.splitext(fname)[1] == '.root': continue
 			isdata,procname,splitno = resolveFilename(fname)
 			if isdata: continue
-			if procname == 'QCDPt30to80':           continue ## exclude QCD
+			if 'QCD' in procname:                   continue ## exclude QCD
 			if procname == 'TTJets_MSDecays_172v5': continue ## have those already
 
 			if not procname in treefiles:
@@ -135,10 +144,19 @@ def main(args, opt):
 	cachefile.close()
 	print '>>> Read DY scale factors from cache (.svldyscalefactors.pck)'
 
+
+	cachefile = open(".svlqcdtemplates.pck", 'r')
+	qcdTemplates = pickle.load(cachefile)
+	cachefile.close()
+	print '>>> Read QCD templates from cache (.svlqcdtemplates.pck)'
+
 	bghistos_added = {}
 	for tag,_,_ in SELECTIONS:
+		if opt.verbose>2: print ' selection:',tag
 		for ntk,_ in NTRKBINS:
+			if opt.verbose>2: print '  ntrks:',ntk
 			for pname in treefiles.keys():
+				if opt.verbose>3: print '   process:',pname
 				hname = "SVLMass_tot_%s_bg_%d"%(tag,ntk)
 				hist = bghistos[tag, pname, 'tot', ntk].Clone("%s_%s" % (
 															  hname, pname))
@@ -154,6 +172,16 @@ def main(args, opt):
 					bghistos_added[(tag, ntk)].SetName(hname)
 				else:
 					bghistos_added[(tag, ntk)].Add(hist)
+
+			## Add QCD templates from MET fit:
+			if tag in QCDTEMPLATESTOADD:
+				sel,cats = QCDTEMPLATESTOADD[tag]
+				for cat in cats:
+					if opt.verbose>2: print '  adding qcd templates from',sel,ntk,cat
+					bghistos_added[(tag, ntk)].Add(qcdTemplates[(sel,ntk,cat)])
+
+
+
 
 
 	## Read syst histos:

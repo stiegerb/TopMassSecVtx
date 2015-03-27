@@ -842,7 +842,7 @@ void LxyTreeAnalysis::analyze(){
 		}
 		else
 		  {
-		    if(jcsv[i] > 0.783) nbjets++;
+		    if(jcsv[i] > gCSVWPMedium) nbjets++;
 		    else {
 		      TLorentzVector p4; p4.SetPtEtaPhiM(jpt[i], jeta[i], jphi[i], 0.);
 		      lightJetsP4.push_back(p4);
@@ -863,46 +863,46 @@ void LxyTreeAnalysis::analyze(){
 	if(selectSVLEvent()){
 		// Fill some control histograms:
 		if (abs(evcat) <= 13*13){ // Inclusive (exclude control samples)
-			fHNJets     ->Fill(nj,      w[1]*w[4]);
-			fHNSVJets   ->Fill(nsvjets, w[1]*w[4]);
-			fHNbJets    ->Fill(nbjets,  w[1]*w[4]);
-			fHMET       ->Fill(metpt,   w[1]*w[4]);
-			fHMT        ->Fill(mT,      w[1]*w[4]);
-			if(mjj>=0.) fHMjj->Fill(mjj,     w[1]*w[4]); // only fill if there are 2 light jets
+			fHNJets     ->Fill(nj,      w[0]*w[1]*w[4]);
+			fHNSVJets   ->Fill(nsvjets, w[0]*w[1]*w[4]);
+			fHNbJets    ->Fill(nbjets,  w[0]*w[1]*w[4]);
+			fHMET       ->Fill(metpt,   w[0]*w[1]*w[4]);
+			fHMT        ->Fill(mT,      w[0]*w[1]*w[4]);
+			if(mjj>=0.) fHMjj->Fill(mjj,     w[0]*w[1]*w[4]); // only fill if there are 2 light jets
 		}
 		if (abs(evcat) == 11*13){
-			fHNJets_em  ->Fill(nj,      w[1]*w[4]);
-			fHNSVJets_em->Fill(nsvjets, w[1]*w[4]);
-			fHNbJets_em ->Fill(nbjets,  w[1]*w[4]);
-			fHMET_em    ->Fill(metpt,   w[1]*w[4]);
+			fHNJets_em  ->Fill(nj,      w[0]*w[1]*w[4]);
+			fHNSVJets_em->Fill(nsvjets, w[0]*w[1]*w[4]);
+			fHNbJets_em ->Fill(nbjets,  w[0]*w[1]*w[4]);
+			fHMET_em    ->Fill(metpt,   w[0]*w[1]*w[4]);
 		}
 		if (abs(evcat) == 11*11){
-			fHNJets_ee  ->Fill(nj,      w[1]*w[4]);
-			fHNSVJets_ee->Fill(nsvjets, w[1]*w[4]);
-			fHNbJets_ee ->Fill(nbjets,  w[1]*w[4]);
-			fHMET_ee    ->Fill(metpt,   w[1]*w[4]);
+			fHNJets_ee  ->Fill(nj,      w[0]*w[1]*w[4]);
+			fHNSVJets_ee->Fill(nsvjets, w[0]*w[1]*w[4]);
+			fHNbJets_ee ->Fill(nbjets,  w[0]*w[1]*w[4]);
+			fHMET_ee    ->Fill(metpt,   w[0]*w[1]*w[4]);
 		}
 		if (abs(evcat) == 13*13){
-			fHNJets_mm  ->Fill(nj,      w[1]*w[4]);
-			fHNSVJets_mm->Fill(nsvjets, w[1]*w[4]);
-			fHNbJets_mm ->Fill(nbjets,  w[1]*w[4]);
-			fHMET_mm    ->Fill(metpt,   w[1]*w[4]);
+			fHNJets_mm  ->Fill(nj,      w[0]*w[1]*w[4]);
+			fHNSVJets_mm->Fill(nsvjets, w[0]*w[1]*w[4]);
+			fHNbJets_mm ->Fill(nbjets,  w[0]*w[1]*w[4]);
+			fHMET_mm    ->Fill(metpt,   w[0]*w[1]*w[4]);
 		}
 		if (abs(evcat) == 11){
-			fHNJets_e   ->Fill(nj,      w[1]*w[4]);
-			fHMjj_e     ->Fill(mjj,     w[1]*w[4]);
-			fHNSVJets_e ->Fill(nsvjets, w[1]*w[4]);
-			fHNbJets_e  ->Fill(nbjets,  w[1]*w[4]);
-			fHMT_e      ->Fill(mT,      w[1]*w[4]);
-			fHMET_e     ->Fill(metpt,   w[1]*w[4]);
+			fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
+			fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
+			fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
+			fHNbJets_e  ->Fill(nbjets,  w[0]*w[1]*w[4]);
+			fHMT_e      ->Fill(mT,      w[0]*w[1]*w[4]);
+			fHMET_e     ->Fill(metpt,   w[0]*w[1]*w[4]);
 		}
 		if (abs(evcat) == 13){
-			fHNJets_m   ->Fill(nj,      w[1]*w[4]);
-			fHMjj_m     ->Fill(mjj,     w[1]*w[4]);
-			fHNSVJets_m ->Fill(nsvjets, w[1]*w[4]);
-			fHNbJets_m  ->Fill(nbjets,  w[1]*w[4]);
-			fHMT_m      ->Fill(mT,      w[1]*w[4]);
-			fHMET_m     ->Fill(metpt,   w[1]*w[4]);
+			fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
+			fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
+			fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
+			fHNbJets_m  ->Fill(nbjets,  w[0]*w[1]*w[4]);
+			fHMT_m      ->Fill(mT,      w[0]*w[1]*w[4]);
+			fHMET_m     ->Fill(metpt,   w[0]*w[1]*w[4]);
 		}
 
 		// First find all pairs and get their ranking in mass and deltar
@@ -1028,12 +1028,12 @@ void LxyTreeAnalysis::analyze(){
 		p_l2.SetPtEtaPhiM(lpt[1], leta[1], lphi[1], 0.);
 		float mll = (p_l1+p_l2).M();
 		if(abs(evcat) == 11*11*1000){
-			fHDY_mll_ee->Fill(mll,   w[1]*w[4]);
-			fHDY_met_ee->Fill(metpt, w[1]*w[4]);
+			fHDY_mll_ee->Fill(mll,   w[0]*w[1]*w[4]);
+			fHDY_met_ee->Fill(metpt, w[0]*w[1]*w[4]);
 		}
 		if(abs(evcat) == 13*13*1000){
-			fHDY_mll_mm->Fill(mll,   w[1]*w[4]);
-			fHDY_met_mm->Fill(metpt, w[1]*w[4]);
+			fHDY_mll_mm->Fill(mll,   w[0]*w[1]*w[4]);
+			fHDY_met_mm->Fill(metpt, w[0]*w[1]*w[4]);
 		}
 	}
 }

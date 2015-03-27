@@ -59,10 +59,20 @@ Will run the plots and put them in svlplots/ by default. Also saves the histogra
 ```
 Produces a number of data/MC comparison plots (both from the SVLInfo trees, and from the histograms produced in the LxyTreeAnalysis). Default output directory is plots/. This is based on the runPlotter.py script. In order to have correct xsection weights and number of generated events, one needs to run on the eos/ directory first to produce a cache file with the weights, like so:
 ```
-./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/e1fa735/
+./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json
 
 ```
 
+
+------------------------------------------------------
+### Producing QCD Templates
+makeSVLQCDTemplates.py produces MET and m(l,SV) distributions from the non-isolated data control region and stores them in qcd_templates.root.
+qcdFitter.py fits the MET distribution in the l+jets signal region, using the shapes from the non-isolated region produced by makeSVLQCDTemplates.py and produces m(l,SV) templates scaled according to the outcome of the fit.
+It takes as input a plotter.root file (from makeSVLDataMCPlots.py) with properly scaled MET distributions in the signal region.
+```
+./scripts/makeSVLQCDTemplates.py treedir/
+./test/topss2014/qcdFitter.py plotter.root qcd_templates.root
+```
 
 ------------------------------------------------------
 ### Running the fits (work in progress...)

@@ -642,14 +642,14 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir):
     p3.Draw()
     p3.cd()
     frame2=mtop.frame()
-    nll.plotOn(frame2,ROOT.RooFit.ShiftToZero())
+    for ill in xrange(0,len(nll)): nll[ill].plotOn(frame2,ROOT.RooFit.ShiftToZero(),ROOT.RooFit.LineStyle(ill+1))
     frame2.Draw()
     frame2.GetYaxis().SetRangeUser(0,12)
     frame2.GetXaxis().SetRangeUser(165,180)
     frame2.GetYaxis().SetNdivisions(3)
     frame2.GetXaxis().SetNdivisions(3)
     frame2.GetXaxis().SetTitle('Top mass [GeV]')
-    frame2.GetYaxis().SetTitle('-log L/L_{max}')
+    frame2.GetYaxis().SetTitle('pLL and LL')
     frame2.GetYaxis().SetTitleOffset(1.5)
     frame2.GetXaxis().SetTitleSize(0.08)
     frame2.GetXaxis().SetLabelSize(0.08)
@@ -703,7 +703,7 @@ def runPseudoExperiments(ws,experimentTag,options):
             tcor       = '%s_tcor_%d'               %(chsel,ntrk)
             tcorPDF    = 'simplemodel_%s_%d_cor_t'  %(chsel,ntrk)
             twrounmPDF = 'model_%s_%d_wrounm_t'     %(chsel,ntrk)
-            bkgNorm    = '%s_bgexp_%d'              %(chsel,ntrk)
+            bkgExp     = '%s_bgexp_%d'              %(chsel,ntrk)
             bkgPDF     = 'model_%s_%d_unm_bg'       %(chsel,ntrk)
 
             ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
@@ -712,17 +712,28 @@ def runPseudoExperiments(ws,experimentTag,options):
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
             Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
 
+            ws.factory("nu_%s_%d[1.0,0.0,10.0]"%(chsel,ntrk))
+            bkgConstPDF =  ws.factory('Gaussian::nuprior_%s_%d(nu0_nuis_%s_%d[0,-10,10],nu_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
+            ws.var('nu0_nuis_%s_%d'%(chsel,ntrk)).setVal(0.0)
+            ws.var('nu0_nuis_%s_%d'%(chsel,ntrk)).setConstant(True)
+            #30% unc on background
+            Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)*@2',{nu_%s_%d,nu_nuis_%s_%d,%s})"%(chsel,ntrk,chsel,ntrk,chsel,ntrk,bkgExp))
+            
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
-            allPdfs[ (chsel,ntrk) ] = ws.factory("SUM::model_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
-                                                                                            Ntt.GetName(), ttShapePDF.GetName(),
-                                                                                            Nt.GetName(), tShapePDF.GetName(),
-                                                                                            bkgNorm, bkgPdf
-                                                                                            ))
+            sumPDF = ws.factory("SUM::expmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
+                                                                              Ntt.GetName(), ttShapePDF.GetName(),
+                                                                              Nt.GetName(), tShapePDF.GetName(),
+                                                                              Nbkg.GetName(), bkgPDF
+                                                                              ))
+            allPdfs[ (chsel,ntrk) ] = ws.factory('PROD::model_%s_%d(%s,%s)'%(chsel,ntrk,
+                                                                             sumPDF.GetName(),bkgConstPDF.GetName()))
+
 
     #throw pseudo-experiments
     allFitVals  = {('comb',0):[], ('comb_mu',0):[]}
     allFitErrs  = {('comb',0):[], ('comb_mu',0):[]}
     allFitPulls = {('comb',0):[], ('comb_mu',0):[]}
+    poi = ROOT.RooArgSet( ws.var('mtop') )
     for i in xrange(0,options.nPexp):
 
         #iterate over available categories to build the set of likelihoods to combine
@@ -737,6 +748,7 @@ def runPseudoExperiments(ws,experimentTag,options):
 
             ws.var('mtop').setVal(172.5)
             ws.var('mu').setVal(1.0)
+            ws.var('nu_%s_%d'%(chsel,ntrk)).setVal(1.0)
 
             #init results map if not yet available
             if not (key in allFitVals):
@@ -756,11 +768,15 @@ def runPseudoExperiments(ws,experimentTag,options):
                                            'PseudoData_%s_%d'%(chsel,trk),
                                            ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
 
-            #fit and generate likelihood for combination
-            allPdfs[key].fitTo(pseudoData, ROOT.RooFit.Extended())
-
-            allNLL.append(allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()))
-            ROOT.RooMinuit(allNLL[-1]).migrad()
+            #minimize likelihood
+            allNLL.append( allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()) )
+            minuit=ROOT.RooMinuit(allNLL[-1])
+            minuit.setErrorLevel(0.5)
+            minuit.migrad() 
+            minuit.hesse() 
+            #error level from minos is equivalent to profile likelihood
+            #but seems overestimated
+            #minuit.minos(poi) 
 
             #save fit results
             fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()
@@ -772,13 +788,14 @@ def runPseudoExperiments(ws,experimentTag,options):
             allFitVals[mukey] .append(fitVal_mu)
             allFitErrs[mukey] .append(fitErr_mu)
             allFitPulls[mukey].append((fitVal_mu-1.0)/fitErr_mu)
-
+            
             #show if required
             #FIXME: this is making the combined fit crash? something with TPads getting free'd up
             if options.spy and i==0:
-               showFinalFitResult(data=pseudoData,pdf=allPdfs[key],nll=allNLL[-1],
-                                  SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
-                                  outDir=options.outDir)
+                pll=allNLL[-1].createProfile(poi)
+                showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,allNLL[-1]],
+                                   SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
+                                   outDir=options.outDir)
                # raw_input('press key to continue...')
 
             #save to erase later
@@ -786,18 +803,29 @@ def runPseudoExperiments(ws,experimentTag,options):
             allPseudoData.append(pseudoData)
 
         #combined likelihood
+        ws.var('mtop').setVal(172.5)
+        ws.var('mu').setVal(1.0)
+        for key in allPdfs:
+            chsel, trk = key
+            ws.var('nu_%s_%d'%(chsel,ntrk)).setVal(1.0)
         llSet = ROOT.RooArgSet()
         for ll in allNLL: llSet.add(ll)
         combll = ROOT.RooAddition("combll","combll",llSet)
-        ROOT.RooMinuit(combll).migrad()
-        fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()
+        minuit=ROOT.RooMinuit(combll)
+        minuit.setErrorLevel(0.5)        
+        minuit.migrad() 
+        minuit.hesse() 
+        #error level from minos is equivalent to profile likelihood
+        #but seems overestimated
+        #minuit.minos(poi) 
 
+        fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()        
         combKey = ('comb',0)
         allFitVals[combKey].append(fitVal)
         allFitErrs[combKey].append(fitErr)
         allFitPulls[combKey].append((fitVal-genMtop)/fitErr)
-        fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError()
 
+        fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError()
         muCombKey = ('comb_mu',0)
         allFitVals[muCombKey].append(fitVal_mu)
         allFitErrs[muCombKey].append(fitErr_mu)
@@ -822,7 +850,7 @@ def runPseudoExperiments(ws,experimentTag,options):
         mtopfitPullH.SetDirectory(0)
         mufitStatUncH = ROOT.TH1F('mufit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(#mu);Pseudo-experiments',100,0,0.1)
         mufitStatUncH.SetDirectory(0)
-        fitCorrH = ROOT.TH2F('muvsmtopcorr_%s_%d'%(chsel,trk),';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.5,1.5)
+        fitCorrH = ROOT.TH2F('muvsmtopcorr_%s_%d'%(chsel,trk),';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.85,1.15)
         fitCorrH.SetDirectory(0)
         for i in xrange(0,len(allFitVals[key])):
             mtopfitH         .Fill( allFitVals[key][i] )

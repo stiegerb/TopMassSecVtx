@@ -11,11 +11,12 @@ from UserCode.TopMassSecVtx.PlotUtils import printProgress
 """
 parameterize the signal permutations
 """
-def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, options)):
+def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLmass, options)):
 
     print ' ...processing ch=%s #tk=%d for %s permutations'%(ch,ntrk,permName)
     procName='tt'
     if singleTop : procName='t'
+    if bkg       : procName='bg'
     tag='%s_%d_%s_%s'%(ch,ntrk,permName,procName)
 
     # Base correct, signal PDF :
@@ -71,7 +72,6 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, 
                             (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
         theData=ws.data('SVLMass_%s_%s_%s_%d'%(permName,ch,procName,ntrk))
         catNames=['']
-
     else:
         #base PDF
         ws.factory("SUM::simplemodel_%s("
@@ -121,7 +121,7 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, 
 """
 instantiates the PDFs needed to parameterize the SVLmass histo in a given category for signal events
 """
-def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop):
+def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop,bkg=False):
 
     chselList,  massList, trkMultList, combList, procList = config
     print '[parameterizeSignalPermutations] with %s'%permName
@@ -131,12 +131,14 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop)
             print ' but process not found in ',procList
             return
         print ''
+    if bkg:
+        print ' \t backgroumd mode enabled'
 
     tasklist = []
     for ch in chselList:
         # if ch != 'em' : continue
         for ntrk in trkMultList:
-            tasklist.append((ws, ch, ntrk, permName, massList, singleTop, SVLmass, options))
+            tasklist.append((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLmass, options))
 
     if options.jobs > 1:
         import multiprocessing
@@ -330,6 +332,13 @@ def createWorkspace(options):
     cachefile = open(options.input,'r')
     masshistos = pickle.load(cachefile)
     cachefile.close()
+    bkgmasshistos=None
+    try:
+        cachefile = open(options.inputBkg,'r')   
+        bkgmasshistos = pickle.load(cachefile)
+        cachefile.close()
+    except:
+        print 'No valid background shapes file found'
 
     # Extract the configurations from the diffhistos dictionary
     config = readConfig(masshistos)
@@ -350,6 +359,16 @@ def createWorkspace(options):
     # Import binned PDFs from histograms read from file
     for chsel in chselList:
         for trk in trkMultList:
+
+            #backgrounds
+            try:
+                hbkg=bkgmasshistos[(chsel,trk)]
+                name='SVLMass_unm_%s_bg_%d'%(chsel,trk)
+                getattr(ws,'import')(ROOT.RooDataHist(name,name, ROOT.RooArgList(SVLmass), hbkg))
+            except:
+                pass
+
+            #signal
             for comb in ['cor','wro']:
                 for mass in massList:
 
@@ -407,6 +426,8 @@ def createWorkspace(options):
                                    SVLmass=SVLmass, options=options, singleTop=True)
     parameterizeSignalPermutations(ws=ws, permName='wrounm', config=config,
                                    SVLmass=SVLmass, options=options, singleTop=True)
+    parameterizeSignalPermutations(ws=ws, permName='unm', config=config,
+                                   SVLmass=SVLmass, options=options, singleTop=False, bkg=True)
 
     # Save all to file
     ws.saveSnapshot("model_params", ws.allVars(), True)
@@ -479,12 +500,18 @@ def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
             massVal=float( catName.replace('m','') )/10.
             label.DrawLatex(0.6,0.86,'#it{m_{t}=%3.1f GeV}'%massVal)
         subTags=tag.split('_')
-        permTitle='#it{correct permutations}'
-        if subTags[0]=='wro' : permTitle='#it{wrong permutations}'
-        if subTags[0]=='unm' : permTitle='#it{unmatched permutations}'
+        permTitle=''
+        if 'cor' in subTags : '#it{correct permutations}'
+        if 'wro' in subTags : permTitle='#it{wrong permutations}'
+        if 'unm' in subTags : 
+            permTitle='#it{unmatched permutations}'
+            if 'wro' in subTags : permTitle='#it{wrong+unmatched permutations}'
+        if 'bg'  in subTags : permTitle='#it{background}'
         label.DrawLatex(0.6,0.80,permTitle)
-        channelTitle=subTags[2].replace('mu','#mu')
-        channelTitle='#it{%s, %s tracks}'%(channelTitle,subTags[1])
+        channelTitle=subTags[0].replace('m','#mu')
+        ntracks = subTags[1] if subTags[1].isdigit() else subTags[2]
+        selCat = subTags[1] if not subTags[1].isdigit() else 'inclusive'
+        channelTitle='#it{%s %s, %s tracks}'%(channelTitle,selCat,ntracks)
         label.DrawLatex(0.6,0.74,channelTitle)
         label.DrawLatex(0.6,0.68,'#chi^{2}=%3.2f'%frame.chiSquare())
 
@@ -889,6 +916,9 @@ def main():
     parser.add_option('-i', '--input', dest='input',
                        default='.svlmasshistos.pck',
                        help='input file with histograms.')
+    parser.add_option('-b', '--bkg', dest='inputBkg',
+                       default='.svlbgtemplates.pck',
+                       help='input file with histograms for the background processes.')
     parser.add_option('-w', '--ws', dest='wsFile', default=None,
                        help='ROOT file with previous workspace.')
     parser.add_option('--isData', dest='isData', default=False, action='store_true',

@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-
 import ROOT
 import os,sys
 import optparse
 import pickle
 import numpy
+
+from UserCode.TopMassSecVtx.PlotUtils import printProgress
+
 
 """
 parameterize the signal permutations
@@ -123,16 +125,16 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop)
 
     chselList,  massList, trkMultList, combList, procList = config
     print '[parameterizeSignalPermutations] with %s'%permName
-    if singleTop: 
+    if singleTop:
         print ' \t single top quark mode enabled',
         if not ('t' in procList or 'tW' in procList):
             print ' but process not found in ',procList
             return
         print ''
-    
+
     tasklist = []
     for ch in chselList:
-        if ch != 'em' : continue
+        # if ch != 'em' : continue
         for ntrk in trkMultList:
             tasklist.append((ws, ch, ntrk, permName, massList, singleTop, SVLmass, options))
 
@@ -144,7 +146,7 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop)
             fitSignalPermutation(task)
 
 """
-Parameterizes the fraction of correct and wrong assignments 
+Parameterizes the fraction of correct and wrong assignments
 as well as the fraction of single top expected with respect to ttbar
 """
 def parameterizeSignalFractions(ws, masshistos, config, options) :
@@ -156,7 +158,7 @@ def parameterizeSignalFractions(ws, masshistos, config, options) :
     canvas.SetRightMargin(0.05)
     for chsel in chselList:
         for trk in trkMultList:
-            
+
             grToParametrize={}
             for key,title in [('ttcor','t#bar{t} correct'),
                               ('ttwro','t#bar{t} wrong'),
@@ -171,9 +173,9 @@ def parameterizeSignalFractions(ws, masshistos, config, options) :
                 grToParametrize[key].SetMarkerStyle(20+grCtr)
                 grToParametrize[key].SetLineColor(2*grCtr+1)
                 grToParametrize[key].SetMarkerColor(2*grCtr+1)
-                
+
             for mass in massList:
-                
+
                 combCtrs={}
                 for comb in combList:
                     for proc in procList:
@@ -213,17 +215,18 @@ def parameterizeSignalFractions(ws, masshistos, config, options) :
                 if 'texp' in combCtrs:
                     combCtrs['tfrac']=(combCtrs['texp'][0]/combCtrs['ttexp'][0],
                                        ROOT.TMath.Sqrt( ROOT.TMath.Power(combCtrs['texp'][0]*combCtrs['ttexp'][1],2)
-                                                        + ROOT.TMath.Power(combCtrs['ttexp'][0]*combCtrs['texp'][1],2) ) / ROOT.TMath.Power(combCtrs['ttexp'][0],2))
+                                                      + ROOT.TMath.Power(combCtrs['ttexp'][0]*combCtrs['texp'][1],2) )
+                                                      / ROOT.TMath.Power(combCtrs['ttexp'][0],2))
 
                 #fill add point to the graph
                 for key in combCtrs:
                     try:
-                        np=grToParametrize[key].GetN()                        
+                        np=grToParametrize[key].GetN()
                         grToParametrize[key].SetPoint     (np,mass,combCtrs[key][0])
                         grToParametrize[key].SetPointError(np,0,combCtrs[key][1])
                     except:
                         pass
-                    
+
             #extrapolate dependency with straight line and show
             for keys in [['ttcor','ttwro','tcor'],
                          ['tfrac'],
@@ -245,12 +248,14 @@ def parameterizeSignalFractions(ws, masshistos, config, options) :
                     elif 'frac' in key:
                         grToParametrize[key].GetYaxis().SetTitle('t / t#bar{t}')
                         ws.factory("RooFormulaVar::%s('%f+@0*(%f)',{mtop})"%
-                                   (tag,grToParametrize[key].GetFunction('pol1').GetParameter(0),grToParametrize[key].GetFunction('pol1').GetParameter(1))) 
+                                   (tag,grToParametrize[key].GetFunction('pol1').GetParameter(0),
+                                        grToParametrize[key].GetFunction('pol1').GetParameter(1)))
                     else:
                         grToParametrize[key].GetYaxis().SetRangeUser(0,1)
                         grToParametrize[key].GetYaxis().SetTitle('Fraction wrt to t#bar{t} or t events')
                         ws.factory("RooFormulaVar::%s('%f+@0*(%f)',{mtop})"%
-                                   (tag,grToParametrize[key].GetFunction('pol1').GetParameter(0),grToParametrize[key].GetFunction('pol1').GetParameter(1))) 
+                                   (tag,grToParametrize[key].GetFunction('pol1').GetParameter(0),
+                                        grToParametrize[key].GetFunction('pol1').GetParameter(1)))
 
                 if drawOpt=='ap': continue
                 leg=canvas.BuildLegend()
@@ -267,6 +272,7 @@ def parameterizeSignalFractions(ws, masshistos, config, options) :
                 label.DrawLatex(0.12,0.92,'#bf{CMS} #it{simulation}')
                 label.DrawLatex(0.2,0.84,channelTitle)
                 label.DrawLatex(0.2,0.8,'%d tracks'%trk)
+                canvas.SaveAs('%s/plots/%s_%s.pdf'%(options.outDir,keys[0],tag))
                 canvas.SaveAs('%s/plots/%s_%s.png'%(options.outDir,keys[0],tag))
 
 
@@ -303,7 +309,7 @@ Creates a string with mass categories to be used
 """
 def buildSigMassCats(massList,singleTop,permName):
     sig_mass_cats='massCat%s%d['%(permName,singleTop)
-    if 'unm' in permName : 
+    if 'unm' in permName :
         sig_mass_cats+='minc]'
     else :
         for m in sorted(massList):
@@ -324,7 +330,7 @@ def createWorkspace(options):
     cachefile = open(options.input,'r')
     masshistos = pickle.load(cachefile)
     cachefile.close()
-    
+
     # Extract the configurations from the diffhistos dictionary
     config = readConfig(masshistos)
     chselList, massList, trkMultList, combList,procList = config
@@ -343,49 +349,51 @@ def createWorkspace(options):
 
     # Import binned PDFs from histograms read from file
     for chsel in chselList:
-            for trk in trkMultList:
-                for comb in ['cor','wro']:
-                    for mass in massList:
-
-                        #ttbar
-                        htt=masshistos[(chsel,'tt',mass,comb,trk)]
-                        getattr(ws,'import')(ROOT.RooDataHist(htt.GetName(), htt.GetTitle(), ROOT.RooArgList(SVLmass), htt))
-
-                        #correct combinations for single top
-                        if comb!='cor': continue
-                        ht=None
-                        for stProc in ['t','tbar','tW','tbarW']:
-                            try:
-                                h=masshistos[(chsel,stProc,mass,comb,trk)]
-                                if ht is None:
-                                    ht=h.Clone("SVLMass_%s_%s_%d_t_%d"%(comb,chsel,10*mass,trk))
-                                else:
-                                    ht.Add(h)
-                            except:
-                                pass
-                        if ht is None : continue
-                        getattr(ws,'import')(ROOT.RooDataHist(ht.GetName(), ht.GetTitle(), ROOT.RooArgList(SVLmass), ht))
-
-                #unmatched for tt and wrong+unmatched for single top are merged
-                htt_unm, ht_wrounm = None, None
+        for trk in trkMultList:
+            for comb in ['cor','wro']:
                 for mass in massList:
-                    htt=masshistos[(chsel,'tt',mass,'unm',trk)]
-                    if htt_unm is None : htt_unm=htt.Clone("SVLMass_unm_%s_tt_%d"%(chsel,trk))
-                    else               : htt_unm.Add(htt)
 
-                    for comb in ['unm','wro']:
-                        for stProc in ['t','tbar','tW','tbarW']:
-                            try:
-                                h=masshistos[(chsel,stProc,mass,comb,trk)]
-                                if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_t_%d"%(chsel,trk))
-                                else                 : ht_wrounm.Add(h)
-                            except:
-                                pass
-                if not (htt_unm is None):
-                    getattr(ws,'import')(ROOT.RooDataHist(htt_unm.GetName(),  htt_unm.GetTitle(),   ROOT.RooArgList(SVLmass), htt_unm))
-                if not (ht_wrounm is None):
-                    getattr(ws,'import')(ROOT.RooDataHist(ht_wrounm.GetName(), ht_wrounm.GetTitle(), ROOT.RooArgList(SVLmass), ht_wrounm))
-            
+                    #ttbar
+                    htt=masshistos[(chsel,'tt',mass,comb,trk)]
+                    getattr(ws,'import')(ROOT.RooDataHist(htt.GetName(), htt.GetTitle(), ROOT.RooArgList(SVLmass), htt))
+
+                    #correct combinations for single top
+                    if comb!='cor': continue
+                    ht=None
+                    for stProc in ['t','tbar','tW','tbarW']:
+                        try:
+                            h=masshistos[(chsel,stProc,mass,comb,trk)]
+                            if ht is None:
+                                ht=h.Clone("SVLMass_%s_%s_%d_t_%d"%(comb,chsel,10*mass,trk))
+                            else:
+                                ht.Add(h)
+                        except:
+                            pass
+                    if ht is None : continue
+                    getattr(ws,'import')(ROOT.RooDataHist(ht.GetName(), ht.GetTitle(), ROOT.RooArgList(SVLmass), ht))
+
+            #unmatched for tt and wrong+unmatched for single top are merged
+            htt_unm, ht_wrounm = None, None
+            for mass in massList:
+                htt=masshistos[(chsel,'tt',mass,'unm',trk)]
+                if htt_unm is None : htt_unm=htt.Clone("SVLMass_unm_%s_tt_%d"%(chsel,trk))
+                else               : htt_unm.Add(htt)
+
+                for comb in ['unm','wro']:
+                    for stProc in ['t','tbar','tW','tbarW']:
+                        try:
+                            h=masshistos[(chsel,stProc,mass,comb,trk)]
+                            if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_t_%d"%(chsel,trk))
+                            else                 : ht_wrounm.Add(h)
+                        except:
+                            pass
+            if not (htt_unm is None):
+                getattr(ws,'import')(ROOT.RooDataHist(htt_unm.GetName(), htt_unm.GetTitle(),
+                                     ROOT.RooArgList(SVLmass), htt_unm))
+            if not (ht_wrounm is None):
+                getattr(ws,'import')(ROOT.RooDataHist(ht_wrounm.GetName(), ht_wrounm.GetTitle(),
+                                     ROOT.RooArgList(SVLmass), ht_wrounm))
+
 
     # Run signal parameterization cycles
     parameterizeSignalFractions(ws=ws, config=config, masshistos=masshistos, options=options)
@@ -516,11 +524,10 @@ def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
 """
 Show fit result
 """
-def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir='./'):
-    
+def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir):
     #init canvas
-    canvas=ROOT.TCanvas('c','c',500,500)   
-    
+    canvas=ROOT.TCanvas('c','c',500,500)
+
     p1 = ROOT.TPad('p1','p1',0.0,0.85,1.0,0.0)
     p1.SetRightMargin(0.05)
     p1.SetLeftMargin(0.12)
@@ -532,13 +539,13 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir='./'):
     p1.cd()
     frame=SVLMass.frame()
     data.plotOn(frame,ROOT.RooFit.Name('data'))
-    pdf.plotOn(frame, 
+    pdf.plotOn(frame,
                ROOT.RooFit.Name('totalexp'),
                ROOT.RooFit.ProjWData(data),
                ROOT.RooFit.LineColor(ROOT.kBlue),
                ROOT.RooFit.LineWidth(2),
                ROOT.RooFit.MoveToBack())
-    pdf.plotOn(frame, 
+    pdf.plotOn(frame,
                ROOT.RooFit.Name('singlet'),
                ROOT.RooFit.ProjWData(data),
                ROOT.RooFit.Components('tshape_*'),
@@ -547,7 +554,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir='./'):
                ROOT.RooFit.FillStyle(1001),
                ROOT.RooFit.DrawOption('f'),
                ROOT.RooFit.MoveToBack())
-    pdf.plotOn(frame, 
+    pdf.plotOn(frame,
                ROOT.RooFit.Name('tt'),
                ROOT.RooFit.ProjWData(data),
                ROOT.RooFit.Components('ttshape_*'),
@@ -558,7 +565,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir='./'):
                ROOT.RooFit.MoveToBack())
     frame.Draw()
     frame.GetYaxis().SetTitleOffset(1.5)
-    frame.GetXaxis().SetTitle("M(SecVtx,lepton) [GeV]")
+    frame.GetXaxis().SetTitle("m(SV,lepton) [GeV]")
     label=ROOT.TLatex()
     label.SetNDC()
     label.SetTextFont(42)
@@ -607,7 +614,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir='./'):
     p3.Draw()
     p3.cd()
     frame2=mtop.frame()
-    nll.plotOn(frame2,ROOT.RooFit.ShiftToZero()) 
+    nll.plotOn(frame2,ROOT.RooFit.ShiftToZero())
     frame2.Draw()
     frame2.GetYaxis().SetRangeUser(0,12)
     frame2.GetXaxis().SetRangeUser(165,180)
@@ -620,22 +627,22 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir='./'):
     frame2.GetXaxis().SetLabelSize(0.08)
     frame2.GetYaxis().SetTitleSize(0.08)
     frame2.GetYaxis().SetLabelSize(0.08)
-    
+
     canvas.Modified()
     canvas.Update()
     canvas.SaveAs('%s/plots/%s_fit.png'%(outDir,data.GetName()))
+    canvas.SaveAs('%s/plots/%s_fit.pdf'%(outDir,data.GetName()))
     canvas.Delete()
-  
 
 
 """
 run pseudo-experiments
 """
-def runPseudoExperiments(ws,options,experimentTag):
+def runPseudoExperiments(ws,experimentTag,options):
 
     #read the file with input distributions
     inputDistsF=ROOT.TFile.Open(options.input)
-    print '[runPseudoExperiments] with %s'%experimentTag
+    print '[runPseudoExperiments] with %s' % experimentTag
 
     #FIXME: correct if another mass is being used
     genMtop=172.5
@@ -655,27 +662,29 @@ def runPseudoExperiments(ws,options,experimentTag):
     print '[runPseudoExperiments] setting to constant %d numbers in the model'%varCtr
 
     #build the relevant PDFs
-    allPdfs={}
-    for chsel in ['em']:
-        for ntrk in [2,3,4] : #,3,4]: #,3,4]:
-            ttexp      = '%s_ttexp_%s'%(chsel,ntrk)
-            ttcor      = '%s_ttcor_%s'%(chsel,ntrk)
-            ttcorPDF   = 'simplemodel_%s_%d_cor_tt'%(chsel,ntrk)
-            ttwro      = '%s_ttwro_%s'%(chsel,ntrk)
-            ttwroPDF   = 'simplemodel_%s_%d_wro_tt'%(chsel,ntrk)
-            ttunmPDF   = 'model_%s_%d_unm_tt'%(chsel,ntrk)
-            tfrac      = '%s_tfrac_%s'%(chsel,ntrk)
-            tcor       = '%s_tcor_%s'%(chsel,ntrk)
-            tcorPDF    = 'simplemodel_%s_%d_cor_t'%(chsel,ntrk)
-            twrounmPDF = 'model_%s_%d_wrounm_t'%(chsel,ntrk)
+    allPdfs = {}
+    for chsel in ['em','mm','ee','m','e']:
+        for ntrk in [2,3,4]:
+            ttexp      = '%s_ttexp_%s'              %(chsel,ntrk)
+            ttcor      = '%s_ttcor_%s'              %(chsel,ntrk)
+            ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
+            ttwro      = '%s_ttwro_%s'              %(chsel,ntrk)
+            ttwroPDF   = 'simplemodel_%s_%d_wro_tt' %(chsel,ntrk)
+            ttunmPDF   = 'model_%s_%d_unm_tt'       %(chsel,ntrk)
+            tfrac      = '%s_tfrac_%s'              %(chsel,ntrk)
+            tcor       = '%s_tcor_%s'               %(chsel,ntrk)
+            tcorPDF    = 'simplemodel_%s_%d_cor_t'  %(chsel,ntrk)
+            twrounmPDF = 'model_%s_%d_wrounm_t'     %(chsel,ntrk)
 
             ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
             Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
 
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
             Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
-            
-            allPdfs[ (chsel,ntrk) ] = ws.factory("SUM::model_%s_%d( %s*%s, %s*%s )"%(chsel,ntrk,Ntt.GetName(),ttShapePDF.GetName(),Nt.GetName(),tShapePDF.GetName()))
+
+            allPdfs[ (chsel,ntrk) ] = ws.factory("SUM::model_%s_%d( %s*%s, %s*%s )"%(chsel,ntrk,
+                                                                         Ntt.GetName(), ttShapePDF.GetName(),
+                                                                         Nt.GetName(), tShapePDF.GetName()))
 
     #throw pseudo-experiments
     allFitVals  = {('comb',0):[], ('comb_mu',0):[]}
@@ -687,9 +696,10 @@ def runPseudoExperiments(ws,options,experimentTag):
         allNLL=[]
         allPseudoDataH=[]
         allPseudoData=[]
+        if options.verbose>1:
+            printProgress(i, options.nPexp, '[runPseudoExperiments] ')
         for key in allPdfs:
-
-            chsel, trk = key[0], key[1]
+            chsel, trk = key
             mukey=(chsel+'_mu',trk)
 
             ws.var('mtop').setVal(172.5)
@@ -705,77 +715,81 @@ def runPseudoExperiments(ws,options,experimentTag):
                 allFitPulls[mukey] = []
 
             #read histogram and generate random data
-            h           = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
-            pseudoDataH = h.Clone('peh')
+            ihist       = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
+            pseudoDataH = ihist.Clone('peh')
             pseudoDataH.Reset('ICE')
-            pseudoDataH.FillRandom(h, ROOT.gRandom.Poisson(h.Integral()) )
+            pseudoDataH.FillRandom(ihist, ROOT.gRandom.Poisson(ihist.Integral()) )
             pseudoData  = ROOT.RooDataHist('PseudoData_%s_%d'%(chsel,trk),
                                            'PseudoData_%s_%d'%(chsel,trk),
                                            ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
 
             #fit and generate likelihood for combination
-            allPdfs[ key ].fitTo(pseudoData,ROOT.RooFit.Extended())
-            nNLL=len(allNLL)
-            allNLL.append( allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()) )
-            ROOT.RooMinuit(allNLL[nNLL]).migrad()
+            allPdfs[key].fitTo(pseudoData, ROOT.RooFit.Extended())
+
+            allNLL.append(allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()))
+            ROOT.RooMinuit(allNLL[-1]).migrad()
 
             #save fit results
-            fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError() 
+            fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()
             allFitVals[key] .append(fitVal)
             allFitErrs[key] .append(fitErr)
             allFitPulls[key].append((fitVal-genMtop)/fitErr)
 
-            fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError() 
+            fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError()
             allFitVals[mukey] .append(fitVal_mu)
             allFitErrs[mukey] .append(fitErr_mu)
             allFitPulls[mukey].append((fitVal_mu-1.0)/fitErr_mu)
 
-            #show if required 
+            #show if required
             #FIXME: this is making the combined fit crash? something with TPads getting free'd up
-            #if options.spy:
-            #    showFinalFitResult(data=pseudoData,pdf=allPdfs[key],nll=allNLL[nNLL],SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),outDir=options.outDir)
-            #    raw_input()
+            if options.spy and i==0:
+               showFinalFitResult(data=pseudoData,pdf=allPdfs[key],nll=allNLL[-1],
+                                  SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
+                                  outDir=options.outDir)
+               # raw_input('press key to continue...')
 
             #save to erase later
             allPseudoDataH.append(pseudoDataH)
             allPseudoData.append(pseudoData)
-        
+
         #combined likelihood
-        llSet=ROOT.RooArgSet()
-        for ll in allNLL : llSet.add(ll)
-        combll = ROOT.RooAddition("combll","combll",llSet);
-        ROOT.RooMinuit(combll).migrad();
-        fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError() 
-        combKey=('comb',0)
+        llSet = ROOT.RooArgSet()
+        for ll in allNLL: llSet.add(ll)
+        combll = ROOT.RooAddition("combll","combll",llSet)
+        ROOT.RooMinuit(combll).migrad()
+        fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()
+
+        combKey = ('comb',0)
         allFitVals[combKey].append(fitVal)
         allFitErrs[combKey].append(fitErr)
         allFitPulls[combKey].append((fitVal-genMtop)/fitErr)
-        fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError() 
-        muCombKey=('comb_mu',0)
+        fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError()
+
+        muCombKey = ('comb_mu',0)
         allFitVals[muCombKey].append(fitVal_mu)
         allFitErrs[muCombKey].append(fitErr_mu)
         allFitPulls[muCombKey].append((fitVal_mu-1.0)/fitErr_mu)
 
         #free used memory
-        for h in allPseudoDataH :h.Delete()
+        for h in allPseudoDataH : h.Delete()
         for d in allPseudoData  : d.Delete()
 
     #show and save final results
     peFile=ROOT.TFile(os.path.join(options.outDir,'%s_results.root'%experimentTag), 'RECREATE')
     for key in allFitVals:
-        chsel,trk=key[0],key[1]
+        chsel,trk = key
         if '_mu' in chsel : continue
 
         #fill the histograms
-        mtopfitH=ROOT.TH1F('mtopfit_%s_%d'%(chsel,trk),';Top quark mass [GeV];Pseudo-experiments',200,150,200)
+        mtopfitH = ROOT.TH1F('mtopfit_%s_%d'%(chsel,trk),';Top quark mass [GeV];Pseudo-experiments',200,150,200)
         mtopfitH.SetDirectory(0)
-        mtopfitStatUncH=ROOT.TH1F('mtopfit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)
+        mtopfitStatUncH = ROOT.TH1F('mtopfit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)
         mtopfitStatUncH.SetDirectory(0)
-        mtopfitPullH=ROOT.TH1F('mtopfit_pull_%s_%d'%(chsel,trk),';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-2.02,1.98)
+        mtopfitPullH = ROOT.TH1F('mtopfit_pull_%s_%d'%(chsel,trk),';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-2.02,1.98)
         mtopfitPullH.SetDirectory(0)
-        mufitStatUncH=ROOT.TH1F('mufit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(#mu);Pseudo-experiments',100,0,0.1)
+        mufitStatUncH = ROOT.TH1F('mufit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(#mu);Pseudo-experiments',100,0,0.1)
         mufitStatUncH.SetDirectory(0)
-        fitCorrH=ROOT.TH2F('muvsmtopcorr_%s_%d'%(chsel,trk),';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.5,1.5)
+        fitCorrH = ROOT.TH2F('muvsmtopcorr_%s_%d'%(chsel,trk),';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.5,1.5)
         fitCorrH.SetDirectory(0)
         for i in xrange(0,len(allFitVals[key])):
             mtopfitH         .Fill( allFitVals[key][i] )
@@ -824,7 +838,8 @@ def runPseudoExperiments(ws,options,experimentTag):
         canvas.cd()
         canvas.Modified()
         canvas.Update()
-        canvas.SaveAs('%s/plots/%s_%d_pesummary.png'%(options.outDir,chsel,trk))
+        canvas.SaveAs('%s/plots/%s_%d_%s_pesummary.png'%(options.outDir,chsel,trk,experimentTag))
+        canvas.SaveAs('%s/plots/%s_%d_%s_pesummary.pdf'%(options.outDir,chsel,trk,experimentTag))
 
         #save to file
         peFile.cd()
@@ -861,7 +876,6 @@ def runPseudoExperiments(ws,options,experimentTag):
 
         peFile.cd()
 
-
     #all done here
     peFile.cd()
     peFile.Close()
@@ -872,10 +886,6 @@ steer
 def main():
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-s', '--selection', dest='selection',
-                       default='drrank',
-                       help=('Selection type. [mrank, drrank, mrankinc, '
-                             ' drrankinc, mrank12, drrank12]'))
     parser.add_option('-i', '--input', dest='input',
                        default='.svlmasshistos.pck',
                        help='input file with histograms.')
@@ -885,6 +895,8 @@ def main():
                        help='if true, final fit is performed')
     parser.add_option('--spy', dest='spy', default=False, action='store_true',
                        help='if true,shows fit results on the screen')
+    parser.add_option('-v', '--verbose', dest='verbose', default=0, type=int,
+                       help='Verbose mode')
     parser.add_option('-n', '--nPexp', dest='nPexp', default=100, type=int,
                        help='Total # pseudo-experiments.')
     parser.add_option('-j', '--jobs', dest='jobs', default=1,
@@ -896,20 +908,24 @@ def main():
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
+    ROOT.gROOT.SetBatch(True)
     if opt.spy : ROOT.gROOT.SetBatch(False)
     ROOT.gSystem.Load("libUserCodeTopMassSecVtx")
     ROOT.AutoLibraryLoader.enable()
-    ROOT.shushRooFit()
-    # see TError.h - gamma function prints lots of errors when scanning
-    ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
+    if not opt.verbose > 5:
+        ROOT.shushRooFit()
+        # see TError.h - gamma function prints lots of errors when scanning
+        ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
 
     os.system('mkdir -p %s' % opt.outDir)
+    os.system('mkdir -p %s' % os.path.join(opt.outDir, 'plots'))
 
     # Check if one needs to create a new workspace or run pseudo-experiments
     print 80*'-'
     if opt.wsFile is None :
         print 'Creating a new workspace file from %s'%opt.input
         ws = createWorkspace(options=opt)
+        return 0
     else:
         print 'Reading workspace file from %s'%opt.wsFile
         inF = ROOT.TFile.Open(opt.wsFile)
@@ -918,15 +934,25 @@ def main():
     print 80*'-'
 
     # launch pseudo-experiments
-    print 80*'-'
-    if not opt.isData : 
+    if not opt.isData :
         print 'Running pseudo-experiments using PDFs and signal expectations'
-        runPseudoExperiments(ws=ws, options=opt, experimentTag='nominal')
-    else:
-        print 'Ready to unblid?'
-        print '...ah ah this is not even implemented'
-    print 80*'-'
 
+        runPseudoExperiments(ws=ws, options=opt, experimentTag='nominal')
+        return 0
+
+        ## Get the experimentTag's from the PE input file:
+        peInputFile = ROOT.TFile.Open(opt.input, 'READ')
+        allTags = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()]
+        print allTags
+
+        ## loop over them, run them in parallel (batch?)
+
+    else:
+        print 'Ready to unblind?'
+        print '...ah ah this is not even implemented'
+        return -1
+    print 80*'-'
+    return 0
 
 
 

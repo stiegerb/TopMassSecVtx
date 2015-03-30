@@ -2,6 +2,7 @@
 #include "UserCode/TopMassSecVtx/interface/LxyTreeAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/SVLInfoTreeAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/RooFitUtils.h"
+#include "UserCode/TopMassSecVtx/interface/th1fmorph.h"
 
 #ifdef __CINT__
 
@@ -16,6 +17,7 @@
 #pragma link C++ class SVLInfoTreeAnalysis;
 #pragma link C++ class MappedRooDataHist;
 #pragma link C++ function shushRooFit;
+#pragma link C++ function th1fmorph;
 
 #endif
 

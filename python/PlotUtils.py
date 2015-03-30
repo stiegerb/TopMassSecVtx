@@ -2,10 +2,19 @@
 import os
 import math
 import ROOT
+from sys import stdout
 from ROOT import THStack, TLatex
 from ROOT import TCanvas, TPad, TLegend
 from UserCode.TopMassSecVtx.CMS_lumi import *
 from UserCode.TopMassSecVtx.rounding import *
+
+def printProgress(step, total, customstr=''):
+    stdout.write("\r%s[%3d %%]" % (customstr, 100*float(step+1)/float(total)) )
+    stdout.flush()
+    if step==total-1:
+        stdout.write("\n")
+        stdout.flush()
+
 
 def getRatio(hist, reference):
     ratio = hist.Clone("%s_ratio"%hist.GetName())
@@ -216,9 +225,9 @@ class RatioPlot(object):
         mainframe.GetYaxis().SetLabelFont(43)
 
         if not self.titley:
-            if self.normalized: 
+            if self.normalized:
                 mainframe.GetYaxis().SetTitle('a.u.')
-            else : 
+            else :
                 mainframe.GetYaxis().SetTitle('Events')
         else:
             mainframe.GetXaxis().SetTitle(self.titley)

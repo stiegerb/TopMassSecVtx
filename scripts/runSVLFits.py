@@ -637,6 +637,8 @@ def runPseudoExperiments(ws,options,experimentTag):
     inputDistsF=ROOT.TFile.Open(options.input)
     print '[runPseudoExperiments] with %s'%experimentTag
 
+    #FIXME: correct if another mass is being used
+    genMtop=172.5
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")
@@ -718,17 +720,18 @@ def runPseudoExperiments(ws,options,experimentTag):
             ROOT.RooMinuit(allNLL[nNLL]).migrad()
 
             #save fit results
-            fitVal, fitErr = ws.var('mtop').getVal()-172.5, ws.var('mtop').getError() 
+            fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError() 
             allFitVals[key] .append(fitVal)
             allFitErrs[key] .append(fitErr)
-            allFitPulls[key].append(fitVal/fitErr)
+            allFitPulls[key].append((fitVal-genMtop)/fitErr)
 
-            fitVal_mu, fitErr_mu = ws.var('mu').getVal()-1, ws.var('mu').getError() 
-            allFitVals[mukey] .append(fitVal)
-            allFitErrs[mukey] .append(fitErr)
-            allFitPulls[mukey].append(fitVal/fitErr)
+            fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError() 
+            allFitVals[mukey] .append(fitVal_mu)
+            allFitErrs[mukey] .append(fitErr_mu)
+            allFitPulls[mukey].append((fitVal_mu-1.0)/fitErr_mu)
 
-            #show if required
+            #show if required 
+            #FIXME: this is making the combined fit crash? something with TPads getting free'd up
             #if options.spy:
             #    showFinalFitResult(data=pseudoData,pdf=allPdfs[key],nll=allNLL[nNLL],SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),outDir=options.outDir)
             #    raw_input()
@@ -742,48 +745,50 @@ def runPseudoExperiments(ws,options,experimentTag):
         for ll in allNLL : llSet.add(ll)
         combll = ROOT.RooAddition("combll","combll",llSet);
         ROOT.RooMinuit(combll).migrad();
-        fitVal, fitErr = ws.var('mtop').getVal()-172.5, ws.var('mtop').getError() 
+        fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError() 
         combKey=('comb',0)
         allFitVals[combKey].append(fitVal)
         allFitErrs[combKey].append(fitErr)
-        allFitPulls[combKey].append(fitVal/fitErr)
-        fitVal_mu, fitErr_mu = ws.var('mu').getVal()-1.0, ws.var('mu').getError() 
+        allFitPulls[combKey].append((fitVal-genMtop)/fitErr)
+        fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError() 
         muCombKey=('comb_mu',0)
         allFitVals[muCombKey].append(fitVal_mu)
         allFitErrs[muCombKey].append(fitErr_mu)
-        allFitPulls[muCombKey].append(fitVal_mu/fitErr_mu)
+        allFitPulls[muCombKey].append((fitVal_mu-1.0)/fitErr_mu)
 
         #free used memory
         for h in allPseudoDataH :h.Delete()
         for d in allPseudoData  : d.Delete()
 
-    #show final results
+    #show and save final results
+    peFile=ROOT.TFile(os.path.join(options.outDir,'%s_results.root'%experimentTag), 'RECREATE')
     for key in allFitVals:
         chsel,trk=key[0],key[1]
         if '_mu' in chsel : continue
 
-        fitBiasH=ROOT.TH1F('bias_%s_%d'%(chsel,trk),';m_{t}-m_{t}^{true} [GeV];Pseudo-experiments',100,-2.02,1.98)
-        fitBiasH.SetDirectory(0)
-        fitStatUncH=ROOT.TH1F('statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,2.0)
-        fitStatUncH.SetDirectory(0)
-        fitPullH=ROOT.TH1F('pullH_%s_%d'%(chsel,trk),';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-2.02,1.98)
-        fitPullH.SetDirectory(0)
-        fitCorrH=ROOT.TH2F('biascorr_%s_%d'%(chsel,trk),';m_{t}-m_{t}^{true} [GeV];#mu=#sigma/#sigma_{th}-1;Pseudo-experiments',100,-2.02,1.98,100,-2.02,1.98)
-        fitCorrH.SetDirectory(0)
-        mufitStatUncH=ROOT.TH1F('mustatunc_%s_%d'%(chsel,trk),';#sigma_{stat}(#mu);Pseudo-experiments',200,0,2.0)
+        #fill the histograms
+        mtopfitH=ROOT.TH1F('mtopfit_%s_%d'%(chsel,trk),';Top quark mass [GeV];Pseudo-experiments',200,150,200)
+        mtopfitH.SetDirectory(0)
+        mtopfitStatUncH=ROOT.TH1F('mtopfit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)
+        mtopfitStatUncH.SetDirectory(0)
+        mtopfitPullH=ROOT.TH1F('mtopfit_pull_%s_%d'%(chsel,trk),';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-2.02,1.98)
+        mtopfitPullH.SetDirectory(0)
+        mufitStatUncH=ROOT.TH1F('mufit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(#mu);Pseudo-experiments',100,0,0.1)
         mufitStatUncH.SetDirectory(0)
-      
+        fitCorrH=ROOT.TH2F('muvsmtopcorr_%s_%d'%(chsel,trk),';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.5,1.5)
+        fitCorrH.SetDirectory(0)
         for i in xrange(0,len(allFitVals[key])):
-            fitBiasH     .Fill( allFitVals[key][i] )
-            fitCorrH     .Fill( allFitVals[key][i], allFitVals[(chsel+'_mu',trk)][i] )
-            fitStatUncH  .Fill( allFitErrs[key][i] )
-            mufitStatUncH.Fill( allFitErrs[(chsel+'_mu',trk)][i] )
-            fitPullH     .Fill( allFitPulls[key][i] )
+            mtopfitH         .Fill( allFitVals[key][i] )
+            mtopfitStatUncH  .Fill( allFitErrs[key][i] )
+            mtopfitPullH     .Fill( allFitPulls[key][i] )
+            mufitStatUncH    .Fill( allFitErrs[(chsel+'_mu',trk)][i] )
+            fitCorrH         .Fill( allFitVals[key][i], allFitVals[(chsel+'_mu',trk)][i] )
 
+        #show results
         canvas=ROOT.TCanvas('c','c',1200,800)
         canvas.Divide(3,2)
         canvas.cd(1)
-        fitBiasH.Draw()
+        mtopfitH.Draw()
         channelTitle=chsel.replace('_',' ')
         label=ROOT.TLatex()
         label.SetNDC()
@@ -793,46 +798,73 @@ def runPseudoExperiments(ws,options,experimentTag):
         label.DrawLatex(0.15,0.84,channelTitle)
         if trk>1 : label.DrawLatex(0.15,0.8,'%d tracks'%trk)
         canvas.cd(2)
-        fitStatUncH.Draw()
+        mtopfitStatUncH.Draw()
         canvas.cd(3)
-        fitPullH.Draw()
+        mtopfitPullH.Draw()
         canvas.cd(4)
         fitCorrH.Draw('colz')
         fitCorrH.GetZaxis().SetTitleOffset(-0.5)
         canvas.cd(5)
-        mufitStatUncH.Draw('colz')
+        mufitStatUncH.Draw()
         canvas.cd(6)
-
+        label.DrawLatex(0.15,0.90,'# pseudo-experiments: %d'%(options.nPexp))
         mtopkey=(chsel,trk)
-        label.DrawLatex(0.15,0.90,'<#deltam_{t}> : %3.3f #pm %3.3f'%(numpy.mean(allFitVals[mtopkey]),numpy.std(allFitVals[mtopkey])/ROOT.TMath.Sqrt(len(allFitVals[mtopkey]))))
-        label.DrawLatex(0.15,0.85,'<#sigma_{stat}(m_{t})> : %3.3f #pm %3.3f'%(numpy.mean(allFitErrs[mtopkey]),numpy.std(allFitErrs[mtopkey])/ROOT.TMath.Sqrt(len(allFitErrs[mtopkey]))))
-        label.DrawLatex(0.15,0.80,'<#deltam_{t}/#sigma_{stat}(m_{t})> : %3.3f #pm %3.3f'%(numpy.mean(allFitPulls[mtopkey]),numpy.std(allFitPulls[mtopkey])/ROOT.TMath.Sqrt(len(allFitPulls[mtopkey]))))
+        mtopAvg, mtopUncAvg, mtopPullAvg = numpy.mean(allFitVals[mtopkey]), numpy.mean(allFitErrs[mtopkey]), numpy.mean(allFitPulls[mtopkey])
+        mtopStd, mtopUncStd, mtopPullStd = numpy.std(allFitVals[mtopkey]),  numpy.std(allFitErrs[mtopkey]),  numpy.std(allFitPulls[mtopkey])
+        label.DrawLatex(0.15,0.80,'<m_{t}>=%3.3f  #sigma(m_{t})=%3.3f'%(mtopAvg,mtopStd))
+        label.DrawLatex(0.15,0.75,'<#sigma_{stat}>=%3.3f #sigma(#sigma_{stat})=%3.3f'%(mtopUncAvg,mtopUncStd))
+        label.DrawLatex(0.15,0.70,'<Pull>=%3.3f #sigma(Pull)=%3.3f'%(mtopPullAvg,mtopPullStd))
         mukey=(chsel+'_mu',trk)
-        label.DrawLatex(0.15,0.65,'<#delta#mu> : %3.3f #pm %3.3f'%(numpy.mean(allFitVals[mukey]),numpy.std(allFitVals[mukey])/ROOT.TMath.Sqrt(len(allFitVals[mukey]))))
-        label.DrawLatex(0.15,0.6,'<#sigma_{stat}(#mu)> : %3.3f #pm %3.3f'%(numpy.mean(allFitErrs[mukey]),numpy.std(allFitErrs[mukey])/ROOT.TMath.Sqrt(len(allFitErrs[mukey]))))
-        label.DrawLatex(0.15,0.55,'<#delta#mu/#sigma_{stat}(#mu)> : %3.3f #pm %3.3f'%(numpy.mean(allFitPulls[mukey]),numpy.std(allFitPulls[mukey])/ROOT.TMath.Sqrt(len(allFitPulls[mukey]))))
-
-        label.DrawLatex(0.15,0.4,'#rho(m_{t},#mu) : %3.3f'%fitCorrH.GetCorrelationFactor())
-
+        muAvg, muUncAvg, muPullAvg = numpy.mean(allFitVals[mukey]), numpy.mean(allFitErrs[mukey]), numpy.mean(allFitPulls[mukey])
+        muStd, muUncStd, muPullStd = numpy.std(allFitVals[mukey]),  numpy.std(allFitErrs[mukey]),  numpy.std(allFitPulls[mukey])
+        label.DrawLatex(0.15,0.60,'<#mu>=%3.3f #sigma(#mu)=%3.3f'%(muAvg,muStd))
+        label.DrawLatex(0.15,0.55,'<#sigma_{stat}>=%3.5f #sigma(#sigma_{stat})=%3.5f'%(muUncAvg,muUncStd))
+        label.DrawLatex(0.15,0.50,'<Pull>=%3.3f #sigma(Pull)=%3.3f'%(muPullAvg,muPullStd))
+        label.DrawLatex(0.15,0.40,'#rho(m_{t},#mu)=%3.3f'%fitCorrH.GetCorrelationFactor())
         canvas.cd()
         canvas.Modified()
         canvas.Update()
         canvas.SaveAs('%s/plots/%s_%d_pesummary.png'%(options.outDir,chsel,trk))
-        raw_input()
 
-    ##save results to a file
-    #peFile=ROOT.TFile(os.path.join(options.outDir, peFileName), 'RECREATE')
-    #for cat in fitBiasesH:
-    #    fitBiasesH[cat].Fit('gaus','LMQ+')
-    #    fitBiasesH[cat].SetDirectory(peFile)
-    #    fitBiasesH[cat].Write()
-    #    fitStatUncH[cat].SetDirectory(peFile)
-    #    fitStatUncH[cat].Write()
-    #    fitPullH[cat].Fit('gaus','LMQ+')
-    #    fitPullH[cat].SetDirectory(peFile)
-    #    fitPullH[cat].Write()
-    #peFile.Close()
+        #save to file
+        peFile.cd()
 
+        outDir=peFile.mkdir('%s_%d'%(chsel,trk))
+        outDir.cd()
+        mtopfitH.Write()
+        mtopfitStatUncH.Write()
+        mtopfitPullH.Write()
+        mufitStatUncH.Write()
+        fitCorrH.Write()
+
+        npeRes=ROOT.TVectorD(1)
+        npeRes[0]=float(options.nPexp)
+        npeRes.Write('norm')
+
+        mtopRes=ROOT.TVectorD(6)
+        mtopRes[0]=mtopAvg
+        mtopRes[1]=mtopStd
+        mtopRes[2]=mtopUncAvg
+        mtopRes[3]=mtopUncStd
+        mtopRes[4]=mtopPullAvg
+        mtopRes[5]=mtopPullStd
+        mtopRes.Write('mtop')
+
+        muRes=ROOT.TVectorD(6)
+        muRes[0]=muAvg
+        muRes[1]=muStd
+        muRes[2]=muUncAvg
+        muRes[3]=muUncStd
+        muRes[4]=muPullAvg
+        muRes[5]=muPullStd
+        muRes.Write('mu')
+
+        peFile.cd()
+
+
+    #all done here
+    peFile.cd()
+    peFile.Close()
 
 """
 steer

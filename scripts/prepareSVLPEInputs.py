@@ -13,6 +13,38 @@ from makeSVLSystPlots import ALLSYSTS
 
 LUMI = 19701
 
+CHANMASSTOPROCNAME = {
+	('tt',    163.5) : 'MC8TeV_TTJets_163v5',
+	('tt',    166.5) : 'MC8TeV_TTJets_MSDecays_166v5',
+	('tt',    169.5) : 'MC8TeV_TTJets_MSDecays_169v5',
+	('tt',    171.5) : 'MC8TeV_TTJets_MSDecays_171v5',
+	('tt',    172.5) : 'MC8TeV_TTJets_MSDecays_172v5',
+	('tt',    173.5) : 'MC8TeV_TTJets_MSDecays_173v5',
+	('tt',    175.5) : 'MC8TeV_TTJets_MSDecays_175v5',
+	('tt',    178.5) : 'MC8TeV_TTJets_MSDecays_178v5',
+	('tt',    181.5) : 'MC8TeV_TTJets_181v5',
+	('t',     166.5) : 'MC8TeV_SingleT_t_166v5',
+	('t',     169.5) : 'MC8TeV_SingleT_t_169v5',
+	('t',     171.5) : 'MC8TeV_SingleT_t_171v5',
+	('t',     172.5) : 'MC8TeV_SingleT_t_172v5',
+	('t',     173.5) : 'MC8TeV_SingleT_t_173v5',
+	('t',     175.5) : 'MC8TeV_SingleT_t_175v5',
+	('t',     178.5) : 'MC8TeV_SingleT_t_178v5',
+	('tbar',  166.5) : 'MC8TeV_SingleTbar_t_166v5',
+	('tbar',  169.5) : 'MC8TeV_SingleTbar_t_169v5',
+	('tbar',  171.5) : 'MC8TeV_SingleTbar_t_171v5',
+	('tbar',  172.5) : 'MC8TeV_SingleTbar_t_172v5',
+	('tbar',  173.5) : 'MC8TeV_SingleTbar_t_173v5',
+	('tbar',  175.5) : 'MC8TeV_SingleTbar_t_175v5',
+	('tbar',  178.5) : 'MC8TeV_SingleTbar_t_178v5',
+	('tW',    166.5) : 'MC8TeV_SingleT_tW_166v5',
+	('tW',    172.5) : 'MC8TeV_SingleT_tW_172v5',
+	('tW',    178.5) : 'MC8TeV_SingleT_tW_178v5',
+	('tbarW', 166.5) : 'MC8TeV_SingleTbar_tW_166v5',
+	('tbarW', 172.5) : 'MC8TeV_SingleTbar_tW_172v5',
+	('tbarW', 178.5) : 'MC8TeV_SingleTbar_tW_178v5',
+}
+
 QCDTEMPLATESTOADD = {
 	'inclusive'        : ('',       ['e', 'm']),
 	'inclusive_mrank1' : ('_mrank1',['e', 'm']),
@@ -156,6 +188,9 @@ def main(args, opt):
 			if opt.verbose>2: print '  ntrks:',ntk
 			for pname in treefiles.keys():
 				if opt.verbose>3: print '   process:',pname
+
+				## TODO: Skip single top, add it later with correct mass
+
 				hname = "SVLMass_tot_%s_bg_%d"%(tag,ntk)
 				hist = bghistos[tag, pname, 'tot', ntk].Clone("%s_%s" % (
 															  hname, pname))
@@ -190,23 +225,50 @@ def main(args, opt):
 	systhistos = pickle.load(cachefile)
 	cachefile.close()
 
-	PEinputs = {} ## (tag, syst, ntk) -> histogram
 	ofi = ROOT.TFile.Open(osp.join(opt.outDir,'pe_inputs.root'),'RECREATE')
 	ofi.cd()
 
-
 	for syst,_,_ in ALLSYSTS:
+		if syst == 'nominal': syst += '_172v5'
 		odir = ofi.mkdir(syst)
 		odir.cd()
 		for tag,_,_ in SELECTIONS:
 			for ntk,_ in NTRKBINS:
 				hname = "SVLMass_%s_%s_%s" % (tag,syst,ntk)
 				hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
-				hfinal.Scale(xsecweights['MC8TeV_TTJets_MSDecays_172v5'])
+				hfinal.Scale(xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]])
+				hfinal.Scale(LUMI)
+				hfinal.Add(bghistos_added[(tag,ntk)])
+
+				## TODO: Add also single top here
+
+				hfinal.Write(hname, ROOT.TObject.kOverwrite)
+
+
+	## Read mass scan histos:
+	cachefile = open(".svlmasshistos.pck", 'r')
+	masshistos = pickle.load(cachefile)
+	# (tag, chan, mass, comb)      -> histo
+	# (tag, chan, mass, comb, ntk) -> histo
+	cachefile.close()
+
+	mass_points = sorted(list(set([key[2] for key in masshistos.keys()])))
+	mass_points = mass_points[1:-1] # remove outermost points
+	for mass in mass_points:
+		if mass == 172.5: continue
+		mname = 'nominal_%s' % str(mass).replace('.','v')
+		odir = ofi.mkdir(mname)
+		odir.cd()
+		for tag,_,_ in SELECTIONS:
+			for ntk,_ in NTRKBINS:
+				hname = "SVLMass_%s_%s_%s" % (tag,mname,ntk)
+				hfinal = masshistos[(tag,'tt',mass,'tot',ntk)].Clone(hname)
+				hfinal.Scale(xsecweights[CHANMASSTOPROCNAME[('tt', mass)]])
 				hfinal.Scale(LUMI)
 				hfinal.Add(bghistos_added[(tag,ntk)])
 
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
+
 	ofi.Write()
 	ofi.Close()
 

@@ -192,6 +192,7 @@ def main(args, options) :
 		w.factory("FormulaVar::N_bkg_%s('@0*@1',{mu_%s[1.9,0.5,40],N_bkg_mc_exp_%s})"%(cat,cat,cat))
 
 		if options.useSideBand:
+			## Take QCD shape from the data sideband
 			w.factory("SUM::model_%s( N_other_%s*pdf_other_%s, N_bkg_%s*pdf_bkg_%s)"%(cat,cat,cat,cat,cat) )
 		else:
 			## Raleigh function for QCD

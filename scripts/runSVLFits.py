@@ -365,6 +365,7 @@ def createWorkspace(options):
                 hbkg=bkgmasshistos[(chsel,trk)]
                 name='SVLMass_unm_%s_bg_%d'%(chsel,trk)
                 getattr(ws,'import')(ROOT.RooDataHist(name,name, ROOT.RooArgList(SVLmass), hbkg))
+                ws.factory('%s_bgexp_%d[%f]'%(chsel,trk,hbkg.Integral()))
             except:
                 pass
 
@@ -692,16 +693,18 @@ def runPseudoExperiments(ws,experimentTag,options):
     allPdfs = {}
     for chsel in ['em','mm','ee','m','e']:
         for ntrk in [2,3,4]:
-            ttexp      = '%s_ttexp_%s'              %(chsel,ntrk)
-            ttcor      = '%s_ttcor_%s'              %(chsel,ntrk)
+            ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
+            ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
             ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
-            ttwro      = '%s_ttwro_%s'              %(chsel,ntrk)
+            ttwro      = '%s_ttwro_%d'              %(chsel,ntrk)
             ttwroPDF   = 'simplemodel_%s_%d_wro_tt' %(chsel,ntrk)
             ttunmPDF   = 'model_%s_%d_unm_tt'       %(chsel,ntrk)
-            tfrac      = '%s_tfrac_%s'              %(chsel,ntrk)
-            tcor       = '%s_tcor_%s'               %(chsel,ntrk)
+            tfrac      = '%s_tfrac_%d'              %(chsel,ntrk)
+            tcor       = '%s_tcor_%d'               %(chsel,ntrk)
             tcorPDF    = 'simplemodel_%s_%d_cor_t'  %(chsel,ntrk)
             twrounmPDF = 'model_%s_%d_wrounm_t'     %(chsel,ntrk)
+            bkgNorm    = '%s_bgexp_%d'              %(chsel,ntrk)
+            bkgPDF     = 'model_%s_%d_unm_bg'       %(chsel,ntrk)
 
             ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
             Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
@@ -709,9 +712,12 @@ def runPseudoExperiments(ws,experimentTag,options):
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
             Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
 
-            allPdfs[ (chsel,ntrk) ] = ws.factory("SUM::model_%s_%d( %s*%s, %s*%s )"%(chsel,ntrk,
-                                                                         Ntt.GetName(), ttShapePDF.GetName(),
-                                                                         Nt.GetName(), tShapePDF.GetName()))
+            #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
+            allPdfs[ (chsel,ntrk) ] = ws.factory("SUM::model_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
+                                                                                            Ntt.GetName(), ttShapePDF.GetName(),
+                                                                                            Nt.GetName(), tShapePDF.GetName(),
+                                                                                            bkgNorm, bkgPdf
+                                                                                            ))
 
     #throw pseudo-experiments
     allFitVals  = {('comb',0):[], ('comb_mu',0):[]}

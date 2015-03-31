@@ -251,8 +251,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                                            ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
 
             #minimize likelihood
-            #allNLL.append( allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()) )
-            allNLL.append( allPdfs[key].createNLL(pseudoData) )
+            allNLL.append( allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()) )
+            #allNLL.append( allPdfs[key].createNLL(pseudoData) )
             minuit=ROOT.RooMinuit(allNLL[-1])
             minuit.setErrorLevel(0.5)
             minuit.migrad()

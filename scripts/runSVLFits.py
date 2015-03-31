@@ -712,12 +712,11 @@ def runPseudoExperiments(ws,experimentTag,options):
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
             Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
 
-            ws.factory("nu_%s_%d[1.0,0.0,10.0]"%(chsel,ntrk))
-            bkgConstPDF =  ws.factory('Gaussian::nuprior_%s_%d(nu0_nuis_%s_%d[0,-10,10],nu_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
-            ws.var('nu0_nuis_%s_%d'%(chsel,ntrk)).setVal(0.0)
-            ws.var('nu0_nuis_%s_%d'%(chsel,ntrk)).setConstant(True)
+            bkgConstPDF =  ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
+            ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
+            ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
             #30% unc on background
-            Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)*@2',{nu_%s_%d,nu_nuis_%s_%d,%s})"%(chsel,ntrk,chsel,ntrk,chsel,ntrk,bkgExp))
+            Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
             
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
             sumPDF = ws.factory("SUM::expmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
@@ -748,7 +747,6 @@ def runPseudoExperiments(ws,experimentTag,options):
 
             ws.var('mtop').setVal(172.5)
             ws.var('mu').setVal(1.0)
-            ws.var('nu_%s_%d'%(chsel,ntrk)).setVal(1.0)
 
             #init results map if not yet available
             if not (key in allFitVals):
@@ -775,8 +773,8 @@ def runPseudoExperiments(ws,experimentTag,options):
             minuit.migrad() 
             minuit.hesse() 
             #error level from minos is equivalent to profile likelihood
-            #but seems overestimated
-            #minuit.minos(poi) 
+            #but seems overestimated ?
+            minuit.minos(poi) 
 
             #save fit results
             fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()
@@ -805,9 +803,6 @@ def runPseudoExperiments(ws,experimentTag,options):
         #combined likelihood
         ws.var('mtop').setVal(172.5)
         ws.var('mu').setVal(1.0)
-        for key in allPdfs:
-            chsel, trk = key
-            ws.var('nu_%s_%d'%(chsel,ntrk)).setVal(1.0)
         llSet = ROOT.RooArgSet()
         for ll in allNLL: llSet.add(ll)
         combll = ROOT.RooAddition("combll","combll",llSet)
@@ -816,8 +811,8 @@ def runPseudoExperiments(ws,experimentTag,options):
         minuit.migrad() 
         minuit.hesse() 
         #error level from minos is equivalent to profile likelihood
-        #but seems overestimated
-        #minuit.minos(poi) 
+        #but seems overestimated?
+        minuit.minos(poi) 
 
         fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()        
         combKey = ('comb',0)

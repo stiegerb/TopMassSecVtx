@@ -26,23 +26,33 @@ CHANMASSTOPROCNAME = {
 	('t',     166.5) : 'MC8TeV_SingleT_t_166v5',
 	('t',     169.5) : 'MC8TeV_SingleT_t_169v5',
 	('t',     171.5) : 'MC8TeV_SingleT_t_171v5',
-	('t',     172.5) : 'MC8TeV_SingleT_t_172v5',
+	('t',     172.5) : 'MC8TeV_SingleT_t',
 	('t',     173.5) : 'MC8TeV_SingleT_t_173v5',
 	('t',     175.5) : 'MC8TeV_SingleT_t_175v5',
 	('t',     178.5) : 'MC8TeV_SingleT_t_178v5',
 	('tbar',  166.5) : 'MC8TeV_SingleTbar_t_166v5',
 	('tbar',  169.5) : 'MC8TeV_SingleTbar_t_169v5',
 	('tbar',  171.5) : 'MC8TeV_SingleTbar_t_171v5',
-	('tbar',  172.5) : 'MC8TeV_SingleTbar_t_172v5',
+	('tbar',  172.5) : 'MC8TeV_SingleTbar_t',
 	('tbar',  173.5) : 'MC8TeV_SingleTbar_t_173v5',
 	('tbar',  175.5) : 'MC8TeV_SingleTbar_t_175v5',
 	('tbar',  178.5) : 'MC8TeV_SingleTbar_t_178v5',
 	('tW',    166.5) : 'MC8TeV_SingleT_tW_166v5',
-	('tW',    172.5) : 'MC8TeV_SingleT_tW_172v5',
+	('tW',    172.5) : 'MC8TeV_SingleT_tW',
 	('tW',    178.5) : 'MC8TeV_SingleT_tW_178v5',
 	('tbarW', 166.5) : 'MC8TeV_SingleTbar_tW_166v5',
-	('tbarW', 172.5) : 'MC8TeV_SingleTbar_tW_172v5',
+	('tbarW', 172.5) : 'MC8TeV_SingleTbar_tW',
 	('tbarW', 178.5) : 'MC8TeV_SingleTbar_tW_178v5',
+}
+
+TWXSECS = {
+## see: https://docs.google.com/spreadsheets/d/1msX8xQ-Or0ML4D0nCCeWWSQth0O-OgcYZTZ-Bm7AGmA/
+	166.5 : 25.85,
+	169.5 : 24.65,
+	171.5 : 23.85,
+	173.5 : 23.05,
+	175.5 : 22.25,
+	178.5 : 21.05,
 }
 
 QCDTEMPLATESTOADD = {
@@ -153,6 +163,7 @@ def main(args, opt):
 			if isdata: continue
 			if 'QCD' in procname:                   continue ## exclude QCD
 			if procname == 'TTJets_MSDecays_172v5': continue ## have those already
+			if 'SingleT' in procname:               continue ## have those already
 
 			if not procname in treefiles:
 				treefiles[procname] = []
@@ -163,9 +174,9 @@ def main(args, opt):
 		exit(-1)
 
 
+	## Produce (or read) the histogram data
 	bghistos = makeBackgroundHistos(treefiles, opt)
 
-	## Add up the background histos with proper scales
 	cachefile = open(".xsecweights.pck", 'r')
 	xsecweights = pickle.load(cachefile)
 	cachefile.close()
@@ -181,7 +192,10 @@ def main(args, opt):
 	cachefile.close()
 	print '>>> Read QCD templates from cache (.svlqcdtemplates.pck)'
 
+	## Now add them up with proper scales
 	bghistos_added = {}
+ 	# Save the total expected integral for the overall normalization:
+ 	bg_normalization = {}
 	for tag,_,_ in SELECTIONS:
 		if opt.verbose>2: print ' selection:',tag
 		for ntk,_ in NTRKBINS:
@@ -189,11 +203,26 @@ def main(args, opt):
 			for pname in treefiles.keys():
 				if opt.verbose>3: print '   process:',pname
 
-				## TODO: Skip single top, add it later with correct mass
-
 				hname = "SVLMass_tot_%s_bg_%d"%(tag,ntk)
 				hist = bghistos[tag, pname, 'tot', ntk].Clone("%s_%s" % (
 															  hname, pname))
+
+				## Save normalization (even when skipped)
+				if not (tag, ntk) in bg_normalization:
+					bg_normalization[(tag, ntk)] = 0
+				bg_normalization[(tag, ntk)] += (hist.Integral()*LUMI*
+					                            xsecweights["MC8TeV_"+pname])
+
+				## Skip events with an average event weight above 5 (low statistics)
+				if hist.GetEntries() == 0: continue
+				if ( (hist.Integral()/hist.GetEntries() > 2) and
+					hist.GetEntries() < 10 ):
+					if opt.verbose>3:
+						print ('\033[91m      skipping %s (%d entries, '
+							   'int/entr=%5.2f)\033[0m' %
+							          (pname, hist.GetEntries(),
+							           hist.Integral()/hist.GetEntries()))
+					continue
 
 				## Apply scales
 				hist.Scale(LUMI*xsecweights["MC8TeV_%s"%pname])
@@ -201,11 +230,17 @@ def main(args, opt):
 					 and pname.startswith('DY')):
 					hist.Scale(dySFs[tag[:2]])
 
+				## Save in dictionary
 				if not (tag, ntk) in bghistos_added:
 					bghistos_added[(tag, ntk)] = hist
 					bghistos_added[(tag, ntk)].SetName(hname)
 				else:
 					bghistos_added[(tag, ntk)].Add(hist)
+
+			## Scale the MC only histograms to the total expected integral
+			## (to account for the skipped processes)
+			bghistos_added[(tag,ntk)].Scale(bg_normalization[(tag,ntk)]/
+				                        bghistos_added[(tag,ntk)].Integral())
 
 			## Add QCD templates from MET fit:
 			if tag in QCDTEMPLATESTOADD:
@@ -215,45 +250,60 @@ def main(args, opt):
 					bghistos_added[(tag, ntk)].Add(qcdTemplates[(sel,ntk,cat)])
 
 
+
 	## Save the background only shapes separately as templates for the fit
 	cachefile = open(".svlbgtemplates.pck", 'w')
 	pickle.dump(bghistos_added, cachefile, pickle.HIGHEST_PROTOCOL)
+	print '>>> Dumped bg templates to cache (.svlbgtemplates.pck)'
 	cachefile.close()
 
 	## Read syst histos:
 	cachefile = open(".svlsysthistos.pck", 'r')
 	systhistos = pickle.load(cachefile)
+	print '>>> Read systematics histograms from cache (.svlsysthistos.pck)'
+	cachefile.close()
+
+	## Read mass scan histos:
+	cachefile = open(".svlmasshistos.pck", 'r')
+	masshistos = pickle.load(cachefile)
+	print '>>> Read mass scan histograms from cache (.svlmasshistos.pck)'
+	# (tag, chan, mass, comb)      -> histo
+	# (tag, chan, mass, comb, ntk) -> histo
 	cachefile.close()
 
 	ofi = ROOT.TFile.Open(osp.join(opt.outDir,'pe_inputs.root'),'RECREATE')
 	ofi.cd()
 
+
+	## Central mass point and syst samples
 	for syst,_,_ in ALLSYSTS:
-		if syst == 'nominal': syst += '_172v5'
-		odir = ofi.mkdir(syst)
+		odir = ofi.mkdir(syst + '_172v5')
 		odir.cd()
 		for tag,_,_ in SELECTIONS:
 			for ntk,_ in NTRKBINS:
-				hname = "SVLMass_%s_%s_%s" % (tag,syst,ntk)
+				hname = "SVLMass_%s_%s_%s" % (tag,syst+'_172v5',ntk)
 				hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
 				hfinal.Scale(xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]])
 				hfinal.Scale(LUMI)
+
+				## Add single top
+				for st in ['t', 'tbar', 'tW', 'tbarW']:
+					hsinglet = masshistos[(tag, st, 172.5,'tot',ntk)].Clone('%s_%s'%(hname,st))
+					hsinglet.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(st, 172.5)]])
+					hfinal.Add(hsinglet)
+
+				## Add the backgrounds
 				hfinal.Add(bghistos_added[(tag,ntk)])
-
-				## TODO: Add also single top here
-
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
 
-	## Read mass scan histos:
-	cachefile = open(".svlmasshistos.pck", 'r')
-	masshistos = pickle.load(cachefile)
-	# (tag, chan, mass, comb)      -> histo
-	# (tag, chan, mass, comb, ntk) -> histo
-	cachefile.close()
-
+	## Non-central mass points
+	ROOT.gSystem.Load('libUserCodeTopMassSecVtx.so')
+	from ROOT import th1fmorph
+	# extract mass points from dictionary
 	mass_points = sorted(list(set([key[2] for key in masshistos.keys()])))
 	mass_points = mass_points[1:-1] # remove outermost points
+	debughistos = []
 	for mass in mass_points:
 		if mass == 172.5: continue
 		mname = 'nominal_%s' % str(mass).replace('.','v')
@@ -263,8 +313,33 @@ def main(args, opt):
 			for ntk,_ in NTRKBINS:
 				hname = "SVLMass_%s_%s_%s" % (tag,mname,ntk)
 				hfinal = masshistos[(tag,'tt',mass,'tot',ntk)].Clone(hname)
-				hfinal.Scale(xsecweights[CHANMASSTOPROCNAME[('tt', mass)]])
-				hfinal.Scale(LUMI)
+				hfinal.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', mass)]])
+
+				## Add single top (t-channel, for which we have the samples)
+				for st in ['t', 'tbar']:
+					hsinglet = masshistos[(tag, st, mass,'tot',ntk)].Clone('%s_%s'%(hname,st))
+					hsinglet.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(st, mass)]])
+					hfinal.Add(hsinglet)
+
+				## Add single top (tW-channel, for which we don't have samples)
+				## Morph between the two extreme mass points to get
+				## the non existing ones
+				for st in ['tW', 'tbarW']:
+					if mass not in [166.5, 178.5]:
+						hsingletW = th1fmorph('%s_%s_morph'%(hname,st),
+							                  '%s_%s_morphed'%(hname,st),
+							                   masshistos[(tag, 'tW', 166.5,'tot',ntk)],
+							                   masshistos[(tag, 'tW', 178.5,'tot',ntk)],
+							                   166.5, 178.5, mass,
+							                   masshistos[(tag, 'tW', 166.5,'tot',ntk)].Integral())
+						hsingletW.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(st, 166.5)]]
+							                * TWXSECS[mass]/TWXSECS[166.5])
+						hsingletW.SetDirectory(0)
+					else:
+						hsingletW = masshistos[(tag, st, mass,'tot',ntk)].Clone('%s_%s'%(hname,st))
+						hsingletW.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(st, mass)]])
+					hfinal.Add(hsingletW)
+
 				hfinal.Add(bghistos_added[(tag,ntk)])
 
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)

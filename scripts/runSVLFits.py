@@ -674,6 +674,12 @@ def runPseudoExperiments(ws,experimentTag,options):
 
     #FIXME: correct if another mass is being used
     genMtop=172.5
+    if 'nominal' in experimentTag:
+        try:
+            genMtop=float(experimentTag.split('_')[1].replace('v','.'))
+        except:
+            pass
+    print 'Generated top mass is %3.1f'%genMtop
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")

@@ -135,6 +135,14 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     wsInputFile.Close()
     print '[runPseudoExperiments] Read workspace from %s' % wsfile
 
+    #readout calibration from a file
+    calibMap=None
+    if options.calib:
+         cachefile = open(options.calib,'r')
+         calibMap  = pickle.load(cachefile)
+         cachefile.close()
+         print '[runPseudoExperiments] Read calibration from %s'%cachefile
+
     try:
         genMtop=float(experimentTag.rsplit('_', 1)[1].replace('v','.'))
     except Exception, e:
@@ -149,7 +157,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     varCtr=0
     while var :
         varName=var.GetName()
-        if not varName in ['mtop', 'SVLMass','mu']:
+        if not varName in ['mtop', 'SVLMass', 'mu']:
             ws.var(varName).setConstant(True)
             varCtr+=1
         var = varIter.Next()
@@ -157,8 +165,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
     #build the relevant PDFs
     allPdfs = {}
-    # for chsel in ['em']:
     for chsel in ['em','mm','ee','m','e']:
+        if options.selection : chsel += '_' + options.selection
         for ntrk in [2,3,4]:
             ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
             ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
@@ -182,17 +190,26 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             bkgConstPDF =  ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
-            #30% unc on background
+            #10% unc on background
             Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
 
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
-            sumPDF = ws.factory("SUM::expmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
+            sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
                                                                               Ntt.GetName(), ttShapePDF.GetName(),
                                                                               Nt.GetName(), tShapePDF.GetName(),
                                                                               Nbkg.GetName(), bkgPDF
                                                                               ))
-            allPdfs[ (chsel,ntrk) ] = ws.factory('PROD::model_%s_%d(%s,%s)'%(chsel,ntrk,
-                                                                             sumPDF.GetName(),bkgConstPDF.GetName()))
+            ws.factory('PROD::uncalibmodel_%s_%d(%s,%s)'%(chsel,ntrk,
+                                                          sumPDF.GetName(),bkgConstPDF.GetName()))
+
+            #add calibration for this category if available (read from a pickle file?)
+            offset, slope = 0.0, 1.0
+            try:
+                offset, slope = calibMap[ (chsel,ntrk) ]
+            except:
+                pass
+            allPdfs[ (chsel,ntrk) ] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d, mtop=expr('(@0-%f)/%f',mtop) )"%(chsel,ntrk,chsel,ntrk,offset,slope) )
+
 
 
     #throw pseudo-experiments
@@ -235,6 +252,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
             #minimize likelihood
             allNLL.append( allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()) )
+            #allNLL.append( allPdfs[key].createNLL(pseudoData) )
             minuit=ROOT.RooMinuit(allNLL[-1])
             minuit.setErrorLevel(0.5)
             minuit.migrad()
@@ -298,7 +316,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         for d in allPseudoData  : d.Delete()
 
     #show and save final results
-    peFile=ROOT.TFile(os.path.join(options.outDir,'%s_results.root'%experimentTag), 'RECREATE')
+    selTag=''
+    if options.selection : selTag='_%s'%options.selection
+    peFile=ROOT.TFile(os.path.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)), 'RECREATE')
     for key in allFitVals:
         chsel,trk = key
         if '_mu' in chsel : continue
@@ -456,6 +476,10 @@ def main():
                        help='if true,shows fit results on the screen')
     parser.add_option('-v', '--verbose', dest='verbose', default=0, type=int,
                        help='Verbose mode')
+    parser.add_option('-s', '--selection', dest='selection', default=None,
+                       help='selection type')
+    parser.add_option('-c', '--calib', dest='calib', default=None,
+                       help='calibration file')
     parser.add_option('-n', '--nPexp', dest='nPexp', default=100, type=int,
                        help='Total # pseudo-experiments.')
     parser.add_option('-o', '--outDir', dest='outDir', default='svlfits',
@@ -471,8 +495,8 @@ def main():
     ROOT.AutoLibraryLoader.enable()
     if not opt.verbose > 5:
         ROOT.shushRooFit()
-        # see TError.h - gamma function prints lots of errors when scanning
-        ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
+    # see TError.h - gamma function prints lots of errors when scanning
+    ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
 
     print 'Storing output in %s' % opt.outDir
     os.system('mkdir -p %s' % opt.outDir)

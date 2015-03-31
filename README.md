@@ -65,7 +65,7 @@ Produces a number of data/MC comparison plots (both from the SVLInfo trees, and 
 
 
 ------------------------------------------------------
-### Running the fits 
+### Running the fits
 =======
 ### Producing QCD Templates
 makeSVLQCDTemplates.py produces MET and m(l,SV) distributions from the non-isolated data control region and stores them in qcd_templates.root.
@@ -77,9 +77,13 @@ It takes as input a plotter.root file (from makeSVLDataMCPlots.py) with properly
 ```
 ./scripts/runSVLFits.py
 ```
-Prepares the workspace for the fits
+Prepares the workspace for the fits and put the RooFit workspace and plots in svlfits/ by default.
 ```
-./scripts/runSVLFits.py -w SVLWorkspace.root -i /afs/cern.ch/work/s/stiegerb/public/forPedro/pe_inputs.root --spy
+./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root nominal_172v5
 ```
-Will run the fits and put the RooFit workspace and plots in svlfits/ by default.
+Will run the pseudoexperiment for one variation (e.g. nominal_172v5).
 
+```
+./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root
+```
+Will run all the pseudoexperiments for all variation on batch.

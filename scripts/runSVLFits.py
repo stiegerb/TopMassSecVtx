@@ -11,11 +11,12 @@ from UserCode.TopMassSecVtx.PlotUtils import printProgress
 """
 parameterize the signal permutations
 """
-def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, options)):
+def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLmass, options)):
 
     print ' ...processing ch=%s #tk=%d for %s permutations'%(ch,ntrk,permName)
     procName='tt'
     if singleTop : procName='t'
+    if bkg       : procName='bg'
     tag='%s_%d_%s_%s'%(ch,ntrk,permName,procName)
 
     # Base correct, signal PDF :
@@ -71,7 +72,6 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, 
                             (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
         theData=ws.data('SVLMass_%s_%s_%s_%d'%(permName,ch,procName,ntrk))
         catNames=['']
-
     else:
         #base PDF
         ws.factory("SUM::simplemodel_%s("
@@ -121,7 +121,7 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, SVLmass, 
 """
 instantiates the PDFs needed to parameterize the SVLmass histo in a given category for signal events
 """
-def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop):
+def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop,bkg=False):
 
     chselList,  massList, trkMultList, combList, procList = config
     print '[parameterizeSignalPermutations] with %s'%permName
@@ -131,12 +131,14 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop)
             print ' but process not found in ',procList
             return
         print ''
+    if bkg:
+        print ' \t backgroumd mode enabled'
 
     tasklist = []
     for ch in chselList:
         # if ch != 'em' : continue
         for ntrk in trkMultList:
-            tasklist.append((ws, ch, ntrk, permName, massList, singleTop, SVLmass, options))
+            tasklist.append((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLmass, options))
 
     if options.jobs > 1:
         import multiprocessing
@@ -330,6 +332,13 @@ def createWorkspace(options):
     cachefile = open(options.input,'r')
     masshistos = pickle.load(cachefile)
     cachefile.close()
+    bkgmasshistos=None
+    try:
+        cachefile = open(options.inputBkg,'r')   
+        bkgmasshistos = pickle.load(cachefile)
+        cachefile.close()
+    except:
+        print 'No valid background shapes file found'
 
     # Extract the configurations from the diffhistos dictionary
     config = readConfig(masshistos)
@@ -350,6 +359,17 @@ def createWorkspace(options):
     # Import binned PDFs from histograms read from file
     for chsel in chselList:
         for trk in trkMultList:
+
+            #backgrounds
+            try:
+                hbkg=bkgmasshistos[(chsel,trk)]
+                name='SVLMass_unm_%s_bg_%d'%(chsel,trk)
+                getattr(ws,'import')(ROOT.RooDataHist(name,name, ROOT.RooArgList(SVLmass), hbkg))
+                ws.factory('%s_bgexp_%d[%f]'%(chsel,trk,hbkg.Integral()))
+            except:
+                pass
+
+            #signal
             for comb in ['cor','wro']:
                 for mass in massList:
 
@@ -407,6 +427,8 @@ def createWorkspace(options):
                                    SVLmass=SVLmass, options=options, singleTop=True)
     parameterizeSignalPermutations(ws=ws, permName='wrounm', config=config,
                                    SVLmass=SVLmass, options=options, singleTop=True)
+    parameterizeSignalPermutations(ws=ws, permName='unm', config=config,
+                                   SVLmass=SVLmass, options=options, singleTop=False, bkg=True)
 
     # Save all to file
     ws.saveSnapshot("model_params", ws.allVars(), True)
@@ -479,12 +501,18 @@ def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
             massVal=float( catName.replace('m','') )/10.
             label.DrawLatex(0.6,0.86,'#it{m_{t}=%3.1f GeV}'%massVal)
         subTags=tag.split('_')
-        permTitle='#it{correct permutations}'
-        if subTags[0]=='wro' : permTitle='#it{wrong permutations}'
-        if subTags[0]=='unm' : permTitle='#it{unmatched permutations}'
+        permTitle=''
+        if 'cor' in subTags : '#it{correct permutations}'
+        if 'wro' in subTags : permTitle='#it{wrong permutations}'
+        if 'unm' in subTags : 
+            permTitle='#it{unmatched permutations}'
+            if 'wro' in subTags : permTitle='#it{wrong+unmatched permutations}'
+        if 'bg'  in subTags : permTitle='#it{background}'
         label.DrawLatex(0.6,0.80,permTitle)
-        channelTitle=subTags[2].replace('mu','#mu')
-        channelTitle='#it{%s, %s tracks}'%(channelTitle,subTags[1])
+        channelTitle=subTags[0].replace('m','#mu')
+        ntracks = subTags[1] if subTags[1].isdigit() else subTags[2]
+        selCat = subTags[1] if not subTags[1].isdigit() else 'inclusive'
+        channelTitle='#it{%s %s, %s tracks}'%(channelTitle,selCat,ntracks)
         label.DrawLatex(0.6,0.74,channelTitle)
         label.DrawLatex(0.6,0.68,'#chi^{2}=%3.2f'%frame.chiSquare())
 
@@ -614,14 +642,14 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir):
     p3.Draw()
     p3.cd()
     frame2=mtop.frame()
-    nll.plotOn(frame2,ROOT.RooFit.ShiftToZero())
+    for ill in xrange(0,len(nll)): nll[ill].plotOn(frame2,ROOT.RooFit.ShiftToZero(),ROOT.RooFit.LineStyle(ill+1))
     frame2.Draw()
     frame2.GetYaxis().SetRangeUser(0,12)
     frame2.GetXaxis().SetRangeUser(165,180)
     frame2.GetYaxis().SetNdivisions(3)
     frame2.GetXaxis().SetNdivisions(3)
     frame2.GetXaxis().SetTitle('Top mass [GeV]')
-    frame2.GetYaxis().SetTitle('-log L/L_{max}')
+    frame2.GetYaxis().SetTitle('pLL and LL')
     frame2.GetYaxis().SetTitleOffset(1.5)
     frame2.GetXaxis().SetTitleSize(0.08)
     frame2.GetXaxis().SetLabelSize(0.08)
@@ -646,6 +674,12 @@ def runPseudoExperiments(ws,experimentTag,options):
 
     #FIXME: correct if another mass is being used
     genMtop=172.5
+    if 'nominal' in experimentTag:
+        try:
+            genMtop=float(experimentTag.split('_')[1].replace('v','.'))
+        except:
+            pass
+    print 'Generated top mass is %3.1f'%genMtop
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")
@@ -665,16 +699,18 @@ def runPseudoExperiments(ws,experimentTag,options):
     allPdfs = {}
     for chsel in ['em','mm','ee','m','e']:
         for ntrk in [2,3,4]:
-            ttexp      = '%s_ttexp_%s'              %(chsel,ntrk)
-            ttcor      = '%s_ttcor_%s'              %(chsel,ntrk)
+            ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
+            ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
             ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
-            ttwro      = '%s_ttwro_%s'              %(chsel,ntrk)
+            ttwro      = '%s_ttwro_%d'              %(chsel,ntrk)
             ttwroPDF   = 'simplemodel_%s_%d_wro_tt' %(chsel,ntrk)
             ttunmPDF   = 'model_%s_%d_unm_tt'       %(chsel,ntrk)
-            tfrac      = '%s_tfrac_%s'              %(chsel,ntrk)
-            tcor       = '%s_tcor_%s'               %(chsel,ntrk)
+            tfrac      = '%s_tfrac_%d'              %(chsel,ntrk)
+            tcor       = '%s_tcor_%d'               %(chsel,ntrk)
             tcorPDF    = 'simplemodel_%s_%d_cor_t'  %(chsel,ntrk)
             twrounmPDF = 'model_%s_%d_wrounm_t'     %(chsel,ntrk)
+            bkgExp     = '%s_bgexp_%d'              %(chsel,ntrk)
+            bkgPDF     = 'model_%s_%d_unm_bg'       %(chsel,ntrk)
 
             ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
             Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
@@ -682,14 +718,27 @@ def runPseudoExperiments(ws,experimentTag,options):
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
             Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
 
-            allPdfs[ (chsel,ntrk) ] = ws.factory("SUM::model_%s_%d( %s*%s, %s*%s )"%(chsel,ntrk,
-                                                                         Ntt.GetName(), ttShapePDF.GetName(),
-                                                                         Nt.GetName(), tShapePDF.GetName()))
+            bkgConstPDF =  ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
+            ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
+            ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
+            #30% unc on background
+            Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
+            
+            #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
+            sumPDF = ws.factory("SUM::expmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
+                                                                              Ntt.GetName(), ttShapePDF.GetName(),
+                                                                              Nt.GetName(), tShapePDF.GetName(),
+                                                                              Nbkg.GetName(), bkgPDF
+                                                                              ))
+            allPdfs[ (chsel,ntrk) ] = ws.factory('PROD::model_%s_%d(%s,%s)'%(chsel,ntrk,
+                                                                             sumPDF.GetName(),bkgConstPDF.GetName()))
+
 
     #throw pseudo-experiments
     allFitVals  = {('comb',0):[], ('comb_mu',0):[]}
     allFitErrs  = {('comb',0):[], ('comb_mu',0):[]}
     allFitPulls = {('comb',0):[], ('comb_mu',0):[]}
+    poi = ROOT.RooArgSet( ws.var('mtop') )
     for i in xrange(0,options.nPexp):
 
         #iterate over available categories to build the set of likelihoods to combine
@@ -723,11 +772,15 @@ def runPseudoExperiments(ws,experimentTag,options):
                                            'PseudoData_%s_%d'%(chsel,trk),
                                            ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
 
-            #fit and generate likelihood for combination
-            allPdfs[key].fitTo(pseudoData, ROOT.RooFit.Extended())
-
-            allNLL.append(allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()))
-            ROOT.RooMinuit(allNLL[-1]).migrad()
+            #minimize likelihood
+            allNLL.append( allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()) )
+            minuit=ROOT.RooMinuit(allNLL[-1])
+            minuit.setErrorLevel(0.5)
+            minuit.migrad() 
+            minuit.hesse() 
+            #error level from minos is equivalent to profile likelihood
+            #but seems overestimated ?
+            minuit.minos(poi) 
 
             #save fit results
             fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()
@@ -739,13 +792,14 @@ def runPseudoExperiments(ws,experimentTag,options):
             allFitVals[mukey] .append(fitVal_mu)
             allFitErrs[mukey] .append(fitErr_mu)
             allFitPulls[mukey].append((fitVal_mu-1.0)/fitErr_mu)
-
+            
             #show if required
             #FIXME: this is making the combined fit crash? something with TPads getting free'd up
             if options.spy and i==0:
-               showFinalFitResult(data=pseudoData,pdf=allPdfs[key],nll=allNLL[-1],
-                                  SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
-                                  outDir=options.outDir)
+                pll=allNLL[-1].createProfile(poi)
+                showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,allNLL[-1]],
+                                   SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
+                                   outDir=options.outDir)
                # raw_input('press key to continue...')
 
             #save to erase later
@@ -753,18 +807,26 @@ def runPseudoExperiments(ws,experimentTag,options):
             allPseudoData.append(pseudoData)
 
         #combined likelihood
+        ws.var('mtop').setVal(172.5)
+        ws.var('mu').setVal(1.0)
         llSet = ROOT.RooArgSet()
         for ll in allNLL: llSet.add(ll)
         combll = ROOT.RooAddition("combll","combll",llSet)
-        ROOT.RooMinuit(combll).migrad()
-        fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()
+        minuit=ROOT.RooMinuit(combll)
+        minuit.setErrorLevel(0.5)        
+        minuit.migrad() 
+        minuit.hesse() 
+        #error level from minos is equivalent to profile likelihood
+        #but seems overestimated?
+        minuit.minos(poi) 
 
+        fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()        
         combKey = ('comb',0)
         allFitVals[combKey].append(fitVal)
         allFitErrs[combKey].append(fitErr)
         allFitPulls[combKey].append((fitVal-genMtop)/fitErr)
-        fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError()
 
+        fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError()
         muCombKey = ('comb_mu',0)
         allFitVals[muCombKey].append(fitVal_mu)
         allFitErrs[muCombKey].append(fitErr_mu)
@@ -789,7 +851,7 @@ def runPseudoExperiments(ws,experimentTag,options):
         mtopfitPullH.SetDirectory(0)
         mufitStatUncH = ROOT.TH1F('mufit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(#mu);Pseudo-experiments',100,0,0.1)
         mufitStatUncH.SetDirectory(0)
-        fitCorrH = ROOT.TH2F('muvsmtopcorr_%s_%d'%(chsel,trk),';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.5,1.5)
+        fitCorrH = ROOT.TH2F('muvsmtopcorr_%s_%d'%(chsel,trk),';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.85,1.15)
         fitCorrH.SetDirectory(0)
         for i in xrange(0,len(allFitVals[key])):
             mtopfitH         .Fill( allFitVals[key][i] )
@@ -889,6 +951,9 @@ def main():
     parser.add_option('-i', '--input', dest='input',
                        default='.svlmasshistos.pck',
                        help='input file with histograms.')
+    parser.add_option('-b', '--bkg', dest='inputBkg',
+                       default='.svlbgtemplates.pck',
+                       help='input file with histograms for the background processes.')
     parser.add_option('-w', '--ws', dest='wsFile', default=None,
                        help='ROOT file with previous workspace.')
     parser.add_option('--isData', dest='isData', default=False, action='store_true',

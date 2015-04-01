@@ -243,12 +243,21 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
             #read histogram and generate random data
             ihist       = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
-            pseudoDataH = ihist.Clone('peh')
-            pseudoDataH.Reset('ICE')
-            pseudoDataH.FillRandom(ihist, ROOT.gRandom.Poisson(ihist.Integral()) )
-            pseudoData  = ROOT.RooDataHist('PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
-                                           'PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
-                                           ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
+            nevtsToGen=ROOT.gRandom.Poisson(ihist.Integral())
+            pseudoDataH,pseudoData=None,None
+            if options.genFromPDF:
+                obs=ROOT.RooArgSet(ws.var('SVLMass'))
+                pseudoData =allPdfs[key].generate(obs,nevtsToGen)
+            else:
+                pseudoDataH = ihist.Clone('peh')
+                pseudoDataH.Reset('ICE')
+                pseudoDataH.FillRandom(ihist, nevtsToGen)
+                pseudoData  = ROOT.RooDataHist('PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
+                                               'PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
+                                               ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
+
+            
+
 
             #minimize likelihood
             allNLL.append( allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()) )
@@ -282,7 +291,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                # raw_input('press key to continue...')
 
             #save to erase later
-            allPseudoDataH.append(pseudoDataH)
+            if pseudoDataH : allPseudoDataH.append(pseudoDataH)
             allPseudoData.append(pseudoData)
 
         #combined likelihood
@@ -314,6 +323,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         #free used memory
         for h in allPseudoDataH : h.Delete()
         for d in allPseudoData  : d.Delete()
+        for ll in allNLL: ll.Delete()
+        combll.Delete()
 
     #show and save final results
     selTag=''
@@ -472,6 +483,8 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('--isData', dest='isData', default=False, action='store_true',
                        help='if true, final fit is performed')
+    parser.add_option('--genFromPDF', dest='genFromPDF', default=False, action='store_true',
+                       help='if true, pseudo-experiments are thrown thrown from the PDF')
     parser.add_option('--spy', dest='spy', default=False, action='store_true',
                        help='if true,shows fit results on the screen')
     parser.add_option('-v', '--verbose', dest='verbose', default=0, type=int,

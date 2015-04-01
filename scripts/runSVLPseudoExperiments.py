@@ -314,6 +314,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         #free used memory
         for h in allPseudoDataH : h.Delete()
         for d in allPseudoData  : d.Delete()
+        for ll in allNLL: ll.Delete()
+        combll.Delete()
 
     #show and save final results
     selTag=''

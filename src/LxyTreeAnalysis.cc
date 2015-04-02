@@ -59,6 +59,7 @@ TLorentzVector LxyTreeAnalysis::RotateLepton(TLorentzVector &origLep,
   int ntries(0);
   while(ntries<100)
     {
+      ntries++;
       TLorentzVector rotLepton(origLep);
       double en    = rotLepton.E();
       double pabs  = rotLepton.P();
@@ -82,7 +83,7 @@ TLorentzVector LxyTreeAnalysis::RotateLepton(TLorentzVector &origLep,
 	  minDR=dR;
 	}
       if(minDR<0.4) continue;
-      return rotLepton;
+      return rotLepton;      
     }
 
   return TLorentzVector(0,0,0,0);
@@ -880,25 +881,25 @@ void LxyTreeAnalysis::analyze(){
 			fHMT        ->Fill(mT,      w[0]*w[1]*w[4]);
 			if(mjj>=0.) fHMjj->Fill(mjj,     w[0]*w[1]*w[4]); // only fill if there are 2 light jets
 		}
-		if (abs(evcat) == 11*13){
+		else if (abs(evcat) == 11*13){
 			fHNJets_em  ->Fill(nj,      w[0]*w[1]*w[4]);
 			fHNSVJets_em->Fill(nsvjets, w[0]*w[1]*w[4]);
 			fHNbJets_em ->Fill(nbjets,  w[0]*w[1]*w[4]);
 			fHMET_em    ->Fill(metpt,   w[0]*w[1]*w[4]);
 		}
-		if (abs(evcat) == 11*11){
+		else if (abs(evcat) == 11*11){
 			fHNJets_ee  ->Fill(nj,      w[0]*w[1]*w[4]);
 			fHNSVJets_ee->Fill(nsvjets, w[0]*w[1]*w[4]);
 			fHNbJets_ee ->Fill(nbjets,  w[0]*w[1]*w[4]);
 			fHMET_ee    ->Fill(metpt,   w[0]*w[1]*w[4]);
 		}
-		if (abs(evcat) == 13*13){
+		else if (abs(evcat) == 13*13){
 			fHNJets_mm  ->Fill(nj,      w[0]*w[1]*w[4]);
 			fHNSVJets_mm->Fill(nsvjets, w[0]*w[1]*w[4]);
 			fHNbJets_mm ->Fill(nbjets,  w[0]*w[1]*w[4]);
 			fHMET_mm    ->Fill(metpt,   w[0]*w[1]*w[4]);
 		}
-		if (abs(evcat) == 11){
+		else if (abs(evcat) == 11){
 			fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
 			fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
 			fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
@@ -906,7 +907,7 @@ void LxyTreeAnalysis::analyze(){
 			fHMT_e      ->Fill(mT,      w[0]*w[1]*w[4]);
 			fHMET_e     ->Fill(metpt,   w[0]*w[1]*w[4]);
 		}
-		if (abs(evcat) == 13){
+		else if (abs(evcat) == 13){
 			fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
 			fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
 			fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
@@ -951,7 +952,7 @@ void LxyTreeAnalysis::analyze(){
 					TLorentzVector p_lep_rot=RotateLepton(p_lep,isoObjects);
 					svl_pairing.svlmass_rot = (p_lep_rot + p_sv).M();
 					svl_pairing.svldeltar_rot = p_lep_rot.DeltaR(p_sv);
-
+					
 					svl_pairs.push_back(svl_pairing);
 				}
 			}
@@ -966,7 +967,7 @@ void LxyTreeAnalysis::analyze(){
 		std::sort (svl_pairs_massranked_rot.begin(), svl_pairs_massranked_rot.end(), compare_mass_rot);
 		std::vector<SVLInfo> svl_pairs_drranked_rot = svl_pairs;
 		std::sort (svl_pairs_drranked_rot.begin(), svl_pairs_drranked_rot.end(), compare_deltar_rot);
-
+			
 		// Now put the info in the tree
 		fTNCombs = svl_pairs.size();
 		for (size_t isvl = 0; isvl < svl_pairs.size(); ++isvl){
@@ -1012,7 +1013,7 @@ void LxyTreeAnalysis::analyze(){
 			fTSVPt         = svpt [svl.svindex];
 			fTSVLxy        = svlxy[svl.svindex];
 			if(svlxyerr[svl.svindex]) fTSVLxySig =  svlxy[svl.svindex]/svlxyerr[svl.svindex];
-			if(p_trks.Pt()>0)  fTSVPtChFrac = fTSVPt/p_trks.Pt();
+			if(p_trks.Pt()>0)         fTSVPtChFrac = fTSVPt/p_trks.Pt();
 			fTJPt          = jpt  [svl.svindex];
 			fTJFlav        = jflav[svl.svindex];
 			fTJEta         = jeta [svl.svindex];
@@ -1036,7 +1037,6 @@ void LxyTreeAnalysis::analyze(){
 				(lid[svl.lepindex] > 0 && bid[svl.svindex] == 5  ) || // el-/mu- / t/b
 				(lid[svl.lepindex] < 0 && bid[svl.svindex] == -5 ) )  // el+/mu+ / tbar/bbar
 				fTCombInfo = 0; // wrong
-
 			fSVLInfoTree->Fill();
 		}
 	}

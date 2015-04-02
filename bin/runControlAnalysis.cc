@@ -5,6 +5,7 @@
 #include "UserCode/TopMassSecVtx/interface/LxyAnalysis.h"
 #include "UserCode/TopMassSecVtx/interface/MuScleFitCorrector.h"
 #include "UserCode/TopMassSecVtx/interface/LeptonEfficiencySF.h"
+#include "UserCode/TopMassSecVtx/interface/BfragWeighter.h"
 
 #include "FWCore/FWLite/interface/AutoLibraryLoader.h"
 #include "FWCore/PythonParameterSet/interface/MakeParameterSets.h"
@@ -28,6 +29,7 @@ FactorizedJetCorrector *fJesCor=0;
 std::vector<JetCorrectionUncertainty *> fTotalJESUnc;
 MuScleFitCorrector *fMuCor=0;
 LeptonEfficiencySF fLepEff;
+BfragWeighter *fBfragWgt=0;
 
 //aggregates all the objects needed for the analysis
 enum ControlBoxType { DIJETBOX=1, GAMMABOX=22, WBOX=24, ZBOX=23};
@@ -123,9 +125,10 @@ ControlBox assignBox(int reqControlType,
 	{
 	  if(ijet==randomTagIdx) continue;
 	  float dR=deltaR(jets[ijet],jets[randomTagIdx]);
-	  if(dR>1.5) continue;
+	  if(dR<2.09) continue;
 	  if(randomProbeIdx<0) randomProbeIdx=ijet;
-	  else if( dR>deltaR(jets[randomProbeIdx],jets[randomTagIdx]) && jets[ijet].pt()>jets[randomProbeIdx].pt() ) randomProbeIdx=ijet;
+	  else if( dR>deltaR(jets[randomProbeIdx],jets[randomTagIdx]) 
+		   && jets[ijet].pt()>jets[randomProbeIdx].pt() ) randomProbeIdx=ijet;
 	} 
       if(randomProbeIdx<0) return box;
 	   
@@ -139,17 +142,13 @@ ControlBox assignBox(int reqControlType,
   else if(reqControlType==GAMMABOX)
     {
       //gamma+1 jet without leptons
-      if(photons.size()!=1 || jets.size()!=1) return box;
+      if(photons.size()!=1 || jets.size()==0) return box;
       if(dilCands.size() || ljCands.size() || vetoCands.size()) return box;
 
-      //back to back configuration
-      float dphijj=deltaPhi(photons[0].phi(),jets[0].phi());
-      if(fabs(dphijj)<2.7) return box;
+      //back to back configuration to the leading jet
+      float dR=deltaR(photons[0],jets[0]);
+      if(fabs(dR)<2.09) return box;
      
-      //balancing variable
-      float balance=jets[0].pt()/photons[0].pt();
-      if(balance<0.5 || balance>1.5) return box;
-
       //all done here
       box.assignBox(reqControlType, &(photons[0]), &(jets[0]));
     }
@@ -157,7 +156,7 @@ ControlBox assignBox(int reqControlType,
     {
       //1 lepton + 1 jet
       if(ljCands.size()!=1 || vetoCands.size()) return box;
-      if(jets.size()!=1) return box;
+      if(jets.size()==0) return box;
       
       //require significant MET
       float metsig=met[0].pt()/sqrt(jets[0].pt());
@@ -183,7 +182,7 @@ ControlBox assignBox(int reqControlType,
 
       //back-to-back configuration
       float dphijj=deltaPhi(lv.phi(),jets[0].phi());
-      if(fabs(dphijj)<2.7) return box;
+      if(fabs(dphijj)<2.09) return box;
       
       //balancing variable : better not MET smears all
       //float balance=jets[0].pt()/lv.pt();
@@ -198,19 +197,16 @@ ControlBox assignBox(int reqControlType,
     {
       //2 leptons + 1 jet
       if(dilCands.size()<2) return box;
-      if(jets.size()!=1) return box;
+      if(jets.size()==0) return box;
 
       //require z window
       LorentzVector ll=leptons[ dilCands[0] ]+leptons[ dilCands[1] ];
       if(fabs(ll.mass()-91)>15) return box;
 
-      //back to back configuration 
-      float dphijj=deltaPhi(ll.phi(),jets[0].phi());
-      if(fabs(dphijj)<2.7) return box;
-      
-      //balancing variable
-      float balance=jets[0].pt()/ll.pt();
-      if(balance<0.5 || balance>1.5) return box;
+      //back to back configuration with leading pT jet
+     
+      float dR=deltaR(ll,jets[0]);
+      if(dR<2.09) return box;
       
       data::PhysicsObject_t *z=new data::PhysicsObject_t(ll.px(),ll.py(),ll.pz(),ll.energy());
       z->set("id",23);
@@ -243,7 +239,7 @@ int main(int argc, char* argv[])
   //
   const edm::ParameterSet &runProcess       = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("runProcess");
   std::vector<std::string> urls=runProcess.getParameter<std::vector<std::string> >("input");
-  TString url = TString(urls[0]);
+  TString url          = TString(urls[0]);
   TString baseDir      = runProcess.getParameter<std::string>("dirName");
   TString jecDir       = runProcess.getParameter<std::string>("jecDir");
   bool isMC            = runProcess.getParameter<bool>("isMC");
@@ -298,6 +294,12 @@ int main(int argc, char* argv[])
 
   //control the sec vtx analysis  
   LxyAnalysis lxyAn;
+
+  if(weightsFile.size()) {
+    TString burl(weightsFile[0].c_str());
+    burl += "/BfragWeights.root";
+    fBfragWgt = new BfragWeighter( burl );
+  }
 
   //prepare the output file
   TString proctag=gSystem->BaseName(url);
@@ -374,26 +376,7 @@ int main(int argc, char* argv[])
   size_t nJetFlavors=sizeof(jetFlavors)/sizeof(TString);
   TH1 *hflav=controlHistos.addHistogram( new TH1F ("probeflav", ";Probe flavour; Jets", nJetFlavors, 0.,nJetFlavors) );
   for(int xbin=1; xbin<=hflav->GetXaxis()->GetNbins(); xbin++) hflav->GetXaxis()->SetBinLabel(xbin,jetFlavors[xbin-1]);
-  
-  //tag and probe analysis for Sec Vtx
-  const Double_t ptBins[]={30,35,40,45,50,55,60,65,70,80,90,100,120,140,160,180,200,250,350,400,500,750,1000};
-  Int_t nPtbins=sizeof(ptBins)/sizeof(Double_t)-1;
-  TString svxAlgo="svx"; 
-  // TString svxAlgo="ivf";
-  for(size_t iflav=0; iflav<nJetFlavors; iflav++)
-    {
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"mass",       ";SecVtx Mass [GeV];Transverse momentum [GeV];Jets",                 50, 0.,10.,  nPtbins,ptBins) );
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"lxy",        ";SecVtx L_{xy} [cm];Transverse momentum [GeV];Jets",                100, 0.,10., nPtbins,ptBins) );	 
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"lxysig",     ";L_{xy}/sigma;Transverse momentum [GeV];Jets",                     50, 0.,50.,  nPtbins,ptBins) );	 
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"dr",         ";#Delta R(jet,SecVtx L_{xy});Transverse momentum [GeV];Jets",       50, 0.,1.0,  nPtbins,ptBins) );	 
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"ptfrac",     ";p_{T}(SecVtx L_{xy})/p_{T}(jet);Transverse momentum [GeV];Jets",   50, 0.,2.0,  nPtbins,ptBins) );	 
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"neutemfrac", ";Neutral EM fraction;Transverse momentum [GeV];Jets",               50, 0.,1.0,  nPtbins,ptBins) );	 
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"chfrac",     ";Charged fraction;Transverse momentum [GeV];Jets",                  50, 0.,1.0,  nPtbins,ptBins) );	 
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"neuthadfrac",";Neutral Had fraction;Transverse momentum [GeV];Jets",              50, 0.,1.0,  nPtbins,ptBins) );	 
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"mufrac",     ";Muon fraction;Transverse momentum [GeV];Jets",                     50, 0.,1.0,  nPtbins,ptBins) );	 
-      controlHistos.addHistogram( new TH2F (jetFlavors[iflav]+"recoil"+svxAlgo+"ntracks", ";SecVtx track multiplicity;Transverse momentum [GeV];Jets",            10, 0.,10,   nPtbins,ptBins) );	 
-    }
-    
+      
   ///
   // process events file
   //
@@ -551,8 +534,7 @@ int main(int argc, char* argv[])
       if(isMC) 	controlHistos.fillHisto("probeflav", catsToFill, box.probeFlav,        weight);
      
       //secondary vertex characteristics evaluated for the probe
-      float recoilPtNorm(TMath::Min(box.probe->pt(),ptBins[nPtbins-1]));
-      const data::PhysicsObject_t &svx = box.probe->getObject(svxAlgo);
+      const data::PhysicsObject_t &svx = box.probe->getObject("svx");
       float lxy=svx.vals.find("lxy")->second;
       if(lxy)
 	{
@@ -561,28 +543,6 @@ int main(int argc, char* argv[])
 
 	  controlHistos.fillHisto("probeflav", catsToFill, 0,                              weight);
 	  if(isMC) 	controlHistos.fillHisto("probeflav", catsToFill, box.probeFlav,        weight);
-
-	  float lxyErr=svx.vals.find("lxyErr")->second;
-	  int ntrk=svx.info.find("ntrk")->second;
-	  if(ntrk==2)      catsToFill.push_back("ntrk2");
-	  else if(ntrk==3) catsToFill.push_back("ntrk3");
-	  else             catsToFill.push_back("ntrk4");
-
-	  std::vector<TString> prefixes(1,"");
-	  if(isMC) prefixes.push_back( box.probeFlavStr );
-	  for(size_t ipf=0; ipf<prefixes.size(); ipf++)
-	    {
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"mass",        catsToFill, svx.mass(),                                  recoilPtNorm, weight);
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"lxy",         catsToFill, lxy,                                         recoilPtNorm, weight);
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"lxysig",      catsToFill, lxy/lxyErr,                                  recoilPtNorm, weight);
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"dr",          catsToFill, deltaR(*(box.probe),svx),            recoilPtNorm, weight);
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"ptfrac",      catsToFill, svx.pt()/box.probe->pt(),          recoilPtNorm, weight);
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"neutemfrac",  catsToFill, box.probe->getVal("neutEmFrac"),   recoilPtNorm, weight);
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"chfrac",      catsToFill, box.probe->getVal("chHadFrac"),    recoilPtNorm, weight);
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"neuthadfrac", catsToFill, box.probe->getVal("neutHadFrac"),  recoilPtNorm, weight);
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"mufrac",      catsToFill, box.probe->getVal("muFrac"),       recoilPtNorm, weight);
-	      controlHistos.fillHisto(prefixes[ipf]+"recoil"+svxAlgo+"ntracks",     catsToFill, ntrk,                                        recoilPtNorm, weight);
-	    }
 	}
      
      
@@ -604,6 +564,19 @@ int main(int argc, char* argv[])
       boxtag.push_back( box.tag );
       boxprobe.push_back( box.probe );
       lxyAn.analyze( boxtag, boxprobe, met, pf, gen);
+      //add fragmentation weights using matched b's and B hadrons                                                                                                          
+      if(fBfragWgt) {
+	for(Int_t ij=0; ij<bev.nj; ij++)
+	  {
+	    if(abs(bev.bid[ij])!=5 || bev.bpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
+	    std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.bpt[ij] );
+	    bev.bwgt[ij][0]=bfragWeights[0];
+	    bev.bwgt[ij][1]=bfragWeights[1];
+	    bev.bwgt[ij][2]=bfragWeights[2];
+	  }
+      }
+      
+
       spyDir->cd();
       lxyAn.save();
     }

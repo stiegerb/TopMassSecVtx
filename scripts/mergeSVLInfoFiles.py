@@ -19,13 +19,18 @@ def getBaseNames(dirname):
             header = sfilename[0]
             if not header in ['MC8TeV','Data8TeV']: continue
             basename, number = sfilename[1].rsplit('_',1)
+            if 'filt' in filename:
+                postfix=number
+                basename, number=basename.rsplit('_',1)
+                basename += '_'+postfix
+            
             if not number == 'missing' and not isint(number):
                 raise ValueError
             key = '_'.join([header,basename])
             try:
-                counters[key].append(number)
+                counters[key].append(dirname+'/'+item)
             except KeyError:
-                counters[key] = [number]
+                counters[key] = [dirname+'/'+item]
             names.add(key)
 
         except ValueError:
@@ -51,8 +56,9 @@ chunkdir = os.path.join(inputdir, 'Chunks')
 
 os.system('mkdir -p %s' % chunkdir)
 
-for basename, numbers in counters.iteritems():
-    files = [os.path.join(inputdir,"%s_%s.root" % (basename, number)) for number in numbers]
+print counters
+for basename, files in counters.iteritems():
+
     filenames = " ".join(files)
     target = os.path.join(outputdir,"%s.root" % basename)
 

@@ -706,8 +706,11 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
 	fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
 	fSVLInfoTree->Branch("SVLxy",     &fTSVLxy,     "SVLxy/F");
+	fSVLInfoTree->Branch("SVLxySig",  &fTSVLxySig,  "SVLxySig/F");
+	fSVLInfoTree->Branch("SVPtChFrac",  &fTSVPtChFrac, "SVPtChFrac/F");
 	fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
 	fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
+	fSVLInfoTree->Branch("JFlav",     &fTJFlav,     "JFlav/I");
 	fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
 	// CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
 	fSVLInfoTree->Branch("CombCat"       , &fTCombCat       , "CombCat/I");
@@ -744,8 +747,11 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	fTLPt            = -99.99;
 	fTSVPt           = -99.99;
 	fTSVLxy          = -99.99;
+	fTSVLxySig       = -99.99;
+	fTSVPtChFrac     = -99.99;
 	fTJEta           = -99.99;
 	fTJPt            = -99.99;
+	fTJFlav          = 0;
 	fTSVNtrk         = -99;
 	fTCombCat        = -99;
 	fTCombInfo       = -99;
@@ -990,15 +996,25 @@ void LxyTreeAnalysis::analyze(){
 			        if(svl_pairs_drranked_rot[i].counter != isvl) continue;
 				fTSVLDeltaRRank_rot = i+1;
 			}
+			TLorentzVector p_trks(0.,0.,0.,0.);
+			for (int i = 0; i < npf; ++i) {
+			  if (pfjetidx[i] != svl.svindex) continue;
+			  TLorentzVector p_tk;
+			  p_tk.SetPtEtaPhiM(pfpt[i], pfeta[i], pfphi[i], gMassPi);
+			  p_trks = p_trks + p_tk;
+			}
+
 			fTLPt          = lpt  [svl.lepindex];
 			fTSVPt         = svpt [svl.svindex];
 			fTSVLxy        = svlxy[svl.svindex];
+			if(svlxyerr[svl.svindex]) fTSVLxySig =  svlxy[svl.svindex]/svlxyerr[svl.svindex];
+			if(p_trks.Pt()>0)  fTSVPtChFrac = fTSVPt/p_trks.Pt();
 			fTJPt          = jpt  [svl.svindex];
+			fTJFlav        = jflav[svl.svindex];
 			fTJEta         = jeta [svl.svindex];
 			fTSVNtrk       = svntk[svl.svindex];
 			fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1
 			if(fTBHadNeutrino < 0) fTBHadNeutrino = -1; // set -999 to -1
-
 
 			fTJESWeight[0] = svl.jesweights[0]; // nominal
 			fTJESWeight[1] = svl.jesweights[1]; // jes up

@@ -26,7 +26,10 @@ def getBareName(path):
 def getProcessNormalization(procname, xsecweights):
     if procname.startswith('Data8TeV'): return 1.0
     searchtag = procname
-    if(re.search(r'.*_[0-9]{1,2}?$', procname)): ## ends with a split number
+    if 'filt' in searchtag :
+        tkns=procname.split('_')
+        searchtag='_'.join(tkns[:-2])+'_'+tkns[-1]
+    elif(re.search(r'.*_[0-9]{1,2}?$', procname)): ## ends with a split number
         searchtag = procname.rsplit('_', 1)[0] ## corresponds to dtag in json
 
     try:
@@ -34,6 +37,7 @@ def getProcessNormalization(procname, xsecweights):
     except KeyError:
         print (">>> WARNING: Failed to extract normalization for %s "
                "(setting to 1.0)"%procname)
+        
     return 1.0
 
 def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms'):

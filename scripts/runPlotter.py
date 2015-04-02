@@ -437,7 +437,6 @@ def makeXSecWeights(inDir, jsonfiles, options):
     """
     Loop over a list of json files and fill in a xsecweights dictionary
     """
-
     xsecweights = {}
     tot_ngen = {}
     missing_files = []
@@ -446,6 +445,8 @@ def makeXSecWeights(inDir, jsonfiles, options):
         dirname = inDir
         if 'syst'      in jfname: dirname = os.path.join(inDir,'syst')
         if 'mass_scan' in jfname: dirname = os.path.join(inDir,'mass_scan')
+        if 'qcd'       in jfname: dirname = os.path.join(inDir,'qcd_control')
+        if 'z_samples' in jfname: dirname = os.path.join(inDir,'z_control')
         jsonFile = open(jfname,'r')
         procList = json.load(jsonFile,encoding = 'utf-8').items()
 
@@ -457,16 +458,19 @@ def makeXSecWeights(inDir, jsonfiles, options):
                 mctruthmode = getByLabel(desc,'mctruthmode')
                 for process in data:
                     dtag = getByLabel(process,'dtag','')
-                    print "... processing %s"%dtag
+                    procKey=dtag
+                    if mctruthmode : procKey += '_filt'+str(mctruthmode)
+                    print "... processing %s"%procKey
 
                     if isData:
-                        xsecweights[str(dtag)] = 1.0
+                        xsecweights[procKey] = 1.0
+                        tot_ngen[procKey]    = 0
                         continue
 
                     split = getByLabel(process,'split',1)
 
                     try:
-                        ngen = tot_ngen[dtag]
+                        ngen = tot_ngen[procKey]
                     except KeyError:
                         ngen = 0
 
@@ -487,24 +491,26 @@ def makeXSecWeights(inDir, jsonfiles, options):
 
                         rootFile.Close()
 
-                    tot_ngen[dtag] = ngen
+                    tot_ngen[procKey] = ngen
 
                 # Calculate weights:
                 for process in data:
                     dtag = getByLabel(process,'dtag','')
+                    procKey=dtag                    
+                    if mctruthmode : procKey += '_filt'+str(mctruthmode)
                     brratio = getByLabel(process,'br',[1])
                     xsec = getByLabel(process,'xsec',1)
-                    if dtag not in xsecweights.keys():
+                    if procKey not in xsecweights.keys():
                         try:
-                            ngen = tot_ngen[dtag]
+                            ngen = tot_ngen[procKey]
                             finalBR=1
                             for br in brratio: finalBR *=br
-                            xsecweights[str(dtag)] = finalBR*xsec/ngen
+                            xsecweights[procKey] = finalBR*xsec/ngen
                         except ZeroDivisionError:
                             if isData:
-                                xsecweights[str(dtag)] = 1.0
+                                xsecweights[procKey] = 1.0
                             else:
-                                print ">>> ERROR: ngen not set for", dtag
+                                print ">>> ERROR: ngen not set for", procKey
 
 
     if len(missing_files) and options.verbose>0:
@@ -519,6 +525,7 @@ def makeXSecWeights(inDir, jsonfiles, options):
     cachefile.close()
     print '>>> Produced xsec weights and wrote to cache (.xsecweights.pck)'
     return 0
+
 def runPlotter(inDir, options, scaleFactors={}):
     """
     Loop over the inputs and launch jobs

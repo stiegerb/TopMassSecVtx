@@ -17,12 +17,21 @@ Note: the ntuplizer is running without pileup jet id and IVF-related b-tagging v
 ### Producing the trees
 
 ```
+sh test/topss2014/submitNtupleProduction.sh [sample=presel,syst,mass,control,pdf]
+```
+Will create the base ntuple summary
+```
+./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json,test/topss2014/qcd_samples.json,test/topss2014/z_samples.json
+```
+Will create a pickle file summarizing all the cross section-based normalization to be used
+```
 ./scripts/runLxyTreeAnalysis.py -o treedir -j 8 /store/cmst3/group/top/summer2014/a176401/
 ./scripts/runLxyTreeAnalysis.py -o treedir/syst/ -j 8 /store/cmst3/group/top/summer2014/a176401/syst/
 ./scripts/runLxyTreeAnalysis.py -o treedir/mass_scan/ -j 8 /store/cmst3/group/top/summer2014/a176401/mass_scan/
-
+./scripts/runLxyTreeAnalysis.py -o treedir/qcd_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/qcd_control/
+./scripts/runLxyTreeAnalysis.py -o treedir/z_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/z_control/
 ```
-
+Creates the SVLInfo/CharmInfo trees with the condensed summary info for the final analysis
 ------------------------------------------------------
 ### Merging the trees
 
@@ -30,7 +39,8 @@ Note: the ntuplizer is running without pileup jet id and IVF-related b-tagging v
 ./scripts/mergeSVLInfoFiles.py treedir/
 ./scripts/mergeSVLInfoFiles.py treedir/syst/
 ./scripts/mergeSVLInfoFiles.py treedir/mass_scan/
-
+./scripts/mergeSVLInfoFiles.py treedir/qcd_control/
+./scripts/mergeSVLInfoFiles.py treedir/z_control/
 ```
 Will merge all the chunks and then move them into treedir/Chunks/
 There is a version of the trees from Feb10 that is still current in:
@@ -58,10 +68,6 @@ Will run the plots and put them in svlplots/ by default. Also saves the histogra
 
 ```
 Produces a number of data/MC comparison plots (both from the SVLInfo trees, and from the histograms produced in the LxyTreeAnalysis). Default output directory is plots/. This is based on the runPlotter.py script. In order to have correct xsection weights and number of generated events, one needs to run on the eos/ directory first to produce a cache file with the weights, like so:
-```
-./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json
-
-```
 
 
 ------------------------------------------------------

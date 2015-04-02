@@ -190,7 +190,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             bkgConstPDF =  ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
-            #10% unc on background
+            #30% unc on background
             Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
 
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
@@ -243,6 +243,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
             #read histogram and generate random data
             ihist       = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
+
             nevtsToGen=ROOT.gRandom.Poisson(ihist.Integral())
             pseudoDataH,pseudoData=None,None
             if options.genFromPDF:

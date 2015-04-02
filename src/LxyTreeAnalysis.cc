@@ -638,9 +638,13 @@ bool LxyTreeAnalysis::selectSVLEvent(){
 	// At least one SV in any channel
 	if (nsvjets < 1) return false;
 
-	// That's it for emu
+	// That's it for emu, Z,W photon and dijet qcd control regions
 	if (abs(evcat) == 11*13) return true;
-
+	if (abs(evcat) == 23) return true;
+	if (abs(evcat) == 24) return true;
+	if (abs(evcat) == 22) return true;
+	if (abs(evcat) == 1) return true;
+	
 	// For dilepton also MET > 40 GeV
 	if (abs(evcat) == 11*11 || abs(evcat) == 13*13){
 		if (metpt > 40.) return true;

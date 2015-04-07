@@ -239,6 +239,7 @@ class RatioPlot(object):
         mainframe.GetXaxis().SetLabelSize(0)
         mainframe.GetXaxis().SetTitleSize(0)
         mainframe.GetXaxis().SetTitleOffset(1.5)
+        mainframe.GetYaxis().SetNoExponent()
         mainframe.Draw()
 
         # self.histos[0].GetYaxis().SetTitle('a.u.')
@@ -284,6 +285,7 @@ class RatioPlot(object):
         ratioframe.GetXaxis().SetLabelSize(22)
         ratioframe.GetXaxis().SetTitleSize(26)
         ratioframe.GetYaxis().SetNdivisions(5)
+        ratioframe.GetYaxis().SetNoExponent()
         ratioframe.GetYaxis().SetTitleOffset(1.2)
         ratioframe.GetXaxis().SetTitleOffset(3.0)
         ratioframe.Draw()

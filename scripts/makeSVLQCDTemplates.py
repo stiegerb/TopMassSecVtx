@@ -108,7 +108,7 @@ def main(args, options):
 									   titlex=MASSXAXISTITLE)
 
 
-		cachefile = open(".svlqcdtemplates.pck", 'w')
+		cachefile = open(".svlqcdmasshistos.pck", 'w')
 		pickle.dump(masshistos,     cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(methistos,      cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(fittertkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
@@ -116,7 +116,7 @@ def main(args, options):
 
 
 	else:
-		cachefile = open(".svlqcdtemplates.pck", 'r')
+		cachefile = open(".svlqcdmasshistos.pck", 'r')
 		masshistos     = pickle.load(cachefile)
 		methistos      = pickle.load(cachefile)
 		fittertkhistos = pickle.load(cachefile)

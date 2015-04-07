@@ -10,11 +10,13 @@ XMIN = 5.
 XMAX = 200.
 FITRANGE = (20., 140.)
 MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
-LUMI = 19701
+LUMI = 19701.0
 
 #NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
 NTRKBINS = [(2,3), (3,4), (4,1000)]
-COMMONWEIGHT = "%f*Weight[0]*Weight[1]*Weight[4]*JESWeight[0]*XSWeight"%LUMI  #gen. weight (BR correction) x pu weight x lep. selection weight x JES weight x XS weight
+# BR fix x PU x Lep Sel x JES
+COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*JESWeight[0]"
+LUMIWEIGHT = "XSWeight*%f"%LUMI  # x XS weight
 TREENAME = 'SVLInfo'
 SELECTIONS = [
 	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),
@@ -37,6 +39,39 @@ COMBINATIONS = [
 	('wro', 'CombInfo==0'),
 	('unm', 'CombInfo==-1'),
 ]
+
+
+CHANMASSTOPROCNAME = {
+	('tt',    163.5) : 'MC8TeV_TTJets_163v5',
+	('tt',    166.5) : 'MC8TeV_TTJets_MSDecays_166v5',
+	('tt',    169.5) : 'MC8TeV_TTJets_MSDecays_169v5',
+	('tt',    171.5) : 'MC8TeV_TTJets_MSDecays_171v5',
+	('tt',    172.5) : 'MC8TeV_TTJets_MSDecays_172v5',
+	('tt',    173.5) : 'MC8TeV_TTJets_MSDecays_173v5',
+	('tt',    175.5) : 'MC8TeV_TTJets_MSDecays_175v5',
+	('tt',    178.5) : 'MC8TeV_TTJets_MSDecays_178v5',
+	('tt',    181.5) : 'MC8TeV_TTJets_181v5',
+	('t',     166.5) : 'MC8TeV_SingleT_t_166v5',
+	('t',     169.5) : 'MC8TeV_SingleT_t_169v5',
+	('t',     171.5) : 'MC8TeV_SingleT_t_171v5',
+	('t',     172.5) : 'MC8TeV_SingleT_t',
+	('t',     173.5) : 'MC8TeV_SingleT_t_173v5',
+	('t',     175.5) : 'MC8TeV_SingleT_t_175v5',
+	('t',     178.5) : 'MC8TeV_SingleT_t_178v5',
+	('tbar',  166.5) : 'MC8TeV_SingleTbar_t_166v5',
+	('tbar',  169.5) : 'MC8TeV_SingleTbar_t_169v5',
+	('tbar',  171.5) : 'MC8TeV_SingleTbar_t_171v5',
+	('tbar',  172.5) : 'MC8TeV_SingleTbar_t',
+	('tbar',  173.5) : 'MC8TeV_SingleTbar_t_173v5',
+	('tbar',  175.5) : 'MC8TeV_SingleTbar_t_175v5',
+	('tbar',  178.5) : 'MC8TeV_SingleTbar_t_178v5',
+	('tW',    166.5) : 'MC8TeV_SingleT_tW_166v5',
+	('tW',    172.5) : 'MC8TeV_SingleT_tW',
+	('tW',    178.5) : 'MC8TeV_SingleT_tW_178v5',
+	('tbarW', 166.5) : 'MC8TeV_SingleTbar_tW_166v5',
+	('tbarW', 172.5) : 'MC8TeV_SingleTbar_tW',
+	('tbarW', 178.5) : 'MC8TeV_SingleTbar_tW_178v5',
+}
 
 
 def addTopMassTreesFromDir(dirname, trees, files):
@@ -89,11 +124,11 @@ def getMassTrees(inputdir, verbose=True):
 		for mass in sorted(allmasses):
 			line = '  %5.1f GeV '%mass
 			if (mass, 'tt') in alltrees:
-				line += ' (tt: %7d) '     % alltrees[(mass, 'tt')].GetEntries()
+				line += ' (tt: %7d) ' % alltrees[(mass, 'tt')].GetEntries()
 			if (mass, 't') in alltrees:
-				line += ' (t: %5d) '  % alltrees[(mass, 't')].GetEntries()
+				line += ' (t: %5d) ' % alltrees[(mass, 't')].GetEntries()
 			if (mass, 'tbar') in alltrees:
-				line += ' (tbar: %5d) '  % alltrees[(mass, 'tbar')].GetEntries()
+				line += ' (tbar: %5d) ' % alltrees[(mass, 'tbar')].GetEntries()
 			if (mass, 'tW') in alltrees:
 				line += ' (tW: %6d) ' % alltrees[(mass, 'tW')].GetEntries()
 			if (mass, 'tbarW') in alltrees:
@@ -202,16 +237,16 @@ def main(args, opt):
 				hname = "SVLMass_%s_%s" % (comb, htag)
 				finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT,sel,combsel)
 				tasks.append((hname, 'SVLMass', finalsel,
-					          NBINS, XMIN, XMAX, MASSXAXISTITLE))
+							  NBINS, XMIN, XMAX, MASSXAXISTITLE))
 				hname_to_keys[hname] = (tag, chan, mass, comb)
 
 				for ntk1,ntk2 in NTRKBINS:
 					tksel = "(SVNtrk>=%d && SVNtrk<%d)"%(ntk1,ntk2)
 					finalsel = "%s*(%s&&%s&&%s)"%(COMMONWEIGHT, sel,
-						                          combsel,tksel)
+												  combsel,tksel)
 					hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
 					tasks.append((hname, 'SVLMass', finalsel,
-						          NBINS, XMIN, XMAX, MASSXAXISTITLE))
+								  NBINS, XMIN, XMAX, MASSXAXISTITLE))
 					hname_to_keys[hname] = (tag, chan, mass, comb, ntk1)
 
 		tasklist[(mass,chan)] = tasks
@@ -223,9 +258,9 @@ def main(args, opt):
 	# (tag, chan, mass, comb)      -> histo
 	# (tag, chan, mass, comb, ntk) -> histo
 	masshistos = gatherHistosFromFiles(tasklist, massfiles,
-		                              os.path.join(opt.outDir,
-		                              'mass_histos'),
-		                              hname_to_keys)
+									  os.path.join(opt.outDir,
+									  'mass_histos'),
+									  hname_to_keys)
 
 	cachefile = open(".svlmasshistos.pck", 'w')
 	pickle.dump(masshistos, cachefile, pickle.HIGHEST_PROTOCOL)
@@ -253,6 +288,17 @@ def main(args, opt):
 	ROOT.gStyle.SetOptStat(0)
 	ROOT.gROOT.SetBatch(1)
 
+
+	cachefile = open(".xsecweights.pck", 'r')
+	xsecweights = pickle.load(cachefile)
+	cachefile.close()
+	print '>>> Read xsec weights from cache (.xsecweights.pck)'
+
+	## Scale all the histograms for the plotting:
+	for key, hist in masshistos.iteritems():
+		hist.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(key[1], key[2])]])
+
+
 	errorGetters = {} # tag -> function(chi2) -> error
 	systematics = {} # (seltag, systname) -> error
 	mass_scan_dir = os.path.join(opt.outDir, 'mass_scans')
@@ -271,17 +317,17 @@ def main(args, opt):
 				continue
 
 			ratplot = RatioPlot('ratioplot')
-			ratplot.normalized=False
+			ratplot.normalized = False
 			ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
 			ratplot.ratiorange = (0.5, 1.5)
 
-			ratplot.reference = masshistos[(tag,chan,172.5,'tot')]
+			reference = masshistos[(tag,chan,172.5,'tot')]
+			ratplot.reference = reference
 
 			for mass in masspoints:
 				legentry = 'm_{t} = %5.1f GeV' % mass
 				try:
 					histo = masshistos[(tag,chan,mass,'tot')]
-					# print histo.GetName(), histo.GetEntries()
 					ratplot.add(histo, legentry)
 				except KeyError: pass
 					# print "Can't find ", (tag,chan,mass,'tot')
@@ -353,7 +399,7 @@ if __name__ == "__main__":
 	parser.add_option('-j', '--jobs', dest='jobs', action="store",
 					  type='int', default=1,
 					  help=('Number of jobs to run in parallel '
-					  	    '[default: single]'))
+							'[default: single]'))
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",

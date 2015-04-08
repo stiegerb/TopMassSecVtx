@@ -6,6 +6,7 @@ import pickle
 import numpy
 
 from runSVLPseudoExperiments import runPseudoExperiments
+from makeSVLMassHistos import CHANMASSTOPROCNAME
 
 from UserCode.TopMassSecVtx.PlotUtils import printProgress
 
@@ -153,7 +154,7 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop,
 Parameterizes the fraction of correct and wrong assignments
 as well as the fraction of single top expected with respect to ttbar
 """
-def parameterizeSignalFractions(ws, masshistos, config, options) :
+def parameterizeSignalFractions(ws, masshistos, config, xsecweights, options) :
     chselList,  massList, trkMultList, combList, procList = config
     print '[parameterizeSignalFractions]'
 
@@ -190,6 +191,7 @@ def parameterizeSignalFractions(ws, masshistos, config, options) :
                         h=None
                         try:
                             h=masshistos[(chsel,proc,mass,comb,trk)]
+                            h.Scale(xsecweights[CHANMASSTOPROCNAME[(proc, mass)]])
                         except:
                             continue
                         err=ROOT.Double(0)
@@ -334,17 +336,25 @@ def createWorkspace(options):
     cachefile = open(options.input,'r')
     masshistos = pickle.load(cachefile)
     cachefile.close()
+    print '>>> Read mass histos from (%s)' % options.input
     bkgmasshistos=None
     try:
         cachefile = open(options.inputBkg,'r')
         bkgmasshistos = pickle.load(cachefile)
         cachefile.close()
-    except:
-        print 'No valid background shapes file found'
+        print '>>> Read background shapes from (%s)' % options.inputBkg
+    except IOError:
+        print '>>> No valid background shapes file found'
+
+    cachefile = open(".xsecweights.pck", 'r')
+    xsecweights = pickle.load(cachefile)
+    cachefile.close()
+    print '>>> Read xsec weights from cache (.xsecweights.pck)'
+
 
     # Extract the configurations from the diffhistos dictionary
     config = readConfig(masshistos)
-    chselList, massList, trkMultList, combList,procList = config
+    chselList, massList, trkMultList, combList, procList = config
     print 'Selected channels available :', chselList
     print 'Mass points available: ', massList
     print 'Track multiplicities available: ', trkMultList
@@ -364,19 +374,22 @@ def createWorkspace(options):
 
             #backgrounds
             try:
-                hbkg=bkgmasshistos[(chsel,trk)]
-                name='SVLMass_unm_%s_bg_%d'%(chsel,trk)
+                # These are already properly scaled by xsec
+                hbkg = bkgmasshistos[(chsel,trk)]
+                name = 'SVLMass_unm_%s_bg_%d'%(chsel,trk)
                 getattr(ws,'import')(ROOT.RooDataHist(name,name, ROOT.RooArgList(SVLmass), hbkg))
                 ws.factory('%s_bgexp_%d[%f]'%(chsel,trk,hbkg.Integral()))
-            except:
+            except Exception, e:
+                print e
                 pass
 
             #signal
             for comb in ['cor','wro']:
                 for mass in massList:
 
-                    #ttbar
-                    htt=masshistos[(chsel,'tt',mass,comb,trk)]
+                    # ttbar
+                    htt = masshistos[(chsel,'tt',mass,comb,trk)]
+                    htt.Scale(xsecweights[CHANMASSTOPROCNAME[('tt', mass)]])
                     getattr(ws,'import')(ROOT.RooDataHist(htt.GetName(), htt.GetTitle(), ROOT.RooArgList(SVLmass), htt))
 
                     #correct combinations for single top
@@ -384,12 +397,14 @@ def createWorkspace(options):
                     ht=None
                     for stProc in ['t','tbar','tW','tbarW']:
                         try:
-                            h=masshistos[(chsel,stProc,mass,comb,trk)]
+                            h = masshistos[(chsel,stProc,mass,comb,trk)]
+                            h.Scale(xsecweights[CHANMASSTOPROCNAME[(stProc, mass)]])
                             if ht is None:
-                                ht=h.Clone("SVLMass_%s_%s_%d_t_%d"%(comb,chsel,10*mass,trk))
+                                ht = h.Clone("SVLMass_%s_%s_%d_t_%d"%(comb,chsel,10*mass,trk))
                             else:
                                 ht.Add(h)
-                        except:
+                        except Exception, e:
+                            print e
                             pass
                     if ht is None : continue
                     getattr(ws,'import')(ROOT.RooDataHist(ht.GetName(), ht.GetTitle(), ROOT.RooArgList(SVLmass), ht))
@@ -397,7 +412,8 @@ def createWorkspace(options):
             #unmatched for tt and wrong+unmatched for single top are merged
             htt_unm, ht_wrounm = None, None
             for mass in massList:
-                htt=masshistos[(chsel,'tt',mass,'unm',trk)]
+                htt = masshistos[(chsel,'tt',mass,'unm',trk)]
+                htt.Scale(xsecweights[CHANMASSTOPROCNAME[('tt', mass)]])
                 if htt_unm is None : htt_unm=htt.Clone("SVLMass_unm_%s_tt_%d"%(chsel,trk))
                 else               : htt_unm.Add(htt)
 
@@ -405,9 +421,11 @@ def createWorkspace(options):
                     for stProc in ['t','tbar','tW','tbarW']:
                         try:
                             h=masshistos[(chsel,stProc,mass,comb,trk)]
+                            h.Scale(xsecweights[CHANMASSTOPROCNAME[(stProc, mass)]])
                             if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_t_%d"%(chsel,trk))
                             else                 : ht_wrounm.Add(h)
-                        except:
+                        except Exception, e:
+                            print e
                             pass
             if not (htt_unm is None):
                 getattr(ws,'import')(ROOT.RooDataHist(htt_unm.GetName(), htt_unm.GetTitle(),
@@ -418,7 +436,8 @@ def createWorkspace(options):
 
 
     # Run signal parameterization cycles
-    parameterizeSignalFractions(ws=ws, config=config, masshistos=masshistos, options=options)
+    parameterizeSignalFractions(ws=ws, config=config, masshistos=masshistos,
+                                xsecweights=xsecweights, options=options)
     parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
                                    SVLmass=SVLmass, options=options, singleTop=False)
     parameterizeSignalPermutations(ws=ws, permName='wro', config=config,

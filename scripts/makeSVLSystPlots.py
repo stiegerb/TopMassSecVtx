@@ -9,6 +9,7 @@ from makeSVLMassHistos import SELECTIONS, COMBINATIONS
 from makeSVLMassHistos import runSVLInfoTreeAnalysis, runTasks
 from makeSVLDataMCPlots import resolveFilename
 from numpy import roots
+from pprint import pprint
 
 
 CONTROLVARS = [
@@ -320,14 +321,18 @@ def main(args, opt):
 				if fname == systfile:
 					systfiles[syst] = [os.path.join(args[0], 'syst', fname)]
 
+		# Get the split nominal files
 		systfiles['nominal'] = []
-		for fname in os.listdir(args[0]):
+		for fname in os.listdir(os.path.join(args[0],'Chunks')):
 			if not os.path.splitext(fname)[1] == '.root': continue
 			isdata,procname,splitno = resolveFilename(fname)
 			if not procname == 'TTJets_MSDecays_172v5': continue
 			if not splitno: continue # file is split
 
-			systfiles['nominal'].append(os.path.join(args[0],fname))
+			systfiles['nominal'].append(os.path.join(args[0],'Chunks',fname))
+		if len(systfiles['nominal']) < 20:
+			print "ERROR >>> Missing files for split nominal sample?"
+			return -1
 
 	except IndexError:
 		print "Please provide a valid input directory"
@@ -375,13 +380,14 @@ def main(args, opt):
 		# 	print filename
 		# 	for task in tasks:
 		# 		print task
-
+		# raw_input("Press any key to continue...")
 		runTasks(systfiles, tasklist, opt, 'syst_histos')
 
 	systhistos = {} # (tag, syst, comb) -> histo
 	systhistos = gatherHistosFromFiles(tasklist, systfiles,
 		                           os.path.join(opt.outDir, 'syst_histos'),
 		                           hname_to_keys)
+
 
 	cachefile = open(".svlsysthistos.pck", 'w')
 	pickle.dump(systhistos, cachefile, pickle.HIGHEST_PROTOCOL)
@@ -391,9 +397,7 @@ def main(args, opt):
 	# systhistos = pickle.load(cachefile)
 	# cachefile.close()
 
-
-	# from pprint import pprint
-	# pprint(systhistos)
+	# pprint(sorted(set(systhistos.keys())))
 
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gStyle.SetOptStat(0)

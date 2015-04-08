@@ -5,45 +5,11 @@ import ROOT
 import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
 from makeSVLMassHistos import NBINS, XMIN, XMAX, MASSXAXISTITLE
-from makeSVLMassHistos import NTRKBINS, COMMONWEIGHT, TREENAME
-from makeSVLMassHistos import SELECTIONS, COMBINATIONS
+from makeSVLMassHistos import NTRKBINS, COMMONWEIGHT, TREENAME, LUMI
+from makeSVLMassHistos import SELECTIONS, COMBINATIONS, CHANMASSTOPROCNAME
 from makeSVLMassHistos import runSVLInfoTreeAnalysis, runTasks
 from makeSVLDataMCPlots import resolveFilename
 from makeSVLSystPlots import ALLSYSTS
-
-LUMI = 19701
-
-CHANMASSTOPROCNAME = {
-	('tt',    163.5) : 'MC8TeV_TTJets_163v5',
-	('tt',    166.5) : 'MC8TeV_TTJets_MSDecays_166v5',
-	('tt',    169.5) : 'MC8TeV_TTJets_MSDecays_169v5',
-	('tt',    171.5) : 'MC8TeV_TTJets_MSDecays_171v5',
-	('tt',    172.5) : 'MC8TeV_TTJets_MSDecays_172v5',
-	('tt',    173.5) : 'MC8TeV_TTJets_MSDecays_173v5',
-	('tt',    175.5) : 'MC8TeV_TTJets_MSDecays_175v5',
-	('tt',    178.5) : 'MC8TeV_TTJets_MSDecays_178v5',
-	('tt',    181.5) : 'MC8TeV_TTJets_181v5',
-	('t',     166.5) : 'MC8TeV_SingleT_t_166v5',
-	('t',     169.5) : 'MC8TeV_SingleT_t_169v5',
-	('t',     171.5) : 'MC8TeV_SingleT_t_171v5',
-	('t',     172.5) : 'MC8TeV_SingleT_t',
-	('t',     173.5) : 'MC8TeV_SingleT_t_173v5',
-	('t',     175.5) : 'MC8TeV_SingleT_t_175v5',
-	('t',     178.5) : 'MC8TeV_SingleT_t_178v5',
-	('tbar',  166.5) : 'MC8TeV_SingleTbar_t_166v5',
-	('tbar',  169.5) : 'MC8TeV_SingleTbar_t_169v5',
-	('tbar',  171.5) : 'MC8TeV_SingleTbar_t_171v5',
-	('tbar',  172.5) : 'MC8TeV_SingleTbar_t',
-	('tbar',  173.5) : 'MC8TeV_SingleTbar_t_173v5',
-	('tbar',  175.5) : 'MC8TeV_SingleTbar_t_175v5',
-	('tbar',  178.5) : 'MC8TeV_SingleTbar_t_178v5',
-	('tW',    166.5) : 'MC8TeV_SingleT_tW_166v5',
-	('tW',    172.5) : 'MC8TeV_SingleT_tW',
-	('tW',    178.5) : 'MC8TeV_SingleT_tW_178v5',
-	('tbarW', 166.5) : 'MC8TeV_SingleTbar_tW_166v5',
-	('tbarW', 172.5) : 'MC8TeV_SingleTbar_tW',
-	('tbarW', 178.5) : 'MC8TeV_SingleTbar_tW_178v5',
-}
 
 TWXSECS = {
 ## see: https://docs.google.com/spreadsheets/d/1msX8xQ-Or0ML4D0nCCeWWSQth0O-OgcYZTZ-Bm7AGmA/
@@ -274,7 +240,6 @@ def main(args, opt):
 	ofi = ROOT.TFile.Open(osp.join(opt.outDir,'pe_inputs.root'),'RECREATE')
 	ofi.cd()
 
-
 	## Central mass point and syst samples
 	for syst,_,_ in ALLSYSTS:
 		odir = ofi.mkdir(syst + '_172v5')
@@ -343,6 +308,9 @@ def main(args, opt):
 				hfinal.Add(bghistos_added[(tag,ntk)])
 
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
+
+	print ('>>> Wrote pseudo experiment inputs to file (%s)' %
+		                      osp.join(opt.outDir,'pe_inputs.root'))
 
 	ofi.Write()
 	ofi.Close()

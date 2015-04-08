@@ -108,7 +108,7 @@ def importPdfsAndNormalizationsFrom(histo,bkg,url,qcdUrl,w,options):
 	fIn=ROOT.TFile.Open(url)
 	print ' ... processing %s' % url
 	for cat in CATEGORIES:
-		dirName='%s_%s'%(histo,cat)
+		dirName='%s_%s_qcd'%(histo,cat) ## 'MET_e', 'MET_m'
 		try:
 			keys_in_dir = [key.GetName() for key in fIn.Get(dirName).GetListOfKeys()]
 		except AttributeError:

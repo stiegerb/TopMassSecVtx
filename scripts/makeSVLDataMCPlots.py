@@ -54,6 +54,7 @@ def writeDataMCHistos(tree, processName, outputFile):
 			hist.Write(hist.GetName())
 
 def resolveFilename(fname):
+	if not os.path.splitext(fname)[1] == '.root': return None
 	import re
 	matchres = re.match(
 	       r'(Data8TeV|MC8TeV)_([\w]+?)(?:_([0-9]{1,2}))?\.root', fname)
@@ -89,11 +90,12 @@ def main(args, options):
 	if not options.cached:
 		ofi = ROOT.TFile(outputFileName, 'recreate')
 		for proc,filename in treefiles.iteritems():
-			tree = ROOT.TFile.Open(filename,'READ').Get(TREENAME)
+			tree = ROOT.TFile.Open(filename[0],'READ').Get(TREENAME)
 			writeDataMCHistos(tree, proc, ofi)
 
 		ofi.Write()
 		ofi.Close()
+
 
 	# print 80*'='
 	# print ' Producing charm peak control plots from histograms'
@@ -122,7 +124,10 @@ def main(args, options):
 
 	print 80*'='
 	print ' Producing (DY-scaled) control plots from histograms'
-	options.filter = '!,JPsi,D0,Dpm,DMDs,Ds2010' ## not the charm plots
+	options.filter = '!,JPsi,D0,Dpm,DMDs,Ds2010,Mjj' ## not the charm plots
+	runPlotter(args[0], options, scaleFactors=scaleFactors)
+	options.filter = 'Mjj' ## not the charm plots
+	options.cutUnderOverFlow = True
 	runPlotter(args[0], options, scaleFactors=scaleFactors)
 
 	print 80*'='
@@ -135,9 +140,6 @@ def main(args, options):
 def addDataMCPlotOptions(parser):
 	parser.add_option('--cached', dest='cached', action="store_true",
 	                  help='Read the histos from the previous run')
-
-	parser.add_option('--dySFFile', dest='dySFFile', default='',
-					  help='File for DY scale factors')
 
 if __name__ == "__main__":
 	import sys

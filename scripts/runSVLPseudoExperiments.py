@@ -6,6 +6,7 @@ import pickle
 import numpy
 
 from UserCode.TopMassSecVtx.PlotUtils import printProgress
+from makeSVLMassHistos import NTRKBINS
 
 """
 Show PE fit result
@@ -167,7 +168,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     allPdfs = {}
     for chsel in ['em','mm','ee','m','e']:
         if options.selection : chsel += '_' + options.selection
-        for ntrk in [2,3,4]:
+        for ntrk in [tklow for tklow,_ in NTRKBINS]:
             ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
             ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
             ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
@@ -210,24 +211,28 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 pass
             allPdfs[ (chsel,ntrk) ] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d, mtop=expr('(@0-%f)/%f',mtop) )"%(chsel,ntrk,chsel,ntrk,offset,slope) )
 
-
-
     #throw pseudo-experiments
     allFitVals  = {('comb',0):[], ('comb_mu',0):[]}
     allFitErrs  = {('comb',0):[], ('comb_mu',0):[]}
     allFitPulls = {('comb',0):[], ('comb_mu',0):[]}
     poi = ROOT.RooArgSet( ws.var('mtop') )
+    if options.verbose>1:
+        print '[runPseudoExperiments] Running %d experiments' % options.nPexp
+        print 80*'-'
     for i in xrange(0,options.nPexp):
 
         #iterate over available categories to build the set of likelihoods to combine
         allNLL=[]
         allPseudoDataH=[]
         allPseudoData=[]
-        if options.verbose>1:
+        if options.verbose>1 and options.verbose<=3:
             printProgress(i, options.nPexp, '[runPseudoExperiments] ')
-        for key in allPdfs:
+        for key in sorted(allPdfs):
             chsel, trk = key
             mukey=(chsel+'_mu',trk)
+            if options.verbose>3:
+                sys.stdout.write('[runPseudoExperiments] Exp %-3d (%-2s, %d):' % (i+1, chsel, trk))
+                sys.stdout.flush()
 
             ws.var('mtop').setVal(172.5)
             ws.var('mu').setVal(1.0)
@@ -247,8 +252,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             nevtsToGen=ROOT.gRandom.Poisson(ihist.Integral())
             pseudoDataH,pseudoData=None,None
             if options.genFromPDF:
-                obs=ROOT.RooArgSet(ws.var('SVLMass'))
-                pseudoData =allPdfs[key].generate(obs,nevtsToGen)
+                obs = ROOT.RooArgSet(ws.var('SVLMass'))
+                pseudoData = allPdfs[key].generate(obs, nevtsToGen)
             else:
                 pseudoDataH = ihist.Clone('peh')
                 pseudoDataH.Reset('ICE')
@@ -257,12 +262,18 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                                                'PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
                                                ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
 
-            
+            if options.verbose>3:
+                sys.stdout.write(' [generated pseudodata]')
+                sys.stdout.flush()
+
 
 
             #minimize likelihood
             allNLL.append( allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()) )
             #allNLL.append( allPdfs[key].createNLL(pseudoData) )
+            if options.verbose>3:
+                sys.stdout.write(' [running Minuit]')
+                sys.stdout.flush()
             minuit=ROOT.RooMinuit(allNLL[-1])
             minuit.setErrorLevel(0.5)
             minuit.migrad()
@@ -289,13 +300,22 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,allNLL[-1]],
                                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
                                    outDir=options.outDir)
-               # raw_input('press key to continue...')
+                # raw_input('press key to continue...')
 
             #save to erase later
             if pseudoDataH : allPseudoDataH.append(pseudoDataH)
             allPseudoData.append(pseudoData)
+            if options.verbose>3:
+                sys.stdout.write('\033[92m DONE\033[0m '
+                                 '(mt: %6.2f+-%4.2f GeV, '
+                                  'mu: %4.2f+-%4.2f)\n'%
+                                (fitVal, fitErr, fitVal_mu, fitErr_mu))
+                sys.stdout.flush()
 
         #combined likelihood
+        if options.verbose>3:
+            sys.stdout.write('[runPseudoExperiments] [combining channels]')
+            sys.stdout.flush()
         ws.var('mtop').setVal(172.5)
         ws.var('mu').setVal(1.0)
         llSet = ROOT.RooArgSet()
@@ -326,6 +346,14 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         for d in allPseudoData  : d.Delete()
         for ll in allNLL: ll.Delete()
         combll.Delete()
+        if options.verbose>3:
+            sys.stdout.write(' \033[92m \033[1m DONE\033[0m\033[1m '
+                             '(mt: %6.2f+-%4.2f GeV, '
+                              'mu: %5.3f+-%5.3f)\033[0m \n'%
+                            (fitVal, fitErr, fitVal_mu, fitErr_mu))
+            sys.stdout.flush()
+            print 80*'-'
+
 
     #show and save final results
     selTag=''
@@ -452,6 +480,9 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     wsfilepath = os.path.abspath(wsfile)
     pefilepath = os.path.abspath(pefile)
     odirpath = os.path.abspath(options.outDir)
+
+    ## Feedback before submitting the jobs
+    raw_input('This will submit %d jobs to batch. Continue?'%len(experimentTags))
 
     for n,tag in enumerate(experimentTags):
         sys.stdout.write(' ... processing job %2d - %-22s' % (n, tag))

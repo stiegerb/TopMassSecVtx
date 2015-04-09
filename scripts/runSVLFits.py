@@ -6,7 +6,7 @@ import pickle
 import numpy
 
 from runSVLPseudoExperiments import runPseudoExperiments
-from makeSVLMassHistos import CHANMASSTOPROCNAME
+from makeSVLMassHistos import CHANMASSTOPROCNAME, LUMI
 
 from UserCode.TopMassSecVtx.PlotUtils import printProgress
 
@@ -191,7 +191,7 @@ def parameterizeSignalFractions(ws, masshistos, config, xsecweights, options) :
                         h=None
                         try:
                             h=masshistos[(chsel,proc,mass,comb,trk)]
-                            h.Scale(xsecweights[CHANMASSTOPROCNAME[(proc, mass)]])
+                            h.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(proc, mass)]])
                         except:
                             continue
                         err=ROOT.Double(0)
@@ -389,7 +389,7 @@ def createWorkspace(options):
 
                     # ttbar
                     htt = masshistos[(chsel,'tt',mass,comb,trk)]
-                    htt.Scale(xsecweights[CHANMASSTOPROCNAME[('tt', mass)]])
+                    htt.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', mass)]])
                     getattr(ws,'import')(ROOT.RooDataHist(htt.GetName(), htt.GetTitle(), ROOT.RooArgList(SVLmass), htt))
 
                     #correct combinations for single top
@@ -398,7 +398,7 @@ def createWorkspace(options):
                     for stProc in ['t','tbar','tW','tbarW']:
                         try:
                             h = masshistos[(chsel,stProc,mass,comb,trk)]
-                            h.Scale(xsecweights[CHANMASSTOPROCNAME[(stProc, mass)]])
+                            h.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(stProc, mass)]])
                             if ht is None:
                                 ht = h.Clone("SVLMass_%s_%s_%d_t_%d"%(comb,chsel,10*mass,trk))
                             else:
@@ -413,7 +413,7 @@ def createWorkspace(options):
             htt_unm, ht_wrounm = None, None
             for mass in massList:
                 htt = masshistos[(chsel,'tt',mass,'unm',trk)]
-                htt.Scale(xsecweights[CHANMASSTOPROCNAME[('tt', mass)]])
+                htt.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', mass)]])
                 if htt_unm is None : htt_unm=htt.Clone("SVLMass_unm_%s_tt_%d"%(chsel,trk))
                 else               : htt_unm.Add(htt)
 
@@ -421,7 +421,7 @@ def createWorkspace(options):
                     for stProc in ['t','tbar','tW','tbarW']:
                         try:
                             h=masshistos[(chsel,stProc,mass,comb,trk)]
-                            h.Scale(xsecweights[CHANMASSTOPROCNAME[(stProc, mass)]])
+                            h.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(stProc, mass)]])
                             if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_t_%d"%(chsel,trk))
                             else                 : ht_wrounm.Add(h)
                         except Exception, e:

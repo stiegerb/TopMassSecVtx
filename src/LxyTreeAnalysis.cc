@@ -709,14 +709,15 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("SVLDeltaR_rot", &fTSVLDeltaR_rot, "SVLDeltaR_rot/F");
 	fSVLInfoTree->Branch("BHadNeutrino", &fTBHadNeutrino, "BHadNeutrino/I");
 	fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
+	fSVLInfoTree->Branch("SVMass",    &fTSVMass,    "SVMass/F");
+	fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
 	fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
 	fSVLInfoTree->Branch("SVLxy",     &fTSVLxy,     "SVLxy/F");
 	fSVLInfoTree->Branch("SVLxySig",  &fTSVLxySig,  "SVLxySig/F");
 	fSVLInfoTree->Branch("SVPtChFrac",  &fTSVPtChFrac, "SVPtChFrac/F");
 	fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
 	fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
-	fSVLInfoTree->Branch("JFlav",     &fTJFlav,     "JFlav/I");
-	fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
+	fSVLInfoTree->Branch("JFlav",     &fTJFlav,     "JFlav/I");	
 	// CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
 	fSVLInfoTree->Branch("CombCat"       , &fTCombCat       , "CombCat/I");
 	// CombInfo = -1 for data or unmatched, 0 for wrong combs, 1 for correct combs
@@ -758,6 +759,7 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	fTJPt            = -99.99;
 	fTJFlav          = 0;
 	fTSVNtrk         = -99;
+	fTSVMass         = -99;
 	fTCombCat        = -99;
 	fTCombInfo       = -99;
 
@@ -1018,6 +1020,7 @@ void LxyTreeAnalysis::analyze(){
 			fTJFlav        = jflav[svl.svindex];
 			fTJEta         = jeta [svl.svindex];
 			fTSVNtrk       = svntk[svl.svindex];
+			fTSVMass       = svmass[svl.svindex];
 			fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1
 			if(fTBHadNeutrino < 0) fTBHadNeutrino = -1; // set -999 to -1
 

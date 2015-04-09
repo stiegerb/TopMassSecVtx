@@ -21,7 +21,7 @@ sh test/topss2014/submitNtupleProduction.sh [sample=presel,syst,mass,control,pdf
 ```
 Will create the base ntuple summary
 ```
-./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json,test/topss2014/qcd_samples.json,test/topss2014/z_samples.json
+./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json,test/topss2014/qcd_samples.json,test/topss2014/z_samples.json,test/topss2014/photon_samples.json
 ```
 Will create a pickle file summarizing all the cross section-based normalization to be used
 ```
@@ -30,6 +30,7 @@ Will create a pickle file summarizing all the cross section-based normalization 
 ./scripts/runLxyTreeAnalysis.py -o treedir/mass_scan/ -j 8 /store/cmst3/group/top/summer2014/a176401/mass_scan/
 ./scripts/runLxyTreeAnalysis.py -o treedir/qcd_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/qcd_control/
 ./scripts/runLxyTreeAnalysis.py -o treedir/z_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/z_control/
+./scripts/runLxyTreeAnalysis.py -o treedir/photon_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/photon_control/
 ```
 Creates the SVLInfo/CharmInfo trees with the condensed summary info for the final analysis
 ------------------------------------------------------
@@ -41,6 +42,7 @@ Creates the SVLInfo/CharmInfo trees with the condensed summary info for the fina
 ./scripts/mergeSVLInfoFiles.py treedir/mass_scan/
 ./scripts/mergeSVLInfoFiles.py treedir/qcd_control/
 ./scripts/mergeSVLInfoFiles.py treedir/z_control/
+./scripts/mergeSVLInfoFiles.py treedir/photon_control/
 ```
 Will merge all the chunks and then move them into treedir/Chunks/
 There is a version of the trees from Feb10 that is still current in:
@@ -93,3 +95,12 @@ Will run the pseudoexperiment for one variation (e.g. nominal_172v5).
 ./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root
 ```
 Will run all the pseudoexperiments for all variation on batch.
+-----------------------------
+Control region analysis
+```
+./scripts/fitSecVtxProperties.py -i treedir/qcd_control    -o treedir/qcd_control/plots/    --weightPt --onlyCentral --minLxySig 10
+./scripts/fitSecVtxProperties.py -i treedir/z_control      -o treedir/z_control/plots/      --weightPt --vetoCentral
+./scripts/fitSecVtxProperties.py -i treedir/photon_control -o treedir/photon_control/plots/ --weightPt --rebin 2
+`````
+After creating the workspace you can use it directly by using -w workspace.root instead of -i ntuple_dir
+

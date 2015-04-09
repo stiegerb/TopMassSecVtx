@@ -248,8 +248,7 @@ def main(args, opt):
 			for ntk,_ in NTRKBINS:
 				hname = "SVLMass_%s_%s_%s" % (tag,syst+'_172v5',ntk)
 				hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
-				hfinal.Scale(xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]])
-				hfinal.Scale(LUMI)
+				hfinal.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]])
 
 				## Add single top
 				for st in ['t', 'tbar', 'tW', 'tbarW']:
@@ -305,6 +304,7 @@ def main(args, opt):
 						hsingletW.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(st, mass)]])
 					hfinal.Add(hsingletW)
 
+				## Add the combined backgrounds
 				hfinal.Add(bghistos_added[(tag,ntk)])
 
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)

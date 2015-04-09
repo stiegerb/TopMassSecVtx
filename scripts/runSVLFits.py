@@ -335,12 +335,14 @@ def createWorkspace(options):
     # Read file
     cachefile = open(options.input,'r')
     masshistos = pickle.load(cachefile)
+    ## These are not scaled to xs*lumi
     cachefile.close()
     print '>>> Read mass histos from (%s)' % options.input
     bkgmasshistos=None
     try:
         cachefile = open(options.inputBkg,'r')
         bkgmasshistos = pickle.load(cachefile)
+        ## Note that these are already scaled to xs*lumi
         cachefile.close()
         print '>>> Read background shapes from (%s)' % options.inputBkg
     except IOError:

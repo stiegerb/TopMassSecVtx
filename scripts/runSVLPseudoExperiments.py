@@ -5,7 +5,7 @@ import optparse
 import pickle
 import numpy
 
-from UserCode.TopMassSecVtx.PlotUtils import printProgress
+from UserCode.TopMassSecVtx.PlotUtils import printProgress, bcolors
 from makeSVLMassHistos import NTRKBINS
 
 """
@@ -311,10 +311,11 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             if pseudoDataH : allPseudoDataH.append(pseudoDataH)
             allPseudoData.append(pseudoData)
             if options.verbose>3:
-                sys.stdout.write('\033[92m DONE\033[0m '
+                sys.stdout.write('%s DONE %s'
                                  '(mt: %6.2f+-%4.2f GeV, '
                                   'mu: %4.2f+-%4.2f)\n'%
-                                (fitVal, fitErr, fitVal_mu, fitErr_mu))
+                                (bcolors.OKGREEN,bcolors.ENDC,
+                                 fitVal, fitErr, fitVal_mu, fitErr_mu))
                 sys.stdout.flush()
 
         #combined likelihood
@@ -352,10 +353,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         for ll in allNLL: ll.Delete()
         combll.Delete()
         if options.verbose>3:
-            sys.stdout.write(' \033[92m \033[1m DONE\033[0m\033[1m '
+            sys.stdout.write(' %s%s DONE%s%s '
                              '(mt: %6.2f+-%4.2f GeV, '
-                              'mu: %5.3f+-%5.3f)\033[0m \n'%
-                            (fitVal, fitErr, fitVal_mu, fitErr_mu))
+                              'mu: %5.3f+-%5.3f)%s \n'%
+                            (bcolors.OKGREEN, bcolors.BOLD, bcolors.ENDC, bcolors.BOLD,
+                             fitVal, fitErr, fitVal_mu, fitErr_mu,
+                             bcolors.ENDC))
             sys.stdout.flush()
             print 80*'-'
 
@@ -506,7 +509,7 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
         scriptFile.close()
         os.system('chmod u+rwx %s'%scriptFileN)
         os.system("bsub -q %s -J SVLPE%d \'%s\'"% (queue, n+1, scriptFileN))
-        sys.stdout.write('\033[92m SUBMITTED\n\033[0m')
+        sys.stdout.write(bcolors.OKGREEN+' SUBMITTED' + bcolors.ENDC)
     return 0
 
 """

@@ -135,7 +135,7 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop,
             return
         print ''
     if bkg:
-        print ' \t backgroumd mode enabled'
+        print ' \t background mode enabled'
 
     tasklist = []
     for ch in chselList:
@@ -192,7 +192,8 @@ def parameterizeSignalFractions(ws, masshistos, config, xsecweights, options) :
                         try:
                             h=masshistos[(chsel,proc,mass,comb,trk)]
                             h.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(proc, mass)]])
-                        except:
+                        except Exception, e:
+                            print e
                             continue
                         err=ROOT.Double(0)
                         val=h.IntegralAndError(1,h.GetXaxis().GetNbins(),err)
@@ -302,7 +303,7 @@ def readConfig(diffhistos):
             trkMultList.append( key[4] )
         except:
             print key
-
+            
     chselList   = list( set(chselList) )
     massList    = sorted(list( set(massList) ))
     trkMultList = sorted(list( set(trkMultList) ))
@@ -404,7 +405,7 @@ def createWorkspace(options):
                             else:
                                 ht.Add(h)
                         except Exception, e:
-                            print e
+                            print 'Fail to add mass histo for cor ',stProc,' with ',e
                             pass
                     if ht is None : continue
                     getattr(ws,'import')(ROOT.RooDataHist(ht.GetName(), ht.GetTitle(), ROOT.RooArgList(SVLmass), ht))
@@ -425,7 +426,7 @@ def createWorkspace(options):
                             if ht_wrounm is None : ht_wrounm=h.Clone("SVLMass_wrounm_%s_t_%d"%(chsel,trk))
                             else                 : ht_wrounm.Add(h)
                         except Exception, e:
-                            print e
+                            print 'Fail to add mass histo for ',comb,stProc,' with ',e
                             pass
             if not (htt_unm is None):
                 getattr(ws,'import')(ROOT.RooDataHist(htt_unm.GetName(), htt_unm.GetTitle(),

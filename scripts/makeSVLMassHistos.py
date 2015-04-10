@@ -42,6 +42,7 @@ COMBINATIONS = [
 
 
 CHANMASSTOPROCNAME = {
+## (chan, mass) -> xsecweights key
 	('tt',    163.5) : 'MC8TeV_TTJets_163v5',
 	('tt',    166.5) : 'MC8TeV_TTJets_MSDecays_166v5',
 	('tt',    169.5) : 'MC8TeV_TTJets_MSDecays_169v5',

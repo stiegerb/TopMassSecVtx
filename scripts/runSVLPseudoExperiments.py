@@ -5,7 +5,7 @@ import optparse
 import pickle
 import numpy
 
-from UserCode.TopMassSecVtx.PlotUtils import printProgress
+from UserCode.TopMassSecVtx.PlotUtils import printProgress, bcolors
 from makeSVLMassHistos import NTRKBINS
 
 """
@@ -168,7 +168,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     allPdfs = {}
     for chsel in ['em','mm','ee','m','e']:
         if options.selection : chsel += '_' + options.selection
-        for ntrk in [tklow for tklow,_ in NTRKBINS]:
+        for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
             ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
             ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
             ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
@@ -188,12 +188,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
             Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
 
-            bkgConstPDF =  ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
+            bkgConstPDF = ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
             #30% unc on background
             Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
-
+            # print '[Expectation] %2s, %d: %8.2f' % (chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal())
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
             sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
                                                                               Ntt.GetName(), ttShapePDF.GetName(),
@@ -201,7 +201,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                                                                               Nbkg.GetName(), bkgPDF
                                                                               ))
             ws.factory('PROD::uncalibmodel_%s_%d(%s,%s)'%(chsel,ntrk,
-                                                          sumPDF.GetName(),bkgConstPDF.GetName()))
+                                                          sumPDF.GetName(),
+                                                          bkgConstPDF.GetName()))
 
             #add calibration for this category if available (read from a pickle file?)
             offset, slope = 0.0, 1.0
@@ -209,7 +210,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 offset, slope = calibMap[ (chsel,ntrk) ]
             except:
                 pass
-            allPdfs[ (chsel,ntrk) ] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d, mtop=expr('(@0-%f)/%f',mtop) )"%(chsel,ntrk,chsel,ntrk,offset,slope) )
+            allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d("
+                                               "uncalibmodel_%s_%d, "
+                                               "mtop=expr('(@0-%f)/%f',mtop))"%
+                                          (chsel,ntrk,chsel,ntrk,offset,slope) )
 
     #throw pseudo-experiments
     allFitVals  = {('comb',0):[], ('comb_mu',0):[]}
@@ -253,9 +257,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             pseudoDataH,pseudoData=None,None
             if options.genFromPDF:
                 obs = ROOT.RooArgSet(ws.var('SVLMass'))
-                pseudoData = allPdfs[key].generate(obs, nevtsToGen)
+                pseudoData = allPdfs[key].generateBinned(obs, nevtsToGen)
             else:
                 pseudoDataH = ihist.Clone('peh')
+                # print '[PE input] %2s, %d: %8.2f' % (chsel, trk, ihist.Integral())
                 pseudoDataH.Reset('ICE')
                 pseudoDataH.FillRandom(ihist, nevtsToGen)
                 pseudoData  = ROOT.RooDataHist('PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
@@ -269,7 +274,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
 
             #minimize likelihood
-            allNLL.append( allPdfs[key].createNLL(pseudoData,ROOT.RooFit.Extended()) )
+            allNLL.append( allPdfs[key].createNLL(pseudoData, ROOT.RooFit.Extended()) )
             #allNLL.append( allPdfs[key].createNLL(pseudoData) )
             if options.verbose>3:
                 sys.stdout.write(' [running Minuit]')
@@ -306,10 +311,11 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             if pseudoDataH : allPseudoDataH.append(pseudoDataH)
             allPseudoData.append(pseudoData)
             if options.verbose>3:
-                sys.stdout.write('\033[92m DONE\033[0m '
+                sys.stdout.write('%s DONE %s'
                                  '(mt: %6.2f+-%4.2f GeV, '
                                   'mu: %4.2f+-%4.2f)\n'%
-                                (fitVal, fitErr, fitVal_mu, fitErr_mu))
+                                (bcolors.OKGREEN,bcolors.ENDC,
+                                 fitVal, fitErr, fitVal_mu, fitErr_mu))
                 sys.stdout.flush()
 
         #combined likelihood
@@ -347,10 +353,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         for ll in allNLL: ll.Delete()
         combll.Delete()
         if options.verbose>3:
-            sys.stdout.write(' \033[92m \033[1m DONE\033[0m\033[1m '
+            sys.stdout.write(' %s%s DONE%s%s '
                              '(mt: %6.2f+-%4.2f GeV, '
-                              'mu: %5.3f+-%5.3f)\033[0m \n'%
-                            (fitVal, fitErr, fitVal_mu, fitErr_mu))
+                              'mu: %5.3f+-%5.3f)%s \n'%
+                            (bcolors.OKGREEN, bcolors.BOLD, bcolors.ENDC, bcolors.BOLD,
+                             fitVal, fitErr, fitVal_mu, fitErr_mu,
+                             bcolors.ENDC))
             sys.stdout.flush()
             print 80*'-'
 
@@ -495,11 +503,13 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
         scriptFile.write('cd %s\n'%jobsDir)
         command = ('runSVLPseudoExperiments.py %s %s -o %s -v 3 %s -n %d' %
                       (wsfilepath, pefilepath, odirpath, tag, options.nPexp))
+        if options.genFromPDF:
+            command += ' --genFromPDF'
         scriptFile.write('%s\n'%command)
         scriptFile.close()
         os.system('chmod u+rwx %s'%scriptFileN)
         os.system("bsub -q %s -J SVLPE%d \'%s\'"% (queue, n+1, scriptFileN))
-        sys.stdout.write('\033[92m SUBMITTED\n\033[0m')
+        sys.stdout.write(bcolors.OKGREEN+' SUBMITTED' + bcolors.ENDC)
     return 0
 
 """

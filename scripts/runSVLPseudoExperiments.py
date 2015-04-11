@@ -44,7 +44,8 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir):
     pdf.plotOn(frame,
                ROOT.RooFit.Name('tt'),
                ROOT.RooFit.ProjWData(data),
-               ROOT.RooFit.Components('ttshape_*'),
+               ROOT.RooFit.Components('ttshape_*,tshape_*'),
+               #ROOT.RooFit.Components('*_ttcor_*'),
                ROOT.RooFit.FillColor(ROOT.kOrange),
                ROOT.RooFit.LineColor(ROOT.kOrange),
                ROOT.RooFit.DrawOption('f'),
@@ -158,7 +159,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     varCtr=0
     while var :
         varName=var.GetName()
-        if not varName in ['mtop', 'SVLMass', 'mu']:
+        if not varName in ['mtop', 'SVLMass', 'mu']:        
+        #if not varName in ['mtop', 'SVLMass']:
             ws.var(varName).setConstant(True)
             varCtr+=1
         var = varIter.Next()
@@ -191,9 +193,13 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             bkgConstPDF = ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
+            #ws.var('bg_nuis_%s_%d'%(chsel,ntrk)).setVal(0.0)
+            #ws.var('bg_nuis_%s_%d'%(chsel,ntrk)).setConstant(True)
+
             #30% unc on background
             Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
             # print '[Expectation] %2s, %d: %8.2f' % (chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal())
+
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
             sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
                                                                               Ntt.GetName(), ttShapePDF.GetName(),
@@ -203,7 +209,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             ws.factory('PROD::uncalibmodel_%s_%d(%s,%s)'%(chsel,ntrk,
                                                           sumPDF.GetName(),
                                                           bkgConstPDF.GetName()))
-
+            
             #add calibration for this category if available (read from a pickle file?)
             offset, slope = 0.0, 1.0
             try:
@@ -261,8 +267,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             else:
                 pseudoDataH = ihist.Clone('peh')
                 # print '[PE input] %2s, %d: %8.2f' % (chsel, trk, ihist.Integral())
-                pseudoDataH.Reset('ICE')
-                pseudoDataH.FillRandom(ihist, nevtsToGen)
+                if options.nPexp>1:
+                    pseudoDataH.Reset('ICE')
+                    pseudoDataH.FillRandom(ihist, nevtsToGen)
+                else:
+                    print 'Single pseudo-experiment won\'t be randomized'
+
                 pseudoData  = ROOT.RooDataHist('PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
                                                'PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
                                                ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
@@ -296,7 +306,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError()
             allFitVals[mukey] .append(fitVal_mu)
             allFitErrs[mukey] .append(fitErr_mu)
-            allFitPulls[mukey].append((fitVal_mu-1.0)/fitErr_mu)
+            try:
+                allFitPulls[mukey].append((fitVal_mu-1.0)/fitErr_mu)
+            except:
+                allFitPulls[mukey].append(-9999)
 
             #show if required
             #FIXME: this is making the combined fit crash? something with TPads getting free'd up
@@ -305,7 +318,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,allNLL[-1]],
                                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
                                    outDir=options.outDir)
-                # raw_input('press key to continue...')
+                #raw_input('press key to continue...')
 
             #save to erase later
             if pseudoDataH : allPseudoDataH.append(pseudoDataH)
@@ -345,7 +358,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         muCombKey = ('comb_mu',0)
         allFitVals[muCombKey].append(fitVal_mu)
         allFitErrs[muCombKey].append(fitErr_mu)
-        allFitPulls[muCombKey].append((fitVal_mu-1.0)/fitErr_mu)
+        try:
+            allFitPulls[muCombKey].append((fitVal_mu-1.0)/fitErr_mu)
+        except:
+            allFitPulls[muCombKey].append(-999)
 
         #free used memory
         for h in allPseudoDataH : h.Delete()
@@ -545,7 +561,7 @@ def main():
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True)
-    if opt.spy : ROOT.gROOT.SetBatch(False)
+    #if opt.spy : ROOT.gROOT.SetBatch(False)
     ROOT.gSystem.Load("libUserCodeTopMassSecVtx")
     ROOT.AutoLibraryLoader.enable()
     if not opt.verbose > 5:

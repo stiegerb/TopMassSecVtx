@@ -26,8 +26,9 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLm
 
 	# Base correct, signal PDF :
 	# free parameters are linear functions of the top mass
+	
 	ws.factory("RooFormulaVar::%s_p0('@0*(@1-172.5)+@2',{"
-			   "slope_%s_p0[0.0],"
+		           "slope_%s_p0[0.0],"
 			   "mtop,"
 			   "offset_%s_p0[0.4,0.1,0.9]})"% (tag,tag,tag))
 	ws.factory("RooFormulaVar::%s_p1('@0*(@1-172.5)+@2',{"
@@ -43,18 +44,15 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLm
 			   "mtop,"
 			   "offset_%s_p3[25,5,100]})"% (tag,tag,tag))
 	ws.factory("RooFormulaVar::%s_p4('@0*(@1-172.5)+@2',{"
-			   #"slope_%s_p4[0,-1,1],"
 			   "slope_%s_p4[0],"
 			   "mtop,"
 			   "offset_%s_p4[5,-10,10]})"% (tag,tag,tag))
 	ws.factory("RooFormulaVar::%s_p5('@0*(@1-172.5)+@2',{"
-			   #"slope_%s_p5[0.05,0,2],"
 			   "slope_%s_p5[0],"
 			   "mtop,"
 			   "offset_%s_p5[10,1,100]})"% (tag,tag,tag))
 	ws.factory("RooFormulaVar::%s_p6('@0*(@1-172.5)+@2',{"
 			   "slope_%s_p6[0.05,0,2],"
-			   #"slope_%s_p6[0],"
 			   "mtop,"
 			   "offset_%s_p6[0.5,0.1,100]})"% (tag,tag,tag))
 
@@ -65,11 +63,14 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLm
 	if 'unm' in tag:
 		#freeze the top mass dependent slopes to 0 if unmatched permutations are in the tag
 		print 'Freezing all mtop-dependent slopes for %s'%tag
-		for i in xrange(0,6):
-			ws.var('slope_%s_p%d'%(tag,i)).setVal(0)
+		for i in xrange(0,7):
 			ws.var('slope_%s_p%d'%(tag,i)).setRange(0,0)
+			ws.var('slope_%s_p%d'%(tag,i)).setVal(0)
 		ws.var('offset_%s_p4'%tag).setRange(2,100)
 		ws.var('offset_%s_p5'%tag).setRange(1,100)
+
+		#for this case it needs to be put by hand to converge
+		if ch=='m' and ntrk==2 and 'tt' in procName: ws.var('offset_%s_p1'%tag).setRange(0,200)
 
 		thePDF = ws.factory("SUM::model_%s("
 							"%s_p0*RooBifurGauss::%s_f1(SVLMass,%s_p1,%s_p2,%s_p3),"
@@ -137,7 +138,7 @@ def parameterizeSignalPermutations(ws,permName,config,SVLmass,options,singleTop,
 			return
 		print ''
 	if bkg:
-		print ' \t backgroumd mode enabled'
+		print ' \t background mode enabled'
 
 	tasklist = []
 	for ch in chselList:

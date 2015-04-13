@@ -87,6 +87,10 @@ It takes as input a plotter.root file (from makeSVLDataMCPlots.py) with properly
 ```
 Prepares the workspace for the fits and put the RooFit workspace and plots in svlfits/ by default.
 ```
+python scripts/summarizeSVLresults.py --pe pe_inputs.root
+```
+Will compare the shape variations in the different categories for the pe_inputs file
+```
 ./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root nominal_172v5
 ```
 Will run the pseudoexperiment for one variation (e.g. nominal_172v5).
@@ -96,7 +100,7 @@ Will run the pseudoexperiment for one variation (e.g. nominal_172v5).
 ```
 Will run all the pseudoexperiments for all variation on batch.
 ```
-python scripts/summarizeSVLresults.py svlfits/
+python scripts/summarizeSVLresults.py --calib svlfits/
 ```
 Will parse the summaries of the pseudo-experiments and produce a calibration file
 ```

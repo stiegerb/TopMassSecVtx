@@ -80,6 +80,10 @@ Produces a number of data/MC comparison plots (both from the SVLInfo trees, and 
 ```
 Prepares the workspace for the fits and put the RooFit workspace and plots in svlfits/ by default.
 ```
+python scripts/summarizeSVLresults.py --pe pe_inputs.root
+```
+Will compare the shape variations in the different categories for the pe_inputs file
+```
 ./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root nominal_172v5
 ```
 Will run the pseudoexperiment for one variation (e.g. nominal_172v5).
@@ -88,8 +92,16 @@ Will run the pseudoexperiment for one variation (e.g. nominal_172v5).
 ./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root
 ```
 Will run all the pseudoexperiments for all variation on batch.
+```
+python scripts/summarizeSVLresults.py --calib svlfits/
+```
+Will parse the summaries of the pseudo-experiments and produce a calibration file
+```
+./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root -c svlfits/.svlcalib.pck
+```
+Will run the calibrated pseudo-experiments
 
-------------------------------------------------------
+---------------------------------------------------
 ### Producing QCD Templates
 makeSVLQCDTemplates.py produces MET and m(l,SV) distributions from the non-isolated data control region and stores them in qcd_templates.root.
 qcdFitter.py fits the MET distribution in the l+jets signal region, using the shapes from the non-isolated region produced by makeSVLQCDTemplates.py and produces m(l,SV) templates scaled according to the outcome of the fit.
@@ -98,6 +110,8 @@ It takes as input a plotter.root file (from makeSVLDataMCPlots.py) with properly
 ./scripts/makeSVLQCDTemplates.py treedir/
 ./test/topss2014/qcdFitter.py plotter.root qcd_templates.root
 ```
+
+---------------------------------------------------
 Control region analysis
 ```
 ./scripts/fitSecVtxProperties.py -i treedir/qcd_control    -o treedir/qcd_control/plots/    --weightPt --onlyCentral --minLxySig 10

@@ -95,6 +95,14 @@ Will run the pseudoexperiment for one variation (e.g. nominal_172v5).
 ./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root
 ```
 Will run all the pseudoexperiments for all variation on batch.
+```
+python scripts/summarizeSVLresults.py svlfits/
+```
+Will parse the summaries of the pseudo-experiments and produce a calibration file
+```
+./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root -c svlfits/.svlcalib.pck
+```
+Will run the calibrated pseudo-experiments
 -----------------------------
 Control region analysis
 ```

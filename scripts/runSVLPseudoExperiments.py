@@ -143,8 +143,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
          cachefile = open(options.calib,'r')
          calibMap  = pickle.load(cachefile)
          cachefile.close()
-         print '[runPseudoExperiments] Read calibration from %s'%cachefile
+         print '[runPseudoExperiments] Read calibration from %s'%options.calib
 
+    genMtop=172.5
     try:
         genMtop=float(experimentTag.rsplit('_', 1)[1].replace('v','.'))
     except Exception, e:
@@ -169,7 +170,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     #build the relevant PDFs
     allPdfs = {}
     for chsel in ['em','mm','ee','m','e']:
-        if options.selection : chsel += '_' + options.selection
+        if len(options.selection)>0 : chsel += '_' + options.selection
         for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
             ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
             ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
@@ -209,16 +210,17 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             ws.factory('PROD::uncalibmodel_%s_%d(%s,%s)'%(chsel,ntrk,
                                                           sumPDF.GetName(),
                                                           bkgConstPDF.GetName()))
-            
+
             #add calibration for this category if available (read from a pickle file?)
-            offset, slope = 0.0, 1.0
+            # reco-sim = slope.sim+offset <=> sim = (reco-offset)/(slope+1)
+            offset, slope = 0.0, 0.0
             try:
-                offset, slope = calibMap[ (chsel,ntrk) ]
+                offset, slope = calibMap[ '%s_%d'%(chsel,ntrk) ]
             except:
                 pass
             allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d("
                                                "uncalibmodel_%s_%d, "
-                                               "mtop=expr('(@0-%f)/%f',mtop))"%
+                                               "mtop=expr('(@0-%f)/(%f+1.0)',mtop))"%
                                           (chsel,ntrk,chsel,ntrk,offset,slope) )
 
     #throw pseudo-experiments
@@ -280,8 +282,6 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             if options.verbose>3:
                 sys.stdout.write(' [generated pseudodata]')
                 sys.stdout.flush()
-
-
 
             #minimize likelihood
             allNLL.append( allPdfs[key].createNLL(pseudoData, ROOT.RooFit.Extended()) )
@@ -381,14 +381,14 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
     #show and save final results
     selTag=''
-    if options.selection : selTag='_%s'%options.selection
+    if len(options.selection)>0 : selTag='_%s'%options.selection
     peFile=ROOT.TFile(os.path.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)), 'RECREATE')
     for key in allFitVals:
         chsel,trk = key
         if '_mu' in chsel : continue
 
         #fill the histograms
-        mtopfitH = ROOT.TH1F('mtopfit_%s_%d'%(chsel,trk),';Top quark mass [GeV];Pseudo-experiments',200,150,200)
+        mtopfitH = ROOT.TH1F('mtopfit_%s_%d'%(chsel,trk),';#Deltam_{t} [GeV];Pseudo-experiments',200,-5,5)
         mtopfitH.SetDirectory(0)
         mtopfitStatUncH = ROOT.TH1F('mtopfit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)
         mtopfitStatUncH.SetDirectory(0)
@@ -399,7 +399,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         fitCorrH = ROOT.TH2F('muvsmtopcorr_%s_%d'%(chsel,trk),';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.85,1.15)
         fitCorrH.SetDirectory(0)
         for i in xrange(0,len(allFitVals[key])):
-            mtopfitH         .Fill( allFitVals[key][i] )
+            mtopfitH         .Fill( allFitVals[key][i]-genMtop )
             mtopfitStatUncH  .Fill( allFitErrs[key][i] )
             mtopfitPullH     .Fill( allFitPulls[key][i] )
             mufitStatUncH    .Fill( allFitErrs[(chsel+'_mu',trk)][i] )
@@ -490,7 +490,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     import time
     cmsswBase = os.environ['CMSSW_BASE']
-    jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/svlPEJobs',
+    sel=options.selection
+    if len(sel)==0 : sel='inclusive'
+    jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/svlPEJobs/%s'%sel,
                            time.strftime('%b%d'))
     # jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/svlPEJobs',
     #                        time.strftime('%b%d'), time.strftime('%H%M%S'))
@@ -547,11 +549,11 @@ def main():
                        help='if true,shows fit results on the screen')
     parser.add_option('-v', '--verbose', dest='verbose', default=0, type=int,
                        help='Verbose mode')
-    parser.add_option('-s', '--selection', dest='selection', default=None,
+    parser.add_option('-s', '--selection', dest='selection', default='',
                        help='selection type')
-    parser.add_option('-c', '--calib', dest='calib', default=None,
+    parser.add_option('-c', '--calib', dest='calib', default='',
                        help='calibration file')
-    parser.add_option('-n', '--nPexp', dest='nPexp', default=100, type=int,
+    parser.add_option('-n', '--nPexp', dest='nPexp', default=200, type=int,
                        help='Total # pseudo-experiments.')
     parser.add_option('-o', '--outDir', dest='outDir', default='svlfits',
                        help='Output directory [default: %default]')

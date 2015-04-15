@@ -13,21 +13,21 @@ def parseEnsembles(url,selection=''):
      ensemblesMap={}
      peInputFile = ROOT.TFile.Open(url, 'READ')
      allExperiments = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()]
-     
+
      for experimentTag in allExperiments:
 
          #check tag to be assigned
          tag=''
-         tag='massscan' if 'nominal' in experimentTag else tag
+         tag='massscan' if 'nominal'  in experimentTag else tag
          tag='matching' if 'matching' in experimentTag else tag
-         tag='scale'    if 'scale' in experimentTag else tag
-         tag='toppt'    if 'toppt' in experimentTag else tag       
-         tag='bfrag'    if 'bfrag' in experimentTag else tag
-         tag='bfn'      if 'bfn' in experimentTag else tag
-         tag='p11'      if 'p11' in experimentTag else tag
-         tag='jes'      if 'jes' in experimentTag else tag
-         tag='powheg'   if 'pow' in experimentTag else tag
-         if len(tag)==0 : 
+         tag='scale'    if 'scale'    in experimentTag else tag
+         tag='toppt'    if 'toppt'    in experimentTag else tag
+         tag='bfrag'    if 'bfrag'    in experimentTag else tag
+         tag='bfn'      if 'bfn'      in experimentTag else tag
+         tag='p11'      if 'p11'      in experimentTag else tag
+         tag='jes'      if 'jes'      in experimentTag else tag
+         tag='powheg'   if 'powpyth'  in experimentTag else tag
+         if len(tag)==0 :
              continue
          if not (tag in ensemblesMap) : ensemblesMap[tag]={}
 
@@ -52,16 +52,16 @@ def parseEnsembles(url,selection=''):
              grKey=experimentTag.replace(grKey,'')
          else:
              grKey=grKey.replace('v','.')
-     
+
 
          for chsel in ['em','mm','ee','m','e']:
              if len(selection)>0 : chsel += '_' + selection
-             for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]                 
+             for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
                  ihist   = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,ntrk))
                  refHist = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(refTag,chsel,refTag,ntrk))
                  ratio=ihist.Clone('ratio')
                  ratio.Divide(refHist)
-                 
+
                  key=chsel+'_'+str(ntrk)
                  if not(key in ensemblesMap[tag]): ensemblesMap[tag][key]={}
 
@@ -126,7 +126,8 @@ def parsePEResultsFromFile(url):
 Shows results
 """
 def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),doFit=False):
-
+    if not os.path.exists(outDir):
+        os.system('mkdir -p %s' % outDir)
     #save calibration to pickle
     fitParamsMap={}
     nx=3
@@ -157,8 +158,8 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),doFit=
                 slope=gr.GetFunction('pol1').GetParameter(1)
                 gr.GetFunction('pol1').SetLineColor(ROOT.kBlue)
                 fitParamsMap[key]=(offset,slope)
-        
-            if 'comb' in key : 
+
+            if 'comb' in key :
                 if igrctr==1 :
                     p=canvas.cd(2+nx*(ny-1))
                 gr.Draw(drawOpt)
@@ -167,12 +168,12 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),doFit=
                     ip+=1
                     p=canvas.cd(ip)
                 gr.Draw(drawOpt)
-                
+
             drawOpt='p'
             if leg : leg.AddEntry(gr,gr.GetTitle(),'p')
             gr.GetYaxis().SetRangeUser(yrange[0],yrange[1])
             gr.GetYaxis().SetNdivisions(5)
-            
+
         if leg :
             leg.Draw()
             #ROOT.SetOwnership(leg,p)
@@ -224,7 +225,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),doFit=
             p.SetBottomMargin(0.03)
             gr.GetXaxis().SetTitle(xaxisTitle)
             gr.GetXaxis().SetTitleOffset(0.8)
-            gr.GetXaxis().SetTitleSize(0.1)            
+            gr.GetXaxis().SetTitleSize(0.1)
             gr.GetXaxis().SetLabelSize(0.08)
         else:
             p.SetTopMargin(0.03)
@@ -232,7 +233,8 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),doFit=
             gr.GetXaxis().SetTitleSize(0)
             gr.GetXaxis().SetLabelSize(0)
 
-    for ext in ['png','pdf'] : canvas.SaveAs('%s/%s.%s'%(outDir,outName,ext))
+    for ext in ['png','pdf']:
+        canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
     return fitParamsMap
 
 
@@ -249,17 +251,17 @@ def showSystematicsTable(results):
         if expTag=='172.5' : continue
         if expTag=='p11_172.5': continue
         if expTag=='bfrac_172.5': continue
-        print '{0:12s}'.format(expTag),
-        for cat in sorted(results, reverse=False):           
-            
+        print '{0:12s}'.format(expTag.replace('_172.5','')),
+        for cat in sorted(results, reverse=False):
+
             expTag2diff='172.5'
             if 'p11' in expTag:     expTag2diff='p11_172.5'
             if 'powherw' in expTag: expTag2diff='powpyth_172.5'
             if 'bfrag' in expTag:   expTag2diff='bfrag_172.5'
 
-            diff=results[cat][expTag][0]-results[cat][expTag2diff][0]
-            diffErr=math.sqrt( results[cat][expTag][1]**2+results[cat][expTag2diff][1]**2 )
-            print '{0:12s}'.format('%3.3f'%diff),
+            diff = results[cat][expTag][0]-results[cat][expTag2diff][0]
+            diffErr = math.sqrt( results[cat][expTag][1]**2+results[cat][expTag2diff][1]**2 )
+            print '{0:12s}'.format('%6.3f'%diff),
             #print '{0:12s}'.format(toLatexRounded(diff,diffErr)),
         print ' '
     print 80*'-'
@@ -278,16 +280,18 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('--pe',    dest='peInput', default=None, help='compare ensembles for pseudo-experiments')
     parser.add_option('--calib', dest='calib',   default=None, help='show calibration')
+    parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
+                      help='Output directory [default: %default]')
     (opt, args) = parser.parse_args()
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True)
-    
+
     #parse calibration results from directory
     if opt.calib:
         results,calibGrMap = parsePEResultsFromFile(url=opt.calib)
-        calibMap = show(grCollMap=calibGrMap,                        
+        calibMap = show(grCollMap=calibGrMap,
                         outDir=opt.calib,
                         outName='svlcalib',
                         yaxisTitle='#Deltam_{t} [GeV]',
@@ -298,13 +302,13 @@ def main():
         pickle.dump(calibMap, cachefile, pickle.HIGHEST_PROTOCOL)
         cachefile.close()
         print 'Wrote %s with calibration constants'%calibFile
-        #showSystematicsTable(results=results)
+        showSystematicsTable(results=results)
 
     if opt.peInput:
         ensemblesMap=parseEnsembles(url=opt.peInput)
         for tag,grMap in ensemblesMap.items():
-            show(grCollMap=ensemblesMap[tag],                        
-                 outDir='svlfits',
+            show(grCollMap=ensemblesMap[tag],
+                 outDir=opt.outDir,
                  outName=tag,
                  yaxisTitle='m(SV,lepton) [GeV]',
                  xaxisTitle='Ratio to reference',

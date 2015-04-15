@@ -7,6 +7,7 @@ import pickle
 from UserCode.TopMassSecVtx.rounding import *
 from UserCode.TopMassSecVtx.PlotUtils import bcolors
 from makeSVLMassHistos import NTRKBINS
+COLORS=[ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9, ROOT.kViolet+2,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kYellow-3]
 from pprint import pprint
 
 """
@@ -50,29 +51,36 @@ def parseEnsembles(url,selection=''):
          #parse mtop
          grKey=experimentTag.rsplit('_', 1)[1]
          if not 'massscan' in tag:
-             grKey=grKey.replace('_',' ')
+             grKey=grKey.replace('_',' ',99)
              grKey=experimentTag.replace(grKey,'')
          else:
              grKey=grKey.replace('v','.')
 
-
-         for chsel in ['em','mm','ee','m','e']:
+         for chsel in ['em','mm','ee','m','e','inclusive']:
              if len(selection)>0 : chsel += '_' + selection
-             for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
-                 ihist   = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,ntrk))
-                 refHist = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(refTag,chsel,refTag,ntrk))
-                 ratio=ihist.Clone('ratio')
-                 ratio.Divide(refHist)
-
+             for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]                 
+                 ihist   = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,ntrk)).Clone()
+                 refHist = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(refTag,chsel,refTag,ntrk)).Clone()
+                 ihist.Rebin()
+                 refHist.Rebin()
+                 ihist.Divide(refHist)
                  key=chsel+'_'+str(ntrk)
+                 key=key.replace('inclusive','comb')
                  if not(key in ensemblesMap[tag]): ensemblesMap[tag][key]={}
 
-                 ensemblesMap[tag][key][grKey]=ROOT.TGraphErrors(ratio)
+                 ensemblesMap[tag][key][grKey]=ROOT.TGraphErrors(ihist)
                  ensemblesMap[tag][key][grKey].SetName('ratio_%s_%s_%d'%(chsel,experimentTag,ntrk))
                  ensemblesMap[tag][key][grKey].SetTitle(grKey)
+                 color=COLORS[len(ensemblesMap[tag][key])-1]
+                 if tag==refTag: color=1
+                 ensemblesMap[tag][key][grKey].SetFillStyle(0)
+                 ensemblesMap[tag][key][grKey].SetMarkerColor(color)
+                 ensemblesMap[tag][key][grKey].SetLineColor(color)
                  ensemblesMap[tag][key][grKey].SetMarkerStyle(20)
                  ensemblesMap[tag][key][grKey].SetMarkerSize(1.0)
-                 ratio.Delete()
+
+                 ihist.Delete()
+                 refHist.Delete()
 
      return ensemblesMap
 
@@ -127,7 +135,7 @@ def parsePEResultsFromFile(url):
 """
 Shows results
 """
-def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),doFit=False):
+def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),baseDrawOpt='p',doFit=False):
     if not os.path.exists(outDir):
         os.system('mkdir -p %s' % outDir)
     #save calibration to pickle
@@ -138,47 +146,46 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),doFit=
     canvas=ROOT.TCanvas('c','c',nx*400,ny*250)
     canvas.Divide(nx,ny)
     ip=0
+    allLegs=[]
     for key,grColl in sorted(grCollMap.items()):
 
         igrctr=0
-        leg=None
-        if ip==0:
-            leg=ROOT.TLegend(0.2,0.8,0.95,0.9)
-            leg.SetFillStyle(0)
-            leg.SetTextFont(42)
-            leg.SetTextSize(0.04)
-            leg.SetBorderSize(0)
-            leg.SetNColumns(len(grColl))
+        
+        nleg=-1
+        if 'comb' in key:
+             nleg=len(allLegs)
+             allLegs.append(ROOT.TLegend(0.2,0.2,0.9,0.8))
+             allLegs[nleg].SetFillStyle(0)
+             allLegs[nleg].SetTextFont(42)
+             allLegs[nleg].SetTextSize(0.06)
+             allLegs[nleg].SetBorderSize(0)
+             allLegs[nleg].SetNColumns(2)
         for tag,gr in sorted(grColl.items()):
             gr.Sort()
             gr.SetMarkerStyle(gr.GetMarkerStyle()+igrctr)
             igrctr+=1
-            drawOpt='ap' if igrctr==1 else 'p'
+
             if doFit:
                 gr.Fit('pol1','MQ+')
                 offset=gr.GetFunction('pol1').GetParameter(0)
                 slope=gr.GetFunction('pol1').GetParameter(1)
                 gr.GetFunction('pol1').SetLineColor(ROOT.kBlue)
                 fitParamsMap[key]=(offset,slope)
-
-            if 'comb' in key :
+        
+            drawOpt='a'+baseDrawOpt if igrctr==1 else baseDrawOpt
+            if 'comb' in key : 
                 if igrctr==1 :
                     p=canvas.cd(2+nx*(ny-1))
                 gr.Draw(drawOpt)
+                allLegs[nleg].AddEntry(gr,gr.GetTitle(),baseDrawOpt)
             else:
                 if igrctr==1 :
                     ip+=1
                     p=canvas.cd(ip)
                 gr.Draw(drawOpt)
-
-            drawOpt='p'
-            if leg : leg.AddEntry(gr,gr.GetTitle(),'p')
             gr.GetYaxis().SetRangeUser(yrange[0],yrange[1])
             gr.GetYaxis().SetNdivisions(5)
-
-        if leg :
-            leg.Draw()
-            #ROOT.SetOwnership(leg,p)
+            
         p.SetGridy()
         label=ROOT.TLatex()
         label.SetNDC()
@@ -207,7 +214,8 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),doFit=
             gr.GetXaxis().SetLabelSize(0.08)
             p=canvas.cd(1+nx*(ny-1))
             label.DrawLatex(0.2,0.8,'#bf{CMS} #it{simulation}')
-            continue
+            allLegs[nleg].Draw()
+
 
         if (ip-1)%nx==0:
             p.SetLeftMargin(0.15)
@@ -319,7 +327,8 @@ def main():
                  outName=tag,
                  yaxisTitle='m(SV,lepton) [GeV]',
                  xaxisTitle='Ratio to reference',
-                 yrange=(0.5,2),
+                 yrange=(0.75,1.25),
+                 baseDrawOpt='lx',
                  doFit=False)
     return
 

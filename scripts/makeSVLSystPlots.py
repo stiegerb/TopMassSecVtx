@@ -43,6 +43,8 @@ SYSTSFROMFILES = [
 		'MC8TeV_TT_Z2star_powheg_pythia.root'),
 ]
 
+SYSTTOPROCNAME = dict([(k,v.replace('.root','')) for k,_,v in SYSTSFROMFILES])
+
 SYSTSFROMWEIGHTS = [
 	('nominal', 'Nominal',                  '1'),
 	('toppt',   'Top p_{T} weight applied', 'Weight[7]'),
@@ -255,6 +257,10 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 			finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
 				                        'JESWeight[')
 
+		## Remove the BR weight for the POWHEG samples
+		if syst in ['powherw', 'powpyth']:
+			finalsel = finalsel[len('Weight[0]*'):]
+
 		tasks.append((hname, 'SVLMass', finalsel,
 			          NBINS, XMIN, XMAX, MASSXAXISTITLE))
 		hname_to_keys[hname] = (tag, syst, comb)
@@ -267,6 +273,11 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 			if syst in ['jesup', 'jesdn']:
 				finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
 					                        'JESWeight[')
+
+			## Remove the BR weight for the POWHEG samples
+			if syst in ['powherw', 'powpyth']:
+				finalsel = finalsel[len('Weight[0]*'):]
+
 			hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
 			tasks.append((hname, 'SVLMass', finalsel,
 				          NBINS, XMIN, XMAX, MASSXAXISTITLE))
@@ -383,19 +394,20 @@ def main(args, opt):
 		# raw_input("Press any key to continue...")
 		runTasks(systfiles, tasklist, opt, 'syst_histos')
 
-	systhistos = {} # (tag, syst, comb) -> histo
-	systhistos = gatherHistosFromFiles(tasklist, systfiles,
-		                           os.path.join(opt.outDir, 'syst_histos'),
-		                           hname_to_keys)
+		systhistos = {} # (tag, syst, comb) -> histo
+		systhistos = gatherHistosFromFiles(tasklist, systfiles,
+			                           os.path.join(opt.outDir, 'syst_histos'),
+			                           hname_to_keys)
 
 
-	cachefile = open(".svlsysthistos.pck", 'w')
-	pickle.dump(systhistos, cachefile, pickle.HIGHEST_PROTOCOL)
+		cachefile = open(".svlsysthistos.pck", 'w')
+		pickle.dump(systhistos, cachefile, pickle.HIGHEST_PROTOCOL)
+		cachefile.close()
+
+	cachefile = open(".svlsysthistos.pck", 'r')
+	systhistos = pickle.load(cachefile)
+	print '>>> Read syst histos from cache (.svlsysthistos.pck)'
 	cachefile.close()
-
-	# cachefile = open(".svlsysthistos.pck", 'r')
-	# systhistos = pickle.load(cachefile)
-	# cachefile.close()
 
 	# pprint(sorted(set(systhistos.keys())))
 
@@ -507,6 +519,8 @@ if __name__ == "__main__":
 	parser.add_option('-v', '--verbose', dest='verbose', action="store",
 					  type='int', default=1,
 					  help='Verbose mode [default: %default (semi-quiet)]')
+	parser.add_option('-f', '--filter', dest='filter', default='',
+					  help='Run only these tasks (comma separated list)')
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",

@@ -129,13 +129,14 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
     #read the file with input distributions
     inputDistsF = ROOT.TFile.Open(pefile, 'READ')
-    print '[runPseudoExperiments] Reading PE input from %s' % pefile
-    print '[runPseudoExperiments] with %s' % experimentTag
+    prepend = '[runPseudoExperiments %s] '%experimentTag
+    print prepend+'Reading PE input from %s' % pefile
+    print prepend+'with %s' % experimentTag
 
     wsInputFile = ROOT.TFile.Open(wsfile, 'READ')
     ws = wsInputFile.Get('w')
     wsInputFile.Close()
-    print '[runPseudoExperiments] Read workspace from %s' % wsfile
+    print prepend+'Read workspace from %s' % wsfile
 
     #readout calibration from a file
     calibMap=None
@@ -143,14 +144,14 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
          cachefile = open(options.calib,'r')
          calibMap  = pickle.load(cachefile)
          cachefile.close()
-         print '[runPseudoExperiments] Read calibration from %s'%options.calib
+         print prepend+'Read calibration from %s'%options.calib
 
     genMtop=172.5
     try:
         genMtop=float(experimentTag.rsplit('_', 1)[1].replace('v','.'))
     except Exception, e:
         raise e
-    print '[runPseudoExperiments] Generated top mass is %5.1f GeV'%genMtop
+    print prepend+'Generated top mass is %5.1f GeV'%genMtop
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")
@@ -160,12 +161,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     varCtr=0
     while var :
         varName=var.GetName()
-        if not varName in ['mtop', 'SVLMass', 'mu']:        
+        if not varName in ['mtop', 'SVLMass', 'mu']:
         #if not varName in ['mtop', 'SVLMass']:
             ws.var(varName).setConstant(True)
             varCtr+=1
         var = varIter.Next()
-    print '[runPseudoExperiments] setting to constant %d numbers in the model'%varCtr
+    print prepend+'setting to constant %d numbers in the model'%varCtr
 
     #build the relevant PDFs
     allPdfs = {}
@@ -229,7 +230,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     allFitPulls = {('comb',0):[], ('comb_mu',0):[]}
     poi = ROOT.RooArgSet( ws.var('mtop') )
     if options.verbose>1:
-        print '[runPseudoExperiments] Running %d experiments' % options.nPexp
+        print prepend+'Running %d experiments' % options.nPexp
         print 80*'-'
     for i in xrange(0,options.nPexp):
 
@@ -238,12 +239,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         allPseudoDataH=[]
         allPseudoData=[]
         if options.verbose>1 and options.verbose<=3:
-            printProgress(i, options.nPexp, '[runPseudoExperiments] ')
+            printProgress(i, options.nPexp, prepend+' ')
         for key in sorted(allPdfs):
             chsel, trk = key
             mukey=(chsel+'_mu',trk)
             if options.verbose>3:
-                sys.stdout.write('[runPseudoExperiments] Exp %-3d (%-2s, %d):' % (i+1, chsel, trk))
+                sys.stdout.write(prepend+'Exp %-3d (%-2s, %d):' % (i+1, chsel, trk))
                 sys.stdout.flush()
 
             ws.var('mtop').setVal(172.5)
@@ -333,7 +334,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
         #combined likelihood
         if options.verbose>3:
-            sys.stdout.write('[runPseudoExperiments] [combining channels]')
+            sys.stdout.write(prepend+'[combining channels]')
             sys.stdout.flush()
         ws.var('mtop').setVal(172.5)
         ws.var('mu').setVal(1.0)
@@ -553,6 +554,8 @@ def main():
                        help='selection type')
     parser.add_option('-c', '--calib', dest='calib', default='',
                        help='calibration file')
+    parser.add_option('-f', '--filter', dest='filter', default='',
+                       help='Run only on these variations (comma separated list)')
     parser.add_option('-n', '--nPexp', dest='nPexp', default=200, type=int,
                        help='Total # pseudo-experiments.')
     parser.add_option('-o', '--outDir', dest='outDir', default='svlfits',
@@ -586,7 +589,7 @@ def main():
         ## Run a single experiment
         if len(args)>2:
             if not args[2] in allTags:
-                print ("[runPseudoExperiments] ERROR: variation not "
+                print (prepend+"ERROR: variation not "
                        "found in input file! Aborting")
                 return -2
 
@@ -597,6 +600,14 @@ def main():
 
         #loop over the required number of jobs
         print 'Submitting PE jobs to batch'
+        if len(opt.filter)>0:
+            filteredTags = opt.filter.split(',')
+            for tag in filteredTags:
+                if not tag in allTags:
+                    print (prepend+"ERROR: variation not "
+                           "found in input file! Aborting")
+                    return -3
+            allTags = filteredTags
         submitBatchJobs(args[0], args[1], allTags, opt)
 
         return 0

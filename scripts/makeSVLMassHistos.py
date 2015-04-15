@@ -165,6 +165,11 @@ def runTasks(inputfiles, tasklist, opt, subdir):
 	os.system('mkdir -p %s' % os.path.join(opt.outDir, subdir))
 
 	for key, task in tasklist.iteritems():
+		## Apply filter
+		if hasattr(opt,'filter'):
+			if len(opt.filter)>0:
+				if not key in opt.filter.split(','): continue
+
 		for ifilep in inputfiles[key]:
 			ofilen = os.path.basename(ifilep)
 			ofilep = os.path.join(opt.outDir, subdir, ofilen)

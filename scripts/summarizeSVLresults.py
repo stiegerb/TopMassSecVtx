@@ -5,8 +5,10 @@ import optparse
 import math
 import pickle
 from UserCode.TopMassSecVtx.rounding import *
+from UserCode.TopMassSecVtx.PlotUtils import bcolors
 from makeSVLMassHistos import NTRKBINS
 COLORS=[ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9, ROOT.kViolet+2,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kYellow-3]
+from pprint import pprint
 
 """
 """
@@ -14,21 +16,21 @@ def parseEnsembles(url,selection=''):
      ensemblesMap={}
      peInputFile = ROOT.TFile.Open(url, 'READ')
      allExperiments = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()]
-     
+
      for experimentTag in allExperiments:
 
          #check tag to be assigned
          tag=''
-         tag='massscan' if 'nominal' in experimentTag else tag
+         tag='massscan' if 'nominal'  in experimentTag else tag
          tag='matching' if 'matching' in experimentTag else tag
-         tag='scale'    if 'scale' in experimentTag else tag
-         tag='toppt'    if 'toppt' in experimentTag else tag       
-         tag='bfrag'    if 'bfrag' in experimentTag else tag
-         tag='bfn'      if 'bfn' in experimentTag else tag
-         tag='p11'      if 'p11' in experimentTag else tag
-         tag='jes'      if 'jes' in experimentTag else tag
-         tag='powheg'   if 'pow' in experimentTag else tag
-         if len(tag)==0 : 
+         tag='scale'    if 'scale'    in experimentTag else tag
+         tag='toppt'    if 'toppt'    in experimentTag else tag
+         tag='bfrag'    if 'bfrag'    in experimentTag else tag
+         tag='bfn'      if 'bfn'      in experimentTag else tag
+         tag='p11'      if 'p11'      in experimentTag else tag
+         tag='jes'      if 'jes'      in experimentTag else tag
+         tag='powheg'   if 'powpyth'  in experimentTag else tag
+         if len(tag)==0 :
              continue
          if not (tag in ensemblesMap) : ensemblesMap[tag]={}
 
@@ -62,7 +64,6 @@ def parseEnsembles(url,selection=''):
                  ihist.Rebin()
                  refHist.Rebin()
                  ihist.Divide(refHist)
-                 
                  key=chsel+'_'+str(ntrk)
                  key=key.replace('inclusive','comb')
                  if not(key in ensemblesMap[tag]): ensemblesMap[tag][key]={}
@@ -135,7 +136,8 @@ def parsePEResultsFromFile(url):
 Shows results
 """
 def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),baseDrawOpt='p',doFit=False):
-
+    if not os.path.exists(outDir):
+        os.system('mkdir -p %s' % outDir)
     #save calibration to pickle
     fitParamsMap={}
     nx=3
@@ -233,7 +235,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),baseDr
             p.SetBottomMargin(0.03)
             gr.GetXaxis().SetTitle(xaxisTitle)
             gr.GetXaxis().SetTitleOffset(0.8)
-            gr.GetXaxis().SetTitleSize(0.1)            
+            gr.GetXaxis().SetTitleSize(0.1)
             gr.GetXaxis().SetLabelSize(0.08)
         else:
             p.SetTopMargin(0.03)
@@ -241,7 +243,8 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),baseDr
             gr.GetXaxis().SetTitleSize(0)
             gr.GetXaxis().SetLabelSize(0)
 
-    for ext in ['png','pdf'] : canvas.SaveAs('%s/%s.%s'%(outDir,outName,ext))
+    for ext in ['png','pdf']:
+        canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
     return fitParamsMap
 
 
@@ -249,29 +252,34 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),baseDr
 Prints the table of systematics
 """
 def showSystematicsTable(results):
+    # pprint(results)
     #show results
-    print '{0:12s}'.format(''),
-    for cat in sorted(results, reverse=False) : print '{0:12s}'.format(cat),
+    print 14*' ',
+    for cat in sorted(results) : print '{0:7s}'.format(cat),
     print ' '
-    print 80*'-'
-    for expTag in sorted(results.itervalues().next(),reverse=False):
-        if expTag=='172.5' : continue
-        if expTag=='p11_172.5': continue
-        if expTag=='bfrac_172.5': continue
-        print '{0:12s}'.format(expTag),
-        for cat in sorted(results, reverse=False):           
-            
+    print 140*'-'
+    for expTag in sorted(results.itervalues().next()):
+        if expTag in ['172.5', 'p11_172.5', 'bfrag_172.5']: continue
+        print '{0:12s}'.format(expTag.replace('_172.5','')),
+        for cat in sorted(results, reverse=False):
+
             expTag2diff='172.5'
             if 'p11' in expTag:     expTag2diff='p11_172.5'
             if 'powherw' in expTag: expTag2diff='powpyth_172.5'
             if 'bfrag' in expTag:   expTag2diff='bfrag_172.5'
 
-            diff=results[cat][expTag][0]-results[cat][expTag2diff][0]
-            diffErr=math.sqrt( results[cat][expTag][1]**2+results[cat][expTag2diff][1]**2 )
-            print '{0:12s}'.format('%3.3f'%diff),
+            diff = results[cat][expTag][0]-results[cat][expTag2diff][0]
+            diffstr = ' %6.3f'%diff
+            if expTag not in ['166.5','169.5','171.5','173.5','175.5','178.5']:
+                if abs(diff) > 0.5 and abs(diff) < 1.0:
+                    diffstr = "%7s"%(bcolors.YELLOW+diffstr+bcolors.ENDC)
+                if abs(diff) >= 1.0:
+                    diffstr = "%7s"%(bcolors.RED+diffstr+bcolors.ENDC)
+            diffErr = math.sqrt( results[cat][expTag][1]**2+results[cat][expTag2diff][1]**2 )
+            print diffstr,
             #print '{0:12s}'.format(toLatexRounded(diff,diffErr)),
         print ' '
-    print 80*'-'
+    print 140*'-'
     return 0
 
 
@@ -287,16 +295,18 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('--pe',    dest='peInput', default=None, help='compare ensembles for pseudo-experiments')
     parser.add_option('--calib', dest='calib',   default=None, help='show calibration')
+    parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
+                      help='Output directory [default: %default]')
     (opt, args) = parser.parse_args()
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True)
-    
+
     #parse calibration results from directory
     if opt.calib:
         results,calibGrMap = parsePEResultsFromFile(url=opt.calib)
-        calibMap = show(grCollMap=calibGrMap,                        
+        calibMap = show(grCollMap=calibGrMap,
                         outDir=opt.calib,
                         outName='svlcalib',
                         yaxisTitle='#Deltam_{t} [GeV]',
@@ -312,8 +322,8 @@ def main():
     if opt.peInput:
         ensemblesMap=parseEnsembles(url=opt.peInput)
         for tag,grMap in ensemblesMap.items():
-            show(grCollMap=ensemblesMap[tag],                        
-                 outDir='svlfits',
+            show(grCollMap=ensemblesMap[tag],
+                 outDir=opt.outDir,
                  outName=tag,
                  yaxisTitle='m(SV,lepton) [GeV]',
                  xaxisTitle='Ratio to reference',

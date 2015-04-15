@@ -257,6 +257,10 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 			finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
 				                        'JESWeight[')
 
+		## Remove the BR weight for the POWHEG samples
+		if syst in ['powherw', 'powpyth']:
+			finalsel = finalsel[len('Weight[0]*'):]
+
 		tasks.append((hname, 'SVLMass', finalsel,
 			          NBINS, XMIN, XMAX, MASSXAXISTITLE))
 		hname_to_keys[hname] = (tag, syst, comb)

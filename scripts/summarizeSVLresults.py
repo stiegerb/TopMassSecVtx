@@ -5,7 +5,9 @@ import optparse
 import math
 import pickle
 from UserCode.TopMassSecVtx.rounding import *
+from UserCode.TopMassSecVtx.PlotUtils import bcolors
 from makeSVLMassHistos import NTRKBINS
+from pprint import pprint
 
 """
 """
@@ -242,15 +244,14 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),doFit=
 Prints the table of systematics
 """
 def showSystematicsTable(results):
+    # pprint(results)
     #show results
-    print '{0:12s}'.format(''),
-    for cat in sorted(results, reverse=False) : print '{0:12s}'.format(cat),
+    print 14*' ',
+    for cat in sorted(results) : print '{0:7s}'.format(cat),
     print ' '
-    print 80*'-'
-    for expTag in sorted(results.itervalues().next(),reverse=False):
-        if expTag=='172.5' : continue
-        if expTag=='p11_172.5': continue
-        if expTag=='bfrac_172.5': continue
+    print 140*'-'
+    for expTag in sorted(results.itervalues().next()):
+        if expTag in ['172.5', 'p11_172.5', 'bfrag_172.5']: continue
         print '{0:12s}'.format(expTag.replace('_172.5','')),
         for cat in sorted(results, reverse=False):
 
@@ -260,11 +261,17 @@ def showSystematicsTable(results):
             if 'bfrag' in expTag:   expTag2diff='bfrag_172.5'
 
             diff = results[cat][expTag][0]-results[cat][expTag2diff][0]
+            diffstr = ' %6.3f'%diff
+            if expTag not in ['166.5','169.5','171.5','173.5','175.5','178.5']:
+                if abs(diff) > 0.5 and abs(diff) < 1.0:
+                    diffstr = "%7s"%(bcolors.YELLOW+diffstr+bcolors.ENDC)
+                if abs(diff) >= 1.0:
+                    diffstr = "%7s"%(bcolors.RED+diffstr+bcolors.ENDC)
             diffErr = math.sqrt( results[cat][expTag][1]**2+results[cat][expTag2diff][1]**2 )
-            print '{0:12s}'.format('%6.3f'%diff),
+            print diffstr,
             #print '{0:12s}'.format(toLatexRounded(diff,diffErr)),
         print ' '
-    print 80*'-'
+    print 140*'-'
     return 0
 
 

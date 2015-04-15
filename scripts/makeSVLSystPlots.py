@@ -43,6 +43,8 @@ SYSTSFROMFILES = [
 		'MC8TeV_TT_Z2star_powheg_pythia.root'),
 ]
 
+SYSTTOPROCNAME = dict([(k,v.replace('.root','')) for k,_,v in SYSTSFROMFILES])
+
 SYSTSFROMWEIGHTS = [
 	('nominal', 'Nominal',                  '1'),
 	('toppt',   'Top p_{T} weight applied', 'Weight[7]'),
@@ -383,19 +385,20 @@ def main(args, opt):
 		# raw_input("Press any key to continue...")
 		runTasks(systfiles, tasklist, opt, 'syst_histos')
 
-	systhistos = {} # (tag, syst, comb) -> histo
-	systhistos = gatherHistosFromFiles(tasklist, systfiles,
-		                           os.path.join(opt.outDir, 'syst_histos'),
-		                           hname_to_keys)
+		systhistos = {} # (tag, syst, comb) -> histo
+		systhistos = gatherHistosFromFiles(tasklist, systfiles,
+			                           os.path.join(opt.outDir, 'syst_histos'),
+			                           hname_to_keys)
 
 
-	cachefile = open(".svlsysthistos.pck", 'w')
-	pickle.dump(systhistos, cachefile, pickle.HIGHEST_PROTOCOL)
+		cachefile = open(".svlsysthistos.pck", 'w')
+		pickle.dump(systhistos, cachefile, pickle.HIGHEST_PROTOCOL)
+		cachefile.close()
+
+	cachefile = open(".svlsysthistos.pck", 'r')
+	systhistos = pickle.load(cachefile)
+	print '>>> Read syst histos from cache (.svlsysthistos.pck)'
 	cachefile.close()
-
-	# cachefile = open(".svlsysthistos.pck", 'r')
-	# systhistos = pickle.load(cachefile)
-	# cachefile.close()
 
 	# pprint(sorted(set(systhistos.keys())))
 

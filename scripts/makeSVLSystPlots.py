@@ -273,6 +273,11 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 			if syst in ['jesup', 'jesdn']:
 				finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
 					                        'JESWeight[')
+
+			## Remove the BR weight for the POWHEG samples
+			if syst in ['powherw', 'powpyth']:
+				finalsel = finalsel[len('Weight[0]*'):]
+
 			hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
 			tasks.append((hname, 'SVLMass', finalsel,
 				          NBINS, XMIN, XMAX, MASSXAXISTITLE))
@@ -514,6 +519,8 @@ if __name__ == "__main__":
 	parser.add_option('-v', '--verbose', dest='verbose', action="store",
 					  type='int', default=1,
 					  help='Verbose mode [default: %default (semi-quiet)]')
+	parser.add_option('-f', '--filter', dest='filter', default='',
+					  help='Run only these tasks (comma separated list)')
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",

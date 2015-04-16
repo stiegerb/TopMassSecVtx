@@ -695,7 +695,7 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("Run",       &fTRun,       "Run/I");
 	fSVLInfoTree->Branch("Lumi",      &fTLumi,      "Lumi/I");
 	fSVLInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
-	fSVLInfoTree->Branch("Weight",     fTWeight,    "Weight[10]/F");
+	fSVLInfoTree->Branch("Weight",     fTWeight,    "Weight[11]/F");
 	fSVLInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[3]/F");
 	fSVLInfoTree->Branch("XSWeight",  &fTXSWeight,  "XSWeight/F");
 	fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[3]/F");
@@ -737,7 +737,7 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	fTMET       = metpt;
 	fTNJets     = nj;
 	fTNPVtx     = nvtx;
-	for (int i = 0; i < 10; ++i){
+	for (int i = 0; i < int(TMath::Min(11,nw)); ++i){
 		fTWeight[i] = w[i];
 	}
 	for (int i = 0; i < 3; ++i){

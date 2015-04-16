@@ -468,7 +468,7 @@ int main(int argc, char* argv[])
         //top pT weights and MC truth
         data::PhysicsObjectCollection_t gen=evSummary.getPhysicsObject(DataEventSummaryHandler::GENPARTICLES);
         int ngenLeptonsStatus3(0);
-        float topPtWgt(1.0), topPtWgtUp(1.0), topPtWgtDown(1.0);
+        float topPtWgt(1.0), topPtWgtUp(1.0), topPtWgtDown(1.0),topPtStdWgt(1.0);
         float genWeight(1.0);
         int genCat(1);
         if(isMC) {
@@ -503,6 +503,10 @@ int main(int argc, char* argv[])
                 {
                     fTopPtWgt->computeWeight(pttop,ptantitop);
                     fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );
+
+		    //cf. https://twiki.cern.ch/twiki/bin/view/CMS/TopPtReweighting
+		    float a(0.156),b(-0.00137);
+		    topPtStdWgt=sqrt(exp(a+b*pttop)*exp(a+b*ptantitop));
                 }
             }
         }
@@ -621,7 +625,7 @@ int main(int argc, char* argv[])
         bev.lumi=ev.lumi;
         bev.nvtx=ev.nvtx;
         bev.rho=ev.rho;
-        bev.nw=10;
+        bev.nw=11;
         bev.w[0]=genWeight;
         bev.w[1]=puWeight;
         bev.w[2]=puWeightUp;
@@ -632,6 +636,7 @@ int main(int argc, char* argv[])
         bev.w[7]=topPtWgt;
         bev.w[8]=topPtWgtUp;
         bev.w[9]=topPtWgtDown;
+        bev.w[10]=topPtStdWgt;
 
         //fill lxy tree
         data::PhysicsObjectCollection_t pf = evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);

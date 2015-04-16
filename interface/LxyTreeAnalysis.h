@@ -149,6 +149,7 @@ public:
     Int_t fTSVLMinMassRank, fTSVLDeltaRRank, fTSVLMinMassRank_rot, fTSVLDeltaRRank_rot;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
     Int_t fTJFlav;
+    Float_t fTGenMlb, fTGenTopPt;
 
    TRandom3 rndGen_;
 };

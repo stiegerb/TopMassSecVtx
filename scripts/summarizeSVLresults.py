@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import ROOT
-import os,sys
+import os,sys,re
 import optparse
 import math
 import pickle
@@ -12,7 +12,7 @@ from pprint import pprint
 
 """
 """
-def parseEnsembles(url,selection=''):
+def parseEnsembles(url,selection='',rebin=4):
      ensemblesMap={}
      peInputFile = ROOT.TFile.Open(url, 'READ')
      allExperiments = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()]
@@ -30,6 +30,7 @@ def parseEnsembles(url,selection=''):
          tag='p11'      if 'p11'      in experimentTag else tag
          tag='jes'      if 'jes'      in experimentTag else tag
          tag='powheg'   if 'powpyth'  in experimentTag else tag
+         tag='powheg'   if 'powherw'  in experimentTag else tag
          if len(tag)==0 :
              continue
          if not (tag in ensemblesMap) : ensemblesMap[tag]={}
@@ -58,11 +59,11 @@ def parseEnsembles(url,selection=''):
 
          for chsel in ['em','mm','ee','m','e','inclusive']:
              if len(selection)>0 : chsel += '_' + selection
-             for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]                 
+             for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
                  ihist   = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,ntrk)).Clone()
                  refHist = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(refTag,chsel,refTag,ntrk)).Clone()
-                 ihist.Rebin()
-                 refHist.Rebin()
+                 ihist.Rebin(rebin)
+                 refHist.Rebin(rebin)
                  ihist.Divide(refHist)
                  key=chsel+'_'+str(ntrk)
                  key=key.replace('inclusive','comb')
@@ -93,41 +94,61 @@ def parsePEResultsFromFile(url):
     fileNames=[f for f in os.listdir(url) if f.endswith('root')]
     for f in fileNames :
         fIn=ROOT.TFile.Open(os.path.join(url,f))
+
         tag=os.path.splitext(f)[0]
-        useForCalib=False
-        if 'nominal' in tag : useForCalib=True
-        tag=tag.replace('_results','')
-        tag=tag.replace('nominal_','')
-        tag=tag.replace('v5','.5')
+        selection = ''
+        try:
+             # either ['nominal', '172v5', 'results'] or
+             #        ['nominal', '172v5', 'mrank1', 'results']
+            syst, massstr, selection, _ = tag.rsplit('_', 3)
+        except ValueError:
+            syst, massstr, _ = tag.rsplit('_', 2)
+
+        # Extract a XXXvX number from the tag string:
+        # This is a bit superfluous, but it will catch if something went wrong
+        # in the splitting above (e.g. a syst name containing a '_')
+        mass = re.search(r'[\w]*([\d]{3}v[\d]{1})+[\w]*', tag).group(1)
+        mass = float(mass.replace('v5','.5'))
+        assert(mass == float(massstr.replace('v5','.5')))
+
+        # print '... processing %-12s, %5.1f, %s' % (syst,mass,selection)
+
+        useForCalib=True if 'nominal' in syst else False
+
         for key in fIn.GetListOfKeys():
             keyName=key.GetName()
             norm=fIn.Get(keyName+'/norm')
             mtop=fIn.Get(keyName+'/mtop')
-            if not(keyName in results) : results[keyName]={}
-            results[keyName][tag]=(mtop[0],mtop[1]/math.sqrt(norm[0]))
+            if selection is not '' and selection in keyName:
+                keyName = keyName.replace('%s_'%selection,'')
+            if not((keyName,selection) in results):
+                results[(keyName,selection)] = {}
+            if syst == 'nominal':
+                syst = str(mass)
+            results[(keyName,selection)][syst]=(mtop[0],mtop[1]/math.sqrt(norm[0]))
 
-            #add point for calibration
-            #FIXME: parse selection type: inc, mrank1,...
+            # add point for calibration
             if not useForCalib: continue
             np=0
             try:
-                np=calibGrMap[keyName][''].GetN()
-            except:
-                if not keyName in calibGrMap : calibGrMap[keyName]={}
-                calibGrMap[keyName]['']=ROOT.TGraphErrors()
-                calibGrMap[keyName][''].SetName(keyName)
+                np=calibGrMap[keyName][selection].GetN()
+            except KeyError:
+                if not keyName in calibGrMap:
+                    calibGrMap[keyName] = {}
+                calibGrMap[keyName][selection]=ROOT.TGraphErrors()
+                calibGrMap[keyName][selection].SetName(keyName)
                 title=keyName.replace('_',', ')
                 if 'comb' in title:
                     title='combination'
                 else:
                     title=title.replace('m','#mu')
                     title += ' tracks'
-                calibGrMap[keyName][''].SetTitle(title)
-                calibGrMap[keyName][''].SetMarkerStyle(20)
-                calibGrMap[keyName][''].SetMarkerSize(1.0)
-                np=calibGrMap[keyName][''].GetN()
-            calibGrMap[keyName][''].SetPoint     (np, float(tag), mtop[0]-float(tag))
-            calibGrMap[keyName][''].SetPointError(np, 0,          mtop[1]/math.sqrt(norm[0]))
+                calibGrMap[keyName][selection].SetTitle(title)
+                calibGrMap[keyName][selection].SetMarkerStyle(20)
+                calibGrMap[keyName][selection].SetMarkerSize(1.0)
+                np=calibGrMap[keyName][selection].GetN()
+            calibGrMap[keyName][selection].SetPoint     (np, mass, mtop[0]-mass)
+            calibGrMap[keyName][selection].SetPointError(np, 0,  mtop[1]/math.sqrt(norm[0]))
         fIn.Close()
 
     return results, calibGrMap
@@ -150,7 +171,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),baseDr
     for key,grColl in sorted(grCollMap.items()):
 
         igrctr=0
-        
+
         nleg=-1
         if 'comb' in key:
              nleg=len(allLegs)
@@ -171,9 +192,9 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),baseDr
                 slope=gr.GetFunction('pol1').GetParameter(1)
                 gr.GetFunction('pol1').SetLineColor(ROOT.kBlue)
                 fitParamsMap[key]=(offset,slope)
-        
+
             drawOpt='a'+baseDrawOpt if igrctr==1 else baseDrawOpt
-            if 'comb' in key : 
+            if 'comb' in key :
                 if igrctr==1 :
                     p=canvas.cd(2+nx*(ny-1))
                 gr.Draw(drawOpt)
@@ -185,7 +206,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),baseDr
                 gr.Draw(drawOpt)
             gr.GetYaxis().SetRangeUser(yrange[0],yrange[1])
             gr.GetYaxis().SetNdivisions(5)
-            
+
         p.SetGridy()
         label=ROOT.TLatex()
         label.SetNDC()
@@ -254,32 +275,40 @@ Prints the table of systematics
 def showSystematicsTable(results):
     # pprint(results)
     #show results
-    print 14*' ',
-    for cat in sorted(results) : print '{0:7s}'.format(cat),
-    print ' '
-    print 140*'-'
-    for expTag in sorted(results.itervalues().next()):
-        if expTag in ['172.5', 'p11_172.5', 'bfrag_172.5']: continue
-        print '{0:12s}'.format(expTag.replace('_172.5','')),
-        for cat in sorted(results, reverse=False):
+    selections = list(set([s for _,s in results.keys()]))
+    categories = list(set([k for k,_ in results.keys()]))
 
-            expTag2diff='172.5'
-            if 'p11' in expTag:     expTag2diff='p11_172.5'
-            if 'powherw' in expTag: expTag2diff='powpyth_172.5'
-            if 'bfrag' in expTag:   expTag2diff='bfrag_172.5'
-
-            diff = results[cat][expTag][0]-results[cat][expTag2diff][0]
-            diffstr = ' %6.3f'%diff
-            if expTag not in ['166.5','169.5','171.5','173.5','175.5','178.5']:
-                if abs(diff) > 0.5 and abs(diff) < 1.0:
-                    diffstr = "%7s"%(bcolors.YELLOW+diffstr+bcolors.ENDC)
-                if abs(diff) >= 1.0:
-                    diffstr = "%7s"%(bcolors.RED+diffstr+bcolors.ENDC)
-            diffErr = math.sqrt( results[cat][expTag][1]**2+results[cat][expTag2diff][1]**2 )
-            print diffstr,
-            #print '{0:12s}'.format(toLatexRounded(diff,diffErr)),
+    for sel in selections:
+        print 140*'-'
+        print bcolors.BOLD+sel+bcolors.ENDC
+        print 14*' ',
+        for cat in sorted(categories):
+                print '{0:7s}'.format(cat),
         print ' '
-    print 140*'-'
+        print 140*'-'
+        for expTag in sorted(results.itervalues().next()):
+            if expTag in ['172.5', 'p11_172.5', 'bfrag_172.5']: continue
+            print '{0:12s}'.format(expTag.replace('_172.5','')),
+            for cat in sorted(categories):
+
+                expTag2diff='172.5'
+                if 'p11' in expTag:     expTag2diff='p11'
+                if expTag == 'p11':     expTag2diff='172.5'
+                if 'powherw' in expTag: expTag2diff='powpyth'
+                if 'bfrag' in expTag:   expTag2diff='bfrag'
+
+                diff = results[(cat,sel)][expTag][0]-results[(cat,sel)][expTag2diff][0]
+                diffstr = ' %6.3f'%diff
+                if expTag not in ['166.5','169.5','171.5','173.5','175.5','178.5']:
+                    if abs(diff) > 0.5 and abs(diff) < 1.0:
+                        diffstr = "%7s"%(bcolors.YELLOW+diffstr+bcolors.ENDC)
+                    if abs(diff) >= 1.0:
+                        diffstr = "%7s"%(bcolors.RED+diffstr+bcolors.ENDC)
+                diffErr = math.sqrt( results[(cat,sel)][expTag][1]**2+results[(cat,sel)][expTag2diff][1]**2 )
+                print diffstr,
+                #print '{0:12s}'.format(toLatexRounded(diff,diffErr)),
+            print ' '
+        print 140*'-'
     return 0
 
 
@@ -295,6 +324,7 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('--pe',    dest='peInput', default=None, help='compare ensembles for pseudo-experiments')
     parser.add_option('--calib', dest='calib',   default=None, help='show calibration')
+    parser.add_option('--rebin', dest='rebin',   default=4,    type=int, help='rebin pe plots by this factor')
     parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
                       help='Output directory [default: %default]')
     (opt, args) = parser.parse_args()
@@ -320,16 +350,18 @@ def main():
         showSystematicsTable(results=results)
 
     if opt.peInput:
-        ensemblesMap=parseEnsembles(url=opt.peInput)
-        for tag,grMap in ensemblesMap.items():
-            show(grCollMap=ensemblesMap[tag],
-                 outDir=opt.outDir,
-                 outName=tag,
-                 yaxisTitle='m(SV,lepton) [GeV]',
-                 xaxisTitle='Ratio to reference',
-                 yrange=(0.75,1.25),
-                 baseDrawOpt='lx',
-                 doFit=False)
+    	for sel in ['','mrank1']:
+	        ensemblesMap=parseEnsembles(url=opt.peInput, selection=sel,rebin=opt.rebin)
+	        for tag,grMap in ensemblesMap.items():
+	            outName = tag if sel == '' else '%s_%s'%(tag,sel)
+	            show(grCollMap=ensemblesMap[tag],
+	                 outDir=opt.outDir,
+	                 outName=outName,
+	                 yaxisTitle='Ratio to reference',
+	                 xaxisTitle='m(SV,lepton) [GeV]',
+	                 yrange=(0.75,1.25),
+	                 baseDrawOpt='lx',
+	                 doFit=False)
     return
 
 

@@ -84,9 +84,12 @@ class RatioPlot(object):
         self.reference = None
         self.normalized = True
         self.ratiotitle = None
-        self.garbageList = []
+        self._garbageList = []
         self.tag = None
         self.subtag = None
+        self.tagpos = (0.85,0.85)
+        self.subtagpos = (0.85,0.78)
+        self.legpos = (0.66, 0.15)
         self.extratext = 'Simulation'
         self.plotformats = ['.pdf', '.png']
         self.colors1 = [ ## rainbow ('gay flag')
@@ -124,7 +127,7 @@ class RatioPlot(object):
         self.ratiorange = None
 
     def reset(self):
-        for o in self.garbageList:
+        for o in self._garbageList:
             try:
                 o.Delete()
             except AttributeError:
@@ -134,8 +137,6 @@ class RatioPlot(object):
                 raise e
         self.histos = []
         self.legentries = []
-        # self.tag = None
-        # self.subtag = None
 
     def add(self, hist, tag):
         if hist.GetEntries() == 0:
@@ -200,25 +201,28 @@ class RatioPlot(object):
         setMaximums(self.histos, setminimum=0)
 
         tc = ROOT.TCanvas(outname, "ratioplots", 800, 800)
-        # self.garbageList.append(tc)
+        # self._garbageList.append(tc)
         tc.cd()
 
         tc.SetWindowSize(800 + (800 - tc.GetWw()), (800 + (800 - tc.GetWh())));
         p2 = ROOT.TPad("pad2","pad2",0,0,1,0.31);
-        self.garbageList.append(p2)
+        self._garbageList.append(p2)
         p2.SetTopMargin(0);
         p2.SetBottomMargin(0.3);
         p2.SetFillStyle(0);
         p2.Draw();
         p1 = ROOT.TPad("pad1","pad1",0,0.31,1,1);
-        self.garbageList.append(p1)
+        self._garbageList.append(p1)
         p1.SetBottomMargin(0);
         p1.Draw();
         p1.cd();
 
         # tl = ROOT.TLegend(0.66, 0.75-0.040*max(len(self.histos)-3,0), .89, .89)
-        tl = ROOT.TLegend(0.66, 0.15, .89, .30+0.040*max(len(self.histos)-3,0))
-        self.garbageList.append(tl)
+        # tl = ROOT.TLegend(0.66, 0.15, .89, .30+0.040*max(len(self.histos)-3,0))
+        tl = ROOT.TLegend(self.legpos[0], self.legpos[1],
+                          min(self.legpos[0]+0.30,0.89),
+                          self.legpos[1]+0.15+0.040*max(len(self.histos)-3,0))
+        self._garbageList.append(tl)
         tl.SetBorderSize(0)
         tl.SetFillColor(0)
         tl.SetFillStyle(0)
@@ -228,7 +232,7 @@ class RatioPlot(object):
 
 
         mainframe = self.histos[0].Clone('mainframe')
-        self.garbageList.append(mainframe)
+        self._garbageList.append(mainframe)
         mainframe.Reset('ICE')
         mainframe.GetXaxis().SetTitleFont(43)
         mainframe.GetXaxis().SetLabelFont(43)
@@ -265,13 +269,22 @@ class RatioPlot(object):
         tlat = TLatex()
         tlat.SetTextFont(43)
         tlat.SetNDC(1)
-        tlat.SetTextAlign(33)
         if self.tag:
+            tlat.SetTextAlign(33) # right aligned
+            if self.tagpos[0] < 0.50:
+                # left aligned if on the left side
+                tlat.SetTextAlign(13)
             tlat.SetTextSize(22)
-            tlat.DrawLatex(0.85, 0.85, self.tag)
+            tlat.DrawLatex(self.tagpos[0], self.tagpos[1], self.tag)
+            # tlat.DrawLatex(0.85, 0.85, self.tag)
         if self.subtag:
+            tlat.SetTextAlign(33) # right aligned
+            if self.subtagpos[0] < 0.50:
+                # left aligned if on the left side
+                tlat.SetTextAlign(13)
             tlat.SetTextSize(20)
-            tlat.DrawLatex(0.85, 0.78, self.subtag)
+            tlat.DrawLatex(self.subtagpos[0], self.subtagpos[1], self.subtag)
+            # tlat.DrawLatex(0.85, 0.78, self.subtag)
 
         CMS_lumi(pad=p1,iPeriod=2,iPosX=0,extraText=self.extratext)
 
@@ -282,7 +295,7 @@ class RatioPlot(object):
             self.reference = self.histos[0]
 
         ratioframe = mainframe.Clone('ratioframe')
-        self.garbageList.append(ratioframe)
+        self._garbageList.append(ratioframe)
         ratioframe.Reset('ICE')
         ratioframe.GetYaxis().SetRangeUser(0.50,1.50)
         if not self.ratiotitle:
@@ -337,7 +350,7 @@ class Plot(object):
         self.mc = []
         self.dataH = None
         self.data = None
-        self.garbageList = []
+        self._garbageList = []
         self.normalizedToData=False
         self.plotformats = ['pdf','png']
         self.savelog = False
@@ -348,7 +361,7 @@ class Plot(object):
         print len(self.mc),' mc processes', ' data=', self.data
 
     def add(self, h, title, color, isData):
-        self.garbageList.append(h)
+        self._garbageList.append(h)
         h.SetTitle(title)
 
         if "GeV" in h.GetXaxis().GetTitle():
@@ -410,7 +423,7 @@ class Plot(object):
 
     def reset(self):
         self.normalizedToData=False
-        for o in self.garbageList:
+        for o in self._garbageList:
             try:
                 o.Delete()
             except:
@@ -494,7 +507,7 @@ class Plot(object):
         t1.SetBottomMargin(0)
         t1.Draw()
         t1.cd()
-        self.garbageList.append(t1)
+        self._garbageList.append(t1)
 
         frame = None
         # Decide which backgrounds are visible
@@ -513,7 +526,7 @@ class Plot(object):
         if self.data is not None:
             leg.AddEntry( self.data, self.data.GetTitle(),'p')
             frame = self.dataH.Clone('frame')
-            self.garbageList.append(frame)
+            self._garbageList.append(frame)
             maxY = self.dataH.GetMaximum()
             frame.Reset('ICE')
 
@@ -529,7 +542,7 @@ class Plot(object):
             stack.Add(h,'hist')
             if totalMC is None:
                 totalMC = h.Clone('totalmc')
-                self.garbageList.append(totalMC)
+                self._garbageList.append(totalMC)
                 totalMC.SetDirectory(0)
             else:
                 totalMC.Add(h)
@@ -539,7 +552,7 @@ class Plot(object):
             if frame is None:
                 frame = totalMC.Clone('frame')
                 frame.Reset('ICE')
-                self.garbageList.append(frame)
+                self._garbageList.append(frame)
 
         if self.data is not None: nlegCols = nlegCols+1
         if nlegCols == 0:
@@ -580,7 +593,7 @@ class Plot(object):
         else:
             canvas.cd()
             t2 = TPad("t2","t2", 0.0, 0.0, 1.0, 0.2)
-            self.garbageList.append(t2)
+            self._garbageList.append(t2)
             t2.SetTopMargin(0)
             t2.SetBottomMargin(0.4)
             t2.SetGridy()

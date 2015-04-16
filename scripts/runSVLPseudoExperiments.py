@@ -524,6 +524,8 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
                       (wsfilepath, pefilepath, odirpath, tag, options.nPexp))
         if options.genFromPDF:
             command += ' --genFromPDF'
+        if len(options.selection):
+            command += ' --selection %s'%options.selection
         scriptFile.write('%s\n'%command)
         scriptFile.close()
         os.system('chmod u+rwx %s'%scriptFileN)

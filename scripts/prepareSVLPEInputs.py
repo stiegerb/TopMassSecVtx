@@ -173,13 +173,19 @@ def main(args, opt):
 				hist = bghistos[tag, pname, 'tot', ntk].Clone("%s_%s" % (
 															  hname, pname))
 
+
+				## Apply scale factors
+				hist.Scale(LUMI*xsecweights["MC8TeV_%s"%pname])
+				if ((tag.startswith('ee') or tag.startswith('mm'))
+					 and pname.startswith('DY')):
+					hist.Scale(dySFs[tag[:2]])
+
 				## Save normalization (even when skipped)
 				if not (tag, ntk) in bg_normalization:
 					bg_normalization[(tag, ntk)] = 0
-				bg_normalization[(tag, ntk)] += (hist.Integral()*LUMI*
-					                            xsecweights["MC8TeV_"+pname])
+				bg_normalization[(tag, ntk)] += hist.Integral()
 
-				## Skip events with an average event weight above 5 (low statistics)
+				## Skip events with an average event weight above 2 (low statistics)
 				if hist.GetEntries() == 0: continue
 				if ( (hist.Integral()/hist.GetEntries() > 2) and
 					hist.GetEntries() < 10 ):
@@ -189,12 +195,6 @@ def main(args, opt):
 							          (pname, hist.GetEntries(),
 							           hist.Integral()/hist.GetEntries()))
 					continue
-
-				## Apply scales
-				hist.Scale(LUMI*xsecweights["MC8TeV_%s"%pname])
-				if ((tag.startswith('ee') or tag.startswith('mm'))
-					 and pname.startswith('DY')):
-					hist.Scale(dySFs[tag[:2]])
 
 				## Save in dictionary
 				if not (tag, ntk) in bghistos_added:

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import os
+import os,sys
 import pickle
 import ROOT
 
@@ -214,11 +214,13 @@ def main(args, options) :
 	#now rescale the templates for QCD
 	fQCD = ROOT.TFile.Open(args[1])
 	finalTemplates = {}
+	from makeSVLMassHistos import NTRKBINS
+
 	for cat in CATEGORIES:
 		inc = fQCD.Get('%s_qcd_template'%cat)
 		totalIncSideBand = inc.Integral()
 		totalInc = w.function('N_bkg_%s'%cat).getVal()
-		for ntk in xrange(2,5):
+		for ntk in [tk1 for tk1,_ in NTRKBINS]:
 			for sel in ['_mrank1','']:
 				h_ntk = fQCD.Get('%s%s_qcd_template_%d'%(cat,sel,ntk))
 				iniNorm = h_ntk.Integral()
@@ -265,6 +267,10 @@ if __name__ == "__main__":
 	ROOT.shushRooFit()
 	# see TError.h - gamma function prints lots of errors when scanning
 	ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
+
+	cmsswBase = os.environ['CMSSW_BASE']
+	scriptdir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/scripts')
+	sys.path.append(scriptdir)
 
 	exit(main(args, opt))
 

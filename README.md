@@ -32,7 +32,10 @@ Will create a pickle file summarizing all the cross section-based normalization 
 ./scripts/runLxyTreeAnalysis.py -o treedir/z_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/z_control/
 ./scripts/runLxyTreeAnalysis.py -o treedir/photon_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/photon_control/
 ```
+
 Creates the SVLInfo/CharmInfo trees with the condensed summary info for the final analysis
+
+
 ------------------------------------------------------
 ### Merging the trees
 
@@ -108,22 +111,22 @@ python scripts/summarizeSVLresults.py --pe svlplots/pe_inputs.root -o svlplots/p
 ```
 ./scripts/runSVLFits.py -o svlfits/
 ```
-Prepares the workspace for the fits and put the RooFit workspace and plots in svlfits/ by default. By default, takes ```.svlmasshistos.pck``` and ```.svlbgtemplates.pck``` as input for the shapes. (Takes about FIXME 60 min to run.)
+Prepares the workspace for the fits and put the RooFit workspace and plots in svlfits/ by default. By default, takes ```.svlmasshistos.pck``` and ```.svlbgtemplates.pck``` as input for the shapes. (Takes about 45 min to run.)
 
 ```
-./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root nominal_172v5
+./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlplots/pe_inputs.root nominal_172v5
 ```
 Will run the pseudoexperiments for a single variation (e.g. nominal_172v5). Verbose level above 5 prints the result of each channel for each single experiment.
 
 ```
-./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root
+./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlfits/pe_inputs.root
 ```
 Will run all the pseudoexperiments for all variation on batch.
 
 ```
 python scripts/summarizeSVLresults.py --calib svlfits/
 ```
-Will parse the summaries of the pseudo-experiments and produce a calibration file
+Will parse the summaries of the pseudo-experiments, print a systematics table, and produce a calibration file.
 
 ```
 ./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root -c svlfits/.svlcalib.pck

@@ -724,8 +724,9 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("CombInfo"      , &fTCombInfo      , "CombInfo/I");
 
 	// Intra event rankings
-	fSVLInfoTree->Branch("SVLMassRank",   &fTSVLMinMassRank, "SVLMassRank/I");
-	fSVLInfoTree->Branch("SVLDeltaRRank", &fTSVLDeltaRRank,  "SVLDeltaRRank/I");
+	fSVLInfoTree->Branch("SVLMassRank",       &fTSVLMinMassRank,     "SVLMassRank/I");
+	fSVLInfoTree->Branch("SVLCombRank",       &fTSVLCombRank,        "SVLCombRank/I");
+	fSVLInfoTree->Branch("SVLDeltaRRank",     &fTSVLDeltaRRank,      "SVLDeltaRRank/I");
 	fSVLInfoTree->Branch("SVLMassRank_rot",   &fTSVLMinMassRank_rot, "SVLMassRank_rot/I");
 	fSVLInfoTree->Branch("SVLDeltaRRank_rot", &fTSVLDeltaRRank_rot,  "SVLDeltaRRank_rot/I");
 }
@@ -963,12 +964,35 @@ void LxyTreeAnalysis::analyze(){
 		// Sort them according to mass and delta r
 		std::vector<SVLInfo> svl_pairs_massranked = svl_pairs;
 		std::sort (svl_pairs_massranked.begin(), svl_pairs_massranked.end(), compare_mass);
+
+		//based on AN 10/316 (endpoints)
+		std::vector<SVLInfo> svl_pairs_combranked;
+		size_t npairs=svl_pairs_massranked.size();
+		if(npairs)
+		  {
+		    /*
+		    svl_pairs_combranked.push_back( svl_pairs_massranked[npairs-1] );
+		    if(npairs==4) 
+		      {
+			svl_pairs_combranked.push_back( svl_pairs_massranked[npairs-2] );
+			if(svl_pairs_massranked[npairs-1].lepindex!=svl_pairs_massranked[npairs-2].lepindex) svl_pairs_combranked.push_back( svl_pairs_massranked[npairs-3] );
+		      }
+		    */
+		    svl_pairs_combranked.push_back( svl_pairs_massranked[0] );
+		    if(npairs==4) 
+		      {
+			svl_pairs_combranked.push_back( svl_pairs_massranked[1] );
+			if(svl_pairs_massranked[0].lepindex!=svl_pairs_massranked[1].lepindex) svl_pairs_combranked.push_back( svl_pairs_massranked[2] );
+		      }
+		  }
+		
 		std::vector<SVLInfo> svl_pairs_drranked = svl_pairs;
 		std::sort (svl_pairs_drranked.begin(), svl_pairs_drranked.end(), compare_deltar);
 		std::vector<SVLInfo> svl_pairs_massranked_rot = svl_pairs;
 		std::sort (svl_pairs_massranked_rot.begin(), svl_pairs_massranked_rot.end(), compare_mass_rot);
 		std::vector<SVLInfo> svl_pairs_drranked_rot = svl_pairs;
 		std::sort (svl_pairs_drranked_rot.begin(), svl_pairs_drranked_rot.end(), compare_deltar_rot);
+
 			
 		// Now put the info in the tree
 		fTNCombs = svl_pairs.size();
@@ -980,13 +1004,18 @@ void LxyTreeAnalysis::analyze(){
 				if ( svl.svldeltar < 0.4 ) continue;
 			}
 
-			fTSVLMass   = svl.svlmass;
-			fTSVLDeltaR = svl.svldeltar;
+			fTSVLMass       = svl.svlmass;
+			fTSVLDeltaR     = svl.svldeltar;
 			fTSVLMass_rot   = svl.svlmass_rot;
 			fTSVLDeltaR_rot = svl.svldeltar_rot;
-			fTCombCat   = svl.combcat;
+			fTCombCat       = svl.combcat;
 
 			// Find the mass and dr ranks:
+			fTSVLCombRank=-1;
+			for(size_t i=0; i< svl_pairs_combranked.size(); ++i) {
+			  if(svl_pairs_combranked[i].counter != isvl) continue;
+			  fTSVLCombRank = i+1;
+			}
 			for (size_t i = 0; i < svl_pairs.size(); ++i){
 				if(svl_pairs_massranked[i].counter != isvl) continue;
 				fTSVLMinMassRank = i+1;

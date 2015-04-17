@@ -626,19 +626,19 @@ int main(int argc, char* argv[])
         bev.nvtx=ev.nvtx;
         bev.rho=ev.rho;
         bev.nw=11;
-        bev.w[0]=genWeight;
-        bev.w[1]=puWeight;
-        bev.w[2]=puWeightUp;
-        bev.w[3]=puWeightDown;
-        bev.w[4]=lepSelectionWeight;
-        bev.w[5]=lepSelectionWeightUp;
-        bev.w[6]=lepSelectionWeightDown;
-        bev.w[7]=topPtWgt;
-        bev.w[8]=topPtWgtUp;
-        bev.w[9]=topPtWgtDown;
-        bev.w[10]=topPtStdWgt;
+        bev.w[0]  = genWeight;
+        bev.w[1]  = puWeight;
+        bev.w[2]  = puWeightUp;
+        bev.w[3]  = puWeightDown;
+        bev.w[4]  = lepSelectionWeight;
+        bev.w[5]  = lepSelectionWeightUp;
+        bev.w[6]  = lepSelectionWeightDown;
+        bev.w[7]  = topPtWgt;
+        bev.w[8]  = topPtWgtUp;
+        bev.w[9]  = topPtWgtDown;
+        bev.w[10] = topPtStdWgt;
 
-        //fill lxy tree
+        //Fill lxy tree
         data::PhysicsObjectCollection_t pf = evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
         lxyAn.analyze( box.leptons, box.jets, met, pf, gen);
 

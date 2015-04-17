@@ -26,7 +26,7 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLm
 
 	# Base correct, signal PDF :
 	# free parameters are linear functions of the top mass
-	
+
 	ws.factory("RooFormulaVar::%s_p0('@0*(@1-172.5)+@2',{"
 		           "slope_%s_p0[0.0],"
 			   "mtop,"

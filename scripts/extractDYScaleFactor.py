@@ -64,6 +64,8 @@ def extractFactors(inputFile, options):
 		cachefile = open('.svldyscalefactors.pck','r')
 		scaleFactors = pickle.load(cachefile)
 		cachefile.close()
+		print ('>>> Read Drell-Yan scale factors from cache '
+			   '(.svldyscalefactors.pck)')
 		return scaleFactors
 	except IOError:
 		pass

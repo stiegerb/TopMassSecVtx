@@ -83,7 +83,7 @@ TLorentzVector LxyTreeAnalysis::RotateLepton(TLorentzVector &origLep,
 	  minDR=dR;
 	}
       if(minDR<0.4) continue;
-      return rotLepton;      
+      return rotLepton;
     }
 
   return TLorentzVector(0,0,0,0);
@@ -645,7 +645,7 @@ bool LxyTreeAnalysis::selectSVLEvent(){
 	if (abs(evcat) == 24) return true;
 	if (abs(evcat) == 22) return true;
 	if (abs(evcat) == 1) return true;
-	
+
 	// For dilepton also MET > 40 GeV
 	if (abs(evcat) == 11*11 || abs(evcat) == 13*13){
 		if (metpt > 40.) return true;
@@ -717,7 +717,9 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("SVPtChFrac",  &fTSVPtChFrac, "SVPtChFrac/F");
 	fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
 	fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
-	fSVLInfoTree->Branch("JFlav",     &fTJFlav,     "JFlav/I");	
+	fSVLInfoTree->Branch("JFlav",     &fTJFlav,     "JFlav/I");
+	fSVLInfoTree->Branch("GenMlb",    &fTGenMlb,    "GenMlb/F");
+	fSVLInfoTree->Branch("GenTopPt",  &fTGenTopPt,  "GenTopPt/F");
 	// CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
 	fSVLInfoTree->Branch("CombCat"       , &fTCombCat       , "CombCat/I");
 	// CombInfo = -1 for data or unmatched, 0 for wrong combs, 1 for correct combs
@@ -763,6 +765,9 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	fTSVMass         = -99;
 	fTCombCat        = -99;
 	fTCombInfo       = -99;
+
+	fTGenMlb         = -99.99;
+	fTGenTopPt       = -99.99;
 
 	fTSVLMinMassRank = -99;
 	fTSVLDeltaRRank  = -99;
@@ -955,7 +960,7 @@ void LxyTreeAnalysis::analyze(){
 					TLorentzVector p_lep_rot=RotateLepton(p_lep,isoObjects);
 					svl_pairing.svlmass_rot = (p_lep_rot + p_sv).M();
 					svl_pairing.svldeltar_rot = p_lep_rot.DeltaR(p_sv);
-					
+
 					svl_pairs.push_back(svl_pairing);
 				}
 			}
@@ -965,19 +970,11 @@ void LxyTreeAnalysis::analyze(){
 		std::vector<SVLInfo> svl_pairs_massranked = svl_pairs;
 		std::sort (svl_pairs_massranked.begin(), svl_pairs_massranked.end(), compare_mass);
 
-		//based on AN 10/316 (endpoints)
+		//based on AN 10/316 (mass from endpoints)
 		std::vector<SVLInfo> svl_pairs_combranked;
 		size_t npairs=svl_pairs_massranked.size();
 		if(npairs)
 		  {
-		    /*
-		    svl_pairs_combranked.push_back( svl_pairs_massranked[npairs-1] );
-		    if(npairs==4) 
-		      {
-			svl_pairs_combranked.push_back( svl_pairs_massranked[npairs-2] );
-			if(svl_pairs_massranked[npairs-1].lepindex!=svl_pairs_massranked[npairs-2].lepindex) svl_pairs_combranked.push_back( svl_pairs_massranked[npairs-3] );
-		      }
-		    */
 		    svl_pairs_combranked.push_back( svl_pairs_massranked[0] );
 		    if(npairs==4) 
 		      {
@@ -993,7 +990,6 @@ void LxyTreeAnalysis::analyze(){
 		std::vector<SVLInfo> svl_pairs_drranked_rot = svl_pairs;
 		std::sort (svl_pairs_drranked_rot.begin(), svl_pairs_drranked_rot.end(), compare_deltar_rot);
 
-			
 		// Now put the info in the tree
 		fTNCombs = svl_pairs.size();
 		for (size_t isvl = 0; isvl < svl_pairs.size(); ++isvl){
@@ -1069,6 +1065,14 @@ void LxyTreeAnalysis::analyze(){
 				(lid[svl.lepindex] > 0 && bid[svl.svindex] == 5  ) || // el-/mu- / t/b
 				(lid[svl.lepindex] < 0 && bid[svl.svindex] == -5 ) )  // el+/mu+ / tbar/bbar
 				fTCombInfo = 0; // wrong
+
+			// Generator level info
+			fTGenTopPt = tpt[svl.svindex];
+			TLorentzVector p_genb, p_genl;
+			p_genb.SetPtEtaPhiM(bpt[svl.svindex], beta[svl.svindex], bphi[svl.svindex], 0.);
+			p_genl.SetPtEtaPhiM(glpt[svl.lepindex], gleta[svl.lepindex], glphi[svl.lepindex], 0.);
+			fTGenMlb = (p_genb+p_genl).M();
+
 			fSVLInfoTree->Fill();
 		}
 	}

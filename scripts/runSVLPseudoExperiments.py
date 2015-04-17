@@ -509,7 +509,7 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     odirpath = os.path.abspath(options.outDir)
 
     ## Feedback before submitting the jobs
-    raw_input('This will submit %d jobs to batch. Continue?'%len(experimentTags))
+    raw_input('This will submit %d jobs to batch. %s Did you remember to run scram b?%s \n Continue?'%(len(experimentTags), bcolors.RED, bcolors.ENDC))
 
     for n,tag in enumerate(experimentTags):
         sys.stdout.write(' ... processing job %2d - %-22s' % (n, tag))
@@ -524,6 +524,8 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
                       (wsfilepath, pefilepath, odirpath, tag, options.nPexp))
         if options.genFromPDF:
             command += ' --genFromPDF'
+        if len(options.selection):
+            command += ' --selection %s'%options.selection
         scriptFile.write('%s\n'%command)
         scriptFile.close()
         os.system('chmod u+rwx %s'%scriptFileN)

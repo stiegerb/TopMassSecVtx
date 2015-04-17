@@ -127,7 +127,7 @@ def makeControlPlot(systhistos, syst, tag, seltag, opt):
 	ctrlplot.ratiotitle = 'Ratio wrt Total'
 	ctrlplot.ratiorange = (0., 3.0)
 	ctrlplot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
-	ctrlplot.show("control_%s_%s"%(syst,tag), opt.outDir)
+	ctrlplot.show("control_%s_%s"%(syst,tag), os.path.join(opt.outDir, 'syst_plots'))
 	ctrlplot.reset()
 
 def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
@@ -258,7 +258,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 				                        'JESWeight[')
 
 		## Remove the BR weight for the POWHEG samples
-		if syst in ['powherw', 'powpyth']:
+		if syst in ['powherw', 'powpyth'] or 'p11' in syst:
 			finalsel = finalsel[len('Weight[0]*'):]
 
 		tasks.append((hname, 'SVLMass', finalsel,
@@ -275,7 +275,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 					                        'JESWeight[')
 
 			## Remove the BR weight for the POWHEG samples
-			if syst in ['powherw', 'powpyth']:
+			if syst in ['powherw', 'powpyth'] or 'p11' in syst:
 				finalsel = finalsel[len('Weight[0]*'):]
 
 			hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
@@ -443,7 +443,8 @@ def main(args, opt):
 			plot.ratiotitle = 'Ratio wrt Total'
 			plot.ratiorange = (0.7, 1.3)
 			plot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
-			plot.show("neutrino_%s_%s"%(tag,comb), opt.outDir)
+			plot.show("neutrino_%s_%s"%(tag,comb),
+				      os.path.join(opt.outDir, 'syst_plots'))
 			plot.reset()
 
 		for name, title, systs, colors, comb in SYSTPLOTS:

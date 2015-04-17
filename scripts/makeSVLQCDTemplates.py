@@ -216,10 +216,14 @@ def main(args, options):
 				templateplot.add(hist, 'Inclusive')
 				templateplot.reference = hist
 			else:
-				templateplot.add(hist, hist.GetTitle())
+				ntrkbin = int(key.rsplit('_',1)[1])
+				templateplot.add(hist, 'N_{track} = %d'%ntrkbin)
 
 		templateplot.tag = 'QCD templates'
 		templateplot.subtag = seltag
+		templateplot.tagpos    = (0.90, 0.85)
+		templateplot.subtagpos = (0.90, 0.78)
+		templateplot.legpos = (0.75, 0.25)
 		templateplot.ratiotitle = 'Ratio wrt Inclusive'
 		templateplot.extratext = 'Work in Progress'
 		templateplot.ratiorange = (0.2, 2.2)

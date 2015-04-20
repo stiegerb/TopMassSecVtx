@@ -9,6 +9,10 @@ from makeSVLDataMCPlots import addDataMCPlotOptions
 from runPlotter import runPlotter, addPlotterOptions, openTFile
 
 SELECTIONS = [
+	('e',         'abs(EvCat)==11', 'e'),
+	('m',         'abs(EvCat)==13', '#mu'),
+	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
+	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
 	('e_qcd',        'abs(EvCat)==1100', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('m_qcd',        'abs(EvCat)==1300', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('e_mrank1_qcd',
@@ -207,6 +211,7 @@ def main(args, options):
 	#########################################################
 	## Make a plot comparing the templates
 	for tag,_,seltag in SELECTIONS:
+		if not tag.endswith('_qcd'): continue
 		templateplot = RatioPlot('qcdtemplates_%s'%tag)
 		for key,hist in sorted(templates.iteritems()):
 			if not tag in key: continue

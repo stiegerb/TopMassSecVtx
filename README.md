@@ -80,6 +80,12 @@ In order to have correct xsection weights and number of generated events, one ne
 ```
 The script also produces the DY scale factors and applies them directly. It puts the control plots in a sub-directory called ```dy_control```. Note that they are read from the cachefile (.svldyscalefactors.pck) by default. To reproduced them from scratch, delete the cachfile first. To produce only the scale factors, use the ```extractDYScaleFactor.py``` script.
 
+To print event yields, run ```printSVLEventYields.py``` on the output of the script above:
+```
+./scripts/printSVLEventYields.py outDir/plotter.root
+```
+
+
 ---------------------------------------------------
 ### Produce QCD Templates
 

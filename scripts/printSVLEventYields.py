@@ -44,6 +44,8 @@ PROCNAMETORANK = {
 	'\\ttV'         : 7,
 }
 
+CHANTORANK = {'em':0, 'mm':1, 'ee':2, 'm':3, 'e':4}
+
 def printYields(yields):
 	cleanyields = {}
 
@@ -75,7 +77,7 @@ def printYields(yields):
 
 
 	channels  = list(set([c for c,_ in totals.keys()]))
-	channels.sort()
+	channels.sort(key=lambda p: CHANTORANK[p], reverse=True)
 	processes = list(set([p for _,p in totals.keys()]))
 	processes.sort(key=lambda p: PROCNAMETORANK[PROCTOPROCNAME[p]], reverse=True)
 
@@ -92,9 +94,9 @@ def printYields(yields):
 				if totals[(chan, proc)][0]>0.5:
 					print " $%6.0f \pm %3.0f$ &" % (totals[(chan, proc)]),
 				else:
-					print " $    <1 \pm   1$ &",
+					print " $    <1        $ &",
 			except KeyError:
-				print " $    <1 \pm   1$ &",
+				print " $    <1        $ &",
 
 		print ' '
 	print 122*'-'

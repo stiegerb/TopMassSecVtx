@@ -195,7 +195,7 @@ def main(args, options) :
 			## Take QCD shape from the data sideband
 			w.factory("SUM::model_%s( N_other_%s*pdf_other_%s, N_bkg_%s*pdf_bkg_%s)"%(cat,cat,cat,cat,cat) )
 		else:
-			## Raleigh function for QCD
+			## Rayleigh function for QCD
 			w.factory("EXPR::pdf_bkg_cont_%s('@0*TMath::Exp(-0.5*TMath::Power(@0/(@1+@2*@0),2))',{x,alpha_%s[20,10,100],beta_%s[0.5,0.,2]})"%(cat,cat,cat))
 			w.factory("SUM::model_%s( N_other_%s*pdf_other_%s, N_bkg_%s*pdf_bkg_cont_%s)"%(cat,cat,cat,cat,cat) )
 

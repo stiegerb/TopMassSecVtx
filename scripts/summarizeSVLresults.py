@@ -91,7 +91,7 @@ Loops over the results in a directory and build the map
 def parsePEResultsFromFile(url):
 
     results, calibGrMap = {}, {}
-    fileNames=[f for f in os.listdir(url) if f.endswith('root')]
+    fileNames=[f for f in os.listdir(url) if f.endswith('results.root')]
     for f in fileNames :
         fIn=ROOT.TFile.Open(os.path.join(url,f))
 

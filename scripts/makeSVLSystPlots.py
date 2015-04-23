@@ -46,22 +46,21 @@ SYSTSFROMFILES = [
 SYSTTOPROCNAME = dict([(k,v.replace('.root','')) for k,_,v in SYSTSFROMFILES])
 
 SYSTSFROMWEIGHTS = [
-#	('nominal', 'Nominal',                  '1'),
+	('nominal', 'Nominal',                  '1'),
 	('toppt',   'Top p_{T} weight applied', 'Weight[10]'),
 	('topptup', 'Top p_{T} weight up',      'Weight[7]'),
-#	('bfrag',   'rb LEP weighted',          'SVBfragWeight[0]'),
-#	('bfragup', 'rb LEP hard weighted',     'SVBfragWeight[1]'),
-#	('bfragdn', 'rb LEP soft weighted',     'SVBfragWeight[2]'),
-#	('jesup',   'Jet energy scale up',      'JESWeight[1]'),
-#	('jesdn',   'Jet energy scale down',    'JESWeight[2]'),
-#	('bfnuup',   'B hadron semi-lep BF up',
-#	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))'),
-#	('bfnudn',   'B hadron semi-lep BF down',
-#	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))'),
+	('bfrag',   'rb LEP weighted',          'SVBfragWeight[0]'),
+	('bfragup', 'rb LEP hard weighted',     'SVBfragWeight[1]'),
+	('bfragdn', 'rb LEP soft weighted',     'SVBfragWeight[2]'),
+	('jesup',   'Jet energy scale up',      'JESWeight[1]'),
+	('jesdn',   'Jet energy scale down',    'JESWeight[2]'),
+	('bfnuup',   'B hadron semi-lep BF up',
+	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))'),
+	('bfnudn',   'B hadron semi-lep BF down',
+	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))'),
 ]
 
-#ALLSYSTS = SYSTSFROMFILES + SYSTSFROMWEIGHTS
-ALLSYSTS = SYSTSFROMWEIGHTS
+ALLSYSTS = SYSTSFROMFILES + SYSTSFROMWEIGHTS
 SYSTNAMES = dict([(syst,name) for syst,name,_ in ALLSYSTS])
 SELNAMES = dict([(tag,name) for tag,_,name in SELECTIONS])
 COMBNAMES = {

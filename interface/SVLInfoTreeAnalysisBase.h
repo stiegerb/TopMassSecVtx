@@ -26,7 +26,7 @@ public :
    Int_t           Run;
    Int_t           Lumi;
    Int_t           EvCat;
-   Float_t         Weight[10];
+   Float_t         Weight[11];
    Float_t         JESWeight[3];
    Float_t         SVBfragWeight[3];
    Float_t         NJets;

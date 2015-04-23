@@ -26,6 +26,27 @@ def printProgress(step, total, customstr=''):
         stdout.write("\n")
         stdout.flush()
 
+def getContours(h):
+     contours = array('d',[1,3.84])
+     contourTitles = ['68% CL','95% CL']
+     h.SetContour(len(contours),contours)
+     h.Draw('cont z list')
+     allGr=[]
+     conts = ROOT.gROOT.GetListOfSpecials().FindObject("contours");
+     colors=[2,9]
+     styles=[1,2]
+     for cList in conts:
+          for cGr in cList:
+               cGr.SetFillStyle(0)
+               cGr.SetFillColor(0);
+               cGr.SetLineColor(colors[len(allGr)])
+               cGr.SetLineStyle(styles[len(allGr)])
+               cGr.SetLineWidth(4)
+               cGr.SetLineWidth(2)
+               cGr.SetTitle( contourTitles[icont] )
+               allGr.append( cGr.Clone('cont_%d'%len(allGr) ) )
+     return allGr
+
 
 def getRatio(hist, reference):
     ratio = hist.Clone("%s_ratio"%hist.GetName())

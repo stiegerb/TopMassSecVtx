@@ -5,7 +5,7 @@ import optparse
 import math
 import pickle
 from UserCode.TopMassSecVtx.rounding import *
-from UserCode.TopMassSecVtx.PlotUtils import bcolors
+from UserCode.TopMassSecVtx.PlotUtils import bcolors,getContours
 from makeSVLMassHistos import NTRKBINS
 COLORS=[ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9, ROOT.kViolet+2,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kYellow-3]
 from pprint import pprint
@@ -86,6 +86,70 @@ def parseEnsembles(url,selection='',rebin=4):
      return ensemblesMap
 
 """
+Shows final results for all categories
+"""
+def showPEplots(key,fIn):
+
+     channelTitle=chsel.replace('_',' ')
+
+     #show results   
+     canvas=ROOT.TCanvas('c','c',1000,1000)
+     canvas.Divide(2,2)
+     canvas.cd(1)
+     mtopFitH=fIn.Get('%s/mtopfit'%key)
+     mtopFitH.Draw()
+     label=ROOT.TLatex()
+     label.SetNDC()
+     label.SetTextFont(42)
+     label.SetTextSize(0.04)
+     label.DrawLatex(0.1,0.92,'#bf{CMS} #it{simulation}')
+     label.DrawLatex(0.15,0.84,channelTitle)
+     if trk>1 : label.DrawLatex(0.15,0.8,'%d tracks'%trk)
+     mtopFitH.Draw()
+     mtopFitH.Fit('gaus','MRQ+')
+     try:
+          gaus=mtopFitH.GetFunction('gaus')
+          label.DrawLatex(0.15,0.80,'<m_{t}>=%3.3f  #sigma(m_{t})=%3.3f'%(gaus.GetParameter(1),gaus.GetParameter(2)))
+     except:
+          pass
+
+     canvas.cd(2)
+     mtopFitStatH=fIn.Get('%s/mtopfit_statunc'%key)
+     mtopFitStatH.Draw()
+     label.DrawLatex(0.15,0.80,
+                     '<#sigma_{stat}>=%3.3f #sigma(#sigma_{stat})=%3.3f'
+                     %(mtopFitStatH.GetMean(),mtopFitStatH.GetRMS()))
+
+     canvas.cd(3)
+     mtopFitPullH=fIn.Get('%s/mtopfit_pull'%key)
+     mtopFitPullH.Draw()
+     mtopFitPullH.Fit('gaus','MRQ+')
+     try:
+          gaus=mtopFitPullH.GetFunction('gaus')
+          label.DrawLatex(0.15,0.80,'<pull>=%3.3f  #sigma(pull)=%3.3f'%(gaus.GetParameter(1),gaus.GetParameter(2)))
+     except:
+          pass
+
+     canvas.cd(4)
+     fitCorrH=fIn.Get('%s/muvsmtop'%key)
+     cont=getContours(fitCorrH)
+     drawOpt='ac'
+     for gr in cont: 
+          gr.Draw(drawOpt)
+          drawOpt='c'
+          gr.GetXaxis().SetTitle(fitCorrH.GetXaxis().GetTitle())
+          gr.GetYaxis().SetTitle(fitCorrH.GetYaxis().GetTitle())
+     label.DrawLatex(0.15,0.80,'#rho(m_{t},#mu)=%3.3f'%fitCorrH.GetCorrelationFactor())
+
+     #all done, save
+     canvas.cd()
+     canvas.Modified()
+     canvas.Update()
+     canvas.SaveAs('%s/plots/%s_pesummary.png'%(options.outDir,key))
+     canvas.SaveAs('%s/plots/%s_pesummary.pdf'%(options.outDir,key))
+
+
+"""
 Loops over the results in a directory and build the map
 """
 def parsePEResultsFromFile(url):
@@ -98,8 +162,6 @@ def parsePEResultsFromFile(url):
         tag=os.path.splitext(f)[0]
         selection = ''
         try:
-             # either ['nominal', '172v5', 'results'] or
-             #        ['nominal', '172v5', 'mrank1', 'results']
             syst, massstr, selection, _ = tag.rsplit('_', 3)
         except ValueError:
             syst, massstr, _ = tag.rsplit('_', 2)
@@ -116,39 +178,39 @@ def parsePEResultsFromFile(url):
         useForCalib=True if 'nominal' in syst else False
 
         for key in fIn.GetListOfKeys():
-            keyName=key.GetName()
-            norm=fIn.Get(keyName+'/norm')
-            mtop=fIn.Get(keyName+'/mtop')
-            if selection is not '' and selection in keyName:
-                keyName = keyName.replace('%s_'%selection,'')
-            if not((keyName,selection) in results):
-                results[(keyName,selection)] = {}
-            if syst == 'nominal':
-                syst = str(mass)
-            results[(keyName,selection)][syst]=(mtop[0],mtop[1]/math.sqrt(norm[0]))
+             showPEplots(key=keyName,fIn=fIn)
+             keyName=key.GetName()
+             mtop=fIn.Get(keyName+'/mtop')
+             if selection is not '' and selection in keyName:
+                  keyName = keyName.replace('%s_'%selection,'')
+             if not((keyName,selection) in results):
+                  results[(keyName,selection)] = {}
+                  if syst == 'nominal':
+                       syst = str(mass)
+             results[(keyName,selection)][syst]=(mtop[0],mtop[1])
 
-            # add point for calibration
-            if not useForCalib: continue
-            np=0
-            try:
-                np=calibGrMap[keyName][selection].GetN()
-            except KeyError:
-                if not keyName in calibGrMap:
-                    calibGrMap[keyName] = {}
-                calibGrMap[keyName][selection]=ROOT.TGraphErrors()
-                calibGrMap[keyName][selection].SetName(keyName)
-                title=keyName.replace('_',', ')
-                if 'comb' in title:
-                    title='combination'
-                else:
-                    title=title.replace('m','#mu')
-                    title += ' tracks'
-                calibGrMap[keyName][selection].SetTitle(title)
-                calibGrMap[keyName][selection].SetMarkerStyle(20)
-                calibGrMap[keyName][selection].SetMarkerSize(1.0)
-                np=calibGrMap[keyName][selection].GetN()
-            calibGrMap[keyName][selection].SetPoint     (np, mass, mtop[0]-mass)
-            calibGrMap[keyName][selection].SetPointError(np, 0,  mtop[1]/math.sqrt(norm[0]))
+             # add point for calibration
+             if not useForCalib: continue
+             np=0
+             try:
+                  np=calibGrMap[keyName][selection].GetN()
+             except KeyError:
+                  if not keyName in calibGrMap:
+                       calibGrMap[keyName] = {}
+                  calibGrMap[keyName][selection]=ROOT.TGraphErrors()
+                  calibGrMap[keyName][selection].SetName(keyName)
+                  title=keyName.replace('_',', ')
+                  if 'comb' in title:
+                       title='combination'
+                  else:
+                       title=title.replace('m','#mu')
+                       title += ' tracks'
+                  calibGrMap[keyName][selection].SetTitle(title)
+                  calibGrMap[keyName][selection].SetMarkerStyle(20)
+                  calibGrMap[keyName][selection].SetMarkerSize(1.0)
+                  np=calibGrMap[keyName][selection].GetN()
+             calibGrMap[keyName][selection].SetPoint     (np, mass, mtop[0]-mass)
+             calibGrMap[keyName][selection].SetPointError(np, 0,  mtop[1]/math.sqrt(norm[0]))
         fIn.Close()
 
     return results, calibGrMap
@@ -350,7 +412,7 @@ def main():
         showSystematicsTable(results=results)
 
     if opt.peInput:
-    	for sel in ['','mrank1']:
+    	for sel in ['','mrank1','optmrank']:
 	        ensemblesMap=parseEnsembles(url=opt.peInput, selection=sel,rebin=opt.rebin)
 	        for tag,grMap in ensemblesMap.items():
 	            outName = tag if sel == '' else '%s_%s'%(tag,sel)

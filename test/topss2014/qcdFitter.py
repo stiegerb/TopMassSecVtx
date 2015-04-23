@@ -217,11 +217,12 @@ def main(args, options) :
 	from makeSVLMassHistos import NTRKBINS
 
 	for cat in CATEGORIES:
+		print cat,fQCD
 		inc = fQCD.Get('%s_qcd_template'%cat)
 		totalIncSideBand = inc.Integral()
 		totalInc = w.function('N_bkg_%s'%cat).getVal()
 		for ntk in [tk1 for tk1,_ in NTRKBINS]:
-			for sel in ['_mrank1','']:
+			for sel in ['_mrank1','','_optmrank']:
 				h_ntk = fQCD.Get('%s%s_qcd_template_%d'%(cat,sel,ntk))
 				iniNorm = h_ntk.Integral()
 				frac = iniNorm/totalIncSideBand

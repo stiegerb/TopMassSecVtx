@@ -47,8 +47,8 @@ SYSTTOPROCNAME = dict([(k,v.replace('.root','')) for k,_,v in SYSTSFROMFILES])
 
 SYSTSFROMWEIGHTS = [
 	('nominal', 'Nominal',                  '1'),
-	('toppt',   'Top p_{T} weight applied', 'Weight[7]'),
-	('topptup', 'Top p_{T} weight up',      'Weight[8]'),
+	('toppt',   'Top p_{T} weight applied', 'Weight[10]'),
+	('topptup', 'Top p_{T} weight up',      'Weight[7]'),
 	('bfrag',   'rb LEP weighted',          'SVBfragWeight[0]'),
 	('bfragup', 'rb LEP hard weighted',     'SVBfragWeight[1]'),
 	('bfragdn', 'rb LEP soft weighted',     'SVBfragWeight[2]'),
@@ -421,14 +421,18 @@ def main(args, opt):
 			            'inclusive', 'Fully Inclusive', opt)
 		makeControlPlot(systhistos, var,
 			            'inclusive_mrank1', 'Mass ranked', opt)
+		makeControlPlot(systhistos, var,
+			            'inclusive_optmrank', 'Optimized mass rank', opt)
 
 	makeControlPlot(systhistos, 'nominal',
 		            'inclusive', 'Fully Inclusive', opt)
 	makeControlPlot(systhistos, 'nominal',
-		            'inclusive_mrank1', 'Fully Inclusive', opt)
+		            'inclusive_mrank1', 'Mass ranked', opt)
+	makeControlPlot(systhistos, 'nominal',
+		            'inclusive_optmrank', 'Optimized mass rank', opt)
 
 	for tag,_,_ in SELECTIONS:
-		if not tag in ['inclusive', 'inclusive_mrank1']: continue
+		if not tag in ['inclusive', 'inclusive_mrank1','inclusive_optmrank']: continue
 		print "... processing %s"%tag
 
 		# Make plot of mass with and without neutrino:

@@ -740,9 +740,11 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	fTMET       = metpt;
 	fTNJets     = nj;
 	fTNPVtx     = nvtx;
-	for (int i = 0; i < int(TMath::Min(11,nw)); ++i){
-		fTWeight[i] = w[i];
+	for (int i = 0; i < 11; ++i) {
+	  if(nw<i+1) fTWeight[i]=0;
+	  else       fTWeight[i]=w[i];
 	}
+
 	for (int i = 0; i < 3; ++i){
 		fTJESWeight[i] = -99.99;
 		fTSVBfragWeight[i] = -99.99;

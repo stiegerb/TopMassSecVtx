@@ -32,6 +32,12 @@ SELECTIONS = [
 	('mm_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
 	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
 	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
+	('inclusive_optmrank', 'SVLCombRank>0 && abs(EvCat)<200', '#geq 1 lepton'),
+	('ee_optmrank',        'SVLCombRank>0 && EvCat==-121',    'ee'),
+	('em_optmrank',        'SVLCombRank>0 && EvCat==-143',    'e#mu'),
+	('mm_optmrank',        'SVLCombRank>0 && EvCat==-169',    '#mu#mu'),
+	('e_optmrank',         'SVLCombRank>0 && abs(EvCat)==11', 'e'),
+	('m_optmrank',         'SVLCombRank>0 && abs(EvCat)==13', '#mu')
 ]
 
 COMBINATIONS = [

@@ -13,6 +13,8 @@ SELECTIONS = [
 	('m',         'abs(EvCat)==13', '#mu'),
 	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
 	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
+	('e_optmrank',       'SVLCombRank>0&&abs(EvCat)==11', 'e'),
+	('m_optmrank',       'SVLCombRank>0&&abs(EvCat)==13', '#mu'),
 	('e_qcd',        'abs(EvCat)==1100', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('m_qcd',        'abs(EvCat)==1300', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('e_mrank1_qcd',
@@ -21,6 +23,13 @@ SELECTIONS = [
 	('m_mrank1_qcd',
 	 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1300',
 	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('e_optmrank_qcd',
+	 'SVLCombRank>0&&abs(EvCat)==1100',
+	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('m_optmrank_qcd',
+	 'SVLCombRank>0&&abs(EvCat)==1300',
+	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+
 ]
 
 def filterUseless(filename, sel=''):

@@ -13,26 +13,28 @@ Wrapper to contain the histograms with the results of the pseudo-experiments
 """
 class PseudoExperimentResults:
 
-    def __init__(self,genMtop,outFile):
+    def __init__(self,genMtop,outFileUrl):
         self.genMtop=genMtop
-        self.outFile=outFile
+        self.outFileUrl=outFileUrl
         self.histos={}
 
-    def addFitResult(key,ws):
+    def addFitResult(self,key,ws):
 
         #init histogram if needed
-        if not (key in self.histos): initHistos(key)
+        if not (key in self.histos): self.initHistos(key)
 
         #fill the histograms
         if ws.var('mtop').getError()>0:
-            self.histos[key]['mtopfit'].setVal(ws.var('mtop').getVal()-self.genMtop)
-            self.histos[key]['mtopfit_statunc'].setVal(ws.var('mtop').getError())
-            self.histos[key]['mtopfit_pull'].setVal((ws.var('mtop').getVal()-self.genMtop)/ws.var('mtop').getError())
-            self.histos[key]['muvsmtop'].setVal(ws.var('mtop').getVal(),ws.var('mu').getVal())
+            self.histos[key]['mtopfit'].Fill(ws.var('mtop').getVal()-self.genMtop)
+            self.histos[key]['mtopfit_statunc'].Fill(ws.var('mtop').getError())
+            self.histos[key]['mtopfit_pull'].Fill((ws.var('mtop').getVal()-self.genMtop)/ws.var('mtop').getError())
+            self.histos[key]['muvsmtop'].Fill(ws.var('mtop').getVal(),ws.var('mu').getVal())
             
-    def initHistos(key):
+    def initHistos(self,key):
         self.histos[key]={}
-        pf='_'.join(key)
+        pfix=''
+        for tk in key: pfix += str(tk)+'_'
+        pfix=pfix[:-1]
         self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,';#Deltam_{t} [GeV];Pseudo-experiments',200,-5,5)
         self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)        
         self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-2.02,1.98)
@@ -41,11 +43,13 @@ class PseudoExperimentResults:
             self.histos[key][var].SetDirectory(0)
             self.histos[key][var].Sumw2()
         
-    def saveResults():        
-        peFile=ROOT.TFile(self.outFile,'RECREATE')
-        peFile.cd()
+    def saveResults(self):        
+        peFile=ROOT.TFile(self.outFileUrl,'RECREATE')
         for key in self.histos:
-            dirName='_'.join(key)
+            dirName=''
+            for tk in key: dirName+=str(tk)+'_'
+            dirName=dirName[:-1]
+            peFile.cd()
             outDir=peFile.mkdir(dirName)
             outDir.cd()
             for var in self.histos[key]:
@@ -215,8 +219,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     #prepare results summary
     selTag=''
     if len(options.selection)>0 : selTag='_%s'%options.selection
-    summary=PseudoExperiments(genMtop=genMtop,
-                              outFileUrl=os.path.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)))
+    summary=PseudoExperimentResults(genMtop=genMtop,
+                                    outFileUrl=os.path.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)))
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")
@@ -298,7 +302,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     for i in xrange(0,options.nPexp):
 
         #iterate over available categories to build the set of likelihoods to combine
-        nLLMap={}
+        nllMap={}
         allPseudoDataH=[]
         allPseudoData=[]
         if options.verbose>1 and options.verbose<=3:
@@ -382,11 +386,11 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             sys.stdout.write(prepend+'[combining channels and categories]')
             sys.stdout.flush()
         for key in nllMap:
-
+            
             #reset to central values
             ws.var('mtop').setVal(172.5)
             ws.var('mu').setVal(1.0)
-            
+            print key,len(nllMap[key]),' likelihoods to combine'
             #add the log likelihoods and minimize
             llSet = ROOT.RooArgSet()
             for ll in nllMap[key]: llSet.add(ll)

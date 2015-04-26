@@ -58,6 +58,8 @@ SYSTSFROMWEIGHTS = [
 	('bfragdn',     'rb LEP soft weighted',      'SVBfragWeight[2]'),
 	('jesup',       'Jet energy scale up',       'JESWeight[1]'),
 	('jesdn',       'Jet energy scale down',     'JESWeight[2]'),
+	('lesup',       'Lepton energy scale up',       '1'),
+	('lesdn',       'Lepton energy scale down',     '1'),
 	('bfnuup',      'B hadron semi-lep BF up',
 	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))'),
 	('bfnudn',   'B hadron semi-lep BF down',
@@ -218,8 +220,13 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 			if syst in ['powherw', 'powpyth'] or 'p11' in syst:
 				finalsel = finalsel[len('Weight[0]*'):]
 
+			#add scale factor
+			svlmassVar='SVLMass'
+			if syst=='lesdn' : svlmassVar='SVLMass*SVLMass_sf[0]'
+			if syst=='lesup' : svlmassVar='SVLMass*SVLMass_sf[1]'
+
 			hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
-			tasks.append((hname, 'SVLMass', finalsel,
+			tasks.append((hname, svlmassVar, finalsel,
 				          NBINS, XMIN, XMAX, MASSXAXISTITLE))
 			hname_to_keys[hname] = (tag, syst, comb, ntk1)
 	return tasks

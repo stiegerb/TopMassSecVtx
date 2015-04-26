@@ -240,7 +240,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     #build the relevant PDFs
     allPdfs = {}
     finalStates=['em','mm','ee','m','e']
-    for chsel in finalStates:
+    for ch in finalStates:
+        chsel=ch
         if len(options.selection)>0 : chsel += '_' + options.selection
         for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
             ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
@@ -282,17 +283,16 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                                                           sumPDF.GetName(),
                                                           bkgConstPDF.GetName()))
 
-            #add calibration for this category if available (read from a pickle file?)
-            # reco-sim = slope.sim+offset <=> sim = (reco-offset)/(slope+1)
-            offset, slope = 0.0, 0.0
-            try:
-                offset, slope = calibMap[ '%s_%d'%(chsel,ntrk) ]
-            except:
-                pass
-            allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d("
-                                               "uncalibmodel_%s_%d, "
-                                               "mtop=expr('(@0-%f)/(%f+1.0)',mtop))"%
-                                          (chsel,ntrk,chsel,ntrk,offset,slope) )
+            #add calibration for this category if available (read from a pickle file)
+            offset, slope = 0.0, 1.0
+            if calibMap:
+                try:
+                    offset, slope = calibMap[options.selection][ '%s_%d'%(ch,ntrk) ]
+                except KeyError, e:
+                    print 'Failed to retrieve calibration with',e
+            ws.factory("RooFormulaVar::calibmtop_%s_%d('(@0-%f)/%f',{mtop})"%(chsel,ntrk,offset,slope))
+            allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d,mtop=calibmtop_%s_%d)"%
+                                               (chsel,ntrk,chsel,ntrk,chsel,ntrk))
 
     #throw pseudo-experiments
     poi = ROOT.RooArgSet( ws.var('mtop') )
@@ -378,7 +378,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                                  '(mt: %6.2f+-%4.2f GeV, '
                                   'mu: %4.2f+-%4.2f)\n'%
                                 (bcolors.OKGREEN,bcolors.ENDC,
-                                 fitVal, fitErr, fitVal_mu, fitErr_mu))
+                                 ws.var('mtop').getVal(), ws.var('mtop').getError(),
+                                 ws.var('mu').getVal(), ws.var('mu').getError()) )
                 sys.stdout.flush()
 
         #combined likelihoods
@@ -390,7 +391,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             #reset to central values
             ws.var('mtop').setVal(172.5)
             ws.var('mu').setVal(1.0)
-            print key,len(nllMap[key]),' likelihoods to combine'
+            
             #add the log likelihoods and minimize
             llSet = ROOT.RooArgSet()
             for ll in nllMap[key]: llSet.add(ll)
@@ -403,20 +404,22 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             summary.addFitResult(key=key,ws=ws)
             combll.Delete()
 
+            if options.verbose>3:
+                print key,len(nllMap[key]),' likelihoods to combine'    
+                sys.stdout.write(' %s%s DONE%s%s '
+                                 '(mt: %6.2f+-%4.2f GeV, '
+                                 'mu: %5.3f+-%5.3f)%s \n'%
+                                 (bcolors.OKGREEN, bcolors.BOLD, bcolors.ENDC, bcolors.BOLD,
+                                  ws.var('mtop').getVal(), ws.var('mtop').getError(),
+                                  ws.var('mu').getVal(), ws.var('mu').getError(),
+                                  bcolors.ENDC))
+                sys.stdout.flush()
+                print 80*'-'
+
         #free used memory
         for h in allPseudoDataH      : h.Delete()
         for d in allPseudoData       : d.Delete()
         for ll in nllMap[('comb',0)] : ll.Delete()
-
-        if options.verbose>3:
-            sys.stdout.write(' %s%s DONE%s%s '
-                             '(mt: %6.2f+-%4.2f GeV, '
-                              'mu: %5.3f+-%5.3f)%s \n'%
-                            (bcolors.OKGREEN, bcolors.BOLD, bcolors.ENDC, bcolors.BOLD,
-                             fitVal, fitErr, fitVal_mu, fitErr_mu,
-                             bcolors.ENDC))
-            sys.stdout.flush()
-            print 80*'-'
 
     summary.saveResults()
 
@@ -427,10 +430,9 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     cmsswBase = os.environ['CMSSW_BASE']
     sel=options.selection
     if len(sel)==0 : sel='inclusive'
-    jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/svlPEJobs/%s'%sel,
-                           time.strftime('%b%d'))
-    # jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/svlPEJobs',
-    #                        time.strftime('%b%d'), time.strftime('%H%M%S'))
+    baseJobsDir='svlPEJobs'
+    if options.calib : baseJobsDir+='_calib'
+    jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/%s/%s'%(baseJobsDir,sel),time.strftime('%b%d'))
     if os.path.exists(jobsDir):
         os.system('rm -r %s/*.sh'%jobsDir)
     else:
@@ -440,7 +442,7 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
 
     wsfilepath = os.path.abspath(wsfile)
     pefilepath = os.path.abspath(pefile)
-    odirpath = os.path.abspath(options.outDir)
+    odirpath = os.path.abspath(jobsDir)
 
     ## Feedback before submitting the jobs
     raw_input('This will submit %d jobs to batch. %s Did you remember to run scram b?%s \n Continue?'%(len(experimentTags), bcolors.RED, bcolors.ENDC))

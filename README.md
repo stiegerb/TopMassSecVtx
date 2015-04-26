@@ -127,21 +127,24 @@ Prepares the workspace for the fits and put the RooFit workspace and plots in sv
 Will run the pseudoexperiments for a single variation (e.g. nominal_172v5). Verbose level above 5 prints the result of each channel for each single experiment.
 
 ```
-./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlfits/pe_inputs.root
+./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlplots/pe_inputs.root -s optmrank
 ```
-Will run all the pseudoexperiments for all variation on batch.
+Will run all the pseudoexperiments for all variation on batch. The output (and individual scripts) will be stored under svlPEJobs
 
 ```
-python scripts/summarizeSVLresults.py --calib svlfits/
+python scripts/summarizeSVLresults.py --calib svlPEJobs/optmrank/Apr25/
 ```
 Will parse the summaries of the pseudo-experiments, print a systematics table, and produce a calibration file.
 
 ```
-./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root -c svlfits/.svlcalib.pck
+./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlplots/pe_inputs.root -c svlPEJobs/optmrank/Apr25/.svlcalib.pck -s optmrank
 ```
-
 Will run the calibrated pseudo-experiments
-
+```
+python scripts/summarizeSVLresults.py --syst svlPEJobs_calib/optmrank/Apr25/.svlcalib.pck
+```
+Will printout the "final" systematics table
+```
 ---------------------------------------------------
 ### Control region analysis
 ```

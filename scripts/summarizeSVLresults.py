@@ -4,6 +4,7 @@ import os,sys,re
 import optparse
 import math
 import pickle
+
 from UserCode.TopMassSecVtx.rounding import *
 from UserCode.TopMassSecVtx.PlotUtils import bcolors,getContours
 from makeSVLMassHistos import NTRKBINS
@@ -42,7 +43,6 @@ def parseEnsembles(url,selection='',rebin=4):
          refTag='nominal_172v5' if 'scale' in tag else refTag
          refTag='nominal_172v5' if 'toppt' in tag else refTag
          refTag='nominal_172v5' if 'jes' in tag else refTag
-         #refTag='bfrag_172v5'   if 'bfrag' in tag else refTag
          refTag='nominal_172v5'   if 'bfrag' in tag else refTag
          refTag='nominal_172v5' if 'bfn' in tag else refTag
          refTag='p11_172v5'     if 'p11' in tag else refTag
@@ -86,67 +86,81 @@ def parseEnsembles(url,selection='',rebin=4):
      return ensemblesMap
 
 """
-Shows final results for all categories
+Analyze final results for a given category
 """
-def showPEplots(key,fIn):
-
-     channelTitle=chsel.replace('_',' ')
+def analyzePEresults(key,fIn,outDir):
+     
+     PEsummary={}
 
      #show results   
-     canvas=ROOT.TCanvas('c','c',1000,1000)
-     canvas.Divide(2,2)
+     canvas=ROOT.TCanvas('c','c',1500,500)
+     canvas.Divide(3,1)
+
+     #bias
      canvas.cd(1)
-     mtopFitH=fIn.Get('%s/mtopfit'%key)
+     mtopFitH=fIn.Get('%s/mtopfit_%s'%(key,key))
      mtopFitH.Draw()
+     mtopFitH.Fit('gaus','LMQ+')
+     try:
+          gaus=mtopFitH.GetFunction('gaus')
+          PEsummary['bias']=(gaus.GetParameter(1),gaus.GetParError(1))
+     except:
+          pass
      label=ROOT.TLatex()
      label.SetNDC()
      label.SetTextFont(42)
      label.SetTextSize(0.04)
      label.DrawLatex(0.1,0.92,'#bf{CMS} #it{simulation}')
+     if 'bias' in PEsummary : label.DrawLatex(0.15,0.80,'<m_{t}>=%3.3f#pm%3.3f'%(PEsummary['bias'][0],PEsummary['bias'][1]))
+     channelTitle=key.replace('_',', ')
      label.DrawLatex(0.15,0.84,channelTitle)
-     if trk>1 : label.DrawLatex(0.15,0.8,'%d tracks'%trk)
-     mtopFitH.Draw()
-     mtopFitH.Fit('gaus','MRQ+')
-     try:
-          gaus=mtopFitH.GetFunction('gaus')
-          label.DrawLatex(0.15,0.80,'<m_{t}>=%3.3f  #sigma(m_{t})=%3.3f'%(gaus.GetParameter(1),gaus.GetParameter(2)))
-     except:
-          pass
 
+     #stat unc
+     #canvas.cd(2)
+     mtopFitStatH=fIn.Get('%s/mtopfit_statunc_%s'%(key,key))
+     #mtopFitStatH.Draw('hist')
+     #mtopFitStatH.SetFillStyle(1001)
+     #mtopFitStatH.SetFillColor(ROOT.kGray)
+     #label.DrawLatex(0.15,0.80,
+     #                '<#sigma_{stat}>=%3.3f #sigma(#sigma_{stat})=%3.3f'
+     #                %(mtopFitStatH.GetMean(),mtopFitStatH.GetRMS()))
+     PEsummary['stat']=(mtopFitStatH.GetMean(),mtopFitStatH.GetMeanError())
+
+     #pull
      canvas.cd(2)
-     mtopFitStatH=fIn.Get('%s/mtopfit_statunc'%key)
-     mtopFitStatH.Draw()
-     label.DrawLatex(0.15,0.80,
-                     '<#sigma_{stat}>=%3.3f #sigma(#sigma_{stat})=%3.3f'
-                     %(mtopFitStatH.GetMean(),mtopFitStatH.GetRMS()))
-
-     canvas.cd(3)
-     mtopFitPullH=fIn.Get('%s/mtopfit_pull'%key)
+     mtopFitPullH=fIn.Get('%s/mtopfit_pull_%s'%(key,key))
+     mtopFitPullH.Rebin(4)
      mtopFitPullH.Draw()
-     mtopFitPullH.Fit('gaus','MRQ+')
+     mtopFitPullH.Fit('gaus','LMQ+')
      try:
           gaus=mtopFitPullH.GetFunction('gaus')
+          PEsummary['pull']=(gaus.GetParameter(1),gaus.GetParameter(2))
           label.DrawLatex(0.15,0.80,'<pull>=%3.3f  #sigma(pull)=%3.3f'%(gaus.GetParameter(1),gaus.GetParameter(2)))
      except:
           pass
 
-     canvas.cd(4)
-     fitCorrH=fIn.Get('%s/muvsmtop'%key)
-     cont=getContours(fitCorrH)
-     drawOpt='ac'
-     for gr in cont: 
-          gr.Draw(drawOpt)
-          drawOpt='c'
-          gr.GetXaxis().SetTitle(fitCorrH.GetXaxis().GetTitle())
-          gr.GetYaxis().SetTitle(fitCorrH.GetYaxis().GetTitle())
+     #correlation with signal strength
+     canvas.cd(3)
+     fitCorrH=fIn.Get('%s/muvsmtop_%s'%(key,key))
+     fitCorrH.Draw('contz')
+     #cont=getContours(fitCorrH)
+     #drawOpt='ac'
+     #for gr in cont: 
+     #     gr.Draw(drawOpt)
+     #     drawOpt='c'
+     #     gr.GetXaxis().SetTitle(fitCorrH.GetXaxis().GetTitle())
+     #     gr.GetYaxis().SetTitle(fitCorrH.GetYaxis().GetTitle())
      label.DrawLatex(0.15,0.80,'#rho(m_{t},#mu)=%3.3f'%fitCorrH.GetCorrelationFactor())
 
      #all done, save
      canvas.cd()
      canvas.Modified()
      canvas.Update()
-     canvas.SaveAs('%s/plots/%s_pesummary.png'%(options.outDir,key))
-     canvas.SaveAs('%s/plots/%s_pesummary.pdf'%(options.outDir,key))
+     pename=os.path.splitext(os.path.basename(fIn.GetName()))[0]
+     for ext in ['png','pdf'] : canvas.SaveAs('%s/plots/%s_%s.%s'%(outDir,key,pename,ext))
+
+     #resturn results
+     return PEsummary
 
 
 """
@@ -173,44 +187,42 @@ def parsePEResultsFromFile(url):
         mass = float(mass.replace('v5','.5'))
         assert(mass == float(massstr.replace('v5','.5')))
 
-        # print '... processing %-12s, %5.1f, %s' % (syst,mass,selection)
-
         useForCalib=True if 'nominal' in syst else False
-
         for key in fIn.GetListOfKeys():
-             showPEplots(key=keyName,fIn=fIn)
-             keyName=key.GetName()
-             mtop=fIn.Get(keyName+'/mtop')
-             if selection is not '' and selection in keyName:
-                  keyName = keyName.replace('%s_'%selection,'')
+
+             keyName=key.GetName()             
+             PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url)
+             if not 'bias' in PEsummary : continue
+
+             #save results
+             if selection is not '' and selection in keyName : keyName = keyName.replace('%s_'%selection,'')
              if not((keyName,selection) in results):
                   results[(keyName,selection)] = {}
-                  if syst == 'nominal':
-                       syst = str(mass)
-             results[(keyName,selection)][syst]=(mtop[0],mtop[1])
+                  if syst == 'nominal' : syst = str(mass)
 
-             # add point for calibration
-             if not useForCalib: continue
+             # add point for systematics
+             if not useForCalib or mass==172.5:
+                  results[(keyName,selection)][syst]=(mass+PEsummary['bias'][0],PEsummary['bias'][1])
+             if not useForCalib :
+                  continue
+
+             # otherwise use it for calibration
              np=0
              try:
                   np=calibGrMap[keyName][selection].GetN()
              except KeyError:
-                  if not keyName in calibGrMap:
-                       calibGrMap[keyName] = {}
+                  if not keyName in calibGrMap : calibGrMap[keyName] = {}                  
                   calibGrMap[keyName][selection]=ROOT.TGraphErrors()
                   calibGrMap[keyName][selection].SetName(keyName)
-                  title=keyName.replace('_',', ')
-                  if 'comb' in title:
-                       title='combination'
-                  else:
-                       title=title.replace('m','#mu')
-                       title += ' tracks'
-                  calibGrMap[keyName][selection].SetTitle(title)
+                  calibGrMap[keyName][selection].SetTitle(selection)
                   calibGrMap[keyName][selection].SetMarkerStyle(20)
                   calibGrMap[keyName][selection].SetMarkerSize(1.0)
                   np=calibGrMap[keyName][selection].GetN()
-             calibGrMap[keyName][selection].SetPoint     (np, mass, mtop[0]-mass)
-             calibGrMap[keyName][selection].SetPointError(np, 0,  mtop[1]/math.sqrt(norm[0]))
+
+             #require less than 1 GeV in unc.
+             if results[(keyName,selection)][syst][1]<1:
+                  calibGrMap[keyName][selection].SetPoint     (np, results[(keyName,selection)][syst][0], mass)
+                  calibGrMap[keyName][selection].SetPointError(np, results[(keyName,selection)][syst][1], 0 )
         fIn.Close()
 
     return results, calibGrMap
@@ -218,124 +230,126 @@ def parsePEResultsFromFile(url):
 """
 Shows results
 """
-def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,yrange=(-1.5,1.5),baseDrawOpt='p',doFit=False):
-    if not os.path.exists(outDir):
-        os.system('mkdir -p %s' % outDir)
-    #save calibration to pickle
-    fitParamsMap={}
-    nx=3
-    ny=int(len(grCollMap)/nx)
-    while ny*nx<len(grCollMap) : ny+=1
-    canvas=ROOT.TCanvas('c','c',nx*400,ny*250)
-    canvas.Divide(nx,ny)
-    ip=0
-    allLegs=[]
-    for key,grColl in sorted(grCollMap.items()):
+def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_range=(160,190),baseDrawOpt='p',doFit=False):
 
-        igrctr=0
+     #prepare output
+     if not os.path.exists(outDir) : os.system('mkdir -p %s' % outDir)
+     
+     #fit results
+     fitParamsMap={}
 
-        nleg=-1
-        if 'comb' in key:
-             nleg=len(allLegs)
-             allLegs.append(ROOT.TLegend(0.2,0.2,0.9,0.8))
-             allLegs[nleg].SetFillStyle(0)
-             allLegs[nleg].SetTextFont(42)
-             allLegs[nleg].SetTextSize(0.06)
-             allLegs[nleg].SetBorderSize(0)
-             allLegs[nleg].SetNColumns(2)
-        for tag,gr in sorted(grColl.items()):
-            gr.Sort()
-            gr.SetMarkerStyle(gr.GetMarkerStyle()+igrctr)
-            igrctr+=1
+     #prepare results
+     nx=3
+     ny=int(len(grCollMap)/nx)
+     while ny*nx<len(grCollMap) : ny+=1
+     canvas=ROOT.TCanvas('c','c',nx*400,ny*250)
+     canvas.Divide(nx,ny)
+     ip=0
+     allLegs=[]
+     line=ROOT.TLine(x_range[0],y_range[0],x_range[1],y_range[1])
+     line.SetLineStyle(2)
+     line.SetLineColor(ROOT.kGray)
+     for key,grColl in sorted(grCollMap.items()):
+         
+          ip+=1
+          yTitleOffset, yLabelSize = 0, 0
+          if 'comb_0' in key:
+               padCtr=1
+               ip-=1
+               nleg=len(allLegs)
+               allLegs.append(ROOT.TLegend(0.2,0.5,0.6,0.8))
+               allLegs[nleg].SetFillStyle(0)
+               allLegs[nleg].SetTextFont(42)
+               allLegs[nleg].SetTextSize(0.06)
+               allLegs[nleg].SetBorderSize(0)
+               yTitleOffset, yLabelSize=0.8,0.07
+          else:
+               padCtr=ip+1
+          p=canvas.cd(padCtr)
+          
+          if (padCtr-1)%nx==0:
+               p.SetLeftMargin(0.15)
+               p.SetRightMargin(0.03)
+               yTitleOffset, yLabelSize=0.8,0.07
+          else:
+               p.SetLeftMargin(0.03)
+               p.SetRightMargin(0.03)
+               yTitleOffset, yLabelSize=0.,0.0
 
-            if doFit:
-                gr.Fit('pol1','MQ+')
-                offset=gr.GetFunction('pol1').GetParameter(0)
-                slope=gr.GetFunction('pol1').GetParameter(1)
-                gr.GetFunction('pol1').SetLineColor(ROOT.kBlue)
-                fitParamsMap[key]=(offset,slope)
+          p.SetTopMargin(0.03)
+          p.SetBottomMargin(0.15)
+          p.SetGridy()
+          p.SetGridx()
 
-            drawOpt='a'+baseDrawOpt if igrctr==1 else baseDrawOpt
-            if 'comb' in key :
-                if igrctr==1 :
-                    p=canvas.cd(2+nx*(ny-1))
-                gr.Draw(drawOpt)
-                allLegs[nleg].AddEntry(gr,gr.GetTitle(),baseDrawOpt)
-            else:
-                if igrctr==1 :
-                    ip+=1
-                    p=canvas.cd(ip)
-                gr.Draw(drawOpt)
-            gr.GetYaxis().SetRangeUser(yrange[0],yrange[1])
-            gr.GetYaxis().SetNdivisions(5)
+          #draw graphs on pads
+          igrctr=0
+          igrctr=0
+          color=[ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9]
+          for tag,gr in sorted(grColl.items()):
+               gr.Sort()
+               gr.SetMarkerStyle(20+igrctr)
+               gr.SetMarkerColor(color[igrctr])
+               gr.SetLineColor(color[igrctr])
+               if doFit:                
+                    gr.Fit('pol1','MQ+','same')
+                    offset=gr.GetFunction('pol1').GetParameter(0)
+                    slope=gr.GetFunction('pol1').GetParameter(1)
+                    gr.GetFunction('pol1').SetLineColor(ROOT.kBlue)
 
-        p.SetGridy()
-        label=ROOT.TLatex()
-        label.SetNDC()
-        label.SetTextFont(42)
-        label.SetTextSize(0.08)
-        title=key
-        if 'comb' in title:
-            title='combination'
-        else:
-            title=title.replace('m','#mu')
-            title=title.replace('_',', ')
-            title += ' tracks'
-        label.DrawLatex(0.2,0.8,'#it{'+title+'}')
-        if 'comb' in key:
-            p.SetLeftMargin(0.03)
-            p.SetRightMargin(0.03)
-            gr.GetYaxis().SetRangeUser(-1.5,1.5)
-            gr.GetYaxis().SetTitle(yaxisTitle)
-            gr.GetYaxis().SetNdivisions(5)
-            gr.GetYaxis().SetTitleOffset(0.8)
-            gr.GetYaxis().SetTitleSize(0.1)
-            gr.GetYaxis().SetLabelSize(0.08)
-            gr.GetXaxis().SetTitle(xaxisTitle)
-            gr.GetXaxis().SetTitleOffset(0.8)
-            gr.GetXaxis().SetTitleSize(0.1)
-            gr.GetXaxis().SetLabelSize(0.08)
-            p=canvas.cd(1+nx*(ny-1))
-            label.DrawLatex(0.2,0.8,'#bf{CMS} #it{simulation}')
-            allLegs[nleg].Draw()
+                    #add to map
+                    title=gr.GetTitle()
+                    if not (title in fitParamsMap): fitParamsMap[title]={}
+                    fitParamsMap[title][key]=(offset,slope)
 
+               igrctr+=1
+               drawOpt='a'+baseDrawOpt if igrctr==1 else baseDrawOpt
+               if 'comb_0' in key : allLegs[nleg].AddEntry(gr,gr.GetTitle(),baseDrawOpt)
+               gr.Draw(drawOpt)
 
-        if (ip-1)%nx==0:
-            p.SetLeftMargin(0.15)
-            p.SetRightMargin(0.03)
-            gr.GetYaxis().SetTitle(yaxisTitle)
-            gr.GetYaxis().SetTitleOffset(0.8)
-            gr.GetYaxis().SetTitleSize(0.1)
-            gr.GetYaxis().SetLabelSize(0.08)
-        else:
-            p.SetLeftMargin(0.03)
-            p.SetRightMargin(0.03)
-            gr.GetYaxis().SetLabelSize(0)
-            gr.GetYaxis().SetTitleSize(0)
+               gr.GetYaxis().SetRangeUser(y_range[0],y_range[1])
+               gr.GetXaxis().SetRangeUser(x_range[0],x_range[1])
+               gr.GetYaxis().SetNdivisions(5)
+               gr.GetXaxis().SetTitle(xaxisTitle)
+               gr.GetYaxis().SetTitle(yaxisTitle)
+               gr.GetYaxis().SetTitleOffset(yTitleOffset)
+               gr.GetYaxis().SetTitleSize(yLabelSize)
+               gr.GetYaxis().SetLabelSize(yLabelSize)
+               gr.GetXaxis().SetTitleSize(0.07)
+               gr.GetXaxis().SetLabelSize(0.07)
 
-        if ip>=len(grCollMap)-nx:
-            p.SetTopMargin(0.03)
-            p.SetBottomMargin(0.03)
-            gr.GetXaxis().SetTitle(xaxisTitle)
-            gr.GetXaxis().SetTitleOffset(0.8)
-            gr.GetXaxis().SetTitleSize(0.1)
-            gr.GetXaxis().SetLabelSize(0.08)
-        else:
-            p.SetTopMargin(0.03)
-            p.SetBottomMargin(0.03)
-            gr.GetXaxis().SetTitleSize(0)
-            gr.GetXaxis().SetLabelSize(0)
+          if doFit: line.Draw('same')
 
-    for ext in ['png','pdf']:
-        canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
-    return fitParamsMap
+          #label this pad
+          label=ROOT.TLatex()
+          label.SetNDC()
+          label.SetTextFont(42)
+          label.SetTextSize(0.08)
+          title=key
+          title=title.replace('_',', ')
+          if 'comb' in title:
+               title=title.replace('comb','combination ')
+               title=title.replace('0','')
+          else:
+               title=title.replace('m','#mu')
+               title += ' tracks'
+          label.DrawLatex(0.2,0.8,'#it{'+title+'}')
+          if 'comb_0' in key : 
+               label.DrawLatex(0.2,0.9,'#bf{CMS} #it{simulation}')
+               allLegs[nleg].Draw()
+
+     #all done
+     canvas.Modified()
+     canvas.Update()
+     for ext in ['png','pdf']:
+          canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
+     return fitParamsMap
 
 
 """
 Prints the table of systematics
 """
-def showSystematicsTable(results):
-    # pprint(results)
+def showSystematicsTable(results,filterCats):
+
     #show results
     selections = list(set([s for _,s in results.keys()]))
     categories = list(set([k for k,_ in results.keys()]))
@@ -345,31 +359,35 @@ def showSystematicsTable(results):
         print bcolors.BOLD+sel+bcolors.ENDC
         print 14*' ',
         for cat in sorted(categories):
-                print '{0:7s}'.format(cat),
-        print ' '
+             if not cat in filterCats: continue
+             print '{0:7s}'.format(cat),' & ',
+        print '\\\\'
         print 140*'-'
         for expTag in sorted(results.itervalues().next()):
-            if expTag in ['172.5', 'p11_172.5', 'bfrag_172.5']: continue
-            print '{0:12s}'.format(expTag.replace('_172.5','')),
-            for cat in sorted(categories):
+             if expTag in ['nominal', '172.5', 'p11_172.5', 'bfrag_172.5']: continue
+             print '{0:12s}'.format(expTag.replace('_172.5','')),
+             for cat in sorted(categories):
+                  
+                  if not cat in filterCats: continue
 
-                expTag2diff='172.5'
-                if 'p11' in expTag:     expTag2diff='p11'
-                if expTag == 'p11':     expTag2diff='172.5'
-                if 'powherw' in expTag: expTag2diff='powpyth'
-                if 'bfrag' in expTag:   expTag2diff='bfrag'
-
-                diff = results[(cat,sel)][expTag][0]-results[(cat,sel)][expTag2diff][0]
-                diffstr = ' %6.3f'%diff
-                if expTag not in ['166.5','169.5','171.5','173.5','175.5','178.5']:
-                    if abs(diff) > 0.5 and abs(diff) < 1.0:
-                        diffstr = "%7s"%(bcolors.YELLOW+diffstr+bcolors.ENDC)
-                    if abs(diff) >= 1.0:
-                        diffstr = "%7s"%(bcolors.RED+diffstr+bcolors.ENDC)
-                diffErr = math.sqrt( results[(cat,sel)][expTag][1]**2+results[(cat,sel)][expTag2diff][1]**2 )
-                print diffstr,
-                #print '{0:12s}'.format(toLatexRounded(diff,diffErr)),
-            print ' '
+                  expTag2diff='nominal'
+                  if 'p11' in expTag:     expTag2diff='p11'
+                  if expTag == 'p11':     expTag2diff='nominal'
+                  if 'powherw' in expTag: expTag2diff='powpyth'
+                  if 'bfrag' in expTag:   expTag2diff='bfrag'
+                  if 'bfrag' == expTag:   expTag2diff='nominal'
+                  
+                  diff = results[(cat,sel)][expTag][0]-results[(cat,sel)][expTag2diff][0]                  
+                  diffErr = math.sqrt( results[(cat,sel)][expTag][1]**2+results[(cat,sel)][expTag2diff][1]**2 )
+                  diffstr='{0:12s}'.format(toLatexRounded(diff,diffErr))
+                  #diffstr = ' %6.3f'%diff
+                  if expTag not in ['166.5','169.5','171.5','173.5','175.5','178.5']:
+                       if abs(diff) > 0.5 and abs(diff) < 1.0:
+                            diffstr = "%7s"%(bcolors.YELLOW+diffstr+bcolors.ENDC)
+                       if abs(diff) >= 1.0:
+                            diffstr = "%7s"%(bcolors.RED+diffstr+bcolors.ENDC)
+                  print diffstr,'&',
+             print '\\\\'
         print 140*'-'
     return 0
 
@@ -386,9 +404,8 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('--pe',    dest='peInput', default=None, help='compare ensembles for pseudo-experiments')
     parser.add_option('--calib', dest='calib',   default=None, help='show calibration')
+    parser.add_option('--syst',  dest='syst',    default=None, help='show systematics table')
     parser.add_option('--rebin', dest='rebin',   default=4,    type=int, help='rebin pe plots by this factor')
-    parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
-                      help='Output directory [default: %default]')
     (opt, args) = parser.parse_args()
 
     ROOT.gStyle.SetOptStat(0)
@@ -399,20 +416,39 @@ def main():
     if opt.calib:
         results,calibGrMap = parsePEResultsFromFile(url=opt.calib)
         calibMap = show(grCollMap=calibGrMap,
-                        outDir=opt.calib,
+                        outDir=opt.calib+'/plots',
                         outName='svlcalib',
-                        yaxisTitle='#Deltam_{t} [GeV]',
-                        xaxisTitle='Generated m_{t} [GeV]',
+                        yaxisTitle='m_{t}^{gen} [GeV]',
+                        y_range=(165,180),
+                        xaxisTitle='<m_{t}^{fit}> [GeV]',
+                        x_range=(165,180),
                         doFit=True)
         calibFile=os.path.join(opt.calib,'.svlcalib.pck')
         cachefile = open(calibFile, 'w')
         pickle.dump(calibMap, cachefile, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(results,  cachefile, pickle.HIGHEST_PROTOCOL)
         cachefile.close()
-        print 'Wrote %s with calibration constants'%calibFile
-        showSystematicsTable(results=results)
+        print 'Wrote %s with calibration constants and results'%calibFile
 
+    #show systematics table
+    if opt.syst:
+         cachefile = open(opt.syst, 'r')
+         calibMap  = pickle.load(cachefile)
+         results   =  pickle.load(cachefile)
+         cachefile.close()
+
+         showSystematicsTable(results=results,
+                              filterCats=['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0'])
+         showSystematicsTable(results=results,
+                              filterCats=['comb_0','comb_3','comb_4','comb_5'])
+         #showSystematicsTable(results=results,
+         #                     filterCats=['e_3','e_4','e_5','m_3','m_4','m_5'])
+         #showSystematicsTable(results=results,
+         #                     filterCats=['ee_3','ee_4','ee_5','em_3','em_4','em_5','mm_3','mm_4','mm_5'])
+
+    #compare inputs for pseudo-experiments
     if opt.peInput:
-    	for sel in ['','mrank1','optmrank']:
+        for sel in ['','mrank1','optmrank']:
 	        ensemblesMap=parseEnsembles(url=opt.peInput, selection=sel,rebin=opt.rebin)
 	        for tag,grMap in ensemblesMap.items():
 	            outName = tag if sel == '' else '%s_%s'%(tag,sel)

@@ -220,9 +220,9 @@ def parsePEResultsFromFile(url):
                   np=calibGrMap[keyName][selection].GetN()
 
              #require less than 1 GeV in unc.
-             if results[(keyName,selection)][syst][1]<1:
-                  calibGrMap[keyName][selection].SetPoint     (np, results[(keyName,selection)][syst][0], mass)
-                  calibGrMap[keyName][selection].SetPointError(np, results[(keyName,selection)][syst][1], 0 )
+             if PEsummary['bias'][1]<1:
+                  calibGrMap[keyName][selection].SetPoint     (np, PEsummary['bias'][0], mass)
+                  calibGrMap[keyName][selection].SetPointError(np, PEsummary['bias'][1], 0)
         fIn.Close()
 
     return results, calibGrMap

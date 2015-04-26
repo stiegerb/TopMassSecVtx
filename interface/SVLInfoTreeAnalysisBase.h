@@ -28,12 +28,14 @@ public :
    Int_t           EvCat;
    Float_t         Weight[11];
    Float_t         JESWeight[3];
+   Float_t         METWeight[2];
    Float_t         SVBfragWeight[3];
    Float_t         NJets;
    Float_t         MET;
    Int_t           NPVtx;
    Int_t           NCombs;
    Float_t         SVLMass;
+   Float_t         SVLMass_sf[2];
    Float_t         SVLDeltaR;
    Float_t         SVLMass_rot;
    Float_t         SVLDeltaR_rot;
@@ -58,12 +60,14 @@ public :
    TBranch        *b_EvCat;   //!
    TBranch        *b_Weight;   //!
    TBranch        *b_JESWeight;   //!
+   TBranch        *b_METWeight;   //!
    TBranch        *b_SVBfragWeight;   //!
    TBranch        *b_NJets;   //!
    TBranch        *b_MET;   //!
    TBranch        *b_NPVtx;   //!
    TBranch        *b_NCombs;   //!
    TBranch        *b_SVLMass;   //!
+   TBranch        *b_SVLMass_sf;   //!
    TBranch        *b_SVLDeltaR;   //!
    TBranch        *b_SVLMass_rot;   //!
    TBranch        *b_SVLDeltaR_rot;   //!

@@ -365,7 +365,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             #show, if required
             if options.spy and i==0:
                 pll=nllMap[('comb',0)][-1].createProfile(poi)
-                showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,allNLL[-1]],
+                showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,nllMap[('comb',0)][-1]],
                                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
                                    outDir=options.outDir)
                 #raw_input('press key to continue...')

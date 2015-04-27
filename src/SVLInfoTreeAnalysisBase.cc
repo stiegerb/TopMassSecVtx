@@ -55,12 +55,14 @@ void SVLInfoTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("EvCat", &EvCat, &b_EvCat);
    fChain->SetBranchAddress("Weight", Weight, &b_Weight);
    fChain->SetBranchAddress("JESWeight", JESWeight, &b_JESWeight);
+   fChain->SetBranchAddress("METWeight", METWeight, &b_METWeight);
    fChain->SetBranchAddress("SVBfragWeight", SVBfragWeight, &b_SVBfragWeight);
    fChain->SetBranchAddress("NJets", &NJets, &b_NJets);
    fChain->SetBranchAddress("MET", &MET, &b_MET);
    fChain->SetBranchAddress("NPVtx", &NPVtx, &b_NPVtx);
    fChain->SetBranchAddress("NCombs", &NCombs, &b_NCombs);
    fChain->SetBranchAddress("SVLMass", &SVLMass, &b_SVLMass);
+   fChain->SetBranchAddress("SVLMass_sf", SVLMass_sf, &b_SVLMass_sf);
    fChain->SetBranchAddress("SVLDeltaR", &SVLDeltaR, &b_SVLDeltaR);
    fChain->SetBranchAddress("SVLMass_rot", &SVLMass_rot, &b_SVLMass_rot);
    fChain->SetBranchAddress("SVLDeltaR_rot", &SVLDeltaR_rot, &b_SVLDeltaR_rot);

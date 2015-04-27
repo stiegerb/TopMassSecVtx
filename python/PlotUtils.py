@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import math
+from array import array
 import ROOT
 from sys import stdout
 from ROOT import THStack, TLatex
@@ -25,6 +26,31 @@ def printProgress(step, total, customstr=''):
     if step==total-1:
         stdout.write("\n")
         stdout.flush()
+
+def getContours(h):
+     contours      = array('d',[1,3.84])
+     contourTitles = ['68% CL','95% CL']
+     colors        = [2,9]
+     styles        = [1,2]
+     total=h.Integral()
+     if total<=10 : return None
+
+     #get contours
+     h.SetContour(len(contours),contours)
+     h.Draw('cont z list')
+     conts = ROOT.gROOT.GetListOfSpecials().FindObject("contours");
+     allGr=[]
+     for cList in conts:
+          for cGr in cList:
+               cGr.SetFillStyle(0)
+               cGr.SetFillColor(0);
+               cGr.SetLineColor(colors[len(allGr)])
+               cGr.SetLineStyle(styles[len(allGr)])
+               cGr.SetLineWidth(4)
+               cGr.SetLineWidth(2)
+               cGr.SetTitle( contourTitles[icont] )
+               allGr.append( cGr.Clone('cont_%d'%len(allGr) ) )
+     return allGr
 
 
 def getRatio(hist, reference):

@@ -19,14 +19,16 @@ const int njetbins = 6;
 const int nsvbins = 4;
 
 struct SVLInfo{ // needed for sorting...
-	unsigned counter;
-	int lepindex;
-	int svindex;
-	int combcat;
-	float svlmass, svlmass_rot;
-	float svldeltar, svldeltar_rot;
-	int jesweights[3];
-	float bfragweights[3];
+  unsigned counter;
+  int lepindex;
+  int svindex;
+  int combcat;
+  float svlmass, svlmass_rot;
+  float svldeltar, svldeltar_rot;
+  float svlmass_sf[2];
+  float umetweights[2];
+  int jesweights[3];
+  float bfragweights[3];
 };
 bool compare_mass (SVLInfo svl1, SVLInfo svl2){
 	return (svl1.svlmass < svl2.svlmass);
@@ -697,6 +699,7 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
 	fSVLInfoTree->Branch("Weight",     fTWeight,    "Weight[11]/F");
 	fSVLInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[3]/F");
+	fSVLInfoTree->Branch("METWeight",  fTMETWeight, "METWeight[2]/F");
 	fSVLInfoTree->Branch("XSWeight",  &fTXSWeight,  "XSWeight/F");
 	fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[3]/F");
 	fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
@@ -704,6 +707,7 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
 	fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
 	fSVLInfoTree->Branch("SVLMass",   &fTSVLMass,   "SVLMass/F");
+	fSVLInfoTree->Branch("SVLMass_sf",   fTSVLMass_sf,   "SVLMass_sf[2]/F");
 	fSVLInfoTree->Branch("SVLDeltaR", &fTSVLDeltaR, "SVLDeltaR/F");
 	fSVLInfoTree->Branch("SVLMass_rot",   &fTSVLMass_rot,   "SVLMass_rot/F");
 	fSVLInfoTree->Branch("SVLDeltaR_rot", &fTSVLDeltaR_rot, "SVLDeltaR_rot/F");
@@ -882,50 +886,59 @@ void LxyTreeAnalysis::analyze(){
 	float mjj( lightJetsP4.size()>=2 ? (lightJetsP4[0]+lightJetsP4[1]).M() : -99);
 
 	if(selectSVLEvent()){
-		// Fill some control histograms:
-		if (abs(evcat) <= 13*13){ // Inclusive (exclude control samples)
-			fHNJets     ->Fill(nj,      w[0]*w[1]*w[4]);
-			fHNSVJets   ->Fill(nsvjets, w[0]*w[1]*w[4]);
-			fHNbJets    ->Fill(nbjets,  w[0]*w[1]*w[4]);
-			fHMET       ->Fill(metpt,   w[0]*w[1]*w[4]);
-			fHMT        ->Fill(mT,      w[0]*w[1]*w[4]);
-			if(mjj>=0.) fHMjj->Fill(mjj,     w[0]*w[1]*w[4]); // only fill if there are 2 light jets
-		}
-		else if (abs(evcat) == 11*13){
-			fHNJets_em  ->Fill(nj,      w[0]*w[1]*w[4]);
-			fHNSVJets_em->Fill(nsvjets, w[0]*w[1]*w[4]);
-			fHNbJets_em ->Fill(nbjets,  w[0]*w[1]*w[4]);
-			fHMET_em    ->Fill(metpt,   w[0]*w[1]*w[4]);
-		}
-		else if (abs(evcat) == 11*11){
-			fHNJets_ee  ->Fill(nj,      w[0]*w[1]*w[4]);
-			fHNSVJets_ee->Fill(nsvjets, w[0]*w[1]*w[4]);
-			fHNbJets_ee ->Fill(nbjets,  w[0]*w[1]*w[4]);
-			fHMET_ee    ->Fill(metpt,   w[0]*w[1]*w[4]);
-		}
-		else if (abs(evcat) == 13*13){
-			fHNJets_mm  ->Fill(nj,      w[0]*w[1]*w[4]);
-			fHNSVJets_mm->Fill(nsvjets, w[0]*w[1]*w[4]);
-			fHNbJets_mm ->Fill(nbjets,  w[0]*w[1]*w[4]);
-			fHMET_mm    ->Fill(metpt,   w[0]*w[1]*w[4]);
-		}
-		else if (abs(evcat) == 11){
-			fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
-			fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
-			fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
-			fHNbJets_e  ->Fill(nbjets,  w[0]*w[1]*w[4]);
-			fHMT_e      ->Fill(mT,      w[0]*w[1]*w[4]);
-			fHMET_e     ->Fill(metpt,   w[0]*w[1]*w[4]);
-		}
-		else if (abs(evcat) == 13){
-			fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
-			fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
-			fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
-			fHNbJets_m  ->Fill(nbjets,  w[0]*w[1]*w[4]);
-			fHMT_m      ->Fill(mT,      w[0]*w[1]*w[4]);
-			fHMET_m     ->Fill(metpt,   w[0]*w[1]*w[4]);
-		}
 
+	  bool passUMETup(true),passUMETdown(true);
+	  if (abs(evcat) == 11*11 || abs(evcat) == 13*13)
+	    {
+	      passUMETup   = (metvar[5]>40);
+	      passUMETdown = (metvar[6]>40);
+	    }
+
+	  // Fill some control histograms:
+	  if (abs(evcat) <= 13*13){ // Inclusive (exclude control samples)
+	    fHNJets     ->Fill(nj,      w[0]*w[1]*w[4]);
+	    fHNSVJets   ->Fill(nsvjets, w[0]*w[1]*w[4]);
+	    fHNbJets    ->Fill(nbjets,  w[0]*w[1]*w[4]);
+	    fHMET       ->Fill(metpt,   w[0]*w[1]*w[4]);
+	    fHMT        ->Fill(mT,      w[0]*w[1]*w[4]);
+	    if(mjj>=0.) fHMjj->Fill(mjj,     w[0]*w[1]*w[4]); // only fill if there are 2 light jets
+	  }
+
+	  if (abs(evcat) == 11*13){
+	    fHNJets_em  ->Fill(nj,      w[0]*w[1]*w[4]);
+	    fHNSVJets_em->Fill(nsvjets, w[0]*w[1]*w[4]);
+	    fHNbJets_em ->Fill(nbjets,  w[0]*w[1]*w[4]);
+	    fHMET_em    ->Fill(metpt,   w[0]*w[1]*w[4]);
+	  }
+	  else if (abs(evcat) == 11*11){
+	    fHNJets_ee  ->Fill(nj,      w[0]*w[1]*w[4]);
+	    fHNSVJets_ee->Fill(nsvjets, w[0]*w[1]*w[4]);
+	    fHNbJets_ee ->Fill(nbjets,  w[0]*w[1]*w[4]);
+	    fHMET_ee    ->Fill(metpt,   w[0]*w[1]*w[4]);
+	  }
+	  else if (abs(evcat) == 13*13){
+	    fHNJets_mm  ->Fill(nj,      w[0]*w[1]*w[4]);
+	    fHNSVJets_mm->Fill(nsvjets, w[0]*w[1]*w[4]);
+	    fHNbJets_mm ->Fill(nbjets,  w[0]*w[1]*w[4]);
+	    fHMET_mm    ->Fill(metpt,   w[0]*w[1]*w[4]);
+	  }
+	  else if (abs(evcat) == 11){
+	    fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
+	    fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
+	    fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
+	    fHNbJets_e  ->Fill(nbjets,  w[0]*w[1]*w[4]);
+	    fHMT_e      ->Fill(mT,      w[0]*w[1]*w[4]);
+	    fHMET_e     ->Fill(metpt,   w[0]*w[1]*w[4]);
+	  }
+	  else if (abs(evcat) == 13){
+	    fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
+	    fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
+	    fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
+	    fHNbJets_m  ->Fill(nbjets,  w[0]*w[1]*w[4]);
+	    fHMT_m      ->Fill(mT,      w[0]*w[1]*w[4]);
+	    fHMET_m     ->Fill(metpt,   w[0]*w[1]*w[4]);
+	  }
+	  
 		// First find all pairs and get their ranking in mass and deltar
 		std::vector<SVLInfo> svl_pairs;
 		for (int il = 0; il < nl; ++il){ // lepton loop
@@ -939,10 +952,11 @@ void LxyTreeAnalysis::analyze(){
 				if(jpt[svind]       > 30.) svl_pairing.jesweights[0] = 1; // nominal
 				if(jjesup[svind][0] > 30.) svl_pairing.jesweights[1] = 1; // jes up
 				if(jjesdn[svind][0] > 30.) svl_pairing.jesweights[2] = 1; // jes down
-
 				svl_pairing.bfragweights[0] = bwgt[svind][0];
 				svl_pairing.bfragweights[1] = bwgt[svind][1];
 				svl_pairing.bfragweights[2] = bwgt[svind][2];
+				svl_pairing.umetweights[0]  = passUMETdown;
+				svl_pairing.umetweights[1]  = passUMETup;
 
 				if(jpt[svind] > 30. || jjesup[svind][0] > 30. || jjesdn[svind][0] > 30.){
 					int combcat = (il+1)*10 + (ij+1); // 10(20) + 1(2): 11, 21, 12, 22
@@ -958,6 +972,23 @@ void LxyTreeAnalysis::analyze(){
 
 					svl_pairing.svlmass = (p_lep + p_sv).M();
 					svl_pairing.svldeltar = p_lep.DeltaR(p_sv);
+					
+					//lepton energy scale variation on mass
+					for(size_t ivar=0; ivar<2; ivar++)
+					  {
+					    svl_pairing.svlmass_sf[ivar]=1.0;
+					    if(svl_pairing.svlmass<=0) continue;
+					    float lesf(1.0);
+					    int varSign( ivar==0 ? -1 : 1 );
+					    if(abs(lid[il])==13) lesf=(1.0+varSign*0.005);
+					    if(abs(lid[il])==11) {
+					      if(fabs(leta[il])<1.442) lesf=(1.0+varSign*0.005);
+					      else                     lesf=(1.0-varSign*0.01);
+					    }
+					    TLorentzVector p_lep_var;
+					    p_lep_var.SetPtEtaPhiM(lesf*lpt[il], leta[il], lphi[il], 0.);
+					    svl_pairing.svlmass_sf[ivar]=((p_lep_var + p_sv).M() / svl_pairing.svlmass );
+					  }
 
 					TLorentzVector p_lep_rot=RotateLepton(p_lep,isoObjects);
 					svl_pairing.svlmass_rot = (p_lep_rot + p_sv).M();
@@ -1003,6 +1034,8 @@ void LxyTreeAnalysis::analyze(){
 			}
 
 			fTSVLMass       = svl.svlmass;
+			fTSVLMass_sf[0] = svl.svlmass_sf[0];
+			fTSVLMass_sf[1] = svl.svlmass_sf[1];
 			fTSVLDeltaR     = svl.svldeltar;
 			fTSVLMass_rot   = svl.svlmass_rot;
 			fTSVLDeltaR_rot = svl.svldeltar_rot;
@@ -1047,17 +1080,19 @@ void LxyTreeAnalysis::analyze(){
 			fTJFlav        = jflav[svl.svindex];
 			fTJEta         = jeta [svl.svindex];
 			fTSVNtrk       = svntk[svl.svindex];
-			fTSVMass       = svmass[svl.svindex];
+			fTSVMass       = svmass[svl.svindex];			
 			fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1
 			if(fTBHadNeutrino < 0) fTBHadNeutrino = -1; // set -999 to -1
 
 			fTJESWeight[0] = svl.jesweights[0]; // nominal
 			fTJESWeight[1] = svl.jesweights[1]; // jes up
 			fTJESWeight[2] = svl.jesweights[2]; // jes down
+			fTMETWeight[0] = svl.umetweights[0]; // unclustered met down
+			fTMETWeight[1] = svl.umetweights[1]; // unclustered met up
 			fTSVBfragWeight[0] = svl.bfragweights[0]; // nominal (Z2star_rbLEP_weight)
 			fTSVBfragWeight[1] = svl.bfragweights[1]; // bfrag up (Z2star_rbLEPhard_weight)
 			fTSVBfragWeight[2] = svl.bfragweights[2]; // bfrag dn (Z2star_rbLEPsoft_weight)
-
+			
 			// MC truth information on correct/wrong matchings
 			fTCombInfo = -1;    // unmatched
 			if( (lid[svl.lepindex] > 0 && bid[svl.svindex] == -5 ) || // el-/mu- / tbar/bbar

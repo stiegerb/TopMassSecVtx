@@ -9,6 +9,69 @@ from UserCode.TopMassSecVtx.PlotUtils import printProgress, bcolors
 from makeSVLMassHistos import NTRKBINS
 
 """
+Wrapper to contain the histograms with the results of the pseudo-experiments
+"""
+class PseudoExperimentResults:
+
+    def __init__(self,genMtop,outFileUrl):
+        self.genMtop=genMtop
+        self.outFileUrl=outFileUrl
+        self.histos={}
+
+    def addFitResult(self,key,ws):
+
+        #init histogram if needed
+        if not (key in self.histos): self.initHistos(key)
+
+        #fill the histograms
+        if ws.var('mtop').getError()>0:
+            self.histos[key]['mtopfit'].Fill(ws.var('mtop').getVal()-self.genMtop)
+            self.histos[key]['mtopfit_statunc'].Fill(ws.var('mtop').getError())
+            self.histos[key]['mtopfit_pull'].Fill((ws.var('mtop').getVal()-self.genMtop)/ws.var('mtop').getError())
+            self.histos[key]['muvsmtop'].Fill(ws.var('mtop').getVal()-self.genMtop,ws.var('mu').getVal())
+
+    def initHistos(self,key):
+        self.histos[key]={}
+        pfix=''
+        for tk in key: pfix += str(tk)+'_'
+        pfix=pfix[:-1]
+        self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,';#Deltam_{t} [GeV];Pseudo-experiments',200,-5,5)
+        self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)
+        self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-3.03,2.97)
+        self.histos[key]['muvsmtop']        = ROOT.TH2F('muvsmtop_%s'%pfix,';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',100,-5,5,100,0.95,1.05)
+        for var in self.histos[key]:
+            self.histos[key][var].SetDirectory(0)
+            self.histos[key][var].Sumw2()
+
+    def saveResults(self):
+        peFile=ROOT.TFile(self.outFileUrl,'RECREATE')
+        for key in self.histos:
+            dirName=''
+            for tk in key: dirName+=str(tk)+'_'
+            dirName=dirName[:-1]
+            peFile.cd()
+            outDir=peFile.mkdir(dirName)
+            outDir.cd()
+            for var in self.histos[key]:
+                self.histos[key][var].Write()
+
+            mtopRes=ROOT.TVectorD(6)
+            mtopRes[0]=self.histos[key]['mtopfit'].GetMean()
+            mtopRes[1]=self.histos[key]['mtopfit'].GetMeanError()
+            mtopRes[2]=self.histos[key]['mtopfit_statunc'].GetMean()
+            mtopRes[3]=self.histos[key]['mtopfit_statunc'].GetMeanError()
+            mtopRes[4]=self.histos[key]['mtopfit_pull'].GetMean()
+            mtopRes[5]=self.histos[key]['mtopfit_pull'].GetRMS()
+            mtopRes.Write('mtop')
+
+            peFile.cd()
+
+        #all done here
+        peFile.cd()
+        peFile.Close()
+
+
+"""
 Show PE fit result
 """
 def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir):
@@ -153,6 +216,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         raise e
     print prepend+'Generated top mass is %5.1f GeV'%genMtop
 
+    #prepare results summary
+    selTag=''
+    if len(options.selection)>0 : selTag='_%s'%options.selection
+    summary=PseudoExperimentResults(genMtop=genMtop,
+                                    outFileUrl=os.path.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)))
+
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")
     allVars = ws.allVars()
@@ -170,7 +239,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
     #build the relevant PDFs
     allPdfs = {}
-    for chsel in ['em','mm','ee','m','e']:
+    finalStates=['em','mm','ee','m','e']
+    for ch in finalStates:
+        chsel=ch
         if len(options.selection)>0 : chsel += '_' + options.selection
         for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
             ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
@@ -212,22 +283,18 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                                                           sumPDF.GetName(),
                                                           bkgConstPDF.GetName()))
 
-            #add calibration for this category if available (read from a pickle file?)
-            # reco-sim = slope.sim+offset <=> sim = (reco-offset)/(slope+1)
-            offset, slope = 0.0, 0.0
-            try:
-                offset, slope = calibMap[ '%s_%d'%(chsel,ntrk) ]
-            except:
-                pass
-            allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d("
-                                               "uncalibmodel_%s_%d, "
-                                               "mtop=expr('(@0-%f)/(%f+1.0)',mtop))"%
-                                          (chsel,ntrk,chsel,ntrk,offset,slope) )
+            #add calibration for this category if available (read from a pickle file)
+            offset, slope = 0.0, 1.0
+            if calibMap:
+                try:
+                    offset, slope = calibMap[options.selection][ '%s_%d'%(ch,ntrk) ]
+                except KeyError, e:
+                    print 'Failed to retrieve calibration with',e
+            ws.factory("RooFormulaVar::calibmtop_%s_%d('(@0-%f)/%f',{mtop})"%(chsel,ntrk,offset,slope))
+            allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d,mtop=calibmtop_%s_%d)"%
+                                               (chsel,ntrk,chsel,ntrk,chsel,ntrk))
 
     #throw pseudo-experiments
-    allFitVals  = {('comb',0):[], ('comb_mu',0):[]}
-    allFitErrs  = {('comb',0):[], ('comb_mu',0):[]}
-    allFitPulls = {('comb',0):[], ('comb_mu',0):[]}
     poi = ROOT.RooArgSet( ws.var('mtop') )
     if options.verbose>1:
         print prepend+'Running %d experiments' % options.nPexp
@@ -235,11 +302,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     for i in xrange(0,options.nPexp):
 
         #iterate over available categories to build the set of likelihoods to combine
-        allNLL=[]
+        nllMap={}
         allPseudoDataH=[]
         allPseudoData=[]
         if options.verbose>1 and options.verbose<=3:
             printProgress(i, options.nPexp, prepend+' ')
+
         for key in sorted(allPdfs):
             chsel, trk = key
             mukey=(chsel+'_mu',trk)
@@ -250,18 +318,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             ws.var('mtop').setVal(172.5)
             ws.var('mu').setVal(1.0)
 
-            #init results map if not yet available
-            if not (key in allFitVals):
-                allFitVals[key]    = []
-                allFitVals[mukey]  = []
-                allFitErrs[key]    = []
-                allFitErrs[mukey]  = []
-                allFitPulls[key]   = []
-                allFitPulls[mukey] = []
-
             #read histogram and generate random data
             ihist       = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
-
             nevtsToGen = ROOT.gRandom.Poisson(ihist.Integral())
             pseudoDataH,pseudoData=None,None
             if options.genFromPDF:
@@ -269,13 +327,11 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 pseudoData = allPdfs[key].generateBinned(obs, nevtsToGen)
             else:
                 pseudoDataH = ihist.Clone('peh')
-                # print '[PE input] %2s, %d: %8.2f' % (chsel, trk, ihist.Integral())
                 if options.nPexp>1:
                     pseudoDataH.Reset('ICE')
                     pseudoDataH.FillRandom(ihist, nevtsToGen)
                 else:
                     print 'Single pseudo-experiment won\'t be randomized'
-
                 pseudoData  = ROOT.RooDataHist('PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
                                                'PseudoData_%s_%s_%d'%(experimentTag,chsel,trk),
                                                ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
@@ -284,38 +340,31 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 sys.stdout.write(' [generated pseudodata]')
                 sys.stdout.flush()
 
-            #minimize likelihood
-            allNLL.append( allPdfs[key].createNLL(pseudoData, ROOT.RooFit.Extended()) )
-            #allNLL.append( allPdfs[key].createNLL(pseudoData) )
+            #create likelihood
+            #store it in the appropriate categories for posterior combination
+            for nllMapKey in [('comb',0),('comb',trk),('comb%s'%chsel,0)]:
+                if not (nllMapKey in nllMap):
+                    nllMap[nllMapKey]=[]
+                if nllMapKey[0]=='comb' and nllMapKey[1]==0:
+                    nllMap[nllMapKey].append( allPdfs[key].createNLL(pseudoData, ROOT.RooFit.Extended()) )
+                else:
+                    nllMap[nllMapKey].append( nllMap[('comb',0)][-1] )
+
             if options.verbose>3:
                 sys.stdout.write(' [running Minuit]')
                 sys.stdout.flush()
-            minuit=ROOT.RooMinuit(allNLL[-1])
+            minuit=ROOT.RooMinuit(nllMap[('comb',0)][-1])
             minuit.setErrorLevel(0.5)
             minuit.migrad()
             minuit.hesse()
-            #error level from minos is equivalent to profile likelihood
-            #but seems overestimated ?
             minuit.minos(poi)
 
             #save fit results
-            fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()
-            allFitVals[key] .append(fitVal)
-            allFitErrs[key] .append(fitErr)
-            allFitPulls[key].append((fitVal-genMtop)/fitErr)
+            summary.addFitResult(key=key,ws=ws)
 
-            fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError()
-            allFitVals[mukey] .append(fitVal_mu)
-            allFitErrs[mukey] .append(fitErr_mu)
-            try:
-                allFitPulls[mukey].append((fitVal_mu-1.0)/fitErr_mu)
-            except:
-                allFitPulls[mukey].append(-9999)
-
-            #show if required
-            #FIXME: this is making the combined fit crash? something with TPads getting free'd up
+            #show, if required
             if options.spy and i==0:
-                pll=allNLL[-1].createProfile(poi)
+                pll=nllMap[('comb',0)][-1].createProfile(poi)
                 showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,allNLL[-1]],
                                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
                                    outDir=options.outDir)
@@ -329,174 +378,61 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                                  '(mt: %6.2f+-%4.2f GeV, '
                                   'mu: %4.2f+-%4.2f)\n'%
                                 (bcolors.OKGREEN,bcolors.ENDC,
-                                 fitVal, fitErr, fitVal_mu, fitErr_mu))
+                                 ws.var('mtop').getVal(), ws.var('mtop').getError(),
+                                 ws.var('mu').getVal(), ws.var('mu').getError()) )
                 sys.stdout.flush()
 
-        #combined likelihood
+        #combined likelihoods
         if options.verbose>3:
-            sys.stdout.write(prepend+'[combining channels]')
+            sys.stdout.write(prepend+'[combining channels and categories]')
             sys.stdout.flush()
-        ws.var('mtop').setVal(172.5)
-        ws.var('mu').setVal(1.0)
-        llSet = ROOT.RooArgSet()
-        for ll in allNLL: llSet.add(ll)
-        combll = ROOT.RooAddition("combll","combll",llSet)
-        minuit=ROOT.RooMinuit(combll)
-        minuit.setErrorLevel(0.5)
-        minuit.migrad()
-        minuit.hesse()
-        #error level from minos is equivalent to profile likelihood
-        #but seems overestimated?
-        minuit.minos(poi)
+        for key in nllMap:
 
-        fitVal, fitErr = ws.var('mtop').getVal(), ws.var('mtop').getError()
-        combKey = ('comb',0)
-        allFitVals[combKey].append(fitVal)
-        allFitErrs[combKey].append(fitErr)
-        allFitPulls[combKey].append((fitVal-genMtop)/fitErr)
+            #reset to central values
+            ws.var('mtop').setVal(172.5)
+            ws.var('mu').setVal(1.0)
 
-        fitVal_mu, fitErr_mu = ws.var('mu').getVal(), ws.var('mu').getError()
-        muCombKey = ('comb_mu',0)
-        allFitVals[muCombKey].append(fitVal_mu)
-        allFitErrs[muCombKey].append(fitErr_mu)
-        try:
-            allFitPulls[muCombKey].append((fitVal_mu-1.0)/fitErr_mu)
-        except:
-            allFitPulls[muCombKey].append(-999)
+            #add the log likelihoods and minimize
+            llSet = ROOT.RooArgSet()
+            for ll in nllMap[key]: llSet.add(ll)
+            combll = ROOT.RooAddition("combll","combll",llSet)
+            minuit=ROOT.RooMinuit(combll)
+            minuit.setErrorLevel(0.5)
+            minuit.migrad()
+            minuit.hesse()
+            minuit.minos(poi)
+            summary.addFitResult(key=key,ws=ws)
+            combll.Delete()
+
+            if options.verbose>3:
+                print key,len(nllMap[key]),' likelihoods to combine'
+                sys.stdout.write(' %s%s DONE%s%s '
+                                 '(mt: %6.2f+-%4.2f GeV, '
+                                 'mu: %5.3f+-%5.3f)%s \n'%
+                                 (bcolors.OKGREEN, bcolors.BOLD, bcolors.ENDC, bcolors.BOLD,
+                                  ws.var('mtop').getVal(), ws.var('mtop').getError(),
+                                  ws.var('mu').getVal(), ws.var('mu').getError(),
+                                  bcolors.ENDC))
+                sys.stdout.flush()
+                print 80*'-'
 
         #free used memory
-        for h in allPseudoDataH : h.Delete()
-        for d in allPseudoData  : d.Delete()
-        for ll in allNLL: ll.Delete()
-        combll.Delete()
-        if options.verbose>3:
-            sys.stdout.write(' %s%s DONE%s%s '
-                             '(mt: %6.2f+-%4.2f GeV, '
-                              'mu: %5.3f+-%5.3f)%s \n'%
-                            (bcolors.OKGREEN, bcolors.BOLD, bcolors.ENDC, bcolors.BOLD,
-                             fitVal, fitErr, fitVal_mu, fitErr_mu,
-                             bcolors.ENDC))
-            sys.stdout.flush()
-            print 80*'-'
+        for h in allPseudoDataH      : h.Delete()
+        for d in allPseudoData       : d.Delete()
+        for ll in nllMap[('comb',0)] : ll.Delete()
+
+    summary.saveResults()
 
 
-    #show and save final results
-    selTag=''
-    if len(options.selection)>0 : selTag='_%s'%options.selection
-    peFile=ROOT.TFile(os.path.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)), 'RECREATE')
-    for key in allFitVals:
-        chsel,trk = key
-        if '_mu' in chsel : continue
-
-        #fill the histograms
-        mtopfitH = ROOT.TH1F('mtopfit_%s_%d'%(chsel,trk),';#Deltam_{t} [GeV];Pseudo-experiments',200,-5,5)
-        mtopfitH.SetDirectory(0)
-        mtopfitStatUncH = ROOT.TH1F('mtopfit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)
-        mtopfitStatUncH.SetDirectory(0)
-        mtopfitPullH = ROOT.TH1F('mtopfit_pull_%s_%d'%(chsel,trk),';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-2.02,1.98)
-        mtopfitPullH.SetDirectory(0)
-        mufitStatUncH = ROOT.TH1F('mufit_statunc_%s_%d'%(chsel,trk),';#sigma_{stat}(#mu);Pseudo-experiments',100,0,0.1)
-        mufitStatUncH.SetDirectory(0)
-        fitCorrH = ROOT.TH2F('muvsmtopcorr_%s_%d'%(chsel,trk),';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.85,1.15)
-        fitCorrH.SetDirectory(0)
-        for i in xrange(0,len(allFitVals[key])):
-            mtopfitH         .Fill( allFitVals[key][i]-genMtop )
-            mtopfitStatUncH  .Fill( allFitErrs[key][i] )
-            mtopfitPullH     .Fill( allFitPulls[key][i] )
-            mufitStatUncH    .Fill( allFitErrs[(chsel+'_mu',trk)][i] )
-            fitCorrH         .Fill( allFitVals[key][i], allFitVals[(chsel+'_mu',trk)][i] )
-
-        #show results
-        canvas=ROOT.TCanvas('c','c',1200,800)
-        canvas.Divide(3,2)
-        canvas.cd(1)
-        mtopfitH.Draw()
-        channelTitle=chsel.replace('_',' ')
-        label=ROOT.TLatex()
-        label.SetNDC()
-        label.SetTextFont(42)
-        label.SetTextSize(0.04)
-        label.DrawLatex(0.1,0.92,'#bf{CMS} #it{simulation}')
-        label.DrawLatex(0.15,0.84,channelTitle)
-        if trk>1 : label.DrawLatex(0.15,0.8,'%d tracks'%trk)
-        canvas.cd(2)
-        mtopfitStatUncH.Draw()
-        canvas.cd(3)
-        mtopfitPullH.Draw()
-        canvas.cd(4)
-        fitCorrH.Draw('colz')
-        fitCorrH.GetZaxis().SetTitleOffset(-0.5)
-        canvas.cd(5)
-        mufitStatUncH.Draw()
-        canvas.cd(6)
-        label.DrawLatex(0.15,0.90,'# pseudo-experiments: %d'%(options.nPexp))
-        mtopkey=(chsel,trk)
-        mtopAvg, mtopUncAvg, mtopPullAvg = numpy.mean(allFitVals[mtopkey]), numpy.mean(allFitErrs[mtopkey]), numpy.mean(allFitPulls[mtopkey])
-        mtopStd, mtopUncStd, mtopPullStd = numpy.std(allFitVals[mtopkey]),  numpy.std(allFitErrs[mtopkey]),  numpy.std(allFitPulls[mtopkey])
-        label.DrawLatex(0.15,0.80,'<m_{t}>=%3.3f  #sigma(m_{t})=%3.3f'%(mtopAvg,mtopStd))
-        label.DrawLatex(0.15,0.75,'<#sigma_{stat}>=%3.3f #sigma(#sigma_{stat})=%3.3f'%(mtopUncAvg,mtopUncStd))
-        label.DrawLatex(0.15,0.70,'<Pull>=%3.3f #sigma(Pull)=%3.3f'%(mtopPullAvg,mtopPullStd))
-        mukey=(chsel+'_mu',trk)
-        muAvg, muUncAvg, muPullAvg = numpy.mean(allFitVals[mukey]), numpy.mean(allFitErrs[mukey]), numpy.mean(allFitPulls[mukey])
-        muStd, muUncStd, muPullStd = numpy.std(allFitVals[mukey]),  numpy.std(allFitErrs[mukey]),  numpy.std(allFitPulls[mukey])
-        label.DrawLatex(0.15,0.60,'<#mu>=%3.3f #sigma(#mu)=%3.3f'%(muAvg,muStd))
-        label.DrawLatex(0.15,0.55,'<#sigma_{stat}>=%3.5f #sigma(#sigma_{stat})=%3.5f'%(muUncAvg,muUncStd))
-        label.DrawLatex(0.15,0.50,'<Pull>=%3.3f #sigma(Pull)=%3.3f'%(muPullAvg,muPullStd))
-        label.DrawLatex(0.15,0.40,'#rho(m_{t},#mu)=%3.3f'%fitCorrH.GetCorrelationFactor())
-        canvas.cd()
-        canvas.Modified()
-        canvas.Update()
-        canvas.SaveAs('%s/plots/%s_%d_%s_pesummary.png'%(options.outDir,chsel,trk,experimentTag))
-        canvas.SaveAs('%s/plots/%s_%d_%s_pesummary.pdf'%(options.outDir,chsel,trk,experimentTag))
-
-        #save to file
-        peFile.cd()
-
-        outDir=peFile.mkdir('%s_%d'%(chsel,trk))
-        outDir.cd()
-        mtopfitH.Write()
-        mtopfitStatUncH.Write()
-        mtopfitPullH.Write()
-        mufitStatUncH.Write()
-        fitCorrH.Write()
-
-        npeRes=ROOT.TVectorD(1)
-        npeRes[0]=float(options.nPexp)
-        npeRes.Write('norm')
-
-        mtopRes=ROOT.TVectorD(6)
-        mtopRes[0]=mtopAvg
-        mtopRes[1]=mtopStd
-        mtopRes[2]=mtopUncAvg
-        mtopRes[3]=mtopUncStd
-        mtopRes[4]=mtopPullAvg
-        mtopRes[5]=mtopPullStd
-        mtopRes.Write('mtop')
-
-        muRes=ROOT.TVectorD(6)
-        muRes[0]=muAvg
-        muRes[1]=muStd
-        muRes[2]=muUncAvg
-        muRes[3]=muUncStd
-        muRes[4]=muPullAvg
-        muRes[5]=muPullStd
-        muRes.Write('mu')
-
-        peFile.cd()
-
-    #all done here
-    peFile.cd()
-    peFile.Close()
 
 def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     import time
     cmsswBase = os.environ['CMSSW_BASE']
     sel=options.selection
     if len(sel)==0 : sel='inclusive'
-    jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/svlPEJobs/%s'%sel,
-                           time.strftime('%b%d'))
-    # jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/svlPEJobs',
-    #                        time.strftime('%b%d'), time.strftime('%H%M%S'))
+    baseJobsDir='svlPEJobs'
+    if options.calib : baseJobsDir+='_calib'
+    jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/%s/%s'%(baseJobsDir,sel),time.strftime('%b%d'))
     if os.path.exists(jobsDir):
         os.system('rm -r %s/*.sh'%jobsDir)
     else:
@@ -506,7 +442,7 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
 
     wsfilepath = os.path.abspath(wsfile)
     pefilepath = os.path.abspath(pefile)
-    odirpath = os.path.abspath(options.outDir)
+    odirpath = os.path.abspath(jobsDir)
 
     ## Feedback before submitting the jobs
     raw_input('This will submit %d jobs to batch. %s Did you remember to run scram b?%s \n Continue?'%(len(experimentTags), bcolors.RED, bcolors.ENDC))

@@ -44,7 +44,7 @@ if [ "$step" == "mass" ]; then
 fi
 
 if [ "${step}" == "pdf" ]; then
-    runLocalAnalysisOverSamples.py -e computePDFvariations -j ${outdir}/samples.json -o ${outdir}/summary/${hash} -d ${outdir}/summary/${hash} -c ${cfg} -t TTJets -s 2nd;
+    runLocalAnalysisOverSamples.py -e computePDFvariations -j ${outdir}/samples.json -o ${outdir}/summary/${hash} -d ${outdir}/summary/${hash} -c ${cfg} -t TTJets -s 2nw;
 fi
 
 if [ "$step" == "control" ]; then

@@ -22,12 +22,15 @@ TWXSECS = {
 }
 
 QCDTEMPLATESTOADD = {
-	'inclusive'        : ('',       ['e', 'm']),
-	'inclusive_mrank1' : ('_mrank1',['e', 'm']),
-	'e'                : ('',       ['e']),
-	'm'                : ('',       ['m']),
-	'e_mrank1'         : ('_mrank1',['e']),
-	'm_mrank1'         : ('_mrank1',['m']),
+	'inclusive'          : ('',       ['e', 'm']),
+	'inclusive_mrank1'   : ('_mrank1',['e', 'm']),
+	'inclusive_optmrank' : ('_optmrank',['e', 'm']),
+	'e'                  : ('',       ['e']),
+	'm'                  : ('',       ['m']),
+	'e_mrank1'           : ('_mrank1',['e']),
+	'm_mrank1'           : ('_mrank1',['m']),
+	'e_optmrank'         : ('_optmrank',['e']),
+	'm_optmrank'         : ('_optmrank',['m']),
 }
 
 def makeSystTask(tag, sel, pname, hname_to_keys, weight='1'):

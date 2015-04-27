@@ -70,12 +70,13 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLm
 		ws.var('offset_%s_p5'%tag).setRange(1,100)
 
 		#for this case it needs to be put by hand to converge
-		if ch=='m' and ntrk==2 and 'tt' in procName: ws.var('offset_%s_p1'%tag).setRange(0,200)
+		if ch=='m' and ntrk==2 and 'tt' in procName     : ws.var('offset_%s_p1'%tag).setRange(0,200)
+		if 'opt' in tag and ntrk==5 and 'bg' in procName:  ws.var('offset_%s_p1'%tag).setRange(30,100)
 
 		thePDF = ws.factory("SUM::model_%s("
-							"%s_p0*RooBifurGauss::%s_f1(SVLMass,%s_p1,%s_p2,%s_p3),"
-							"RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
-							(tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
+				    "%s_p0*RooBifurGauss::%s_f1(SVLMass,%s_p1,%s_p2,%s_p3),"
+				    "RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
+				    (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
 		theData=ws.data('SVLMass_%s_%s_%s_%d'%(permName,ch,procName,ntrk))
 		catNames=['']
 	else:
@@ -85,9 +86,16 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLm
 				   "RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
 				   (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
 
-		if 'cor' in permName and singleTop==True:
-			ws.var('slope_%s_p0'%tag).setRange(0,0)
-			ws.var('offset_%s_p0'%tag).setRange(0.4,1.0)
+		if singleTop:
+			if 'cor' in permName:
+				
+				ws.var('slope_%s_p0'%tag).setRange(0,0)
+				ws.var('offset_%s_p0'%tag).setRange(0.4,0.9)
+				if 'opt' in tag :
+					ws.var('offset_%s_p0'%tag).setRange(0.1,0.8)
+					ws.var('offset_%s_p1'%tag).setRange(40,90)
+
+
 
 
 		# Replicate the base signal PDF for different categories
@@ -471,7 +479,7 @@ def createWorkspace(options):
 	parameterizeSignalPermutations(ws=ws, permName='cor', config=config,
 								   SVLmass=SVLmass, options=options, singleTop=True)
 	parameterizeSignalPermutations(ws=ws, permName='wrounm', config=config,
-								   SVLmass=SVLmass, options=options, singleTop=True)
+	                                                             SVLmass=SVLmass, options=options, singleTop=True)
 	parameterizeSignalPermutations(ws=ws, permName='unm', config=config,
 								   SVLmass=SVLmass, options=options, singleTop=False, bkg=True)
 

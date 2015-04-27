@@ -111,7 +111,7 @@ def extractFactors(inputFile, options):
 	cachefile.close()
 	return scaleFactors
 
-def main(args, opt):
+def main(args, opt):	
 	SFs = extractFactors(args[0], options=opt)
 	print SFs
 	return 0
@@ -129,7 +129,8 @@ if __name__ == "__main__":
 	usage: %prog [options] plotter.root
 	"""
 	parser = OptionParser(usage=usage)
-	(opt, args) = parser.parse_args()
+	parser.add_option('-v', '--verbose', dest='verbose', default=0, type=int,help='Verbose mode')
+	(opt, args) = parser.parse_args()	
 
 	exit(main(args, opt))
 

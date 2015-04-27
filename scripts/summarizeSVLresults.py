@@ -258,16 +258,18 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
      for key,grColl in sorted(grCollMap.items()):
          
           ip+=1
-          yTitleOffset, yLabelSize = 0, 0
-          if 'comb_0' in key:
-               padCtr=1
-               ip-=1
+          if ip==1:
                nleg=len(allLegs)
                allLegs.append(ROOT.TLegend(0.2,0.5,0.6,0.8))
                allLegs[nleg].SetFillStyle(0)
                allLegs[nleg].SetTextFont(42)
                allLegs[nleg].SetTextSize(0.06)
                allLegs[nleg].SetBorderSize(0)
+               
+          yTitleOffset, yLabelSize = 0, 0
+          if 'comb_0' in key:
+               padCtr=1
+               ip-=1
                yTitleOffset, yLabelSize=0.8,0.07
           else:
                padCtr=ip+1
@@ -308,7 +310,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
 
                igrctr+=1
                drawOpt='a'+baseDrawOpt if igrctr==1 else baseDrawOpt
-               if 'comb_0' in key : allLegs[nleg].AddEntry(gr,gr.GetTitle(),baseDrawOpt)
+               if ip==1 : allLegs[nleg].AddEntry(gr,gr.GetTitle(),baseDrawOpt)
                gr.Draw(drawOpt)
 
                gr.GetYaxis().SetRangeUser(y_range[0],y_range[1])
@@ -338,9 +340,12 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
                title=title.replace('m','#mu')
                title += ' tracks'
           label.DrawLatex(0.2,0.8,'#it{'+title+'}')
-          if 'comb_0' in key : 
-               label.DrawLatex(0.2,0.9,'#bf{CMS} #it{simulation}')
-               allLegs[nleg].Draw()
+     
+     #independentently of 'comb_0' being found, draw legend in first pad
+     canvas.cd(1)
+     allLegs[nleg].Draw()
+     label.DrawLatex(0.2,0.9,'#bf{CMS} #it{simulation}')
+     canvas.cd()
 
      #all done
      canvas.Modified()

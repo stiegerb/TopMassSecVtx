@@ -60,7 +60,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir):
     label.SetTextSize(0.04)
     label.DrawLatex(0.18,0.94,'#bf{CMS} #it{simulation}')
     leg=ROOT.TLegend(0.7,0.35,0.95,0.55)
-    leg.AddEntry('data',       'data',      'p')
+    leg.AddEntry('data',       'Pseudo data',      'p')
     leg.AddEntry('totalexp',   'total',     'l')
     leg.AddEntry('tt',         't#bar{t}',  'f')
     leg.AddEntry('singlet',    'single top','f')
@@ -262,7 +262,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             #read histogram and generate random data
             ihist       = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
 
-            nevtsToGen=ROOT.gRandom.Poisson(ihist.Integral())
+            nevtsToGen = ROOT.gRandom.Poisson(ihist.Integral())
             pseudoDataH,pseudoData=None,None
             if options.genFromPDF:
                 obs = ROOT.RooArgSet(ws.var('SVLMass'))

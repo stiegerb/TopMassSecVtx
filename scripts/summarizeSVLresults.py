@@ -5,11 +5,23 @@ import optparse
 import math
 import pickle
 
-from UserCode.TopMassSecVtx.rounding import *
+from UserCode.TopMassSecVtx.rounding import toLatexRounded
 from UserCode.TopMassSecVtx.PlotUtils import bcolors,getContours
 from makeSVLMassHistos import NTRKBINS
 COLORS=[ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9, ROOT.kViolet+2,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kYellow-3]
 from pprint import pprint
+
+CATTOLABEL = {
+  'comb_0'   : 'Combined',
+  'comb_3'   : '=3 trks',
+  'comb_4'   : '=4 trks',
+  'comb_5'   : '=5 trks',
+  'combe_0'  : 'e+jets',
+  'combee_0' : 'ee',
+  'combem_0' : 'emu',
+  'combm_0'  : 'mu+jets',
+  'combmm_0' : 'mumu',
+}
 
 """
 """
@@ -95,10 +107,10 @@ def parseEnsembles(url,selection='',rebin=4):
 Analyze final results for a given category
 """
 def analyzePEresults(key,fIn,outDir):
-     
+
      PEsummary={}
 
-     #show results   
+     #show results
      canvas=ROOT.TCanvas('c','c',1500,500)
      canvas.Divide(3,1)
 
@@ -151,7 +163,7 @@ def analyzePEresults(key,fIn,outDir):
      fitCorrH.Draw('contz')
      #cont=getContours(fitCorrH)
      #drawOpt='ac'
-     #for gr in cont: 
+     #for gr in cont:
      #     gr.Draw(drawOpt)
      #     drawOpt='c'
      #     gr.GetXaxis().SetTitle(fitCorrH.GetXaxis().GetTitle())
@@ -196,7 +208,7 @@ def parsePEResultsFromFile(url):
         useForCalib=True if 'nominal' in syst else False
         for key in fIn.GetListOfKeys():
 
-             keyName=key.GetName()             
+             keyName=key.GetName()
              PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url)
              if not 'bias' in PEsummary : continue
 
@@ -217,7 +229,7 @@ def parsePEResultsFromFile(url):
              try:
                   np=calibGrMap[keyName][selection].GetN()
              except KeyError:
-                  if not keyName in calibGrMap : calibGrMap[keyName] = {}                  
+                  if not keyName in calibGrMap : calibGrMap[keyName] = {}
                   calibGrMap[keyName][selection]=ROOT.TGraphErrors()
                   calibGrMap[keyName][selection].SetName(keyName)
                   calibGrMap[keyName][selection].SetTitle(selection)
@@ -240,7 +252,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
 
      #prepare output
      if not os.path.exists(outDir) : os.system('mkdir -p %s' % outDir)
-     
+
      #fit results
      fitParamsMap={}
 
@@ -256,7 +268,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
      line.SetLineStyle(2)
      line.SetLineColor(ROOT.kGray)
      for key,grColl in sorted(grCollMap.items()):
-         
+
           ip+=1
           if ip==1:
                nleg=len(allLegs)
@@ -265,7 +277,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
                allLegs[nleg].SetTextFont(42)
                allLegs[nleg].SetTextSize(0.06)
                allLegs[nleg].SetBorderSize(0)
-               
+
           yTitleOffset, yLabelSize = 0, 0
           if 'comb_0' in key:
                padCtr=1
@@ -274,7 +286,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
           else:
                padCtr=ip+1
           p=canvas.cd(padCtr)
-          
+
           if (padCtr-1)%nx==0:
                p.SetLeftMargin(0.15)
                p.SetRightMargin(0.03)
@@ -297,7 +309,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
                gr.SetMarkerStyle(20+igrctr)
                gr.SetMarkerColor(color[igrctr])
                gr.SetLineColor(color[igrctr])
-               if doFit:                
+               if doFit:
                     gr.Fit('pol1','MQ+','same')
                     offset=gr.GetFunction('pol1').GetParameter(0)
                     slope=gr.GetFunction('pol1').GetParameter(1)
@@ -340,7 +352,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
                title=title.replace('m','#mu')
                title += ' tracks'
           label.DrawLatex(0.2,0.8,'#it{'+title+'}')
-     
+
      #independentently of 'comb_0' being found, draw legend in first pad
      canvas.cd(1)
      allLegs[nleg].Draw()
@@ -359,7 +371,6 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
 Prints the table of systematics
 """
 def showSystematicsTable(results,filterCats):
-
     #show results
     selections = list(set([s for _,s in results.keys()]))
     categories = list(set([k for k,_ in results.keys()]))
@@ -367,17 +378,17 @@ def showSystematicsTable(results,filterCats):
     for sel in selections:
         print 140*'-'
         print bcolors.BOLD+sel+bcolors.ENDC
-        print 14*' ',
+        print 20*' ','&',
         for cat in sorted(categories):
              if not cat in filterCats: continue
-             print '{0:7s}'.format(cat),' & ',
+             print '{0:^20s}'.format(CATTOLABEL[cat]),'&',
         print '\\\\'
         print 140*'-'
         for expTag in sorted(results.itervalues().next()):
              if expTag in ['nominal', '172.5', 'p11_172.5', 'bfrag_172.5']: continue
-             print '{0:12s}'.format(expTag.replace('_172.5','')),
+             print '{0:20s}'.format(expTag.replace('_172.5','')),'&',
              for cat in sorted(categories):
-                  
+
                   if not cat in filterCats: continue
 
                   expTag2diff='nominal'
@@ -386,11 +397,11 @@ def showSystematicsTable(results,filterCats):
                   if 'powherw' in expTag: expTag2diff='powpyth'
                   if 'bfrag' in expTag:   expTag2diff='bfrag'
                   if 'bfrag' == expTag:   expTag2diff='nominal'
-                  
-                  diff = results[(cat,sel)][expTag][0]-results[(cat,sel)][expTag2diff][0]                  
+
+                  diff = results[(cat,sel)][expTag][0]-results[(cat,sel)][expTag2diff][0]
                   diffErr = math.sqrt( results[(cat,sel)][expTag][1]**2+results[(cat,sel)][expTag2diff][1]**2 )
-                  diffstr='{0:12s}'.format(toLatexRounded(diff,diffErr))
-                  #diffstr = ' %6.3f'%diff
+                  # diffstr='{0:20s}'.format(toLatexRounded(diff,diffErr))
+                  diffstr = '$ %6.3f \\pm %5.3f $' % (diff, diffErr)
                   if expTag not in ['166.5','169.5','171.5','173.5','175.5','178.5']:
                        if abs(diff) > 0.5 and abs(diff) < 1.0:
                             diffstr = "%7s"%(bcolors.YELLOW+diffstr+bcolors.ENDC)
@@ -444,7 +455,7 @@ def main():
     if opt.syst:
          cachefile = open(opt.syst, 'r')
          calibMap  = pickle.load(cachefile)
-         results   =  pickle.load(cachefile)
+         results   = pickle.load(cachefile)
          cachefile.close()
 
          showSystematicsTable(results=results,

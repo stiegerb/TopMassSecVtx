@@ -28,7 +28,7 @@ class PseudoExperimentResults:
             self.histos[key]['mtopfit'].Fill(ws.var('mtop').getVal()-self.genMtop)
             self.histos[key]['mtopfit_statunc'].Fill(ws.var('mtop').getError())
             self.histos[key]['mtopfit_pull'].Fill((ws.var('mtop').getVal()-self.genMtop)/ws.var('mtop').getError())
-            self.histos[key]['muvsmtop'].Fill(ws.var('mtop').getVal(),ws.var('mu').getVal())
+            self.histos[key]['muvsmtop'].Fill(ws.var('mtop').getVal()-self.genMtop,ws.var('mu').getVal())
             
     def initHistos(self,key):
         self.histos[key]={}
@@ -37,8 +37,8 @@ class PseudoExperimentResults:
         pfix=pfix[:-1]
         self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,';#Deltam_{t} [GeV];Pseudo-experiments',200,-5,5)
         self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)        
-        self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-2.02,1.98)
-        self.histos[key]['muvsmtop']    = ROOT.TH2F('muvsmtop_%s'%pfix,';Top quark mass [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',200,150,200,100,0.95,1.05)
+        self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-3.03,2.97)
+        self.histos[key]['muvsmtop']        = ROOT.TH2F('muvsmtop_%s'%pfix,';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',100,-5,5,100,0.95,1.05)
         for var in self.histos[key]:
             self.histos[key][var].SetDirectory(0)
             self.histos[key][var].Sumw2()

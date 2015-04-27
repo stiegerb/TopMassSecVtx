@@ -22,6 +22,9 @@ def parseEnsembles(url,selection='',rebin=4):
 
          #check tag to be assigned
          tag=''
+         tag='les'      if 'les'      in experimentTag else tag
+         tag='lepsel'   if 'lepsel'   in experimentTag else tag
+         tag='pu'       if 'pu'       in experimentTag else tag
          tag='massscan' if 'nominal'  in experimentTag else tag
          tag='matching' if 'matching' in experimentTag else tag
          tag='scale'    if 'scale'    in experimentTag else tag
@@ -38,15 +41,18 @@ def parseEnsembles(url,selection='',rebin=4):
 
          #reference tag
          refTag=''
+         refTag='nominal_172v5' if 'lepsel'   in tag else refTag
+         refTag='nominal_172v5' if 'les'      in tag else refTag
+         refTag='nominal_172v5' if 'pu'       in tag else refTag
          refTag='nominal_172v5' if 'massscan' in tag else refTag
          refTag='nominal_172v5' if 'matching' in tag else refTag
-         refTag='nominal_172v5' if 'scale' in tag else refTag
-         refTag='nominal_172v5' if 'toppt' in tag else refTag
-         refTag='nominal_172v5' if 'jes' in tag else refTag
-         refTag='nominal_172v5'   if 'bfrag' in tag else refTag
-         refTag='nominal_172v5' if 'bfn' in tag else refTag
-         refTag='p11_172v5'     if 'p11' in tag else refTag
-         refTag='nominal_172v5' if 'powheg' in tag else refTag
+         refTag='nominal_172v5' if 'scale'    in tag else refTag
+         refTag='nominal_172v5' if 'toppt'    in tag else refTag
+         refTag='nominal_172v5' if 'jes'      in tag else refTag
+         refTag='nominal_172v5' if 'bfrag'    in tag else refTag
+         refTag='nominal_172v5' if 'bfn'      in tag else refTag
+         refTag='p11_172v5'     if 'p11'      in tag else refTag
+         refTag='nominal_172v5' if 'powheg'   in tag else refTag
          if len(refTag)==0 : continue
 
          #parse mtop
@@ -283,8 +289,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
 
           #draw graphs on pads
           igrctr=0
-          igrctr=0
-          color=[ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9]
+          color=[ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9,ROOT.kViolet+2,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kYellow-3]
           for tag,gr in sorted(grColl.items()):
                gr.Sort()
                gr.SetMarkerStyle(20+igrctr)
@@ -448,18 +453,20 @@ def main():
 
     #compare inputs for pseudo-experiments
     if opt.peInput:
-        for sel in ['','mrank1','optmrank']:
-	        ensemblesMap=parseEnsembles(url=opt.peInput, selection=sel,rebin=opt.rebin)
-	        for tag,grMap in ensemblesMap.items():
-	            outName = tag if sel == '' else '%s_%s'%(tag,sel)
-	            show(grCollMap=ensemblesMap[tag],
-	                 outDir=opt.outDir,
-	                 outName=outName,
-	                 yaxisTitle='Ratio to reference',
-	                 xaxisTitle='m(SV,lepton) [GeV]',
-	                 yrange=(0.75,1.25),
-	                 baseDrawOpt='lx',
-	                 doFit=False)
+         outDir=os.path.dirname(opt.peInput)+'/pe_plots'
+         for sel in ['','mrank1','optmrank']:
+              ensemblesMap=parseEnsembles(url=opt.peInput, selection=sel,rebin=opt.rebin)
+              for tag,grMap in ensemblesMap.items():
+                   outName = tag if sel == '' else '%s_%s'%(tag,sel)
+                   show(grCollMap=ensemblesMap[tag],
+                        outDir=outDir,
+                        outName=outName,
+                        yaxisTitle='Ratio to reference',
+                        xaxisTitle='m(SV,lepton) [GeV]',
+                        y_range=(0.75,1.25),
+                        x_range=(0,200),
+                        baseDrawOpt='lx',
+                        doFit=False)
     return
 
 

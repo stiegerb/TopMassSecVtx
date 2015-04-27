@@ -111,6 +111,18 @@ SYSTPLOTS = [
 	 ['nominal', 'jesup', 'jesdn'],
 	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
+	('les', 'Lepton energy scale',
+	 ['nominal', 'lesup', 'lesdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('lepsel', 'Lepton selection efficiency',
+	 ['nominal', 'lepselup', 'lepseldown'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('pu', 'Pileup',
+	 ['nominal', 'puup', 'pudown'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
 	('bfnu', 'B-hadron branching fractions',
 	 ['nominal', 'bfnuup', 'bfnudn'],
 	 [ROOT.kBlack, ROOT.kYellow-3, ROOT.kYellow+3],'tot'),

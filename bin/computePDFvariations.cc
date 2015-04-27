@@ -76,13 +76,12 @@ int main(int argc, char* argv[])
   outFileUrl.ReplaceAll(".root","");
 
   //INITIALIZE THE PDF TOOL
-  //notice cteq66.LHgrid yields 90% CI so the final uncertainty is obtained
-  //after re-scaling by 1/C90=1/1.64485
+  //notice cteq66.LHgrid and CT10, yields 90% CI so the final uncertainty is obtained after re-scaling by 1/C90=1/1.64485
   //see http://www.hep.ucl.ac.uk/pdf4lhc/PDF4LHC_practical_guide.pdf
-  string pdfSets[]   = {"cteq66.LHgrid","MSTW2008nlo68cl.LHgrid","NNPDF20_100.LHgrid"};
+  string pdfSets[]   = {"CT10.LHgrid"}; //"cteq66.LHgrid",, "MSTW2008nlo68cl.LHgrid","NNPDF20_100.LHgrid"};
   std::vector<Int_t>   nPdfVars;
-  //const size_t nPdfSets=sizeof(pdfSets)/sizeof(string);
-  const size_t nPdfSets=1;
+  const size_t nPdfSets=sizeof(pdfSets)/sizeof(string);
+  //const size_t nPdfSets=1;
   for(size_t ipdf=0; ipdf<nPdfSets; ipdf++)  
     {
       LHAPDF::initPDFSet(ipdf+1, pdfSets[ipdf]);
@@ -141,8 +140,10 @@ int main(int argc, char* argv[])
   //
   printf("Loop on PDF sets and variations\n");   
   for(size_t ipdf=0; ipdf<nPdfSets; ipdf++){
-    for(int i=0; i <(nPdfVars[ipdf]+1); ++i){
 
+    std::cout << pdfSets[ipdf] << " has " << nPdfVars[ipdf] << " variations" << std::endl;
+    for(int i=0; i <(nPdfVars[ipdf]+1); ++i){
+      std::cout << ".";
       LHAPDF::usePDFMember(ipdf+1,i);
       char nameBuf[256];sprintf(nameBuf,"%s_var%d", pdfSets[ipdf].c_str(), i);
       //printf("%30s:", nameBuf);
@@ -162,8 +163,7 @@ int main(int argc, char* argv[])
       ofile->cd();
       pdfT->Write();
     }
-    
-    printf("Done\n");
+    std::cout << std::endl;
   }
   qscale->Write();
   ofile->Close();

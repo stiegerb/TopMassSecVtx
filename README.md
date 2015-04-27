@@ -70,16 +70,18 @@ Will run the plots and put them in svlplots/ by default. Also saves the histogra
 ### Producing data/MC comparison plots
 
 ```
-./scripts/makeSVLDataMCPlots.py treedir/ -j 8 -o outDir/
-
-```
-Produces a number of data/MC comparison plots (both from the SVLInfo trees, and from the histograms produced in the LxyTreeAnalysis). Default output directory is plots/. This is based on the runPlotter.py script.
 In order to have correct xsection weights and number of generated events, one needs to run on the eos/ directory first to produce a cache file with the weights, like so:
 ```
 ./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json
 ```
-The script also produces the DY scale factors and applies them directly. It puts the control plots in a sub-directory called ```dy_control```. Note that they are read from the cachefile (.svldyscalefactors.pck) by default. To reproduced them from scratch, delete the cachfile first. To produce only the scale factors, use the ```extractDYScaleFactor.py``` script.
-
+./scripts/makeSVLDataMCPlots.py treedir/ -j test/topss2014/samples.json -o outDir/
+```
+Produces a number of data/MC comparison plots (both from the SVLInfo trees, and from the histograms produced in the LxyTreeAnalysis). Default output directory is plots/. This is based on the runPlotter.py script.
+The script also produces the DY scale factors and applies them directly. It puts the control plots in a sub-directory called ```dy_control```. Note that they are read from the cachefile (.svldyscalefactors.pck) by default. To reproduced them from scratch, delete the cachfile first. To produce only the scale factors, use the ```extractDYScaleFactor.py``` script, e.g. 
+```
+./scripts/extractDYScaleFactor.py outDir/plotter.root  --verbose 5
+```
+Notice it is not needed to run it explicitely after makeSVLDataMCPlots.py has been run.
 To print event yields, run ```printSVLEventYields.py``` on the output of the script above:
 ```
 ./scripts/printSVLEventYields.py outDir/plotter.root
@@ -125,21 +127,24 @@ Prepares the workspace for the fits and put the RooFit workspace and plots in sv
 Will run the pseudoexperiments for a single variation (e.g. nominal_172v5). Verbose level above 5 prints the result of each channel for each single experiment.
 
 ```
-./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlfits/pe_inputs.root
+./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlplots/pe_inputs.root -s optmrank
 ```
-Will run all the pseudoexperiments for all variation on batch.
+Will run all the pseudoexperiments for all variation on batch. The output (and individual scripts) will be stored under svlPEJobs
 
 ```
-python scripts/summarizeSVLresults.py --calib svlfits/
+python scripts/summarizeSVLresults.py --calib svlPEJobs/optmrank/Apr25/
 ```
 Will parse the summaries of the pseudo-experiments, print a systematics table, and produce a calibration file.
 
 ```
-./scripts/runSVLPseudoExperiments.py SVLWorkspace.root pe_inputs.root -c svlfits/.svlcalib.pck
+./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlplots/pe_inputs.root -c svlPEJobs/optmrank/Apr25/.svlcalib.pck -s optmrank
 ```
-
 Will run the calibrated pseudo-experiments
-
+```
+python scripts/summarizeSVLresults.py --syst svlPEJobs_calib/optmrank/Apr25/.svlcalib.pck
+```
+Will printout the "final" systematics table
+```
 ---------------------------------------------------
 ### Control region analysis
 ```

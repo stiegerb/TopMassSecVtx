@@ -46,15 +46,21 @@ SYSTSFROMFILES = [
 SYSTTOPROCNAME = dict([(k,v.replace('.root','')) for k,_,v in SYSTSFROMFILES])
 
 SYSTSFROMWEIGHTS = [
-	('nominal', 'Nominal',                  '1'),
-	('toppt',   'Top p_{T} weight applied', 'Weight[10]'),
-	('topptup', 'Top p_{T} weight up',      'Weight[7]'),
-	('bfrag',   'rb LEP weighted',          'SVBfragWeight[0]'),
-	('bfragup', 'rb LEP hard weighted',     'SVBfragWeight[1]'),
-	('bfragdn', 'rb LEP soft weighted',     'SVBfragWeight[2]'),
-	('jesup',   'Jet energy scale up',      'JESWeight[1]'),
-	('jesdn',   'Jet energy scale down',    'JESWeight[2]'),
-	('bfnuup',   'B hadron semi-lep BF up',
+	('nominal',     'Nominal',                  '1'),
+	('puup',        'Pileup up',                 'Weight[2]/Weight[1]'),
+	('pudown',      'Pileup down',               'Weight[3]/Weight[1]'),
+	('lepselup',    'Lepton selection up',   'Weight[5]/Weight[4]'),
+	('lepseldown',  'Lepton selection down', 'Weight[6]/Weight[4]'),
+	('toppt',       'Top p_{T} weight applied',  'Weight[10]'),
+	('topptup',     'Top p_{T} weight up',       'Weight[7]'),
+	('bfrag',       'rb LEP weighted',           'SVBfragWeight[0]'),
+	('bfragup',     'rb LEP hard weighted',      'SVBfragWeight[1]'),
+	('bfragdn',     'rb LEP soft weighted',      'SVBfragWeight[2]'),
+	('jesup',       'Jet energy scale up',       'JESWeight[1]'),
+	('jesdn',       'Jet energy scale down',     'JESWeight[2]'),
+	('lesup',       'Lepton energy scale up',       '1'),
+	('lesdn',       'Lepton energy scale down',     '1'),
+	('bfnuup',      'B hadron semi-lep BF up',
 	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))'),
 	('bfnudn',   'B hadron semi-lep BF down',
 	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))'),
@@ -103,6 +109,18 @@ SYSTPLOTS = [
 
 	('jes', 'Jet energy scale',
 	 ['nominal', 'jesup', 'jesdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('les', 'Lepton energy scale',
+	 ['nominal', 'lesup', 'lesdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('lepsel', 'Lepton selection efficiency',
+	 ['nominal', 'lepselup', 'lepseldown'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('pu', 'Pileup',
+	 ['nominal', 'puup', 'pudown'],
 	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
 	('bfnu', 'B-hadron branching fractions',
@@ -181,70 +199,6 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
 
 	return getError
 
-def plotFracVsTopMass(fcor, fwro, funm, tag, subtag, oname):
-	tg_cor = ROOT.TGraph(len(fcor))
-	tg_wro = ROOT.TGraph(len(fwro))
-	tg_unm = ROOT.TGraph(len(funm))
-
-	np = 0
-	for mt in sorted(fcor.keys()):
-		tg_cor.SetPoint(np, mt, fcor[mt]/100.)
-		tg_wro.SetPoint(np, mt, fwro[mt]/100.)
-		tg_unm.SetPoint(np, mt, funm[mt]/100.)
-		np += 1
-
-	colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
-	for graph,color in zip([tg_cor, tg_wro, tg_unm], colors):
-		graph.SetLineWidth(2)
-		graph.SetLineColor(color)
-		graph.SetMarkerStyle(20)
-		graph.SetMarkerColor(color)
-		graph.SetFillColor(color)
-		graph.SetFillStyle(1001)
-
-
-	tcanv = ROOT.TCanvas("fracvsmt_%s"%tag, "fracvsmt", 400, 400)
-	tcanv.cd()
-
-	h_axes = ROOT.TH2D("axes", "axes", 10, 162.5, 182.5, 10, 0., 1.)
-	h_axes.GetXaxis().SetTitle("m_{t, gen.} [GeV]")
-	h_axes.GetYaxis().SetTitleOffset(1.2)
-	h_axes.GetYaxis().SetTitle("Fraction of combinations")
-	h_axes.Draw()
-
-	tlat = ROOT.TLatex()
-	tlat.SetTextFont(43)
-	tlat.SetNDC(1)
-	tlat.SetTextAlign(33)
-	if len(tag)>0:
-		tlat.SetTextSize(11)
-		tlat.DrawLatex(0.85, 0.85, tag)
-	if len(subtag)>0:
-		tlat.SetTextSize(10)
-		tlat.DrawLatex(0.85, 0.78, subtag)
-
-	tleg = ROOT.TLegend(0.12, 0.75, .50, 0.89)
-	tleg.SetBorderSize(0)
-	tleg.SetFillColor(0)
-	tleg.SetFillStyle(0)
-	tleg.SetShadowColor(0)
-	tleg.SetTextFont(43)
-	tleg.SetTextSize(10)
-
-	tleg.AddEntry(tg_cor, "Correct",   'F')
-	tleg.AddEntry(tg_wro, "Wrong",     'F')
-	tleg.AddEntry(tg_unm, "Unmatched", 'F')
-
-	tg_cor.Draw("PL")
-	tg_wro.Draw("PL")
-	tg_unm.Draw("PL")
-
-	tleg.Draw()
-	# tcanv.Modified()
-	tcanv.Update()
-
-	for ext in ['.pdf','.png']:
-		tcanv.SaveAs(oname+ext)
 
 def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 	tasks = []
@@ -278,8 +232,13 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 			if syst in ['powherw', 'powpyth'] or 'p11' in syst:
 				finalsel = finalsel[len('Weight[0]*'):]
 
+			#add scale factor
+			svlmassVar='SVLMass'
+			if syst=='lesdn' : svlmassVar='SVLMass*SVLMass_sf[0]'
+			if syst=='lesup' : svlmassVar='SVLMass*SVLMass_sf[1]'
+
 			hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
-			tasks.append((hname, 'SVLMass', finalsel,
+			tasks.append((hname, svlmassVar, finalsel,
 				          NBINS, XMIN, XMAX, MASSXAXISTITLE))
 			hname_to_keys[hname] = (tag, syst, comb, ntk1)
 	return tasks

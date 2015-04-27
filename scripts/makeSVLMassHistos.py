@@ -190,6 +190,71 @@ def runTasks(inputfiles, tasklist, opt, subdir):
 		for task in tasks:
 			runSVLInfoTreeAnalysis(task)
 
+def plotFracVsTopMass(fcor, fwro, funm, tag, subtag, oname):
+	tg_cor = ROOT.TGraph(len(fcor))
+	tg_wro = ROOT.TGraph(len(fwro))
+	tg_unm = ROOT.TGraph(len(funm))
+
+	np = 0
+	for mt in sorted(fcor.keys()):
+		tg_cor.SetPoint(np, mt, fcor[mt]/100.)
+		tg_wro.SetPoint(np, mt, fwro[mt]/100.)
+		tg_unm.SetPoint(np, mt, funm[mt]/100.)
+		np += 1
+
+	colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
+	for graph,color in zip([tg_cor, tg_wro, tg_unm], colors):
+		graph.SetLineWidth(2)
+		graph.SetLineColor(color)
+		graph.SetMarkerStyle(20)
+		graph.SetMarkerColor(color)
+		graph.SetFillColor(color)
+		graph.SetFillStyle(1001)
+
+
+	tcanv = ROOT.TCanvas("fracvsmt_%s"%tag, "fracvsmt", 400, 400)
+	tcanv.cd()
+
+	h_axes = ROOT.TH2D("axes", "axes", 10, 162.5, 182.5, 10, 0., 1.)
+	h_axes.GetXaxis().SetTitle("m_{t, gen.} [GeV]")
+	h_axes.GetYaxis().SetTitleOffset(1.2)
+	h_axes.GetYaxis().SetTitle("Fraction of combinations")
+	h_axes.Draw()
+
+	tlat = ROOT.TLatex()
+	tlat.SetTextFont(43)
+	tlat.SetNDC(1)
+	tlat.SetTextAlign(33)
+	if len(tag)>0:
+		tlat.SetTextSize(11)
+		tlat.DrawLatex(0.85, 0.85, tag)
+	if len(subtag)>0:
+		tlat.SetTextSize(10)
+		tlat.DrawLatex(0.85, 0.78, subtag)
+
+	tleg = ROOT.TLegend(0.12, 0.75, .50, 0.89)
+	tleg.SetBorderSize(0)
+	tleg.SetFillColor(0)
+	tleg.SetFillStyle(0)
+	tleg.SetShadowColor(0)
+	tleg.SetTextFont(43)
+	tleg.SetTextSize(10)
+
+	tleg.AddEntry(tg_cor, "Correct",   'F')
+	tleg.AddEntry(tg_wro, "Wrong",     'F')
+	tleg.AddEntry(tg_unm, "Unmatched", 'F')
+
+	tg_cor.Draw("PL")
+	tg_wro.Draw("PL")
+	tg_unm.Draw("PL")
+
+	tleg.Draw()
+	# tcanv.Modified()
+	tcanv.Update()
+
+	for ext in ['.pdf','.png']:
+		tcanv.SaveAs(oname+ext)
+
 def gatherHistosFromFiles(tasklist, massfiles, dirname, hname_to_keys):
 	## First extract a list of ALL histogram names from the tasklist
 	hnames = [t[0] for tasks in tasklist.values() for t in tasks]
@@ -271,14 +336,15 @@ def main(args, opt):
 	# (tag, chan, mass, comb)      -> histo
 	# (tag, chan, mass, comb, ntk) -> histo
 	masshistos = gatherHistosFromFiles(tasklist, massfiles,
-									  os.path.join(opt.outDir,
-									  'mass_histos'),
-									  hname_to_keys)
+					   os.path.join(opt.outDir,
+							'mass_histos'),
+					   hname_to_keys)
 
 	cachefile = open(".svlmasshistos.pck", 'w')
 	pickle.dump(masshistos, cachefile, pickle.HIGHEST_PROTOCOL)
 	cachefile.close()
 	print 'Wrote .svlmasshistos.pck with all the mass histos'
+
 
 	# ofi = ROOT.TFile(os.path.join(opt.outDir,'masshistos.root'),
 	# 													   'recreate')
@@ -390,6 +456,28 @@ def main(args, opt):
 			ratplot.subtag = '%s %s' % (seltag, chanTitle)
 			ratplot.show("massscan_%s_%s_unm"%(tag,chan), mass_scan_dir)
 			ratplot.reset()
+
+	#fractions
+	for tag,sel,seltag in SELECTIONS:  
+		print 70*'-'
+	 	print '%-10s: %s %s' % (tag, sel,seltag)
+		if not('inclusive' in tag): continue
+	 	fcor, fwro, funm = {}, {}, {}
+	 	for mass,proc in sorted(massfiles.keys()):
+			# mass = 172.5
+			ncount={}
+			for comb in ['tot','cor','wro','unm']:				
+				hist = masshistos[(tag,proc, mass,comb)]
+				ncount[comb]=hist.Integral()
+			fcor[mass] = 100.*(ncount['cor']/float(ncount['tot']))
+	 		fwro[mass] = 100.*(ncount['wro']/float(ncount['tot']))
+	 		funm[mass] = 100.*(ncount['unm']/float(ncount['tot']))
+	 		print ('  %5.1f GeV: %7d entries \t'
+	 			   '(%4.1f%% corr, %4.1f%% wrong, %4.1f%% unmatched)' %
+	 			   (mass, ncount['tot'], fcor[mass], fwro[mass], funm[mass]))
+		oname = os.path.join(opt.outDir, 'fracvsmt_%s'%tag) 
+		plotFracVsTopMass(fcor, fwro, funm, tag, seltag, oname)    
+
 
 	return 0
 

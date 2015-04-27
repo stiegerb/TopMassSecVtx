@@ -176,7 +176,6 @@ def main(args, opt):
 				hist = bghistos[tag, pname, 'tot', ntk].Clone("%s_%s" % (
 															  hname, pname))
 
-
 				## Apply scale factors
 				hist.Scale(LUMI*xsecweights["MC8TeV_%s"%pname])
 				if ((tag.startswith('ee') or tag.startswith('mm'))
@@ -268,6 +267,10 @@ def main(args, opt):
 
 				## Add the backgrounds
 				hfinal.Add(bghistos_added[(tag,ntk)])
+
+				## Rebin if requested
+				if opt.rebin>0:
+					hfinal.Rebin(opt.rebin)
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
 
@@ -317,6 +320,9 @@ def main(args, opt):
 				## Add the combined backgrounds
 				hfinal.Add(bghistos_added[(tag,ntk)])
 
+				## Rebin if requested
+				if opt.rebin>0:
+					hfinal.Rebin(opt.rebin)
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
 	print ('>>> Wrote pseudo experiment inputs to file (%s)' %
@@ -346,6 +352,9 @@ if __name__ == "__main__":
 	parser.add_option('-v', '--verbose', dest='verbose', action="store",
 					  type='int', default=1,
 					  help='Verbose mode [default: %default (semi-quiet)]')
+	parser.add_option('-r', '--rebin', dest='rebin', action="store",
+					  type='int', default=0,
+					  help='Rebin the histograms [default: %default]')
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",

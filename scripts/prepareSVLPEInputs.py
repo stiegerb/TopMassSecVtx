@@ -291,6 +291,10 @@ def main(args, opt):
 	# (tag, chan, mass, comb, ntk) -> histo
 	cachefile.close()
 
+	## Read SV Track multiplicity weights:
+	from extractNtrkWeights import extractNTrkWeights
+	ntkWeights = extractNTrkWeights()
+
 	ofi = ROOT.TFile.Open(osp.join(opt.outDir,'pe_inputs.root'),'RECREATE')
 	ofi.cd()
 
@@ -335,6 +339,11 @@ def main(args, opt):
 				## Rebin if requested
 				if opt.rebin>0:
 					hfinal.Rebin(opt.rebin)
+
+				## Scale by SV track multiplicity weights:
+				hfinal.Scale(ntkWeights['inclusive'][ntk])
+
+				## Write out to file
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
 
@@ -387,6 +396,11 @@ def main(args, opt):
 				## Rebin if requested
 				if opt.rebin>0:
 					hfinal.Rebin(opt.rebin)
+
+				## Scale by SV track multiplicity weights:
+				hfinal.Scale(ntkWeights['inclusive'][ntk])
+
+				## Write out to file
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
 	print ('>>> Wrote pseudo experiment inputs to file (%s)' %

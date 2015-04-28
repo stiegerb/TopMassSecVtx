@@ -516,7 +516,6 @@ def main():
     os.system('mkdir -p %s' % opt.outDir)
     os.system('mkdir -p %s' % os.path.join(opt.outDir, 'plots'))
 
-
     # launch pseudo-experiments
     if not opt.isData:
         peInputFile = ROOT.TFile.Open(args[1], 'READ')
@@ -527,7 +526,7 @@ def main():
         ## Run a single experiment
         if len(args)>2:
             if not args[2] in allTags:
-                print (prepend+"ERROR: variation not "
+                print ("ERROR: variation not "
                        "found in input file! Aborting")
                 return -2
 
@@ -542,7 +541,7 @@ def main():
             filteredTags = opt.filter.split(',')
             for tag in filteredTags:
                 if not tag in allTags:
-                    print (prepend+"ERROR: variation not "
+                    print ("ERROR: variation not "
                            "found in input file! Aborting")
                     return -3
             allTags = filteredTags

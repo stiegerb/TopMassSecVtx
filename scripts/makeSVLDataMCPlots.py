@@ -126,13 +126,15 @@ def main(args, options):
 	print ' Producing (DY-scaled) control plots from histograms'
 	options.filter = '!,JPsi,D0,Dpm,DMDs,Ds2010,Mjj' ## not the charm plots
 	runPlotter(args[0], options, scaleFactors=scaleFactors)
-	options.filter = 'Mjj' ## not the charm plots
-	options.cutUnderOverFlow = True
-	runPlotter(args[0], options, scaleFactors=scaleFactors)
 
 	print 80*'='
 	print ' Producing plots from SVLInfo trees'
 	runPlotter(outputFileName, options, scaleFactors=scaleFactors)
+
+
+	options.filter = 'Mjj' ## not the charm plots
+	options.cutUnderOverFlow = True
+	runPlotter(args[0], options, scaleFactors=scaleFactors)
 
 	return 0
 

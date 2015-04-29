@@ -317,12 +317,15 @@ int main(int argc, char* argv[])
             TString shapesDir("");
             shapesDir=weightsFile[0].c_str();
             fTopPtWgt = new TopPtWeighter( proctag, out, shapesDir, evSummary.getTree() );
-
-            TString burl(weightsFile[0].c_str());
-            burl += "/BfragWeights.root";
-            fBfragWgt = new BfragWeighter( burl );
-        }
+	}
     }
+
+    if(isMC) {
+      TString burl(weightsFile[0].c_str());
+      burl += "/BfragWeights.root";
+      fBfragWgt = new BfragWeighter( burl );
+    }
+    
 
     //control the sec vtx analysis
     LxyAnalysis lxyAn;

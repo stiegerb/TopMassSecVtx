@@ -46,11 +46,13 @@ SYSTSFROMFILES = [
 SYSTTOPROCNAME = dict([(k,v.replace('.root','')) for k,_,v in SYSTSFROMFILES])
 
 SYSTSFROMWEIGHTS = [
-	('nominal',     'Nominal',                  '1'),
+	('nominal',     'Nominal',                   '1'),
 	('puup',        'Pileup up',                 'Weight[2]/Weight[1]'),
-	('pudown',      'Pileup down',               'Weight[3]/Weight[1]'),
-	('lepselup',    'Lepton selection up',   'Weight[5]/Weight[4]'),
-	('lepseldown',  'Lepton selection down', 'Weight[6]/Weight[4]'),
+	('pudn',        'Pileup down',               'Weight[3]/Weight[1]'),
+	('lepselup',    'Lepton selection up',       'Weight[5]/Weight[4]'),
+	('lepseldn',    'Lepton selection down',     'Weight[6]/Weight[4]'),
+	('umetup',      'Uncl. MET up',              'METWeight[0]'),
+	('umetdn',      'Uncl. MET down',            'METWeight[1]'),
 	('toppt',       'Top p_{T} weight applied',  'Weight[10]'),
 	('topptup',     'Top p_{T} weight up',       'Weight[7]'),
 	('bfrag',       'rb LEP weighted',           'SVBfragWeight[0]'),
@@ -58,8 +60,8 @@ SYSTSFROMWEIGHTS = [
 	('bfragdn',     'rb LEP soft weighted',      'SVBfragWeight[2]'),
 	('jesup',       'Jet energy scale up',       'JESWeight[1]'),
 	('jesdn',       'Jet energy scale down',     'JESWeight[2]'),
-	('lesup',       'Lepton energy scale up',       '1'),
-	('lesdn',       'Lepton energy scale down',     '1'),
+	('lesup',       'Lepton energy scale up',    '1'),
+	('lesdn',       'Lepton energy scale down',  '1'),
 	('bfnuup',      'B hadron semi-lep BF up',
 	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))'),
 	('bfnudn',   'B hadron semi-lep BF down',
@@ -113,6 +115,10 @@ SYSTPLOTS = [
 
 	('les', 'Lepton energy scale',
 	 ['nominal', 'lesup', 'lesdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('umet', 'Unclustered MET',
+	 ['nominal', 'umetup', 'umetdn'],
 	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
 	('lepsel', 'Lepton selection efficiency',

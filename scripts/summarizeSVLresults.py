@@ -47,12 +47,14 @@ def parseEnsembles(url,selection='',rebin=4):
          tag='jes'      if 'jes'      in experimentTag else tag
          tag='powheg'   if 'powpyth'  in experimentTag else tag
          tag='powheg'   if 'powherw'  in experimentTag else tag
+         tag='qcd'      if 'qcd'      in experimentTag else tag
+         tag='dy'       if 'dy'       in experimentTag else tag
          if len(tag)==0 :
              continue
          if not (tag in ensemblesMap) : ensemblesMap[tag]={}
 
          #reference tag
-         refTag=''
+         refTag='nominal_172v5'
          refTag='nominal_172v5' if 'lepsel'   in tag else refTag
          refTag='nominal_172v5' if 'les'      in tag else refTag
          refTag='nominal_172v5' if 'pu'       in tag else refTag
@@ -426,7 +428,7 @@ def main():
     parser.add_option('--pe',    dest='peInput', default=None, help='compare ensembles for pseudo-experiments')
     parser.add_option('--calib', dest='calib',   default=None, help='show calibration')
     parser.add_option('--syst',  dest='syst',    default=None, help='show systematics table')
-    parser.add_option('--rebin', dest='rebin',   default=4,    type=int, help='rebin pe plots by this factor')
+    parser.add_option('--rebin', dest='rebin',   default=2,    type=int, help='rebin pe plots by this factor')
     (opt, args) = parser.parse_args()
 
     ROOT.gStyle.SetOptStat(0)

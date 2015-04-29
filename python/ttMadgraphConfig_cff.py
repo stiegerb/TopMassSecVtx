@@ -1,20 +1,15 @@
 import FWCore.ParameterSet.Config as cms
 
-from Configuration.Generator.PythiaUEZ2starSettings_cfi    import pythiaUESettingsBlock as pythiaUESettings_Z2starBlock
 from Configuration.Generator.PythiaUEZ2starLEPSettings_cfi import pythiaUESettingsBlock as pythiaUESettings_Z2starLEPBlock
 from Configuration.Generator.PythiaUEP11Settings_cfi       import pythiaUESettingsBlock as pythiaUESettings_P11Block
-
 
 def configureTTGenerator(process,tune):
 
   pythiaUESettingsBlock=None
 
   #UE
-  if 'Z2star' in tune:
-    if 'LEP' in tune:
+  if 'Z2starLEP' in tune:
       pythiaUESettingsBlock=pythiaUESettings_Z2starLEPBlock.clone()
-    else:
-      pythiaUESettingsBlock=pythiaUESettings_Z2starBlock.clone()
   if 'P11' in tune:
     pythiaUESettingsBlock=pythiaUESettings_P11Block.clone()
   if 'P12' in tune:
@@ -79,15 +74,15 @@ def configureTTGenerator(process,tune):
 
   #fragmentation specific (use with Z2lep with care)                             
   if 'peterson' in tune:
-    pythiaUESettingsBlock.pythiaUESettings.push_back('MSTJ(11)=3')
+    pythiaUESettingsBlock.pythiaUESettings.append('MSTJ(11)=3')
   if 'lund' in tune:
-    pythiaUESettingsBlock.pythiaUESettings.push_back('MSTJ(11)=1')
+    pythiaUESettingsBlock.pythiaUESettings.append('MSTJ(11)=1')
   if 'hard' in tune:
-    pythiaUESettingsBlock.pythiaUESettings.push_back('PARJ(41)  = 0.225 ! a in FF')
-    pythiaUESettingsBlock.pythiaUESettings.push_back('PARJ(42)  = 1.5   ! b in FF')
+    pythiaUESettingsBlock.pythiaUESettings.append('PARJ(41)  = 0.225 ! a in FF')
+    pythiaUESettingsBlock.pythiaUESettings.append('PARJ(42)  = 1.5   ! b in FF')
   if 'soft' in tune:
-    pythiaUESettingsBlock.pythiaUESettings.push_back('PARJ(41)  = 0.9   ! a in FF')
-    pythiaUESettingsBlock.pythiaUESettings.push_back('PARJ(42)  = 0.5   ! b in FF')
+    pythiaUESettingsBlock.pythiaUESettings.append('PARJ(41)  = 0.9   ! a in FF')
+    pythiaUESettingsBlock.pythiaUESettings.append('PARJ(42)  = 0.5   ! b in FF')
  
   
   return pythiaUESettingsBlock

@@ -2,6 +2,9 @@ import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('GEN')
 
+import sys
+UEtune=sys.argv[2]
+
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
@@ -17,12 +20,12 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(50000)
 )
 
 process.load('UserCode.TopMassSecVtx.fragAnalyzer_cfi')
 from UserCode.TopMassSecVtx.ttMadgraphConfig_cff import configureTTGenerator
-UEtune='Z2star'
+print 'Running for %s'%UEtune
 pythiaUESettingsBlock=configureTTGenerator(process,UEtune)
 process.TFileService = cms.Service("TFileService", fileName = cms.string("FragmentationDist_%s.root"%UEtune))
 

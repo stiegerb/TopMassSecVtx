@@ -648,12 +648,15 @@ int main(int argc, char* argv[])
         //add fragmentation weights using matched b's and B hadrons
         if(fBfragWgt) {
             for(Int_t ij=0; ij<bev.nj; ij++)
-            {
-                if(abs(bev.bid[ij])!=5 || bev.bpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
-                std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.gjpt[ij] );
+	      {
+		if(abs(bev.bid[ij])!=5 || bev.gjpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
+		std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.gjpt[ij] );
                 bev.bwgt[ij][0]=bfragWeights[0];
                 bev.bwgt[ij][1]=bfragWeights[1];
                 bev.bwgt[ij][2]=bfragWeights[2];
+		bev.bwgt[ij][3]=bfragWeights[3];
+		bev.bwgt[ij][4]=bfragWeights[4];
+		bev.bwgt[ij][5]=bfragWeights[5];
             }
         }
 

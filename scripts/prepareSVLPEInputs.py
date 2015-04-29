@@ -431,7 +431,7 @@ if __name__ == "__main__":
 					  type='int', default=1,
 					  help='Verbose mode [default: %default (semi-quiet)]')
 	parser.add_option('-r', '--rebin', dest='rebin', action="store",
-					  type='int', default=0,
+					  type='int', default=2,
 					  help='Rebin the histograms [default: %default]')
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')

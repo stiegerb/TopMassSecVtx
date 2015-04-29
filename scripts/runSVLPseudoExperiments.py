@@ -74,7 +74,7 @@ class PseudoExperimentResults:
 """
 Show PE fit result
 """
-def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir):
+def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     #init canvas
     canvas=ROOT.TCanvas('c','c',500,500)
 
@@ -122,17 +122,32 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir):
     label.SetTextFont(42)
     label.SetTextSize(0.04)
     label.DrawLatex(0.18,0.94,'#bf{CMS} #it{simulation}')
-    leg=ROOT.TLegend(0.7,0.35,0.95,0.55)
+    leg=ROOT.TLegend(0.65,0.35,0.95,0.52)
     leg.AddEntry('data',       'Pseudo data',      'p')
-    leg.AddEntry('totalexp',   'total',     'l')
+    leg.AddEntry('totalexp',   'Total',     'l')
     leg.AddEntry('tt',         't#bar{t}',  'f')
-    leg.AddEntry('singlet',    'single top','f')
+    leg.AddEntry('singlet',    'Single top','f')
     leg.SetFillStyle(0)
-    leg.SetTextFont(42)
-    leg.SetTextSize(0.04)
+    leg.SetTextFont(43)
+    leg.SetTextSize(14)
     leg.SetBorderSize(0)
     leg.Draw()
     ROOT.SetOwnership(leg,0)
+
+    if tag:
+        tlat = ROOT.TLatex()
+        tlat.SetTextFont(43)
+        tlat.SetNDC(1)
+        tlat.SetTextAlign(13)
+        tlat.SetTextSize(14)
+        if type(tag) == str:
+            tlat.DrawLatex(0.65, 0.32, tag)
+        else:
+            ystart = 0.32
+            yinc = 0.05
+            for n,text in enumerate(tag):
+                tlat.DrawLatex(0.65, ystart-n*yinc, text)
+
 
     canvas.cd()
     p2 = ROOT.TPad('p2','p2',0.0,0.86,1.0,1.0)
@@ -363,11 +378,16 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             summary.addFitResult(key=key,ws=ws)
 
             #show, if required
+            selstring = options.selection if options.selection else 'inclusive'
             if options.spy and i==0:
                 pll=nllMap[('comb',0)][-1].createProfile(poi)
                 showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,nllMap[('comb',0)][-1]],
                                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
-                                   outDir=options.outDir)
+                                   outDir=options.outDir,
+                                   tag=[selstring,
+                                   "%s channel, =%s tracks"%(
+                                     str(chsel.split('_',1)[0]),
+                                     str(trk))])
                 #raw_input('press key to continue...')
 
             #save to erase later
@@ -529,6 +549,10 @@ def main():
                 print ("ERROR: variation not "
                        "found in input file! Aborting")
                 return -2
+
+            ## Only run one PE for spy option
+            if opt.spy:
+                opt.nPexp = 1
 
             runPseudoExperiments(wsfile=args[0], pefile=args[1],
                                  experimentTag=args[2],

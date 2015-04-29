@@ -36,6 +36,7 @@ def parseEnsembles(url,selection='',rebin=4):
          tag=''
          tag='les'      if 'les'      in experimentTag else tag
          tag='lepsel'   if 'lepsel'   in experimentTag else tag
+         tag='umet'     if 'umet'     in experimentTag else tag
          tag='pu'       if 'pu'       in experimentTag else tag
          tag='massscan' if 'nominal'  in experimentTag else tag
          tag='matching' if 'matching' in experimentTag else tag
@@ -46,7 +47,7 @@ def parseEnsembles(url,selection='',rebin=4):
          tag='p11'      if 'p11'      in experimentTag else tag
          tag='jes'      if 'jes'      in experimentTag else tag
          tag='powheg'   if 'powpyth'  in experimentTag else tag
-         tag='powheg'   if 'powherw'  in experimentTag else tag
+         #tag='powheg'   if 'powherw'  in experimentTag else tag
          if len(tag)==0 :
              continue
          if not (tag in ensemblesMap) : ensemblesMap[tag]={}
@@ -56,6 +57,7 @@ def parseEnsembles(url,selection='',rebin=4):
          refTag='nominal_172v5' if 'lepsel'   in tag else refTag
          refTag='nominal_172v5' if 'les'      in tag else refTag
          refTag='nominal_172v5' if 'pu'       in tag else refTag
+         refTag='nominal_172v5' if 'umet'     in tag else refTag
          refTag='nominal_172v5' if 'massscan' in tag else refTag
          refTag='nominal_172v5' if 'matching' in tag else refTag
          refTag='nominal_172v5' if 'scale'    in tag else refTag

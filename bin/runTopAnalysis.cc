@@ -647,7 +647,7 @@ int main(int argc, char* argv[])
             for(Int_t ij=0; ij<bev.nj; ij++)
             {
                 if(abs(bev.bid[ij])!=5 || bev.bpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
-                std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.bpt[ij] );
+                std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.gjpt[ij] );
                 bev.bwgt[ij][0]=bfragWeights[0];
                 bev.bwgt[ij][1]=bfragWeights[1];
                 bev.bwgt[ij][2]=bfragWeights[2];

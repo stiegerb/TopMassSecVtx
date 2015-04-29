@@ -257,8 +257,9 @@ int main(int argc, char* argv[])
   bool runZControl(reqControlType==ZBOX);
   
   //if given use weights to correct tag pt in MC
-  TGraphErrors *tagPtWeightGr=0;
+  //TGraphErrors *tagPtWeightGr=0;
   float maxPtForTagWgt(450);
+  /*
   if(weightsFile.size() && isMC)
     {
       TFile *inWeightsF=TFile::Open((weightsFile[0]+"/ControlTagPtWeights.root").c_str());
@@ -270,6 +271,7 @@ int main(int argc, char* argv[])
       inWeightsF->Close();
       if(tagPtWeightGr) std::cout << "Tag pT will be reweighted" << std::endl;
     }
+  */
 
 
   //jet energy scale uncertainties
@@ -505,8 +507,10 @@ int main(int argc, char* argv[])
 
       //tag pT weighing
       float tagWeight(1.0);
+      /*
       if(tagPtWeightGr) tagWeight=tagPtWeightGr->Eval(TMath::Min(box.tag->pt(),maxPtForTagWgt-5.0));
       weight *= tagWeight;
+      */
 
       //gen control
       std::vector<TString> catsToFill(1,"all");
@@ -568,11 +572,14 @@ int main(int argc, char* argv[])
       if(fBfragWgt) {
 	for(Int_t ij=0; ij<bev.nj; ij++)
 	  {
-	    if(abs(bev.bid[ij])!=5 || bev.bpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
-	    std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.bpt[ij] );
+	    if(abs(bev.bid[ij])!=5 || bev.gjpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
+	    std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.gjpt[ij] );
 	    bev.bwgt[ij][0]=bfragWeights[0];
 	    bev.bwgt[ij][1]=bfragWeights[1];
 	    bev.bwgt[ij][2]=bfragWeights[2];
+	    bev.bwgt[ij][3]=bfragWeights[3];
+	    bev.bwgt[ij][4]=bfragWeights[4];
+	    bev.bwgt[ij][5]=bfragWeights[5];
 	  }
       }
       

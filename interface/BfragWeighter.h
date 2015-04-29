@@ -18,7 +18,7 @@ public:
   */
   BfragWeighter(TString url)
     {
-      weights_.resize(3,0);
+      weights_.resize(6,0);
       gSystem->ExpandPathName( url );
       TFile *wgtsFile = TFile::Open( url );
       if(wgtsFile && !wgtsFile->IsZombie())
@@ -27,6 +27,9 @@ public:
 	  weights_[0] = (TGraphErrors *) wgtsFile->Get("Z2star_rbLEP_weight");
 	  weights_[1] = (TGraphErrors *) wgtsFile->Get("Z2star_rbLEPhard_weight");
 	  weights_[2] = (TGraphErrors *) wgtsFile->Get("Z2star_rbLEPsoft_weight");
+	  weights_[3] = (TGraphErrors *) wgtsFile->Get("P11_weight");
+	  weights_[4] = (TGraphErrors *) wgtsFile->Get("Z2starLEP_peterson_weight");
+	  weights_[5] = (TGraphErrors *) wgtsFile->Get("Z2starLEP_lund_weight");
 	}
       wgtsFile->Close();
     }
@@ -38,8 +41,9 @@ public:
     {
       std::vector<float> toRet(weights_.size(),1.0);
       for(size_t i=0; i<weights_.size(); i++)
-	toRet[i] = weights_[i]->Eval( bptratio );
-	
+	{
+	  toRet[i] = weights_[i]->Eval( bptratio );
+	}
       return toRet;
     }
   

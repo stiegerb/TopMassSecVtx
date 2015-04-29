@@ -49,6 +49,9 @@ process.generator = cms.EDFilter("Pythia6GeneratorFilter",
                                  crossSection = cms.untracked.double(131.7),
                                  PythiaParameters = cms.PSet( pythiaUESettings=pythiaUESettingsBlock.pythiaUESettings,
                                                               processParameters = cms.vstring('MSEL=0         ! User defined processes', 
+                                                                                              'MSUB(81)  = 1     ! qqbar to QQbar',
+                                                                                              'MSUB(82)  = 1     ! gg to QQbar',
+                                                                                              'MSTP(7)   = 6     ! flavor = top',
                                                                                               'PMAS(5,1)=4.8   ! b quark mass', 
                                                                                               'PMAS(6,1)=172.5 ! t quark mass', 
                                                                                               'MSTJ(1)=1       ! Fragmentation/hadronization on or off', 
@@ -79,4 +82,5 @@ process.genfiltersummary_step = cms.EndPath(process.genFilterSummary)
 
 # Schedule definition
 process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step)
-
+for path in process.paths:
+    getattr(process,path)._seq = process.generator * getattr(process,path)._seq 

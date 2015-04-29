@@ -38,7 +38,7 @@ struct BeautyEvent_t
   Float_t svmass[gMaxNSV],svntk[gMaxNSV],svlxy[gMaxNSV],svlxyerr[gMaxNSV];
   // Gen Bhadrons
   Int_t bid[gMaxNSV],bhadid[gMaxNSV], bhadneutrino[gMaxNSV];
-  Float_t bpt[gMaxNSV],beta[gMaxNSV],bphi[gMaxNSV],bwgt[gMaxNSV][3];
+  Float_t bpt[gMaxNSV],beta[gMaxNSV],bphi[gMaxNSV],bwgt[gMaxNSV][6];
   Float_t bhadpt[gMaxNSV],bhadeta[gMaxNSV],bhadphi[gMaxNSV];
   Float_t bhadmass[gMaxNSV],bhadlxy[gMaxNSV];
   // Gen Top

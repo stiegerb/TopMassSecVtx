@@ -223,9 +223,9 @@ def buildWorkspace(opt):
             lpt=ROOT.TMath.Min(chains[key].LPt,500)
             mass=ROOT.TMath.Max( MASSMIN, ROOT.TMath.Min(chains[key].SVMass,MASSMAX) )
             
-                      
             #check weight
             totalWeight=chains[key].Weight[0]*chains[key].XSWeight
+            if opt.applyLEPweight : totalWeight *= chains[key].SVBfragWeight[0]
             if totalWeight<0 or math.isnan(totalWeight) :
                 print 'Caught unphysical weight ',totalWeight
                 continue
@@ -500,6 +500,7 @@ def main():
     parser.add_option(      '--onlyCentral', dest='onlyCentral', help='only central jets',      default=False, action='store_true')
     parser.add_option(      '--vetoCentral', dest='vetoCentral', help='veto very central jets', default=False, action='store_true')
     parser.add_option(      '--minLxySig'  , dest='minLxySig',   help='min. lxy sig',           default=-1,    type=float)
+    parser.add_option(      '--applyLEPweight', dest='applyLEPweight', help='reweight Z2* to LEP weight', default=False, action='store_true')
     parser.add_option('-w', '--ws',          dest='wsUrl'   ,    help='ws url',                 default=None,  type='string')
     parser.add_option('-s', '--show',        dest='flavorFitUrl', help='flavor fit url',        default=None,  type='string')
     parser.add_option('-m', '--max',        dest='maxTracks', help='max tracks',        default=None,  type=int)

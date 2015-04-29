@@ -67,7 +67,7 @@ public :
    Float_t         svlxy[50];   //[nj]
    Float_t         svlxyerr[50];   //[nj]
    Int_t           bid[50];   //[nj]
-   Float_t         bwgt[50][3];   //[nj]
+   Float_t         bwgt[50][6];   //[nj]
    Float_t         bpt[50];   //[nj]
    Float_t         beta[50];   //[nj]
    Float_t         bphi[50];   //[nj]

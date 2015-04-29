@@ -69,14 +69,15 @@ Will run the plots and put them in svlplots/ by default. Also saves the histogra
 ------------------------------------------------------
 ### Producing data/MC comparison plots
 
-```
 In order to have correct xsection weights and number of generated events, one needs to run on the eos/ directory first to produce a cache file with the weights, like so:
 ```
 ./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json
 ```
+Then use ```makeSVLDataMCPlots.py``` to produce data/MC comparison plots:
+```
 ./scripts/makeSVLDataMCPlots.py treedir/ -j test/topss2014/samples.json -o outDir/
 ```
-Produces a number of data/MC comparison plots (both from the SVLInfo trees, and from the histograms produced in the LxyTreeAnalysis). Default output directory is plots/. This is based on the runPlotter.py script.
+This produces a number of data/MC comparison plots (both from the SVLInfo trees, and from the histograms produced in the LxyTreeAnalysis). Default output directory is plots/. This is based on the runPlotter.py script.
 The script also produces the DY scale factors and applies them directly. It puts the control plots in a sub-directory called ```dy_control```. Note that they are read from the cachefile (.svldyscalefactors.pck) by default. To reproduced them from scratch, delete the cachfile first. To produce only the scale factors, use the ```extractDYScaleFactor.py``` script, e.g. 
 ```
 ./scripts/extractDYScaleFactor.py outDir/plotter.root  --verbose 5
@@ -111,10 +112,11 @@ Prepare the pseudoexperiment inputs, which also prepares the background template
 ```
 Reads the mass scans, systematics histos, and qcd templates from the corresponding cache files, and produces a ```pe_inputs.root``` file with the input histograms for running pseudo experiments. Also produces the correctly scaled and added background template shapes and writes them to a cache file to be used in the fitting.
 
-Produce summary plots of the pseudoexperiment inputs.
+Produce summary plots of the pseudoexperiment inputs:
 ```
-python scripts/summarizeSVLresults.py --pe svlplots/pe_inputs.root -o svlplots/pe_plots/
+./scripts/summarizeSVLresults.py --pe svlplots/pe_inputs.root --rebin 2
 ```
+By default the plots are put in the input directory, under ```plots/```.
 
 ```
 ./scripts/runSVLFits.py -o svlfits/
@@ -129,22 +131,22 @@ Will run the pseudoexperiments for a single variation (e.g. nominal_172v5). Verb
 ```
 ./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlplots/pe_inputs.root -s optmrank
 ```
-Will run all the pseudoexperiments for all variation on batch. The output (and individual scripts) will be stored under svlPEJobs
+Will run all the pseudoexperiments for all variation on batch. The output (and individual scripts) will be stored under ```svlPEJobs/```. Use ```-f --filter``` option to process only selected variations.
 
 ```
-python scripts/summarizeSVLresults.py --calib svlPEJobs/optmrank/Apr25/
+./scripts/summarizeSVLresults.py --calib svlPEJobs/optmrank/Apr25/
 ```
-Will parse the summaries of the pseudo-experiments, print a systematics table, and produce a calibration file.
+Will parse the summaries of the pseudo-experiments and produce a calibration file.
 
 ```
 ./scripts/runSVLPseudoExperiments.py svlfits/SVLWorkspace.root svlplots/pe_inputs.root -c svlPEJobs/optmrank/Apr25/.svlcalib.pck -s optmrank
 ```
 Will run the calibrated pseudo-experiments
 ```
-python scripts/summarizeSVLresults.py --syst svlPEJobs_calib/optmrank/Apr25/.svlcalib.pck
+./scripts/summarizeSVLresults.py --syst svlPEJobs_calib/optmrank/Apr25/.svlcalib.pck
 ```
 Will printout the "final" systematics table
-```
+
 ---------------------------------------------------
 ### Control region analysis
 ```

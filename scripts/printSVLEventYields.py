@@ -25,15 +25,31 @@ PROCTOPROCNAME = {
 	'MC8TeV_SingleTbar_tW'            : 'Single top',
     'Data'                            : 'Data',
     'MC8TeV_QCD'                      : 'QCD multijets',
-    'MC8TeV_WJets'                    : 'W+jets',
-    'MC8TeV_TTWJets'                  : 'ttV',
-    'MC8TeV_TTJets_MSDecays_172v5'    : 'ttbar',
+    'MC8TeV_WJets'                    : '\\PW+jets',
+    'MC8TeV_TTWJets'                  : '\\ttV',
+    'MC8TeV_TTJets_MSDecays_172v5'    : '\\ttbar',
     'MC8TeV_WW'                       : 'Diboson',
     'MC8TeV_DYJets'                   : 'DY+jets',
 }
 
+PROCNAMETORANK = {
+	'Data'          : -1,
+	'total'         : 0,
+	'\\ttbar'       : 1,
+	'Single top'    : 2,
+	'\\PW+jets'     : 3,
+	'DY+jets'       : 4,
+	'QCD multijets' : 5,
+	'Diboson'       : 6,
+	'\\ttV'         : 7,
+}
+
+CHANTORANK = {'em':0, 'mm':1, 'ee':2, 'm':3, 'e':4}
+
 def printYields(yields):
 	cleanyields = {}
+
+	## Change keys to be uniform
 	for chan,dset in yields:
 		proc = dset
 		try:
@@ -46,10 +62,11 @@ def printYields(yields):
 		cleanyields[(chan, proc)] = yields[(chan,dset)]
 	yields = cleanyields
 
-	# Build total:
+	## Build total:
 	totals = {}
 	for chan,proc in yields:
 		totals[(chan,proc)] = yields[(chan,proc)]
+		if 'Data' in proc: continue
 		try:
 			previous = totals[(chan, 'total')]
 			totals[(chan, 'total')] = ( previous[0]+yields[(chan, proc)][0],
@@ -59,31 +76,30 @@ def printYields(yields):
 				                        yields[(chan, proc)][1] )
 
 
-	# pprint(totals)
+	channels  = list(set([c for c,_ in totals.keys()]))
+	channels.sort(key=lambda p: CHANTORANK[p], reverse=True)
+	processes = list(set([p for _,p in totals.keys()]))
+	processes.sort(key=lambda p: PROCNAMETORANK[PROCTOPROCNAME[p]], reverse=True)
 
-
-	channels = list(set([c for c,_ in totals.keys()]))
-	processes = list(set([p for _,p in totals.keys() if not p =='total']))
-
-	print 105*'-'
-	print 20*" ",
-	for chan in sorted(channels):
-		print ("   %-12s" % chan),
+	print 122*'-'
+	print 20*" "+' &',
+	for chan in channels:
+		print ("   %-14s &" % chan),
 	print ''
-	for proc in processes+['total']:
+	for proc in processes:
 		procname = PROCTOPROCNAME[proc]
-		print "%-20s"%procname,
-		for chan in sorted(channels):
+		print "%-20s &" % procname,
+		for chan in channels:
 			try:
 				if totals[(chan, proc)][0]>0.5:
-					print "%7.0f +- %4.0f"%(totals[(chan, proc)]),
+					print " $%6.0f \pm %3.0f$ &" % (totals[(chan, proc)]),
 				else:
-					raise KeyError
+					print " $    <1        $ &",
 			except KeyError:
-				print 15*' ',
+				print " $    <1        $ &",
 
 		print ' '
-	print 105*'-'
+	print 122*'-'
 	return 0
 
 

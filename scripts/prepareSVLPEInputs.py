@@ -121,6 +121,79 @@ def makeBackgroundHistos(treefiles, opt):
 	cachefile.close()
 	return bghistos
 
+def sumBGHistos(processes, bghistos, xsecweights, dySFs, qcdTemplates,
+	            opt, dyScale=None, qcdScale=None):
+	bghistos_added = {}
+ 	# Save the total expected integral for the overall normalization:
+ 	bg_normalization = {}
+	for tag,_,_ in SELECTIONS:
+		if opt.verbose>2: print ' selection:',tag
+		for ntk,_ in NTRKBINS:
+			if opt.verbose>2: print '  ntrks:',ntk
+			for pname in processes:
+				if opt.verbose>3: print '   process:',pname
+
+				hname = "SVLMass_tot_%s_bg_%d"%(tag,ntk)
+				hist = bghistos[tag, pname, 'tot', ntk].Clone("%s_%s" % (
+															  hname, pname))
+
+				## Apply scale factors
+				hist.Scale(LUMI*xsecweights["MC8TeV_%s"%pname])
+				if ((tag.startswith('ee') or tag.startswith('mm'))
+					 and pname.startswith('DY')):
+					hist.Scale(dySFs[tag[:2]])
+
+				## Scaling for background systematics
+				if dyScale and pname.startswith('DY'):
+					if opt.verbose>2: print '    scaling DY by',dyScale
+					hist.Scale(dyScale)
+
+				## Save normalization (even when skipped)
+				if not (tag, ntk) in bg_normalization:
+					bg_normalization[(tag, ntk)] = 0
+				bg_normalization[(tag, ntk)] += hist.Integral()
+
+				## Skip events with an average event weight above 2 (low statistics)
+				if hist.GetEntries() == 0: continue
+				if ( (hist.Integral()/hist.GetEntries() > 2) and
+					hist.GetEntries() < 10 ):
+					if opt.verbose>3:
+						print ('\033[91m      skipping %s (%d entries, '
+							   'int/entr=%5.2f)\033[0m' %
+							          (pname, hist.GetEntries(),
+							           hist.Integral()/hist.GetEntries()))
+					continue
+
+				## Save in dictionary
+				if not (tag, ntk) in bghistos_added:
+					bghistos_added[(tag, ntk)] = hist
+					bghistos_added[(tag, ntk)].SetName(hname)
+				else:
+					bghistos_added[(tag, ntk)].Add(hist)
+
+			## Scale the MC only histograms to the total expected integral
+			## (to account for the skipped processes)
+			bghistos_added[(tag,ntk)].Scale(bg_normalization[(tag,ntk)]/
+				                        bghistos_added[(tag,ntk)].Integral())
+
+			## Add QCD templates from MET fit:
+			if tag in QCDTEMPLATESTOADD:
+				sel,cats = QCDTEMPLATESTOADD[tag]
+				for cat in cats:
+					if opt.verbose>2:
+						print '  adding qcd templates from',sel,ntk,cat
+
+					qcdhist = qcdTemplates[(sel,ntk,cat)]
+
+					## Scaling for background systematics
+					if qcdScale:
+						if opt.verbose>2:
+							print '    scaling qcd by',qcdScale
+						qcdhist.Scale(qcdScale)
+
+					bghistos_added[(tag, ntk)].Add(qcdhist)
+	return bghistos_added
+
 
 def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)
@@ -162,63 +235,41 @@ def main(args, opt):
 	print '>>> Read QCD templates from cache (.svlqcdtemplates.pck)'
 
 	## Now add them up with proper scales
-	bghistos_added = {}
- 	# Save the total expected integral for the overall normalization:
- 	bg_normalization = {}
-	for tag,_,_ in SELECTIONS:
-		if opt.verbose>2: print ' selection:',tag
-		for ntk,_ in NTRKBINS:
-			if opt.verbose>2: print '  ntrks:',ntk
-			for pname in treefiles.keys():
-				if opt.verbose>3: print '   process:',pname
+	bghistos_added = sumBGHistos(processes=treefiles.keys(),
+		                         bghistos=bghistos,
+		                         xsecweights=xsecweights,
+		                         dySFs=dySFs,
+		                         qcdTemplates=qcdTemplates,
+		                         opt=opt)
 
-				hname = "SVLMass_tot_%s_bg_%d"%(tag,ntk)
-				hist = bghistos[tag, pname, 'tot', ntk].Clone("%s_%s" % (
-															  hname, pname))
-
-
-				## Apply scale factors
-				hist.Scale(LUMI*xsecweights["MC8TeV_%s"%pname])
-				if ((tag.startswith('ee') or tag.startswith('mm'))
-					 and pname.startswith('DY')):
-					hist.Scale(dySFs[tag[:2]])
-
-				## Save normalization (even when skipped)
-				if not (tag, ntk) in bg_normalization:
-					bg_normalization[(tag, ntk)] = 0
-				bg_normalization[(tag, ntk)] += hist.Integral()
-
-				## Skip events with an average event weight above 2 (low statistics)
-				if hist.GetEntries() == 0: continue
-				if ( (hist.Integral()/hist.GetEntries() > 2) and
-					hist.GetEntries() < 10 ):
-					if opt.verbose>3:
-						print ('\033[91m      skipping %s (%d entries, '
-							   'int/entr=%5.2f)\033[0m' %
-							          (pname, hist.GetEntries(),
-							           hist.Integral()/hist.GetEntries()))
-					continue
-
-				## Save in dictionary
-				if not (tag, ntk) in bghistos_added:
-					bghistos_added[(tag, ntk)] = hist
-					bghistos_added[(tag, ntk)].SetName(hname)
-				else:
-					bghistos_added[(tag, ntk)].Add(hist)
-
-			## Scale the MC only histograms to the total expected integral
-			## (to account for the skipped processes)
-			bghistos_added[(tag,ntk)].Scale(bg_normalization[(tag,ntk)]/
-				                        bghistos_added[(tag,ntk)].Integral())
-
-			## Add QCD templates from MET fit:
-			if tag in QCDTEMPLATESTOADD:
-				sel,cats = QCDTEMPLATESTOADD[tag]
-				for cat in cats:
-					if opt.verbose>2: print '  adding qcd templates from',sel,ntk,cat
-					bghistos_added[(tag, ntk)].Add(qcdTemplates[(sel,ntk,cat)])
-
-
+	bghistos_added_dyup = sumBGHistos(processes=treefiles.keys(),
+		                         bghistos=bghistos,
+		                         xsecweights=xsecweights,
+		                         dySFs=dySFs,
+		                         qcdTemplates=qcdTemplates,
+		                         opt=opt,
+		                         dyScale=1.3)
+	bghistos_added_dydn = sumBGHistos(processes=treefiles.keys(),
+		                         bghistos=bghistos,
+		                         xsecweights=xsecweights,
+		                         dySFs=dySFs,
+		                         qcdTemplates=qcdTemplates,
+		                         opt=opt,
+		                         dyScale=0.7)
+	bghistos_added_qcdup = sumBGHistos(processes=treefiles.keys(),
+		                         bghistos=bghistos,
+		                         xsecweights=xsecweights,
+		                         dySFs=dySFs,
+		                         qcdTemplates=qcdTemplates,
+		                         opt=opt,
+		                         qcdScale=1.3)
+	bghistos_added_qcddn = sumBGHistos(processes=treefiles.keys(),
+		                         bghistos=bghistos,
+		                         xsecweights=xsecweights,
+		                         dySFs=dySFs,
+		                         qcdTemplates=qcdTemplates,
+		                         opt=opt,
+		                         qcdScale=0.7)
 
 	## Save the background only shapes separately as templates for the fit
 	cachefile = open(".svlbgtemplates.pck", 'w')
@@ -240,17 +291,24 @@ def main(args, opt):
 	# (tag, chan, mass, comb, ntk) -> histo
 	cachefile.close()
 
+	## Read SV Track multiplicity weights:
+	from extractNtrkWeights import extractNTrkWeights
+	ntkWeights = extractNTrkWeights()
+
 	ofi = ROOT.TFile.Open(osp.join(opt.outDir,'pe_inputs.root'),'RECREATE')
 	ofi.cd()
 
 	## Central mass point and syst samples
-	for syst,_,_ in ALLSYSTS:
+	for syst in [s for s,_,_ in ALLSYSTS]+['dyup','dydown','qcdup','qcddown']:
 		odir = ofi.mkdir(syst + '_172v5')
 		odir.cd()
 		for tag,_,_ in SELECTIONS:
 			for ntk,_ in NTRKBINS:
 				hname = "SVLMass_%s_%s_%s" % (tag,syst+'_172v5',ntk)
-				hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
+				if not syst in ['dyup','dydown','qcdup','qcddown']:
+					hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
+				else:
+					hfinal = systhistos[(tag,'nominal','tot',ntk)].Clone(hname)
 				try:
 					## Systs from separate samples
 					scale = LUMI*xsecweights[SYSTTOPROCNAME[syst]]
@@ -267,7 +325,25 @@ def main(args, opt):
 					hfinal.Add(hsinglet)
 
 				## Add the backgrounds
-				hfinal.Add(bghistos_added[(tag,ntk)])
+				if not syst in ['dyup','dydown','qcdup','qcddown']:
+					hfinal.Add(bghistos_added[(tag,ntk)])
+				else: ## From the scaled bghistos if necessary
+					bghistos_added_scaled = {
+						'dyup'    : bghistos_added_dyup,
+						'dydown'  : bghistos_added_dydn,
+						'qcdup'   : bghistos_added_qcdup,
+						'qcddown' : bghistos_added_qcddn,
+					}[syst]
+					hfinal.Add(bghistos_added_scaled[(tag,ntk)])
+
+				## Rebin if requested
+				if opt.rebin>0:
+					hfinal.Rebin(opt.rebin)
+
+				## Scale by SV track multiplicity weights:
+				hfinal.Scale(ntkWeights['inclusive'][ntk])
+
+				## Write out to file
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
 
@@ -317,6 +393,14 @@ def main(args, opt):
 				## Add the combined backgrounds
 				hfinal.Add(bghistos_added[(tag,ntk)])
 
+				## Rebin if requested
+				if opt.rebin>0:
+					hfinal.Rebin(opt.rebin)
+
+				## Scale by SV track multiplicity weights:
+				hfinal.Scale(ntkWeights['inclusive'][ntk])
+
+				## Write out to file
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
 	print ('>>> Wrote pseudo experiment inputs to file (%s)' %
@@ -346,6 +430,9 @@ if __name__ == "__main__":
 	parser.add_option('-v', '--verbose', dest='verbose', action="store",
 					  type='int', default=1,
 					  help='Verbose mode [default: %default (semi-quiet)]')
+	parser.add_option('-r', '--rebin', dest='rebin', action="store",
+					  type='int', default=0,
+					  help='Rebin the histograms [default: %default]')
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",

@@ -29,21 +29,21 @@ class PseudoExperimentResults:
             self.histos[key]['mtopfit_statunc'].Fill(ws.var('mtop').getError())
             self.histos[key]['mtopfit_pull'].Fill((ws.var('mtop').getVal()-self.genMtop)/ws.var('mtop').getError())
             self.histos[key]['muvsmtop'].Fill(ws.var('mtop').getVal()-self.genMtop,ws.var('mu').getVal())
-            
+
     def initHistos(self,key):
         self.histos[key]={}
         pfix=''
         for tk in key: pfix += str(tk)+'_'
         pfix=pfix[:-1]
         self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,';#Deltam_{t} [GeV];Pseudo-experiments',200,-5,5)
-        self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)        
+        self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)
         self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-3.03,2.97)
         self.histos[key]['muvsmtop']        = ROOT.TH2F('muvsmtop_%s'%pfix,';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',100,-5,5,100,0.95,1.05)
         for var in self.histos[key]:
             self.histos[key][var].SetDirectory(0)
             self.histos[key][var].Sumw2()
-        
-    def saveResults(self):        
+
+    def saveResults(self):
         peFile=ROOT.TFile(self.outFileUrl,'RECREATE')
         for key in self.histos:
             dirName=''
@@ -123,7 +123,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir):
     label.SetTextSize(0.04)
     label.DrawLatex(0.18,0.94,'#bf{CMS} #it{simulation}')
     leg=ROOT.TLegend(0.7,0.35,0.95,0.55)
-    leg.AddEntry('data',       'data',      'p')
+    leg.AddEntry('data',       'Pseudo data',      'p')
     leg.AddEntry('totalexp',   'total',     'l')
     leg.AddEntry('tt',         't#bar{t}',  'f')
     leg.AddEntry('singlet',    'single top','f')
@@ -320,7 +320,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
             #read histogram and generate random data
             ihist       = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
-            nevtsToGen=ROOT.gRandom.Poisson(ihist.Integral())
+            nevtsToGen = ROOT.gRandom.Poisson(ihist.Integral())
             pseudoDataH,pseudoData=None,None
             if options.genFromPDF:
                 obs = ROOT.RooArgSet(ws.var('SVLMass'))
@@ -343,7 +343,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             #create likelihood
             #store it in the appropriate categories for posterior combination
             for nllMapKey in [('comb',0),('comb',trk),('comb%s'%chsel,0)]:
-                if not (nllMapKey in nllMap): 
+                if not (nllMapKey in nllMap):
                     nllMap[nllMapKey]=[]
                 if nllMapKey[0]=='comb' and nllMapKey[1]==0:
                     nllMap[nllMapKey].append( allPdfs[key].createNLL(pseudoData, ROOT.RooFit.Extended()) )
@@ -358,14 +358,14 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             minuit.migrad()
             minuit.hesse()
             minuit.minos(poi)
-            
+
             #save fit results
             summary.addFitResult(key=key,ws=ws)
 
             #show, if required
             if options.spy and i==0:
                 pll=nllMap[('comb',0)][-1].createProfile(poi)
-                showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,allNLL[-1]],
+                showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,nllMap[('comb',0)][-1]],
                                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
                                    outDir=options.outDir)
                 #raw_input('press key to continue...')
@@ -387,11 +387,11 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             sys.stdout.write(prepend+'[combining channels and categories]')
             sys.stdout.flush()
         for key in nllMap:
-            
+
             #reset to central values
             ws.var('mtop').setVal(172.5)
             ws.var('mu').setVal(1.0)
-            
+
             #add the log likelihoods and minimize
             llSet = ROOT.RooArgSet()
             for ll in nllMap[key]: llSet.add(ll)
@@ -405,7 +405,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             combll.Delete()
 
             if options.verbose>3:
-                print key,len(nllMap[key]),' likelihoods to combine'    
+                print key,len(nllMap[key]),' likelihoods to combine'
                 sys.stdout.write(' %s%s DONE%s%s '
                                  '(mt: %6.2f+-%4.2f GeV, '
                                  'mu: %5.3f+-%5.3f)%s \n'%
@@ -516,7 +516,6 @@ def main():
     os.system('mkdir -p %s' % opt.outDir)
     os.system('mkdir -p %s' % os.path.join(opt.outDir, 'plots'))
 
-
     # launch pseudo-experiments
     if not opt.isData:
         peInputFile = ROOT.TFile.Open(args[1], 'READ')
@@ -527,7 +526,7 @@ def main():
         ## Run a single experiment
         if len(args)>2:
             if not args[2] in allTags:
-                print (prepend+"ERROR: variation not "
+                print ("ERROR: variation not "
                        "found in input file! Aborting")
                 return -2
 
@@ -542,7 +541,7 @@ def main():
             filteredTags = opt.filter.split(',')
             for tag in filteredTags:
                 if not tag in allTags:
-                    print (prepend+"ERROR: variation not "
+                    print ("ERROR: variation not "
                            "found in input file! Aborting")
                     return -3
             allTags = filteredTags

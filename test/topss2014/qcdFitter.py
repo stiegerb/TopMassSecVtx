@@ -82,8 +82,9 @@ def showFitResults(w,cat,options) :
 	fitpt.SetTextAlign(12)
 	fitpt.SetTextFont(42)
 	fitpt.SetTextSize(0.035)
-	fitpt.AddText('SF_{bkg} = %3.3f#pm%3.3f' % (w.var('mu_%s'%cat).getVal(),
-		                                        w.var('mu_%s'%cat).getError()))
+	fitpt.AddText('SF_{bkg} = %3.1f#pm%3.1f' % (w.var('mu_%s'%cat).getVal(),
+						    w.var('mu_%s'%cat).getError()))
+	fitpt.AddText('SF_{others} = %3.2f' % (w.var('nu_%s'%cat).getVal()))
 	fitpt.Draw()
 
 	c.Modified()
@@ -188,26 +189,52 @@ def main(args, options) :
 	#fit individually the signal and control regions
 	qcdSF = {}
 	for cat in CATEGORIES:
-		w.factory("FormulaVar::N_other_%s('@0*@1',{nu_%s[1.0],N_other_exp_%s})"%(cat,cat,cat))
+		w.factory("FormulaVar::N_other_%s('@0*@1',{nu_%s[1.0,0.7,1.3],N_other_exp_%s})"%(cat,cat,cat))
 		w.factory("FormulaVar::N_bkg_%s('@0*@1',{mu_%s[1.9,0.5,40],N_bkg_mc_exp_%s})"%(cat,cat,cat))
 
 		if options.useSideBand:
 			## Take QCD shape from the data sideband
-			w.factory("SUM::model_%s( N_other_%s*pdf_other_%s, N_bkg_%s*pdf_bkg_%s)"%(cat,cat,cat,cat,cat) )
+			w.factory("SUM::summodel_%s( N_other_%s*pdf_other_%s, N_bkg_%s*pdf_bkg_%s)"%(cat,cat,cat,cat,cat) )
 		else:
 			## Rayleigh function for QCD
 			w.factory("EXPR::pdf_bkg_cont_%s('@0*TMath::Exp(-0.5*TMath::Power(@0/(@1+@2*@0),2))',{x,alpha_%s[20,10,100],beta_%s[0.5,0.,2]})"%(cat,cat,cat))
-			w.factory("SUM::model_%s( N_other_%s*pdf_other_%s, N_bkg_%s*pdf_bkg_cont_%s)"%(cat,cat,cat,cat,cat) )
+			w.factory("SUM::summodel_%s( N_other_%s*pdf_other_%s, N_bkg_%s*pdf_bkg_cont_%s)"%(cat,cat,cat,cat,cat) )
+
+		#ttbar unc. from https://twiki.cern.ch/twiki/pub/CMSPublic/PhysicsResultsTOPSummaryFigures/Top_Summary_8TeV.pdf
+		w.factory('Gaussian::otherctr_%s(nu0_%s[1.0],nu_%s,snu_%s[0.14])'%(cat,cat,cat,cat))
+		w.factory("PROD::model_%s(summodel_%s,otherctr_%s)"%(cat,cat,cat))
 
 		pdf  = w.pdf("model_%s"%(cat))
 		data = w.data("roohist_data_%s"%(cat))
-		pdf.fitTo(data, ROOT.RooFit.Extended())
+
+		#systematic from fixing strength of other processes
+		w.var('nu_%s'%cat).setConstant(False)
+		w.var('nu_%s'%cat).setRange(0.7,1.3)
+		
+		nll=pdf.createNLL(data, ROOT.RooFit.Extended())
+		minuit=ROOT.RooMinuit(nll)
+		minuit.setErrorLevel(0.5)
+		minuit.migrad()
+		minuit.hesse()
+		poi=ROOT.RooArgSet( w.var('mu_%s'%cat) )
+		minuit.minos(poi)
+		pll=nll.createProfile(poi)
+		#pdf.fitTo(data, ROOT.RooFit.Extended())
+		bkgnom=w.var('mu_%s'%cat).getVal()
+
+		#nominal fit from letting it float within 10%
+		#w.var('nu_%s'%cat).setConstant(False)
+		#w.var('nu_%s'%cat).setRange(1.0,1.30)
+		#pdf.fitTo(data, ROOT.RooFit.Extended())
+		#bkgnom=w.var('mu_%s'%cat).getVal()
+
 		showFitResults(w=w, cat=cat, options=options)
-		qcdSF[cat] = (w.var('mu_%s'%cat).getVal(),
-			                    w.var('mu_%s'%cat).getError())
+
+		qcdSF[cat] = (bkgnom,w.var('mu_%s'%cat).getError())
+
 		print ('bkg scalefactor (%s) = %3.3f +- %3.3f' % ( cat,
-			                                               qcdSF[cat][0],
-			                                               qcdSF[cat][1]) )
+								   qcdSF[cat][0],
+								   qcdSF[cat][1]))
 
 	print '-'*50
 
@@ -257,7 +284,7 @@ if __name__ == "__main__":
 	"""
 	parser = OptionParser(usage=usage)
 	parser.add_option('-s', '--useSideBand', dest='useSideBand', action="store_true",
-					  help='Use sidebands')
+					  help='Use sidebands')	
 	(opt, args) = parser.parse_args()
 
 	ROOT.gStyle.SetOptStat(0)

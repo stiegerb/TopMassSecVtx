@@ -28,7 +28,7 @@ struct SVLInfo{ // needed for sorting...
   float svlmass_sf[2];
   float umetweights[2];
   int jesweights[3];
-  float bfragweights[3];
+  float bfragweights[6];
 };
 bool compare_mass (SVLInfo svl1, SVLInfo svl2){
 	return (svl1.svlmass < svl2.svlmass);
@@ -701,7 +701,7 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[3]/F");
 	fSVLInfoTree->Branch("METWeight",  fTMETWeight, "METWeight[2]/F");
 	fSVLInfoTree->Branch("XSWeight",  &fTXSWeight,  "XSWeight/F");
-	fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[3]/F");
+	fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[6]/F");
 	fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
 	fSVLInfoTree->Branch("MET",       &fTMET,       "MET/F");
 	fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
@@ -749,10 +749,9 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	  else       fTWeight[i]=w[i];
 	}
 
-	for (int i = 0; i < 3; ++i){
-		fTJESWeight[i] = -99.99;
-		fTSVBfragWeight[i] = -99.99;
-	}
+	for (int i = 0; i < 3; ++i) fTJESWeight[i] = -99.99;
+	for (int i=0; i<6; i++) fTSVBfragWeight[i] = -99.99;
+
 	fTNCombs         = -99.99;
 	fTSVLMass        = -99.99;
 	fTSVLDeltaR      = -99.99;
@@ -955,6 +954,9 @@ void LxyTreeAnalysis::analyze(){
 				svl_pairing.bfragweights[0] = bwgt[svind][0];
 				svl_pairing.bfragweights[1] = bwgt[svind][1];
 				svl_pairing.bfragweights[2] = bwgt[svind][2];
+				svl_pairing.bfragweights[3] = bwgt[svind][3];
+				svl_pairing.bfragweights[4] = bwgt[svind][4];
+				svl_pairing.bfragweights[5] = bwgt[svind][5];
 				svl_pairing.umetweights[0]  = passUMETdown;
 				svl_pairing.umetweights[1]  = passUMETup;
 
@@ -1092,6 +1094,9 @@ void LxyTreeAnalysis::analyze(){
 			fTSVBfragWeight[0] = svl.bfragweights[0]; // nominal (Z2star_rbLEP_weight)
 			fTSVBfragWeight[1] = svl.bfragweights[1]; // bfrag up (Z2star_rbLEPhard_weight)
 			fTSVBfragWeight[2] = svl.bfragweights[2]; // bfrag dn (Z2star_rbLEPsoft_weight)
+			fTSVBfragWeight[3] = svl.bfragweights[3]; // p11
+			fTSVBfragWeight[4] = svl.bfragweights[4]; // Z2star_peterson
+			fTSVBfragWeight[5] = svl.bfragweights[5]; // Z2star_lund
 			
 			// MC truth information on correct/wrong matchings
 			fTCombInfo = -1;    // unmatched

@@ -272,14 +272,14 @@ def main(args, opt):
 		                         dySFs=dySFs,
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
-		                         qcdScale=1.3)
+		                         qcdScale=1.1)
 	bghistos_added_qcddn = sumBGHistos(processes=treefiles.keys(),
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
 		                         dySFs=dySFs,
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
-		                         qcdScale=0.7)
+		                         qcdScale=0.9)
 
 	## Save the background only shapes separately as templates for the fit
 	cachefile = open(".svlbgtemplates.pck", 'w')

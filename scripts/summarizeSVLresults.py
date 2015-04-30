@@ -25,7 +25,7 @@ CATTOLABEL = {
 
 """
 """
-def parseEnsembles(url,selection='',rebin=4):
+def parsePEInputs(url,selection='',rebin=4):
      ensemblesMap={}
      peInputFile = ROOT.TFile.Open(url, 'READ')
      allExperiments = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()]
@@ -111,12 +111,12 @@ def parseEnsembles(url,selection='',rebin=4):
 """
 Analyze final results for a given category
 """
-def analyzePEresults(key,fIn,outDir):
+def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 
      PEsummary={}
 
      #show results
-     canvas=ROOT.TCanvas('c','c',1500,500)
+     canvas = ROOT.TCanvas('c_%s_%s'%(key,syst),'c',1500,500)
      canvas.Divide(3,1)
 
      #bias
@@ -179,21 +179,24 @@ def analyzePEresults(key,fIn,outDir):
      canvas.cd()
      canvas.Modified()
      canvas.Update()
-     pename=os.path.splitext(os.path.basename(fIn.GetName()))[0]
-     for ext in ['png','pdf'] : canvas.SaveAs('%s/plots/%s_%s.%s'%(outDir,key,pename,ext))
 
-     #resturn results
+     if doPlots:
+           pename=os.path.splitext(os.path.basename(fIn.GetName()))[0]
+           for ext in ['png','pdf']:
+                  canvas.SaveAs('%s/plots/%s_%s.%s'%(outDir,key,pename,ext))
+
+     ## Return results
      return PEsummary
 
 
 """
-Loops over the results in a directory and build the map
+Loops over the results in a directory and builds a map of PE results
 """
-def parsePEResultsFromFile(url):
+def parsePEResultsFromFile(url,verbose=False):
 
     results, calibGrMap = {}, {}
     fileNames=[f for f in os.listdir(url) if f.endswith('results.root')]
-    for f in fileNames :
+    for f in fileNames:
         fIn=ROOT.TFile.Open(os.path.join(url,f))
 
         tag=os.path.splitext(f)[0]
@@ -210,23 +213,38 @@ def parsePEResultsFromFile(url):
         mass = float(mass.replace('v5','.5'))
         assert(mass == float(massstr.replace('v5','.5')))
 
+        if verbose:
+              print '%sSyst: %s, %5.1f GeV, %s%s' % (bcolors.BOLD,
+                                                     syst, mass, selection,
+                                                     bcolors.ENDC)
+
+
         useForCalib=True if 'nominal' in syst else False
         for key in fIn.GetListOfKeys():
+             if verbose:
+                  print '  %-18s  ' % key.GetName(),
 
              keyName=key.GetName()
-             PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url)
+             PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=True,syst=syst)
              if not 'bias' in PEsummary : continue
 
+             bias, biasErr = PEsummary['bias']
+             if verbose:
+                  print '%6.3f +- %5.3f' % (bias, biasErr)
+
+
              #save results
-             if selection is not '' and selection in keyName : keyName = keyName.replace('%s_'%selection,'')
+             if selection is not '' and selection in keyName:
+                  keyName = keyName.replace('%s_'%selection,'')
              if not((keyName,selection) in results):
                   results[(keyName,selection)] = {}
-                  if syst == 'nominal' : syst = str(mass)
+
+             if syst == 'nominal': syst = str(mass)
 
              # add point for systematics
-             if not useForCalib or mass==172.5:
-                  results[(keyName,selection)][syst]=(mass+PEsummary['bias'][0],PEsummary['bias'][1])
-             if not useForCalib :
+             # if not useForCalib or mass==172.5:
+             results[(keyName,selection)][syst] = (mass+bias,biasErr)
+             if not useForCalib:
                   continue
 
              # otherwise use it for calibration
@@ -234,18 +252,19 @@ def parsePEResultsFromFile(url):
              try:
                   np=calibGrMap[keyName][selection].GetN()
              except KeyError:
-                  if not keyName in calibGrMap : calibGrMap[keyName] = {}
-                  calibGrMap[keyName][selection]=ROOT.TGraphErrors()
+                  if not keyName in calibGrMap:
+                        calibGrMap[keyName] = {}
+                  calibGrMap[keyName][selection] = ROOT.TGraphErrors()
                   calibGrMap[keyName][selection].SetName(keyName)
                   calibGrMap[keyName][selection].SetTitle(selection)
                   calibGrMap[keyName][selection].SetMarkerStyle(20)
                   calibGrMap[keyName][selection].SetMarkerSize(1.0)
-                  np=calibGrMap[keyName][selection].GetN()
+                  np = calibGrMap[keyName][selection].GetN()
 
              #require less than 1 GeV in unc.
-             if PEsummary['bias'][1]<1:
-                  calibGrMap[keyName][selection].SetPoint     (np, PEsummary['bias'][0], mass)
-                  calibGrMap[keyName][selection].SetPointError(np, PEsummary['bias'][1], 0)
+             if biasErr<1:
+                  calibGrMap[keyName][selection].SetPoint     (np, mass, mass+bias)
+                  calibGrMap[keyName][selection].SetPointError(np, 0, biasErr)
         fIn.Close()
 
     return results, calibGrMap
@@ -253,10 +272,12 @@ def parsePEResultsFromFile(url):
 """
 Shows results
 """
-def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_range=(160,190),baseDrawOpt='p',doFit=False):
+def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
+         y_range=(160,190),x_range=(160,190),
+         baseDrawOpt='p',doFit=False, verbose=False):
 
      #prepare output
-     if not os.path.exists(outDir) : os.system('mkdir -p %s' % outDir)
+     if not os.path.exists(outDir): os.system('mkdir -p %s' % outDir)
 
      #fit results
      fitParamsMap={}
@@ -265,10 +286,11 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
      nx=3
      ny=int(len(grCollMap)/nx)
      while ny*nx<len(grCollMap) : ny+=1
-     canvas=ROOT.TCanvas('c','c',nx*400,ny*250)
+
+     canvas = ROOT.TCanvas('c','c',nx*400,ny*250)
      canvas.Divide(nx,ny)
      ip=0
-     allLegs=[]
+     allLegs = []
      line=ROOT.TLine(x_range[0],y_range[0],x_range[1],y_range[1])
      line.SetLineStyle(2)
      line.SetLineColor(ROOT.kGray)
@@ -290,16 +312,16 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
                yTitleOffset, yLabelSize=0.8,0.07
           else:
                padCtr=ip+1
-          p=canvas.cd(padCtr)
+          p = canvas.cd(padCtr)
 
-          if (padCtr-1)%nx==0:
-               p.SetLeftMargin(0.15)
-               p.SetRightMargin(0.03)
-               yTitleOffset, yLabelSize=0.8,0.07
-          else:
-               p.SetLeftMargin(0.03)
-               p.SetRightMargin(0.03)
-               yTitleOffset, yLabelSize=0.,0.0
+          # if (padCtr-1)%nx==0:
+          p.SetLeftMargin(0.15)
+          p.SetRightMargin(0.03)
+          yTitleOffset, yLabelSize=0.8,0.07
+          # else:
+          #      p.SetLeftMargin(0.03)
+          #      p.SetRightMargin(0.03)
+          #      yTitleOffset, yLabelSize=0.,0.0
 
           p.SetTopMargin(0.03)
           p.SetBottomMargin(0.15)
@@ -320,10 +342,18 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,y_range=(160,190),x_rang
                     slope=gr.GetFunction('pol1').GetParameter(1)
                     gr.GetFunction('pol1').SetLineColor(ROOT.kBlue)
 
+                    if verbose:
+                         try: keyname = CATTOLABEL[key]
+                         except KeyError: keyname = key
+                         print ('%-20s (%5.3f, %6.3f GeV) (slope, offset at central point)' %
+                                   (keyname,
+                                    slope, (offset+slope*172.5)-172.5))
                     #add to map
                     title=gr.GetTitle()
                     if not (title in fitParamsMap): fitParamsMap[title]={}
-                    fitParamsMap[title][key]=(offset,slope)
+                    # Inverted x and y, so have to invert fit parameters
+                    fitParamsMap[title][key]=(-1.0*offset/slope,1.0/slope)
+                    # fitParamsMap[title][key]=(offset,slope)
 
                igrctr+=1
                drawOpt='a'+baseDrawOpt if igrctr==1 else baseDrawOpt
@@ -380,6 +410,8 @@ def showSystematicsTable(results,filterCats):
     selections = list(set([s for _,s in results.keys()]))
     categories = list(set([k for k,_ in results.keys()]))
 
+    # pprint(results)
+    # return 0
     for sel in selections:
         print 140*'-'
         print bcolors.BOLD+sel+bcolors.ENDC
@@ -390,18 +422,18 @@ def showSystematicsTable(results,filterCats):
         print '\\\\'
         print 140*'-'
         for expTag in sorted(results.itervalues().next()):
-             if expTag in ['nominal', '172.5', 'p11_172.5', 'bfrag_172.5']: continue
+             # if expTag in ['nominal', '172.5', 'p11_172.5', 'bfrag_172.5']: continue
+             if expTag == 'powherw': continue
              print '{0:20s}'.format(expTag.replace('_172.5','')),'&',
              for cat in sorted(categories):
 
                   if not cat in filterCats: continue
 
-                  expTag2diff='nominal'
+                  expTag2diff='172.5'
                   if 'p11' in expTag:     expTag2diff='p11'
-                  if expTag == 'p11':     expTag2diff='nominal'
-                  if 'powherw' in expTag: expTag2diff='powpyth'
+                  if expTag == 'p11':     expTag2diff='172.5'
                   if 'bfrag' in expTag:   expTag2diff='bfrag'
-                  if 'bfrag' == expTag:   expTag2diff='nominal'
+                  if expTag == 'bfrag':   expTag2diff='172.5'
 
                   diff = results[(cat,sel)][expTag][0]-results[(cat,sel)][expTag2diff][0]
                   diffErr = math.sqrt( results[(cat,sel)][expTag][1]**2+results[(cat,sel)][expTag2diff][1]**2 )
@@ -444,11 +476,12 @@ def main():
         calibMap = show(grCollMap=calibGrMap,
                         outDir=opt.calib+'/plots',
                         outName='svlcalib',
-                        yaxisTitle='m_{t}^{gen} [GeV]',
-                        y_range=(165,180),
-                        xaxisTitle='<m_{t}^{fit}> [GeV]',
+                        xaxisTitle='m_{t}^{gen} [GeV]',
                         x_range=(165,180),
-                        doFit=True)
+                        yaxisTitle='<m_{t}^{fit}> [GeV]',
+                        y_range=(165,180),
+                        doFit=True,
+                        verbose=True)
         calibFile=os.path.join(opt.calib,'.svlcalib.pck')
         cachefile = open(calibFile, 'w')
         pickle.dump(calibMap, cachefile, pickle.HIGHEST_PROTOCOL)
@@ -476,7 +509,7 @@ def main():
     if opt.peInput:
          outDir=os.path.dirname(opt.peInput)+'/pe_plots'
          for sel in ['','mrank1','optmrank']:
-              ensemblesMap=parseEnsembles(url=opt.peInput, selection=sel,rebin=opt.rebin)
+              ensemblesMap=parsePEInputs(url=opt.peInput, selection=sel,rebin=opt.rebin)
               for tag,grMap in ensemblesMap.items():
                    outName = tag if sel == '' else '%s_%s'%(tag,sel)
                    show(grCollMap=ensemblesMap[tag],

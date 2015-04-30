@@ -33,6 +33,16 @@ QCDTEMPLATESTOADD = {
 	'm_optmrank'         : ('_optmrank',['m']),
 }
 
+SYSTSTOBERENORMALIZED = [
+## Renormalize these variations to the nominal one
+## (to account for non-normalized event weights)
+	'toppt',
+	'topptup',
+	'bfrag',
+	'bfragup',
+	'bfragdn',
+]
+
 def makeSystTask(tag, sel, pname, hname_to_keys, weight='1'):
 	tasks = []
 	hname = "SVLMass_tot_%s_%s" % (tag, pname)
@@ -298,14 +308,16 @@ def main(args, opt):
 	ofi = ROOT.TFile.Open(osp.join(opt.outDir,'pe_inputs.root'),'RECREATE')
 	ofi.cd()
 
+	#####################################################
 	## Central mass point and syst samples
-	for syst in [s for s,_,_ in ALLSYSTS]+['dyup','dydown','qcdup','qcddown']:
+	for syst in ([s for s,_,_ in ALLSYSTS] +
+	             ['dyup','dydown','qcdup','qcddown','ntkmult']):
 		odir = ofi.mkdir(syst + '_172v5')
 		odir.cd()
 		for tag,_,_ in SELECTIONS:
 			for ntk,_ in NTRKBINS:
 				hname = "SVLMass_%s_%s_%s" % (tag,syst+'_172v5',ntk)
-				if not syst in ['dyup','dydown','qcdup','qcddown']:
+				if not syst in ['dyup','dydown','qcdup','qcddown','ntkmult']:
 					hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
 				else:
 					hfinal = systhistos[(tag,'nominal','tot',ntk)].Clone(hname)
@@ -317,6 +329,12 @@ def main(args, opt):
 					scale = LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]]
 				hfinal.Scale(scale)
 
+				## Renormalize some variations with event weights
+				if syst in SYSTSTOBERENORMALIZED:
+					normintegral = systhistos[(tag,'nominal','tot',ntk)].Integral()
+					normintegral *= LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]]
+					normintegral /= hfinal.Integral()
+					hfinal.Scale(normintegral)
 
 				## Add single top
 				for st in ['t', 'tbar', 'tW', 'tbarW']:
@@ -341,12 +359,14 @@ def main(args, opt):
 					hfinal.Rebin(opt.rebin)
 
 				## Scale by SV track multiplicity weights:
-				hfinal.Scale(ntkWeights['inclusive'][ntk])
+				if not syst == 'ntkmult':
+					hfinal.Scale(ntkWeights['inclusive'][ntk])
 
 				## Write out to file
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
 
+	#####################################################
 	## Non-central mass points
 	ROOT.gSystem.Load('libUserCodeTopMassSecVtx.so')
 	from ROOT import th1fmorph

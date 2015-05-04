@@ -9,99 +9,81 @@ from array import array
 
 from UserCode.TopMassSecVtx.PlotUtils import *
 from UserCode.TopMassSecVtx.CMS_lumi import *
+from makeSVLMassHistos import LUMI
 
-NTKMIN, NTKMAX   = 2, 8
+NTKMIN, NTKMAX   = 2, 6
 MASSMIN,MASSMAX  = 0.0, 6.0
-MASSBINS         = 50
 
 """
 """
-def showFlavorFit(url):
+def showFlavorFracs(opt):
 
-   #read histo map from cache
-   cachefile=open(url,'r')
-   flavorfracs=pickle.load(cachefile)
+   #read flavour normalizations from cache
+   cachefile=open(opt.flavorFitUrl,'r')
+   flavorNorm=pickle.load(cachefile)
    cachefile.close()
 
-   outDir=os.path.dirname(url)
-
-   totalBnorm={}
+   flavorfracs={}
+   for flav in flavorNorm['obs']:
+      flavorfracs[flav]=ROOT.TH1F(flav+'_obs',';SecVtx track multiplicity;Events',NTKMAX-NTKMIN+1,NTKMIN,NTKMAX+1)
+      flavorfracs[flav].SetDirectory(0)
+      flavorfracs[flav].Sumw2()
+      for itk in flavorNorm['obs'][flav]:
+         ibin=flavorfracs[flav].GetXaxis().FindBin(itk)
+         flavorfracs[flav].SetBinContent(ibin,flavorNorm['obs'][flav][itk][0][0])
+         flavorfracs[flav].SetBinError(ibin,flavorNorm['obs'][flav][itk][0][1])
 
    #iterate
    canvas=ROOT.TCanvas('c','c',500,500)
-   for key in flavorfracs:
 
-      totalBnorm[key]=flavorfracs[key]['b'].Clone(key+'_norm_b')
-      totalBnorm[key].Scale(1./totalBnorm[key].Integral())
-      totalBnorm[key].SetDirectory(0)
+   
+   #normalize for each vertex category
+   for xbin in xrange(1,flavorfracs['b'].GetXaxis().GetNbins()+1):
+      totalVtx=0
+      for flavor in flavorfracs:
+         totalVtx+=flavorfracs[flavor].GetBinContent(xbin)
+         flavorfracs[flavor].GetXaxis().SetBinLabel(xbin,'%d'%flavorfracs[flavor].GetXaxis().GetBinLowEdge(xbin))
+      if totalVtx==0 : continue
+      for flavor in flavorfracs:
+         flavorfracs[flavor].SetBinContent(xbin,
+                                                flavorfracs[flavor].GetBinContent(xbin)/totalVtx)
+         flavorfracs[flavor].SetBinError(xbin,
+                                              flavorfracs[flavor].GetBinError(xbin)/totalVtx)
 
-      #normalize for each vertex category
-      for xbin in xrange(1,totalBnorm[key].GetXaxis().GetNbins()+1):
-         totalBnorm[key].GetXaxis().SetBinLabel(xbin,'%d'%totalBnorm[key].GetXaxis().GetBinLowEdge(xbin))
-
-         totalVtx=0
-         for flavor in flavorfracs[key]:
-            totalVtx+=flavorfracs[key][flavor].GetBinContent(xbin)
-            flavorfracs[key][flavor].GetXaxis().SetBinLabel(xbin,'%d'%flavorfracs[key][flavor].GetXaxis().GetBinLowEdge(xbin))
-         if totalVtx==0 : continue
-         for flavor in flavorfracs[key]:
-            flavorfracs[key][flavor].SetBinContent(xbin,
-                                                   flavorfracs[key][flavor].GetBinContent(xbin)/totalVtx)
-            flavorfracs[key][flavor].SetBinError(xbin,
-                                                 flavorfracs[key][flavor].GetBinError(xbin)/totalVtx)
-
-      #show normalized fractions
-      canvas.Clear()
-      stack=ROOT.THStack(key,key)
-      leg=ROOT.TLegend(0.8,0.5,0.95,0.25)
-      leg.SetFillStyle(0)
-      leg.SetBorderSize(0)
-      leg.SetTextFont(42)
-      leg.SetTextSize(0.03)
-      for flavor in flavorfracs[key]:
-         color=ROOT.kGray
-         if flavor=='c' : color=ROOT.kAzure-3
-         if flavor=='b' : color=ROOT.kOrange
-         flavorfracs[key][flavor].SetFillColor(color)
-         flavorfracs[key][flavor].SetLineColor(color)
-         flavorfracs[key][flavor].SetFillStyle(1001)
-         flavorfracs[key][flavor].GetYaxis().SetRangeUser(0,1)
-         stack.Add(flavorfracs[key][flavor],'hist')
-         leg.AddEntry(flavorfracs[key][flavor],flavor,"f")
-      stack.Draw()
-      stack.GetYaxis().SetRangeUser(0,1)
-      stack.GetYaxis().SetTitle('Fraction')
-      stack.GetXaxis().SetNdivisions(5)
-      stack.GetXaxis().SetLabelSize(0.06)
-      stack.GetXaxis().SetTitle('SecVtx track multiplicity')
-      label=ROOT.TLatex()
-      label.SetNDC()
-      label.SetTextFont(42)
-      label.SetTextSize(0.04)
-      label.DrawLatex(0.18,0.95,'#bf{CMS} #it{simulation}')
-      label.DrawLatex(0.75,0.95,'#scale[0.8]{19.7 fb^{-1} (8 TeV)}')
-      leg.Draw()
-
-      canvas.SaveAs('%s/%s_flavor.png'%(outDir,key))
-      canvas.SaveAs('%s/%s_flavor.pdf'%(outDir,key))            
-
+   #show normalized fractions
    canvas.Clear()
-   totalBnorm['obs'].Divide(totalBnorm['exp'])
-   totalBnorm['obs'].Draw()
-   totalBnorm['obs'].GetYaxis().SetTitle('observed/expected')
-   totalBnorm['obs'].GetXaxis().SetTitle('SecVtx track multiplicity')
-   totalBnorm['obs'].GetYaxis().SetRangeUser(0.5,1.25)
-   totalBnorm['obs'].Fit('pol1','MRQ+','',4,NTKMAX)
-   canvas.SetGridy(True)
+   stack=ROOT.THStack('flavorfracs','flavorfracs')
+   leg=ROOT.TLegend(0.8,0.5,0.95,0.25)
+   leg.SetFillStyle(0)
+   leg.SetBorderSize(0)
+   leg.SetTextFont(42)
+   leg.SetTextSize(0.03)
+   for flavor in flavorfracs:
+      color=ROOT.kGray
+      if flavor=='c' : color=ROOT.kAzure-3
+      if flavor=='b' : color=ROOT.kOrange
+      flavorfracs[flavor].SetFillColor(color)
+      flavorfracs[flavor].SetLineColor(1)
+      flavorfracs[flavor].SetFillStyle(1001)
+      flavorfracs[flavor].GetYaxis().SetRangeUser(0,1)
+      stack.Add(flavorfracs[flavor],'hist')
+      leg.AddEntry(flavorfracs[flavor],flavor,"f")
+   stack.Draw()
+   stack.GetYaxis().SetRangeUser(0,1)
+   stack.GetYaxis().SetTitle('Fraction')
+   stack.GetXaxis().SetNdivisions(5)
+   stack.GetXaxis().SetLabelSize(0.06)
+   stack.GetXaxis().SetTitle('SecVtx track multiplicity')
    label=ROOT.TLatex()
    label.SetNDC()
    label.SetTextFont(42)
    label.SetTextSize(0.04)
    label.DrawLatex(0.18,0.95,'#bf{CMS} #it{simulation}')
    label.DrawLatex(0.75,0.95,'#scale[0.8]{19.7 fb^{-1} (8 TeV)}')
-   canvas.SaveAs('%s/bobs_over_bexp.png'%outDir)   
-   canvas.SaveAs('%s/bobs_over_bexp.pdf'%outDir)   
-   totalBnorm['obs'].SaveAs('%s/bobs_over_bexp.root'%outDir)   
+   leg.Draw()
+
+   canvas.SaveAs('%s/flavorfrac.png'%(opt.outDir))
+   canvas.SaveAs('%s/flavorfrac.pdf'%(opt.outDir))            
 
    
 
@@ -144,60 +126,56 @@ generates the RooFit workspace with the data and the fitting model
 """
 def buildWorkspace(opt):
 
+   #prepare histograms for re-composition, after the fit
+    baseHistos=[
+       ROOT.TH1F('chfrac',  ';p_{T}(SecVtx)/|#sigma\vec{p}_{T}(ch.)};Events;', 36,0,1.5),
+       ROOT.TH1F('chfracz', ';p_{z}(SecVtx)/|#sigmap_{z}(ch.)|;Events;',       36,0,1.5),
+       ROOT.TH1F('lxy',     ';L_{xy} [cm];Events;',                      36,0,15),
+       ROOT.TH1F('lxysig',  ';L_{xy} significance;Events;',              36,0,100),
+       ROOT.TH1F('svpt',    ';SecVtx transverse momentum [GeV];Events;', 36,0,100),       
+       ROOT.TH1F('svptrel', ';SecVtx ch. p_{T}^{rel} [GeV];Events;',     36,0,4),
+       ROOT.TH1F('svmass',  ';SecVtx mass [GeV];Events;',                64,MASSMIN,MASSMAX),
+       ROOT.TH1F('tagpt',   ';Tag transverse momentum [GeV];Events;',    36,0,200)
+       ]
+    histos={}
+    for key in ['data','b','c','other']:
+       for fweight in xrange(0,7):
+          for itk in xrange(NTKMIN,NTKMAX+1):
+             for h in baseHistos:
+                if key=='data' and fweight>0 : continue                
+                hkey='%s_%s_%d'%(h.GetName(),key,itk)
+                if key!='data' : hkey += '_fw%d'%fweight
+                histos[hkey]=h.Clone(hkey)
+                histos[hkey].Sumw2()
+                histos[hkey].SetDirectory(0)
+ 
     #add files to the corresponding chain
     chains={'data':ROOT.TChain('SVLInfo'), 'mc':ROOT.TChain('SVLInfo')}
     for f in [ f for f in os.listdir(opt.inDir) if 'root' in f]:      
         key = 'data'
         if f.find('MC')==0: key='mc'
+        print key,f
         chains[key].Add(os.path.join(opt.inDir,f))
-                            
-    #init the workspace
-    ws=ROOT.RooWorkspace("w")
-
-    #create the datasets
-    variables=ROOT.RooArgSet()
-    variables.add( ws.factory("pt[0,0,100.]") )
-    variables.add( ws.factory("flav[0,0,99999.]") )
-    variables.add( ws.factory("tagpt[0,0,200.]") )
-    variables.add( ws.factory("probeeta[0,0,2.5]") )
-    variables.add( ws.factory("mass[2,%f,%f]"%(MASSMIN,MASSMAX)))
-    variables.add( ws.factory("chfrac[0,0,2]") )
-    variables.add( ws.factory("lxy[0,0,15.]") )
-    variables.add( ws.factory("lxysig[0,0,100.]") )
-    variables.add( ws.factory("ntk[2,%d,%d]"%(NTKMIN,NTKMAX)) )
-    variables.add( ws.factory("wgt[0,0,9999999.]") )
-    datasets={
-        'data':ROOT.RooDataSet("data","data",variables,"wgt"),
-        'mc':ROOT.RooDataSet("mc","mc",variables,"wgt")
-        }
-    norm={'data':[],'mc':[]}
-    templates={'b':[],'c':[],'other':[]}
-    weightGr=[]
-    for itk in xrange(NTKMIN,NTKMAX+1):
-        norm['data'].append(0.0)
-        norm['mc'].append(0.0)
-        for key in templates:
-            templates[key].append(ROOT.TH1F('%s_%d_template'%(key,itk),'',MASSBINS,MASSMIN,MASSMAX))
+                           
+    #prepare to weight tag pT, if required
+    weightGr={}
+    for itk in xrange(NTKMIN,NTKMAX+1):        
         if opt.weightPt:
-            #binPt = [0,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200,250,500]
-            #hdata=ROOT.TH1F('hptdata','',len(binPt)-1,array('d',binPt))
-            hdata=ROOT.TH1F('hptdata','',100,0,500)
+            hdata=ROOT.TH1F('hptdata','',50,0,500)
             hdata.Sumw2()
             extraCond=''
             if opt.onlyCentral : extraCond+='&&TMath::Abs(JEta)<1.1'
             if opt.vetoCentral : extraCond+='&&TMath::Abs(JEta)>0.1'
             chains['data'].Draw('LPt>>hptdata','SVNtrk==%d && SVLxySig>%f %s'%(itk,opt.minLxySig,extraCond),'norm goff')
-            #hmc=ROOT.TH1F('hptmc','',len(binPt)-1,array('d',binPt))
-            hmc=ROOT.TH1F('hptmc','',100,0,500)
+            hmc=ROOT.TH1F('hptmc','',50,0,500)
             hmc.Sumw2()
-            chains['mc'].Draw('LPt>>hptmc','(SVNtrk==%d %s)*Weight[0]*XSWeight'%(itk,extraCond),'norm goff')
+            chains['mc'].Draw('LPt>>hptmc','(SVNtrk==%d %s)*Weight[0]*XSWeight*%f'%(itk,extraCond,LUMI),'norm goff')
             hdata.Divide(hmc)
-            weightGr.append( ROOT.TGraphErrors(hdata) )
+            weightGr[itk]=ROOT.TGraphErrors(hdata)
             hdata.Delete()
             hmc.Delete()
-
             
-    #fill the datasets
+    #fill the histograms
     for key in chains:
         nEntries = chains[key].GetEntries()
         print "Will loop over %s with %d entries"%(key,nEntries)
@@ -219,271 +197,387 @@ def buildWorkspace(opt):
             lxysig=chains[key].SVLxySig
             if lxysig<opt.minLxySig : continue
                 
-            #renormalize to range
-            lpt=ROOT.TMath.Min(chains[key].LPt,500)
-            mass=ROOT.TMath.Max( MASSMIN, ROOT.TMath.Min(chains[key].SVMass,MASSMAX) )
-            
-            #check weight
-            totalWeight=chains[key].Weight[0]*chains[key].XSWeight
-            if opt.applyLEPweight : totalWeight *= chains[key].SVBfragWeight[0]
-            if totalWeight<0 or math.isnan(totalWeight) :
-                print 'Caught unphysical weight ',totalWeight
-                continue
-            if key=='data' : totalWeight=1.0
-            elif len(weightGr)>ntk-NTKMIN:
-                totalWeight *= weightGr[ntk-NTKMIN].Eval(lpt)
-            
-            #fill variables
-            norm[key][ntk-2]+=totalWeight
-            ws.var('pt').setVal(chains[key].SVPt)
-            ws.var('lxy').setVal(chains[key].SVLxy)
-            ws.var('lxysig').setVal(lxysig)
-            ws.var('mass').setVal(mass)
-            ws.var('ntk').setVal(ntk)
-            ws.var('tagpt').setVal(lpt)
-            ws.var('probeeta').setVal(ROOT.TMath.Abs(chains[key].JEta))
-            ws.var('flav').setVal(ROOT.TMath.Abs(chains[key].JFlav))
-            ws.var('chfrac').setVal(chains[key].SVPtChFrac)
-            ws.var('wgt').setVal(totalWeight)
-            argset = ROOT.RooArgSet()
-            for var in ['pt','flav','mass','chfrac','lxy','lxysig','tagpt','probeeta','ntk','wgt']: argset.add(ws.var(var))
-            datasets[key].add(argset, ws.var("wgt").getVal())
-
-            #fill binned templates
+            #compute global event weight
+            totalWeight=1.0
             if key=='mc':
-                templateKey='other'
-                if ROOT.TMath.Abs( ws.var('flav').getVal() ) == 5 : templateKey='b'
-                if ROOT.TMath.Abs( ws.var('flav').getVal() ) == 4 : templateKey='c'
-                templates[templateKey][ntk-2].Fill(mass,totalWeight)
+               totalWeight=chains[key].Weight[0]*chains[key].XSWeight*LUMI
+               lpt=ROOT.TMath.Min(chains[key].LPt,500)
+               totalWeight *= weightGr[ntk].Eval(lpt)
 
-        #import new dataset
-        print 'Dataset is filled with %f selected entries'%(datasets[key].sumEntries())
-        getattr(ws,'import')(datasets[key])
-        
-    #check templates for entries with 0 and create PDFs
-    massvariables=ROOT.RooArgSet()
-    massvariables.add( ws.var('mass') )
-    for itk in xrange(0,len(templates['b'])):
-        ntk=NTKMIN+itk
-        mcScaleFactor=norm['data'][itk]/norm['mc'][itk]
-        print 'For %d tracks residual scale factor for MC is %f'%(ntk,mcScaleFactor)
-        for key in templates:
-            for xbin in xrange(1,templates[key][itk].GetXaxis().GetNbins()):
-                binContent=templates[key][itk].GetBinContent(xbin)
-                if binContent>0: continue
-                templates[key][itk].SetBinContent(xbin,1.0e-3)
-            templates[key][itk].Scale(mcScaleFactor)
-            catKey='%s_%d'%(key,ntk)
-            getattr(ws,'import')( ROOT.RooDataHist('%s_shapehist'%catKey,'%s_shapehist'%catKey,
-                                                ROOT.RooArgList(massvariables), templates[key][itk]) )
-            getattr(ws,'import')( ROOT.RooHistPdf('%s_shape'%catKey,     '%s_shapehist'%catKey,
-                                            massvariables, ws.data('%s_shapehist'%catKey) ) )
-            
-            nexp=templates[key][itk].Integral()
-            ws.factory('n_%s[%f,%f,%f]'%(catKey,nexp,0.,5*nexp))
-                        
-        ws.factory("SUM::model_%d( n_b_%d*b_%d_shape, n_c_%d*c_%d_shape, n_other_%d*other_%d_shape )"%(ntk,ntk,ntk,ntk,ntk,ntk,ntk))
-        
-    #save workspace
+            #count and fill histograms
+            histoVars={}
+            histoVars['svpt']    = chains[key].SVPt
+            histoVars['svptrel'] = chains[key].SVPtRel
+            histoVars['lxy']     = chains[key].SVLxy
+            histoVars['lxysig']  = chains[key].SVLxySig
+            histoVars['chfrac']  = chains[key].SVPtChFrac
+            histoVars['chfracz']  = chains[key].SVPzChFrac
+            histoVars['svmass']  = chains[key].SVMass
+            histoVars['tagpt']   = chains[key].LPt
+            histoKey='_'
+            if key=='mc':
+               if ROOT.TMath.Abs(chains[key].JFlav)==5   : histoKey+='b'
+               elif ROOT.TMath.Abs(chains[key].JFlav)==4 : histoKey+='c'
+               else                                      : histoKey+='other'
+            else:
+               histoKey+='data'
+            for ifrag in xrange(0,7):
+               fragWeight=1.0
+               pfix=''
+               if key=='mc' : 
+                  pfix='_fw%d'%ifrag
+                  if ROOT.TMath.Abs(chains[key].JFlav)==5 and ifrag>0: 
+                     fragWeight = chains[key].SVBfragWeight[ifrag-1]
+                     if fragWeight<0 : fragWeight=0
+               if key=='data' and ifrag>0 : continue
+               for var in histoVars:
+                  hname=var+histoKey+'_%d%s'%(ntk,pfix)
+                  histos[hname].Fill(histoVars[var],totalWeight*fragWeight)
+
+    for key in histos:
+       if not ('_b_' in key): continue
+       if '_fw0' in key : continue
+       normKey=key[:-1]+'0'
+       print key,'->', normKey
+       histos[key].Scale(histos[normKey].Integral()/histos[key].Integral())
+    
+    #save histograms
     wsUrl=os.path.join(opt.outDir,"SecVtxWorkspace.root")
-    ws.writeToFile(wsUrl)
-    fOut=ROOT.TFile.Open(wsUrl,'UPDATE')
-    for key in templates: 
-        for h in templates[key]:
-            h.Write()
+    fOut=ROOT.TFile.Open(wsUrl,'RECREATE')
+    for key in histos:
+            histos[key].Write()
     fOut.Close()
     return wsUrl
+        
 
 
 """
 """
 def doMassFit(opt):
 
-    #read workspace from file
-    fIn=ROOT.TFile.Open(opt.wsUrl)
-    ws=fIn.Get('w')
-    fIn.Close()
-                
-    flavorFracs={'exp':{},'obs':{}}
-    for key in flavorFracs:
-       for flav in ['b','c','other']:
-          flavorFracs[key][flav]=ROOT.TH1F(flav+'_'+key,';Track multiplicity; Vertices',NTKMAX-NTKMIN+1,NTKMIN,NTKMAX+1)
-          flavorFracs[key][flav].SetDirectory(0)
-          flavorFracs[key][flav].Sumw2()
-          
-    #fit and save results
-    canvas=ROOT.TCanvas('c','c',500,500)
-    ws.var('mass').setBins(MASSBINS)
-    for itk in xrange(NTKMIN,NTKMAX+1):
+   #for the normalization of the different flavours
+   flavorFracs={'exp':{},'obs':{}}
+   for key in flavorFracs:
+      for flav in ['b','c','other']:
+         flavorFracs[key][flav]={}
+         for itk in xrange(NTKMIN,NTKMAX+1) :
+            flavorFracs[key][flav][itk]=[]
+                  
+   #open file with templates and data
+   fIn=ROOT.TFile.Open(opt.wsUrl)
 
-        data=ws.data('data').reduce('ntk==%d'%itk)
-        mc_b=ws.data('mc').reduce('ntk==%d && flav==5'%itk)
-        mc_c=ws.data('mc').reduce('ntk==%d && flav==4'%itk)
-        mc_other=ws.data('mc').reduce('ntk==%d && flav!=5 && flav!=4'%itk)
+   #initiate a workspace for the fits to the SecVtxMass
+   ws=ROOT.RooWorkspace("w")
+   ws.factory('mass[2,%f,%f]'%(MASSMIN,MASSMAX))
+   obsSet=ROOT.RooArgSet(ws.var('mass'))
+   data2mcScaleFactors={}
+   for itk in xrange(NTKMIN,NTKMAX+1):
 
-        for flavor in ['b','c','other']:
-           flavorFracs['exp'][flavor]    .SetBinContent(itk-NTKMIN+1,ws.var('n_%s_%d'%(flavor,itk)).getVal())
+      #observed data
+      dataH = fIn.Get('svmass_data_%d'%itk)
+      nobs=dataH.Integral(0,-1)
+      getattr(ws,'import')( ROOT.RooDataHist('data_%d'%itk,'data_%d'%itk,
+                                             ROOT.RooArgList(obsSet),
+                                             dataH) )
+      nexp=0
+      for flav in ['b','c','other']:
+         key='svmass_%s_%d_fw0'%(flav,itk)
+         nexp += fIn.Get(key).Integral(0,-1)      
+      data2mcScaleFactors[itk]=nobs/nexp
 
-        model=ws.pdf('model_%d'%itk)
-        model.fitTo(data,ROOT.RooFit.Extended())        
+      #loop over fragmentation weights
+      for iw in xrange(0,7):
+         sumExp=''
+         for flav in ['b','c','other']:
+            key='svmass_%s_%d_fw%d'%(flav,itk,iw)
+            template=fIn.Get(key)
+            getattr(ws,'import')( ROOT.RooDataHist('hist_%s'%key,'hist_%s'%key,
+                                                   ROOT.RooArgList(obsSet),
+                                                   template) )
+            getattr(ws,'import')( ROOT.RooHistPdf('pdf_%s'%key,'pdf_%s'%key,
+                                                  obsSet,
+                                                  ws.data('hist_%s'%key)) )
+            nexpUnc =  ROOT.Double(0.0)
+            nexp    =  template.IntegralAndError(0,-1,nexpUnc)
+            flavorFracs['exp'][flav][itk].append( (nexp,float(nexpUnc)) )
+            ws.factory('nobs_%s[%f,%f,%f]'%(key,nexp,0,5*nexp))
+            sumExp += 'nobs_%s*pdf_%s,'%(key,key)
 
-        for flavor in ['b','c','other']:
-           flavorFracs['obs'][flavor]    .SetBinContent(itk-NTKMIN+1,ws.var('n_%s_%d'%(flavor,itk)).getVal())
-           flavorFracs['obs'][flavor]    .SetBinError(itk-NTKMIN+1,ws.var('n_%s_%d'%(flavor,itk)).getError())
-                
-        #loop over variables
-        scales={}
-        for var,title in [('mass','SecVtx mass [GeV]'),
-                          ('pt','SecVtx transverse momentum [GeV]'),
-                          ('tagpt','Tag transverse momentum [GeV]'),
-                          ('probeeta','Probe jet pseudo-rapidity'),
-                          ('chfrac','p_{T}(SecVtx) / #sum_{ch} p_{T}') ,
-                          ('lxy', 'L_{xy} [cm]'),
-                          ('lxysig', 'L_{xy} significance')]:
-            h_data  = ROOT.RooAbsData.createHistogram(data,var+'_data',ws.var(var))
-            h_data.SetMarkerStyle(20)
-            h_data.SetLineColor(1)
-            h_data.SetMarkerColor(1)
-            if opt.rebin!=0 : h_data.Rebin(opt.rebin)
-            h_b     = ROOT.RooAbsData.createHistogram(mc_b,var+'_mc_b',ws.var(var))
-            try:        
-                h_b.Scale(scales['b'])
-            except:
-                scales['b']=ws.var('n_b_%d'%itk).getVal()/h_b.Integral()
-                h_b.Scale(scales['b'])
-            h_b.SetFillStyle(1001)
-            h_b.SetFillColor(ROOT.kOrange)
-            if opt.rebin!=0 : h_b.Rebin(opt.rebin)
-            h_c     = ROOT.RooAbsData.createHistogram(mc_c,var+'_mc_c',ws.var(var))
-            try:
-                h_c.Scale(scales['c'])
-            except:
-                scales['c']=ws.var('n_c_%d'%itk).getVal()/h_c.Integral()
-                h_c.Scale(scales['c'])
-            h_c.SetFillStyle(1001)
-            h_c.SetFillColor(ROOT.kAzure-3)
-            if opt.rebin!=0 : h_c.Rebin(opt.rebin)
-            h_other = ROOT.RooAbsData.createHistogram(mc_other,var+'_mc_other',ws.var(var))
-            try:
-                h_other.Scale(scales['other'])
-            except:
-                scales['other']=ws.var('n_other_%d'%itk).getVal()/h_other.Integral()
-                h_other.Scale(scales['other'])
-            h_other.SetFillStyle(1001)
-            h_other.SetFillColor(ROOT.kGray)
-            if opt.rebin : h_other.Rebin(opt.rebin)
-            
-            stack=ROOT.THStack('hs','total')
-            stack.Add(h_b,'hist')
-            stack.Add(h_c,'hist')
-            stack.Add(h_other,'hist')
-            stack.Draw()
-            stack.GetYaxis().SetTitle('Events')
-            stack.GetYaxis().SetTitleOffset(1.5)
-            stack.GetXaxis().SetTitle(title)
-            stack.GetXaxis().SetTitleOffset(1.2)
-            stack.GetYaxis().SetTitleSize(0.04)
-            stack.GetXaxis().SetTitleSize(0.04)
-            stack.GetYaxis().SetLabelSize(0.035)
-            stack.GetXaxis().SetLabelSize(0.035)
+         #pdf to fit the data
+         sumExp=sumExp[:-1]
+         ws.factory("SUM::model_%d_fw%d(%s)"%(itk,iw,sumExp))
+         #ws.pdf('model_%d_fw%d'%(itk,iw)).fitTo(ws.data('data_%d'%itk),ROOT.RooFit.Extended())        
+         #ws.pdf('model_%d_fw%d'%(itk,iw)).fitTo(ws.data('data_%d'%itk))
+         for flav in ['b','c','other']:
+            key='svmass_%s_%d_fw%d'%(flav,itk,iw)
+            flavorFracs['obs'][flav][itk].append( (data2mcScaleFactors[itk]*ws.var('nobs_%s'%key).getVal(),
+                                                   data2mcScaleFactors[itk]*ws.var('nobs_%s'%key).getError()) )
 
-            h_data.Draw('same')
-            if 'lxy' in var and itk<4 : canvas.SetLogy(True)
-            else : canvas.SetLogy(False)
-            
-            h_data_sub=h_data.Clone(var+'_datasub')
-            h_data_sub.Add(h_c,-1)
-            h_data_sub.Add(h_other,-1)            
-            h_data_sub.SetMarkerSize(1.0)
+   #dump fits to file 
+   flavorFitUrl='%s/.flavorfits.pck'%opt.outDir
+   cachefile = open(flavorFitUrl,'w')
+   pickle.dump( flavorFracs, cachefile, pickle.HIGHEST_PROTOCOL)
+   pickle.dump( data2mcScaleFactors, cachefile, pickle.HIGHEST_PROTOCOL)
+   cachefile.close()
+   return flavorFitUrl
 
-            canvas.cd()
-            pad = ROOT.TPad('pad','pad',0.45,0.73,0.95,0.91)
-            pad.SetRightMargin(0.05)
-            pad.SetLeftMargin(0.25)
-            pad.SetTopMargin(0.008)
-            pad.SetBottomMargin(0.03)
-            pad.Clear()
-            pad.Draw()
-            pad.cd()
-            if 'lxy' in var and itk<4 : pad.SetLogy(True)
-            else : pad.SetLogy(False)
-            h_b.Draw('hist')
-            h_b.GetYaxis().SetRangeUser(1,h_b.GetMaximum()*1.3)
-            h_b.GetYaxis().SetTitle('Events-#Sigmabkg')
-            h_b.GetXaxis().SetTitle('')
-            h_b.GetYaxis().SetTitleOffset(0.5)
-            h_b.GetYaxis().SetNdivisions(5)
-            h_b.GetYaxis().SetTitleSize(0.17)
-            h_b.GetYaxis().SetLabelSize(0.17)
-            h_data_sub.Draw('e1same')
-            h_data_sub.SetMarkerSize(0.6)
+"""
+"""
+def comparePostFitDistributions(opt):
 
-            canvas.cd()
-            pad2 = ROOT.TPad('pad2','pad2',0.45,0.48,0.95,0.72)
-            pad2.SetRightMargin(0.05)
-            pad2.SetLeftMargin(0.25)
-            pad2.SetTopMargin(0.008)
-            pad2.SetBottomMargin(0.4)
-            pad2.SetFillStyle(0)
-            pad2.Clear()
-            pad2.Draw()
-            pad2.cd()
-            h_res=h_data_sub.Clone(var+'_datares')
-            h_res.Add(h_b,-1)
-            for xbin in xrange(1,h_res.GetXaxis().GetNbins()):
+   #read flavour normalizations from cache
+   cachefile=open(opt.flavorFitUrl,'r')
+   flavorFracs=pickle.load(cachefile)
+   cachefile.close()
+   
+   #open file with templates
+   fIn=ROOT.TFile(opt.wsUrl)
+   
+   #fit and save results 
+   canvas=ROOT.TCanvas('c','c',500,1000)
+   canvas.SetRightMargin(0)
+   canvas.SetLeftMargin(0)
+   canvas.SetTopMargin(0)
+   canvas.SetBottomMargin(0)
+   allLegs=[]
+   pads=[]
+   pads.append( ROOT.TPad('pad0','pad0',0,0.6,1.0,1.0) )
+   pads[0].SetBottomMargin(0.01)
+   pads.append( ROOT.TPad('pad1','pad1',0.0,0.60,1.0,0.42) )
+   pads.append( ROOT.TPad('pad2','pad2',0.0,0.42,1.0,0.24) )
+   pads.append( ROOT.TPad('pad3','pad3',0.0,0.24,1.0,0.00) )
+   for i in xrange(1,4):
+      pads[i].SetTopMargin(0.01)
+      pads[i].SetBottomMargin(0.01)
+   pads[-1].SetBottomMargin(0.22)
+   for p in pads: p.Draw()
+
+   for var,title in [('svmass','SecVtx mass [GeV]'),
+                     ('svpt','SecVtx transverse momentum [GeV]'),
+                     ('svptrel','SecVtx ch. p_{T}^{rel} [GeV]'),
+                     ('chfrac','p_{T}(SecVtx) / |#sum_{ch} #vec{p}_{T}|') ,
+                     ('chfracz','p_{T}(SecVtx) / |#sum_{ch} p_{z}|') ,
+                     ('lxy', 'L_{xy} [cm]'),
+                     ('lxysig', 'L_{xy} significance'),
+                     ('tagpt',  'Tag transverse momentum [GeV]')]:
+      for itk in xrange(NTKMIN,NTKMAX+1):
+         data=fIn.Get('%s_data_%d'%(var,itk))
+         data.SetMarkerStyle(20)
+         data.SetLineColor(1)
+         data.SetMarkerColor(1)
+         data.SetTitle('data')
+         if opt.rebin!=0 : data.Rebin(opt.rebin)
+
+         dataResPull=[]
+         stack=ROOT.THStack('hs','total')
+         leg=ROOT.TLegend(0.8,0.5,0.95,0.25)
+         leg.SetFillStyle(0)
+         leg.SetBorderSize(0)
+         leg.SetTextFont(42)
+         leg.SetTextSize(0.03)
+         for iw in xrange(0,len(flavorFracs['exp']['b'][itk])):
+            dataResPull.append( data.Clone('%s_data_%d_res_%d'%(var,itk,iw)) )
+            dataResPull[iw].SetDirectory(0)
+            hb=None
+            for flav in ['other','c','b']:
+               if flavorFracs['exp'][flav][itk][iw][0]<=0 : continue
+               h=fIn.Get('%s_%s_%d_fw%d'%(var,flav,itk,iw))
+               h.Scale(flavorFracs['obs'][flav][itk][iw][0]/flavorFracs['exp'][flav][itk][iw][0])
+               if opt.rebin!=0 : h.Rebin(opt.rebin)
+               dataResPull[iw].Add(h,-1)
+
+               if iw>0 : continue
+               color = ROOT.kGray
+               if flav=='c' : color=ROOT.kAzure-3
+               if flav=='b' : color=ROOT.kOrange
+               h.SetTitle(flav)
+               h.SetFillStyle(1001)
+               h.SetFillColor(color)
+               h.SetLineColor(color)
+               stack.Add(h,'hist')
+               leg.AddEntry(h,flav,'f')
+
+            #finalize computing pull
+            for xbin in xrange(1,dataResPull[iw].GetXaxis().GetNbins()):
                 mcunc=stack.GetStack().At( stack.GetStack().GetEntriesFast()-1 ).GetBinError(xbin)
                 if mcunc<=0: continue
-                pull=h_res.GetBinContent(xbin)/mcunc
-                pullErr=h_res.GetBinError(xbin)/mcunc
-                h_res.SetBinContent(xbin,pull)
-                h_res.SetBinError(xbin,pullErr)
-            h_res.Draw()
-            h_res.GetYaxis().SetTitle('Pull')
-            h_res.GetXaxis().SetTitle('')
-            h_res.GetYaxis().SetTitleOffset(0.7)
-            h_res.GetYaxis().SetNdivisions(5)
-            h_res.GetXaxis().SetNdivisions(5)
-            h_res.GetYaxis().SetTitleSize(0.13)
-            h_res.GetYaxis().SetLabelSize(0.13)
-            h_res.GetXaxis().SetTitleSize(0.13)
-            h_res.GetXaxis().SetLabelSize(0.13)
-            h_res.SetMarkerSize(0.6)
-            h_res.GetYaxis().SetRangeUser(-5.7,6)
-            pad2.SetGridy()
-            canvas.cd()
-            label=ROOT.TLatex()
-            label.SetNDC()
-            label.SetTextFont(42)
-            label.SetTextSize(0.04)
-            label.DrawLatex(0.18,0.95,'#bf{CMS} #it{simulation}  #scale[0.8]{#it{N_{tracks}=%d}}'%itk)
-            label.DrawLatex(0.75,0.95,'#scale[0.8]{19.7 fb^{-1} (8 TeV)}')
-
-            leg=ROOT.TLegend(0.8,0.5,0.95,0.25)
-            leg.SetFillStyle(0)
-            leg.SetBorderSize(0)
-            leg.SetTextFont(42)
-            leg.SetTextSize(0.03)
-            leg.AddEntry(h_data, "data","p")
-            leg.AddEntry(h_b,"b","f")
-            leg.AddEntry(h_c,"c","f")
-            leg.AddEntry(h_other,"other","f")
-            leg.Draw()
-            canvas.Modified()
-            canvas.Update()
-            canvas.SaveAs('%s/%s_%d.png'%(opt.outDir,var,itk))
-            canvas.SaveAs('%s/%s_%d.pdf'%(opt.outDir,var,itk))
-            #raw_input('...press key to continue')
-            pad.Delete()
-            pad2.Delete()
+                pull=dataResPull[iw].GetBinContent(xbin)/mcunc
+                pullErr=dataResPull[iw].GetBinError(xbin)/mcunc
+                dataResPull[iw].SetBinContent(xbin,pull)
+                dataResPull[iw].SetBinError(xbin,pullErr)
 
 
-    #dump fits to file
-    flavorFitUrl='%s/.flavorfits.pck'%opt.outDir
-    cachefile = open(flavorFitUrl,'w')
-    pickle.dump( flavorFracs, cachefile, pickle.HIGHEST_PROTOCOL)
-    cachefile.close()
 
-    return flavorFitUrl
+         canvas.cd()
+         pads[0].cd()
+         pads[0].Clear()
+         if 'lxy' in var : pads[0].SetLogy(True)
+         else            : pads[0].SetLogy(False)
+         stack.Draw()
+         stack.GetYaxis().SetTitle('Events')
+         stack.GetYaxis().SetTitleOffset(1.5)
+         stack.GetXaxis().SetTitle('')
+         stack.GetYaxis().SetRangeUser(1,1.3*data.GetMaximum())
+         stack.GetXaxis().SetTitleOffset(1.2)
+         stack.GetYaxis().SetTitleSize(0.06)
+         stack.GetXaxis().SetTitleSize(0.0)
+         stack.GetYaxis().SetLabelSize(0.06)
+         stack.GetXaxis().SetLabelSize(0.0)
+         stack.GetXaxis().SetNdivisions(5)
+         dataGr=convertToPoissonErrorGr(data)
+         dataGr.Draw('p')
+         leg.AddEntry(dataGr,'data','p')
+         label=ROOT.TLatex()
+         label.SetNDC()
+         label.SetTextFont(42)
+         label.SetTextSize(0.04)
+         label.DrawLatex(0.18,0.95,'#bf{CMS} #it{simulation}  #scale[0.8]{#it{N_{tracks}=%d}}'%itk)
+         label.DrawLatex(0.75,0.95,'#scale[0.8]{19.7 fb^{-1} (8 TeV)}')
+         leg.Draw()
+
+         canvas.cd()
+         pullsToDraw=[{0:('Z2*',ROOT.kBlack),          4:('P11',ROOT.kMagenta)},
+                      {1:('Z2* r_{b}',ROOT.kBlack),    2:('Z2* r_{b} hard',ROOT.kMagenta), 3:('Z2* r_{b} soft',ROOT.kViolet+2)},
+                      {5:('Z2* peterson',ROOT.kBlack), 6:('Z2* Lund',ROOT.kMagenta) }
+                      ]
+
+         for ip in xrange(0,len(pullsToDraw)):
+            pads[ip+1].cd()
+            pads[ip+1].Clear()
+            pads[ip+1].SetGridy(True)
+
+            drawOpt='hist'
+            allLegs.append( ROOT.TLegend(0.2,0.75,0.9,0.97) )
+            for pkey in pullsToDraw[ip]:
+               dataResPull[pkey].Draw(drawOpt)
+
+               pullTitle=pullsToDraw[ip][pkey][0]
+               dataResPull[pkey].SetTitle(pullTitle)
+               chi2=0
+               for xbin in xrange(1,dataResPull[pkey].GetXaxis().GetNbins()):
+                  pullVal=dataResPull[pkey].GetBinContent(xbin)
+                  chi2 += pullVal*pullVal
+                  dataResPull[pkey].SetBinError(xbin,0)
+               pullTitle += ' #chi^{2}/dof=%3.1f'%(chi2/dataResPull[pkey].GetXaxis().GetNbins())
+               dataResPull[pkey].SetTitle(pullTitle)
+               allLegs[-1].AddEntry( dataResPull[pkey], pullTitle, 'l' )
+               drawOpt='histsame'
+               color=pullsToDraw[ip][pkey][1]
+               
+               dataResPull[pkey].SetLineColor(color)
+               dataResPull[pkey].SetMarkerColor(color)
+               dataResPull[pkey].SetMarkerStyle(1)
+               dataResPull[pkey].SetMarkerSize(0.)
+               dataResPull[pkey].GetYaxis().SetTitle('Pull')
+               dataResPull[pkey].GetXaxis().SetTitle('')
+               dataResPull[pkey].GetYaxis().SetNdivisions(5)
+               dataResPull[pkey].GetXaxis().SetNdivisions(5)
+               dataResPull[pkey].GetYaxis().SetRangeUser(-5.7,6)
+               if ip+1==3 :
+                  dataResPull[pkey].GetXaxis().SetTitleSize(0.1)
+                  dataResPull[pkey].GetXaxis().SetLabelSize(0.1)
+                  dataResPull[pkey].GetXaxis().SetTitle(title)
+                  dataResPull[pkey].GetYaxis().SetTitleOffset(0.7)
+                  dataResPull[pkey].GetXaxis().SetTitleOffset(0.8)
+                  dataResPull[pkey].GetYaxis().SetTitleSize(0.1)
+                  dataResPull[pkey].GetYaxis().SetLabelSize(0.1)
+               else:
+                  dataResPull[pkey].GetXaxis().SetTitleSize(0)
+                  dataResPull[pkey].GetXaxis().SetLabelSize(0)
+                  dataResPull[pkey].GetXaxis().SetTitle('')
+                  dataResPull[pkey].GetYaxis().SetTitleOffset(0.5)
+                  dataResPull[pkey].GetYaxis().SetTitleSize(0.13)
+                  dataResPull[pkey].GetYaxis().SetLabelSize(0.13)
+            allLegs[-1].SetFillStyle(3001)
+            allLegs[-1].SetFillColor(0)
+            allLegs[-1].SetBorderSize(0)
+            allLegs[-1].SetTextFont(42)
+            allLegs[-1].SetTextSize(0.08)
+            allLegs[-1].Draw()         
+         canvas.Modified()
+         canvas.Update()
+         canvas.SaveAs('%s/%s_%d.png'%(opt.outDir,var,itk))
+         canvas.SaveAs('%s/%s_%d.pdf'%(opt.outDir,var,itk))
+         #raw_input('...press key to continue')
+         
+
+#        #loop over variables
+#        scales={}
+#            h_data  = ROOT.RooAbsData.createHistogram(data,var+'_data',ws.var(var))
+#            h_data.SetMarkerStyle(20)
+#            h_data.SetLineColor(1)
+#            h_data.SetMarkerColor(1)
+#            if opt.rebin!=0 : h_data.Rebin(opt.rebin)
+#            h_b     = ROOT.RooAbsData.createHistogram(mc_b,var+'_mc_b',ws.var(var))
+#            try:        
+#                h_b.Scale(scales['b'])
+#            except:
+#                scales['b']=ws.var('n_b_%d'%itk).getVal()/h_b.Integral()
+#                h_b.Scale(scales['b'])
+#            h_b.SetFillStyle(1001)
+#            h_b.SetFillColor(ROOT.kOrange)
+#            if opt.rebin!=0 : h_b.Rebin(opt.rebin)
+#            h_c     = ROOT.RooAbsData.createHistogram(mc_c,var+'_mc_c',ws.var(var))
+#            try:
+#                h_c.Scale(scales['c'])
+#            except:
+#                scales['c']=ws.var('n_c_%d'%itk).getVal()/h_c.Integral()
+#                h_c.Scale(scales['c'])
+#            h_c.SetFillStyle(1001)
+#            h_c.SetFillColor(ROOT.kAzure-3)
+#            if opt.rebin!=0 : h_c.Rebin(opt.rebin)
+#            h_other = ROOT.RooAbsData.createHistogram(mc_other,var+'_mc_other',ws.var(var))
+#            try:
+#                h_other.Scale(scales['other'])
+#            except:
+#                scales['other']=ws.var('n_other_%d'%itk).getVal()/h_other.Integral()
+#                h_other.Scale(scales['other'])
+#            h_other.SetFillStyle(1001)
+#            h_other.SetFillColor(ROOT.kGray)
+#            if opt.rebin : h_other.Rebin(opt.rebin)
+#            
+#            
+#            h_data_sub=h_data.Clone(var+'_datasub')
+#            h_data_sub.Add(h_c,-1)
+#            h_data_sub.Add(h_other,-1)            
+#            h_data_sub.SetMarkerSize(1.0)
+#
+#            canvas.cd()
+#            pad = ROOT.TPad('pad','pad',0.45,0.73,0.95,0.91)
+#            pad.SetRightMargin(0.05)
+#            pad.SetLeftMargin(0.25)
+#            pad.SetTopMargin(0.008)
+#            pad.SetBottomMargin(0.03)
+#            pad.Clear()
+#            pad.Draw()
+#            pad.cd()
+#            if 'lxy' in var and itk<4 : pad.SetLogy(True)
+#            else : pad.SetLogy(False)
+#            h_b.Draw('hist')
+#            h_b.GetYaxis().SetRangeUser(1,h_b.GetMaximum()*1.3)
+#            h_b.GetYaxis().SetTitle('Events-#Sigmabkg')
+#            h_b.GetXaxis().SetTitle('')
+#            h_b.GetYaxis().SetTitleOffset(0.5)
+#            h_b.GetYaxis().SetNdivisions(5)
+#            h_b.GetYaxis().SetTitleSize(0.17)
+#            h_b.GetYaxis().SetLabelSize(0.17)
+#            h_data_sub.Draw('e1same')
+#            h_data_sub.SetMarkerSize(0.6)
+#
+#            canvas.cd()
+#            pad2 = ROOT.TPad('pad2','pad2',0.45,0.48,0.95,0.72)
+#            pad2.SetRightMargin(0.05)
+#            pad2.SetLeftMargin(0.25)
+#            pad2.SetTopMargin(0.008)
+#            pad2.SetBottomMargin(0.4)
+#            pad2.SetFillStyle(0)
+#            pad2.Clear()
+#            pad2.Draw()
+#            pad2.cd()
+#            pad2.SetGridy()
+#            canvas.cd()
+#            pad.Delete()
+#            pad2.Delete()
 
 """
 steer the script
@@ -520,11 +614,16 @@ def main():
     ROOT.RooMsgService.instance().setSilentMode(True)
     ROOT.gROOT.SetBatch(True)    
 
-    if opt.flavorFitUrl is None:
+    #create ROOT file with templates and data
+    if opt.flavorFitUrl is None: 
        if opt.wsUrl is None: opt.wsUrl=buildWorkspace(opt)
        opt.flavorFitUrl = doMassFit(opt)
-    showFlavorFit(url=opt.flavorFitUrl)
-    return
+
+    #show results of the flavour fits
+    comparePostFitDistributions(opt)
+    showFlavorFracs(opt)
+
+    return 0
 
 """
 for execution from another script

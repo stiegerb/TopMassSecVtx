@@ -130,6 +130,7 @@ def buildWorkspace(opt):
     baseHistos=[
        ROOT.TH1F('chfrac',  ';p_{T}(SecVtx)/|#sigma\vec{p}_{T}(ch.)};Events;', 36,0,1.5),
        ROOT.TH1F('chfracz', ';p_{z}(SecVtx)/|#sigmap_{z}(ch.)|;Events;',       36,0,1.5),
+       ROOT.TH1F('svprojfrac', ';R=1+#vec{p}(SecVtx).#vec{p}(tag)/|p(tag)^{2}|;Events;', 36,-2,4),
        ROOT.TH1F('lxy',     ';L_{xy} [cm];Events;',                      36,0,15),
        ROOT.TH1F('lxysig',  ';L_{xy} significance;Events;',              36,0,100),
        ROOT.TH1F('svpt',    ';SecVtx transverse momentum [GeV];Events;', 36,0,100),       
@@ -211,6 +212,7 @@ def buildWorkspace(opt):
             histoVars['lxy']     = chains[key].SVLxy
             histoVars['lxysig']  = chains[key].SVLxySig
             histoVars['chfrac']  = chains[key].SVPtChFrac
+            histoVars['svprojfrac'] = chains[key].SVProjFrac
             histoVars['chfracz']  = chains[key].SVPzChFrac
             histoVars['svmass']  = chains[key].SVMass
             histoVars['tagpt']   = chains[key].LPt
@@ -357,6 +359,7 @@ def comparePostFitDistributions(opt):
                      ('svptrel','SecVtx ch. p_{T}^{rel} [GeV]'),
                      ('chfrac','p_{T}(SecVtx) / |#sum_{ch} #vec{p}_{T}|') ,
                      ('chfracz','p_{T}(SecVtx) / |#sum_{ch} p_{z}|') ,
+                     ('svprojfrac', 'R=1+#vec{p}(SecVtx).#vec{p}(tag)/|p(tag)^{2}|'),
                      ('lxy', 'L_{xy} [cm]'),
                      ('lxysig', 'L_{xy} significance'),
                      ('tagpt',  'Tag transverse momentum [GeV]')]:

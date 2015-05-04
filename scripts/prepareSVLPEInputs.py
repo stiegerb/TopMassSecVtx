@@ -41,6 +41,9 @@ SYSTSTOBERENORMALIZED = [
 	'bfrag',
 	'bfragup',
 	'bfragdn',
+	'bfragp11',
+	'bfragpete',
+	'bfraglund',
 ]
 
 def makeSystTask(tag, sel, pname, hname_to_keys, weight='1'):

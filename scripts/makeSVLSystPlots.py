@@ -58,6 +58,9 @@ SYSTSFROMWEIGHTS = [
 	('bfrag',       'rb LEP weighted',           'SVBfragWeight[0]'),
 	('bfragup',     'rb LEP hard weighted',      'SVBfragWeight[1]'),
 	('bfragdn',     'rb LEP soft weighted',      'SVBfragWeight[2]'),
+	('bfragp11',    'P11 fragmentation',         'SVBfragWeight[3]'),
+	('bfragpete',   'Z2* Peterson frag.',        'SVBfragWeight[4]'),
+	('bfraglund',   'Z2* Lund frag.',            'SVBfragWeight[5]'),
 	('jesup',       'Jet energy scale up',       'JESWeight[1]'),
 	('jesdn',       'Jet energy scale down',     'JESWeight[2]'),
 	('lesup',       'Lepton energy scale up',    '1'),
@@ -105,9 +108,10 @@ SYSTPLOTS = [
 	  ROOT.kViolet+2, ROOT.kBlack],'tot'),
 
 	('bfrag', 'b fragmentation',
-	 ['nominal', 'bfrag', 'bfragup', 'bfragdn'],
-	 [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,
-      ROOT.kMagenta-9, ROOT.kViolet+2],'tot'),
+	 ['nominal', 'bfrag', 'bfragup', 'bfragdn', 'bfragp11',
+	  'bfraglund', 'bfragpete'],
+	 [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
+	  ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
 	('jes', 'Jet energy scale',
 	 ['nominal', 'jesup', 'jesdn'],

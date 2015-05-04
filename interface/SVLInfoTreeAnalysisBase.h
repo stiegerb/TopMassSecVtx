@@ -29,7 +29,7 @@ public :
    Float_t         Weight[11];
    Float_t         JESWeight[3];
    Float_t         METWeight[2];
-   Float_t         SVBfragWeight[3];
+   Float_t         SVBfragWeight[6];
    Float_t         NJets;
    Float_t         MET;
    Int_t           NPVtx;

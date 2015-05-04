@@ -22,57 +22,88 @@ CONTROLVARS = [
 
 SYSTSFROMFILES = [
 	('scaleup', 'Q^{2} Scale up',
-		'MC8TeV_TTJets_MSDecays_scaleup.root'),
+		'MC8TeV_TTJets_MSDecays_scaleup.root',
+		['tot']),
 	('scaledown', 'Q^{2} Scale down',
-		'MC8TeV_TTJets_MSDecays_scaledown.root'),
+		'MC8TeV_TTJets_MSDecays_scaledown.root',
+		['tot']),
 	('matchingup', 'ME/PS maching Scale up',
-		'MC8TeV_TTJets_MSDecays_matchingup.root'),
+		'MC8TeV_TTJets_MSDecays_matchingup.root',
+		['tot']),
 	('matchingdown', 'ME/PS maching Scale down',
-		'MC8TeV_TTJets_MSDecays_matchingdown.root'),
+		'MC8TeV_TTJets_MSDecays_matchingdown.root',
+		['tot']),
 	('p11', 'P11 nominal',
-		'MC8TeV_TTJets_TuneP11.root'),
+		'MC8TeV_TTJets_TuneP11.root',
+		['tot']),
 	('p11nocr', 'P11 no color-reconnection',
-		'MC8TeV_TTJets_TuneP11noCR.root'),
+		'MC8TeV_TTJets_TuneP11noCR.root',
+		['tot']),
 	('p11tev', 'P11 Tevatron tune',
-		'MC8TeV_TTJets_TuneP11TeV.root'),
+		'MC8TeV_TTJets_TuneP11TeV.root',
+		['tot']),
 	('p11mpihi', 'P11 high multi-parton interaction',
-		'MC8TeV_TTJets_TuneP11mpiHi.root'),
+		'MC8TeV_TTJets_TuneP11mpiHi.root',
+		['tot']),
 	('powherw', 'Powhew/HERWIG AUET2',
-		'MC8TeV_TT_AUET2_powheg_herwig.root'),
+		'MC8TeV_TT_AUET2_powheg_herwig.root',
+		['tot']),
 	('powpyth', 'Powhew/PYTHIA Z2*',
-		'MC8TeV_TT_Z2star_powheg_pythia.root'),
+		'MC8TeV_TT_Z2star_powheg_pythia.root',
+		['tot']),
 ]
 
-SYSTTOPROCNAME = dict([(k,v.replace('.root','')) for k,_,v in SYSTSFROMFILES])
+SYSTTOPROCNAME = dict([(k,v.replace('.root','')) for k,_,v,_ in SYSTSFROMFILES])
 
 SYSTSFROMWEIGHTS = [
-	('nominal',     'Nominal',                   '1'),
-	('puup',        'Pileup up',                 'Weight[2]/Weight[1]'),
-	('pudn',        'Pileup down',               'Weight[3]/Weight[1]'),
-	('lepselup',    'Lepton selection up',       'Weight[5]/Weight[4]'),
-	('lepseldn',    'Lepton selection down',     'Weight[6]/Weight[4]'),
-	('umetup',      'Uncl. MET up',              'METWeight[0]'),
-	('umetdn',      'Uncl. MET down',            'METWeight[1]'),
-	('toppt',       'Top p_{T} weight applied',  'Weight[10]'),
-	('topptup',     'Top p_{T} weight up',       'Weight[7]'),
-	('bfrag',       'rb LEP weighted',           'SVBfragWeight[0]'),
-	('bfragup',     'rb LEP hard weighted',      'SVBfragWeight[1]'),
-	('bfragdn',     'rb LEP soft weighted',      'SVBfragWeight[2]'),
-	('bfragp11',    'P11 fragmentation',         'SVBfragWeight[3]'),
-	('bfragpete',   'Z2* Peterson frag.',        'SVBfragWeight[4]'),
-	('bfraglund',   'Z2* Lund frag.',            'SVBfragWeight[5]'),
-	('jesup',       'Jet energy scale up',       'JESWeight[1]'),
-	('jesdn',       'Jet energy scale down',     'JESWeight[2]'),
-	('lesup',       'Lepton energy scale up',    '1'),
-	('lesdn',       'Lepton energy scale down',  '1'),
+	('nominal',     'Nominal',                   '1',
+		['tot','cor','wro','unm']),
+	('puup',        'Pileup up',                 'Weight[2]/Weight[1]',
+		['tot']),
+	('pudn',        'Pileup down',               'Weight[3]/Weight[1]',
+		['tot']),
+	('lepselup',    'Lepton selection up',       'Weight[5]/Weight[4]',
+		['tot']),
+	('lepseldn',    'Lepton selection down',     'Weight[6]/Weight[4]',
+		['tot']),
+	('umetup',      'Uncl. MET up',              'METWeight[0]',
+		['tot']),
+	('umetdn',      'Uncl. MET down',            'METWeight[1]',
+		['tot']),
+	('toppt',       'Top p_{T} weight applied',  'Weight[10]',
+		['tot','cor','wro']),
+	('topptup',     'Top p_{T} weight up',       'Weight[7]',
+		['tot','cor','wro']),
+	('bfrag',       'Z2* rb LEP',                'SVBfragWeight[0]',
+		['tot']),
+	('bfragup',     'Z2* rb LEP hard',           'SVBfragWeight[1]',
+		['tot']),
+	('bfragdn',     'Z2* rb LEP soft',           'SVBfragWeight[2]',
+		['tot']),
+	('bfragp11',    'P11 fragmentation',         'SVBfragWeight[3]',
+		['tot']),
+	('bfragpete',   'Z2* Peterson',              'SVBfragWeight[4]',
+		['tot']),
+	('bfraglund',   'Z2* Lund',                  'SVBfragWeight[5]',
+		['tot']),
+	('jesup',       'Jet energy scale up',       'JESWeight[1]',
+		['tot']),
+	('jesdn',       'Jet energy scale down',     'JESWeight[2]',
+		['tot']),
+	('lesup',       'Lepton energy scale up',    '1',
+		['tot']),
+	('lesdn',       'Lepton energy scale down',  '1',
+		['tot']),
 	('bfnuup',      'B hadron semi-lep BF up',
-	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))'),
+	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))',
+	 ['tot']),
 	('bfnudn',   'B hadron semi-lep BF down',
-	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))'),
+	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))',
+	 ['tot']),
 ]
 
 ALLSYSTS = SYSTSFROMFILES + SYSTSFROMWEIGHTS
-SYSTNAMES = dict([(syst,name) for syst,name,_ in ALLSYSTS])
+SYSTNAMES = dict([(syst,name) for syst,name,_,_ in ALLSYSTS])
 SELNAMES = dict([(tag,name) for tag,_,name in SELECTIONS])
 COMBNAMES = {
 	'tot':'',
@@ -126,11 +157,11 @@ SYSTPLOTS = [
 	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
 	('lepsel', 'Lepton selection efficiency',
-	 ['nominal', 'lepselup', 'lepseldown'],
+	 ['nominal', 'lepselup', 'lepseldn'],
 	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
 	('pu', 'Pileup',
-	 ['nominal', 'puup', 'pudown'],
+	 ['nominal', 'puup', 'pudn'],
 	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
 	('bfnu', 'B-hadron branching fractions',
@@ -140,7 +171,7 @@ SYSTPLOTS = [
 
 
 def makeControlPlot(systhistos, syst, tag, seltag, opt):
-	hists = tuple([systhistos[(tag, syst, c)] for c,_ in COMBINATIONS])
+	hists = tuple([systhistos[(tag, syst, c)] for c in COMBINATIONS.keys()])
 	h_tot, h_cor, h_wro, h_unm = hists
 
 	h_tot.Scale(1./h_tot.Integral())
@@ -210,11 +241,12 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
 	return getError
 
 
-def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
+def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 	tasks = []
 	htag = "%s_%s"%(tag,syst)
-	for comb,combsel in COMBINATIONS:
+	for comb in combs:
 		hname = "SVLMass_%s_%s" % (comb, htag)
+		combsel = COMBINATIONS[comb]
 		finalsel = "%s*%s*(%s&&%s)"%(COMMONWEIGHT, weight, sel, combsel)
 		## Fix the duplicate weight in case of JESWeight
 		if syst in ['jesup', 'jesdn']:
@@ -297,7 +329,7 @@ def main(args, opt):
 	try:
 		for fname in os.listdir(os.path.join(args[0],'syst')):
 			if not os.path.splitext(fname)[1] == '.root': continue
-			for syst,_,systfile in SYSTSFROMFILES:
+			for syst,_,systfile,_ in SYSTSFROMFILES:
 				if fname == systfile:
 					systfiles[syst] = [os.path.join(args[0], 'syst', fname)]
 
@@ -325,13 +357,14 @@ def main(args, opt):
 		if not fsyst in tasklist: tasklist[fsyst] = []
 		for tag,sel,_ in SELECTIONS:
 			if fsyst == 'nominal':
-				for syst,_,weight in SYSTSFROMWEIGHTS:
+				for syst,_,weight,combs in SYSTSFROMWEIGHTS:
 					tasks = makeSystTask(tag, sel, syst,
-						                 hname_to_keys, weight=weight)
+						                 hname_to_keys, weight=weight,
+						                 combs=combs)
 					tasklist[fsyst] += tasks
 
 				tasks = []
-				for comb,combsel in COMBINATIONS:
+				for comb,combsel in COMBINATIONS.iteritems():
 					for var,nbins,xmin,xmax,titlex in CONTROLVARS:
 						hname = "%s_%s_%s" % (var, comb, tag)
 						finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT, sel, combsel)
@@ -339,13 +372,16 @@ def main(args, opt):
 							                 nbins, xmin, xmax, titlex))
 						hname_to_keys[hname] = (tag, var, comb)
 
-					for name, nus in [('nu', 1), ('nonu', 0), ('nuunm', -1)]:
-						hname = "SVLMass_%s_%s_%s" % (comb, tag, name)
-						finalsel = "%s*(%s&&%s&&BHadNeutrino==%d)"%(
-							                 COMMONWEIGHT, sel, combsel, nus)
-						tasks.append((hname, 'SVLMass', finalsel,
-							          NBINS, XMIN, XMAX, MASSXAXISTITLE))
-						hname_to_keys[hname] = (tag, name, comb)
+				tasklist[fsyst] += tasks
+
+				tasks = []
+				for name, nus in [('nu', 1), ('nonu', 0), ('nuunm', -1)]:
+					hname = "SVLMass_%s_%s_%s" % ('tot', tag, name)
+					finalsel = "%s*(%s&&BHadNeutrino==%d)"%(
+						                 COMMONWEIGHT, sel, nus)
+					tasks.append((hname, 'SVLMass', finalsel,
+						          NBINS, XMIN, XMAX, MASSXAXISTITLE))
+					hname_to_keys[hname] = (tag, name, 'tot')
 
 				tasklist[fsyst] += tasks
 
@@ -388,37 +424,37 @@ def main(args, opt):
 	for var,_,_,_,_ in CONTROLVARS:
 		makeControlPlot(systhistos, var,
 			            'inclusive', 'Fully Inclusive', opt)
-		makeControlPlot(systhistos, var,
-			            'inclusive_mrank1', 'Mass ranked', opt)
+		# makeControlPlot(systhistos, var,
+		# 	            'inclusive_mrank1', 'Mass ranked', opt)
 		makeControlPlot(systhistos, var,
 			            'inclusive_optmrank', 'Optimized mass rank', opt)
 
-	makeControlPlot(systhistos, 'nominal',
-		            'inclusive', 'Fully Inclusive', opt)
-	makeControlPlot(systhistos, 'nominal',
-		            'inclusive_mrank1', 'Mass ranked', opt)
-	makeControlPlot(systhistos, 'nominal',
-		            'inclusive_optmrank', 'Optimized mass rank', opt)
+	# makeControlPlot(systhistos, 'nominal',
+	# 	            'inclusive', 'Fully Inclusive', opt)
+	# makeControlPlot(systhistos, 'nominal',
+	# 	            'inclusive_mrank1', 'Mass ranked', opt)
+	# makeControlPlot(systhistos, 'nominal',
+	# 	            'inclusive_optmrank', 'Optimized mass rank', opt)
 
 	for tag,_,_ in SELECTIONS:
 		if not tag in ['inclusive', 'inclusive_mrank1','inclusive_optmrank']: continue
 		print "... processing %s"%tag
 
 		# Make plot of mass with and without neutrino:
-		for comb,_ in COMBINATIONS:
-			plot = RatioPlot('neutrino_%s'%tag)
-			plot.add(systhistos[(tag,'nonu', comb)], 'Without neutrino')
-			plot.add(systhistos[(tag,'nu',   comb)], 'With neutrino')
-			plot.add(systhistos[(tag,'nuunm',comb)], 'Unmatched')
-			plot.reference = systhistos[(tag,'nominal',comb)]
-			plot.tag = "Mass shape with and without neutrinos"
-			plot.subtag = SELNAMES[tag] + COMBNAMES[comb]
-			plot.ratiotitle = 'Ratio wrt Total'
-			plot.ratiorange = (0.7, 1.3)
-			plot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
-			plot.show("neutrino_%s_%s"%(tag,comb),
-				      os.path.join(opt.outDir, 'syst_plots'))
-			plot.reset()
+		# for comb in COMBINATIONS.keys():
+		plot = RatioPlot('neutrino_%s'%tag)
+		plot.add(systhistos[(tag,'nonu', 'tot')], 'Without neutrino')
+		plot.add(systhistos[(tag,'nu',   'tot')], 'With neutrino')
+		plot.add(systhistos[(tag,'nuunm','tot')], 'Unmatched')
+		plot.reference = systhistos[(tag,'nominal','tot')]
+		plot.tag = "Mass shape with and without neutrinos"
+		plot.subtag = SELNAMES[tag] + COMBNAMES['tot']
+		plot.ratiotitle = 'Ratio wrt Total'
+		plot.ratiorange = (0.7, 1.3)
+		plot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
+		plot.show("neutrino_%s_%s"%(tag,'tot'),
+			      os.path.join(opt.outDir, 'syst_plots'))
+		plot.reset()
 
 		for name, title, systs, colors, comb in SYSTPLOTS:
 			plot = RatioPlot('%s_%s'%(name,comb))

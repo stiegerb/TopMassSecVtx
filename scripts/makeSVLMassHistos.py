@@ -26,12 +26,12 @@ SELECTIONS = [
 	('mm',        'EvCat==-169',    '#mu#mu'),
 	('e',         'abs(EvCat)==11', 'e'),
 	('m',         'abs(EvCat)==13', '#mu'),
-	('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
-	('em_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
-	('mm_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
-	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
-	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
+	# ('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
+	# ('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
+	# ('em_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
+	# ('mm_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
+	# ('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
+	# ('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
 	('inclusive_optmrank', 'SVLCombRank>0 && abs(EvCat)<200', '#geq 1 lepton'),
 	('ee_optmrank',        'SVLCombRank>0 && EvCat==-121',    'ee'),
 	('em_optmrank',        'SVLCombRank>0 && EvCat==-143',    'e#mu'),
@@ -40,12 +40,12 @@ SELECTIONS = [
 	('m_optmrank',         'SVLCombRank>0 && abs(EvCat)==13', '#mu')
 ]
 
-COMBINATIONS = [
-	('tot', '1'),
-	('cor', 'CombInfo==1'),
-	('wro', 'CombInfo==0'),
-	('unm', 'CombInfo==-1'),
-]
+COMBINATIONS = {
+	'tot': '1',
+	'cor': 'CombInfo==1',
+	'wro': 'CombInfo==0',
+	'unm': 'CombInfo==-1',
+}
 
 
 CHANMASSTOPROCNAME = {
@@ -154,7 +154,7 @@ def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 			print "ERROR: file %s does not exist! Aborting" % filename
 			return -1
 		chain.Add(filename)
-	print ' ... processing %s for %d histos from %7d entries' %(taskname, len(histos), chain.GetEntries())
+	print ' ... processing %-36s for %4d histos from %7d entries' %(taskname, len(histos), chain.GetEntries())
 
 	from ROOT import gSystem
 	gSystem.Load('libUserCodeTopMassSecVtx.so')
@@ -312,7 +312,7 @@ def main(args, opt):
 			#if not chan == 'tt':
 			htag = ("%s_%5.1f_%s"%(tag,mass,chan)).replace('.','')
 
-			for comb,combsel in COMBINATIONS:
+			for comb,combsel in COMBINATIONS.iteritems():
 				hname = "SVLMass_%s_%s" % (comb, htag)
 				finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT,sel,combsel)
 				tasks.append((hname, 'SVLMass', finalsel,
@@ -363,7 +363,7 @@ def main(args, opt):
 	# 		outDir = ofi.mkdir(tag)
 	# 		outDir.cd()
 
-	# 	for comb,_ in COMBINATIONS:
+	# 	for comb in COMBINATIONS.keys():
 	# 		masshistos[(tag,chan,mass,comb)].Write()
 	# 		for ntk,_ in NTRKBINS:
 	# 			masshistos[(tag,chan,mass,comb,ntk)].Write()

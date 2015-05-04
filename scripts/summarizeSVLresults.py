@@ -508,8 +508,10 @@ def main():
     #compare inputs for pseudo-experiments
     if opt.peInput:
          outDir=os.path.dirname(opt.peInput)+'/pe_plots'
-         for sel in ['','mrank1','optmrank']:
-              ensemblesMap=parsePEInputs(url=opt.peInput, selection=sel,rebin=opt.rebin)
+         for sel in ['','optmrank']:
+              ensemblesMap=parsePEInputs(url=opt.peInput,
+                                         selection=sel,
+                                         rebin=opt.rebin)
               for tag,grMap in ensemblesMap.items():
                    outName = tag if sel == '' else '%s_%s'%(tag,sel)
                    show(grCollMap=ensemblesMap[tag],

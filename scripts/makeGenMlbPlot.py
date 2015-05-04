@@ -15,7 +15,7 @@ MLBSELECTIONS = [
 ]
 
 def makeControlPlot(systhistos, syst, tag, seltag, opt):
-	hists = tuple([systhistos[(tag, syst, c)] for c,_ in COMBINATIONS])
+	hists = tuple([systhistos[(tag, syst, c)] for c in COMBINATIONS.keys()])
 	h_tot, h_cor, h_wro, h_unm = hists
 
 	h_tot.Scale(1./h_tot.Integral())

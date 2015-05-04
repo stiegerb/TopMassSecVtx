@@ -6,7 +6,7 @@ import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
 from makeSVLMassHistos import NBINS, XMIN, XMAX, MASSXAXISTITLE
 from makeSVLMassHistos import NTRKBINS, COMMONWEIGHT, TREENAME, LUMI
-from makeSVLMassHistos import SELECTIONS, COMBINATIONS, CHANMASSTOPROCNAME
+from makeSVLMassHistos import SELECTIONS, CHANMASSTOPROCNAME
 from makeSVLMassHistos import runSVLInfoTreeAnalysis, runTasks
 from makeSVLDataMCPlots import resolveFilename
 from makeSVLSystPlots import ALLSYSTS, SYSTTOPROCNAME
@@ -313,7 +313,7 @@ def main(args, opt):
 
 	#####################################################
 	## Central mass point and syst samples
-	for syst in ([s for s,_,_ in ALLSYSTS] +
+	for syst in ([s for s,_,_,_ in ALLSYSTS] +
 	             ['dyup','dydown','qcdup','qcddown','ntkmult']):
 		odir = ofi.mkdir(syst + '_172v5')
 		odir.cd()

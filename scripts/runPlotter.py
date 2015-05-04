@@ -27,16 +27,6 @@ COLORPALETTE = { # title -> color
     # 'Multijets'      : ROOT.kYellow-6,  # 41
 }
 
-def getByLabel(desc, key, defaultVal=None) :
-    """
-    Gets the value of a given item
-    (if not available a default value is returned)
-    """
-    try :
-        return desc[key]
-    except KeyError:
-        return defaultVal
-
 def getCMSPfn(path, protocol='rfio'):
     cmsf = cmsFile(url, protocol)
     return cmsf.pfn
@@ -181,11 +171,11 @@ def checkMissingFiles(inDir, jsonUrl):
     for proc in procList:
         for desc in proc[1]:
             data = desc['data']
-            isData = getByLabel(desc,'isdata',False)
-            mctruthmode = getByLabel(desc,'mctruthmode')
+            isData = desc.get('isdata',False)
+            mctruthmode = desc.get('mctruthmode')
             for d in data:
-                dtag = getByLabel(d,'dtag','')
-                split = getByLabel(d,'split',1)
+                dtag = d.get('dtag','')
+                split = d.get('split',1)
 
                 for segment in range(0,split):
                     eventsFile = dtag
@@ -247,14 +237,14 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
         baseRootFile = openTFile(inDir)
     for proc_tag in procList:
         for desc in proc_tag[1]: # loop on processes
-            title = getByLabel(desc,'tag','unknown')
-            isData = getByLabel(desc,'isdata',False)
+            title = desc.get('tag','unknown')
+            isData = desc.get('isdata',False)
             try:
                 color = COLORPALETTE[title]
             except KeyError:
-                color = int(getByLabel(desc,'color',1))
+                color = int(desc.get('color',1))
             data = desc['data']
-            mctruthmode = getByLabel(desc,'mctruthmode')
+            mctruthmode = desc.get('mctruthmode')
 
             # Exclude processes specified in options.excludeProcesses
             skipproc = False
@@ -267,7 +257,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
 
             hist = None
             for process in data: # loop on datasets for process
-                dtag = getByLabel(process,'dtag','')
+                dtag = process.get('dtag','')
 
                 # Exclude processes specified in options.excludeProcesses
                 for exproc in procsToExclude:
@@ -279,7 +269,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
 
                 if baseRootFile is None:
                     if options.split: # Files are split
-                        split = getByLabel(process,'split',1)
+                        split = process.get('split',1)
                         for segment in range(0,split) :
                             eventsFile = dtag
                             if split > 1:
@@ -425,9 +415,9 @@ def readXSecWeights(jsonfile=None):
         for proc_tag in procList:
             for desc in proc_tag[1]:
                 data = desc['data']
-                isData = getByLabel(desc,'isdata',False)
+                isData = desc.get('isdata',False)
                 for process in data:
-                    dtag = getByLabel(process,'dtag','')
+                    dtag = process.get('dtag','')
                     if not str(dtag) in xsecweights:
                         print '>>> Missing entry in xsecweights: %s' % str(dtag)
 
@@ -455,10 +445,10 @@ def makeXSecWeights(inDir, jsonfiles, options):
         for proc_tag in procList:
             for desc in proc_tag[1]:
                 data = desc['data']
-                isData = getByLabel(desc,'isdata',False)
-                mctruthmode = getByLabel(desc,'mctruthmode')
+                isData = desc.get('isdata',False)
+                mctruthmode = desc.get('mctruthmode')
                 for process in data:
-                    dtag = getByLabel(process,'dtag','')
+                    dtag = process.get('dtag','')
                     procKey=dtag
                     if mctruthmode : procKey += '_filt'+str(mctruthmode)
                     print "... processing %s"%procKey
@@ -468,7 +458,7 @@ def makeXSecWeights(inDir, jsonfiles, options):
                         tot_ngen[procKey]    = 0
                         continue
 
-                    split = getByLabel(process,'split',1)
+                    split = process.get('split',1)
 
                     try:
                         ngen = tot_ngen[procKey]
@@ -496,11 +486,11 @@ def makeXSecWeights(inDir, jsonfiles, options):
 
                 # Calculate weights:
                 for process in data:
-                    dtag = getByLabel(process,'dtag','')
-                    procKey=dtag                    
+                    dtag = process.get('dtag','')
+                    procKey=dtag
                     if mctruthmode : procKey += '_filt'+str(mctruthmode)
-                    brratio = getByLabel(process,'br',[1])
-                    xsec = getByLabel(process,'xsec',1)
+                    brratio = process.get('br',[1])
+                    xsec = process.get('xsec',1)
                     if procKey not in xsecweights.keys():
                         try:
                             ngen = tot_ngen[procKey]
@@ -559,14 +549,14 @@ def runPlotter(inDir, options, scaleFactors={}):
         for proc_tag in procList:
             for desc in proc_tag[1]:
                 data = desc['data']
-                isData = getByLabel(desc,'isdata',False)
-                mctruthmode = getByLabel(desc,'mctruthmode')
+                isData = desc.get('isdata',False)
+                mctruthmode = desc.get('mctruthmode')
                 for process in data:
-                    dtag = getByLabel(process,'dtag','')
-                    dset = getByLabel(process,'dset',dtag)
+                    dtag = process.get('dtag','')
+                    dset = process.get('dset',dtag)
 
                     if options.split: # Files are split
-                        split = getByLabel(process,'split',1)
+                        split = process.get('split',1)
                         for segment in range(0,split):
                             eventsFile = dtag
                             if split > 1:

@@ -297,6 +297,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
      for key,grColl in sorted(grCollMap.items()):
 
           ip+=1
+          nleg=0
           if ip==1:
                nleg=len(allLegs)
                allLegs.append(ROOT.TLegend(0.2,0.5,0.6,0.8))
@@ -389,16 +390,20 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
           label.DrawLatex(0.2,0.8,'#it{'+title+'}')
 
      #independentently of 'comb_0' being found, draw legend in first pad
-     canvas.cd(1)
-     allLegs[nleg].Draw()
-     label.DrawLatex(0.2,0.9,'#bf{CMS} #it{simulation}')
-     canvas.cd()
+     try:
+       canvas.cd(1)
+       allLegs[nleg].Draw()
+       label.DrawLatex(0.2,0.9,'#bf{CMS} #it{simulation}')
+       canvas.cd()
 
-     #all done
-     canvas.Modified()
-     canvas.Update()
-     for ext in ['png','pdf']:
-          canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
+       #all done
+       canvas.Modified()
+       canvas.Update()
+       for ext in ['png','pdf']:
+            canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
+     except UnboundLocalError:
+       print 'WARNING: Missing some variations!'
+       pass
      return fitParamsMap
 
 
@@ -432,7 +437,7 @@ def showSystematicsTable(results,filterCats):
                   expTag2diff='172.5'
                   if 'p11' in expTag:     expTag2diff='p11'
                   if expTag == 'p11':     expTag2diff='172.5'
-                  if 'bfrag' in expTag:   expTag2diff='bfrag'
+                  if 'bfrag' in expTag:   expTag2diff='172.5' ## could compare with bfrag
                   if expTag == 'bfrag':   expTag2diff='172.5'
 
                   diff = results[(cat,sel)][expTag][0]-results[(cat,sel)][expTag2diff][0]
@@ -447,6 +452,134 @@ def showSystematicsTable(results,filterCats):
                   print diffstr,'&',
              print '\\\\'
         print 140*'-'
+    return 0
+
+def writeSystematicsTable(results,filterCats,ofile):
+    selections = list(set([s for _,s in results.keys()]))
+    categories = list(set([k for k,_ in results.keys()]))
+
+    theosysts = [
+        ('powpyth'      , 'Signal model'           ),
+        ('scaleup'      , '$Q^2$ scale up'         ),
+        ('scaledown'    , '$Q^2$ scale down'       ),
+        ('matchingup'   , 'ME-PS scale up'         ),
+        ('matchingdown' , 'ME-PS scale down'       ),
+        ('pdfup'        , 'PDF up'                 ),
+        ('pdfdn'        , 'PDF down'               ),
+        ('hadmod'       , 'Hadronization model'    ),
+        ('bfnuup'       , 'Semi-lep. B decays up'  ),
+        ('bfnudn'       , 'Semi-lep. B decays down'),
+        ('bfrag'        , 'Z2$^{*}$ rb LEP'        ),
+        ('bfragup'      , 'Z2$^{*}$ rb LEP hard'   ),
+        ('bfragdn'      , 'Z2$^{*}$ rb LEP soft'   ),
+        ('bfragp11'     , 'P11'                    ),
+        ('bfragpete'    , 'Z2$^{*}$ Peterson'      ),
+        ('bfraglund'    , 'Z2$^{*}$ Lund'          ),
+        ('toppt'        , 'Top quark \\pt'         ),
+        ('p11mpihi'     , 'Underlying event'       ),
+        ('p11nocr'      , 'Color reconnection'     ),
+    ]
+    expsysts = [
+        ('jesup'        , 'Jet energy scale up'         ),
+        ('jesdn'        , 'Jet energy scale down'       ),
+        ('jerup'        , 'Jet energy resolution up'    ),
+        ('jerdn'        , 'Jet energy resolution down'  ),
+        ('umetup'       , 'Unclustered energy up'       ),
+        ('umetdn'       , 'Unclustered energy down'     ),
+        ('lesup'        , 'Lepton energy scale up'      ),
+        ('lesdn'        , 'Lepton energy scale down'    ),
+        ('puup'         , 'Pileup up'                   ),
+        ('pudn'         , 'Pileup down'                 ),
+        ('btagup'       , '\\cPqb-tagging up'           ),
+        ('btagdn'       , '\\cPqb-tagging down'         ),
+        ('qcdup'        , 'QCD normalization up'        ),
+        ('qcddn'        , 'QCD normalization down'      ),
+        ('dyup'         , 'Drell-Yan normalization up'  ),
+        ('dydn'         , 'Drell-Yan normalization down'),
+        ('lepselup'     , 'Lepton selection up'         ),
+        ('lepseldn'     , 'Lepton selection down'       ),
+        ('ntkmult'      , 'Track multiplicity'          ),
+    ]
+
+    def writeSection(systs,ofile):
+        sectionsums = {}
+        for tag,title in systs:
+            ofile.write('%-30s & '%title)
+
+            for cat in filterCats:
+                if not cat in sectionsums:
+                    sectionsums[cat] = (0.,0.)
+                tag2diff='172.5' if not 'p11' in tag else 'p11'
+
+                try:
+                    diff =               results[(cat,sel)][tag][0]  - results[(cat,sel)][tag2diff][0]
+                    diffErr = math.sqrt( results[(cat,sel)][tag][1]**2+results[(cat,sel)][tag2diff][1]**2 )
+                    prev, preverr = sectionsums[cat]
+                    sectionsums[cat] = (prev+diff**2, preverr+diffErr**2)
+
+                    if diff > 0:
+                        diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (diff, diffErr)
+                    else:
+                        diffstr = '$ %5.2f \\pm %4.2f $ & ' % (diff, diffErr)
+
+                except KeyError:
+                    ## Syst not defined, write empty entry
+                    diffstr = '$ %14s $ & ' % (' ')
+
+                ## Remove trailing &
+                if cat == filterCats[-1]: diffstr = diffstr[:-2]
+
+                ofile.write(diffstr)
+
+            ofile.write('\\\\')
+            ofile.write('\n')
+
+        ofile.write('Total uncertainty  FIXME       & ')
+        for cat in filterCats:
+            diff, diffErr = sectionsums[cat]
+            diff = math.sqrt(diff)
+            diffErr = math.sqrt(diffErr)
+            diffstr = '$ %5.2f \\pm %4.2f $ & ' % (diff, diffErr)
+            if cat == filterCats[-1]: diffstr = diffstr[:-2]
+            ofile.write(diffstr)
+        ofile.write('\\\\')
+        ofile.write('\n')
+        return sectionsums
+
+    # pprint(results)
+    # return 0
+    for sel in selections:
+        with open(ofile,'w') as of:
+            of.write('\\hline\n')
+            if 'combe_0' in filterCats:
+                of.write('\multirow{2}{*}{Source} & \multicolumn{6}{c}{$\Delta$\mtop [\GeV]} \\\\\n')
+                of.write(30*' '+' & Combined & \ejets & \ee & \emu & \mujets & \mumu \\\\\n')
+            else:
+                of.write('\multirow{2}{*}{Source} & \multicolumn{4}{c}{$\Delta$\mtop [\GeV]} \\\\\n')
+                of.write(30*' '+' & Combined & $=~3$ Tracks & $=~4$ Tracks & $=~5$ Tracks \\\\\n')
+
+            of.write('\n')
+            of.write('\n')
+
+            of.write('\\hline\n')
+            if 'combe_0' in filterCats:
+                of.write('\multicolumn{7}{l}{\\bf Theory uncertainties}\\\\\n')
+            else:
+                of.write('\multicolumn{5}{l}{\\bf Theory uncertainties}\\\\\n')
+            of.write('\\hline\n')
+            sums_theo = writeSection(theosysts, of)
+
+            of.write('\\hline\n')
+            if 'combe_0' in filterCats:
+                of.write('\multicolumn{7}{l}{\\bf Experimental uncertainties}\\\\\n')
+            else:
+                of.write('\multicolumn{5}{l}{\\bf Experimental uncertainties}\\\\\n')
+            of.write('\\hline\n')
+
+            sums_exp = writeSection(expsysts, of)
+
+            of.write('\\hline\n')
+        of.close()
     return 0
 
 
@@ -491,19 +624,20 @@ def main():
 
     #show systematics table
     if opt.syst:
-         cachefile = open(opt.syst, 'r')
-         calibMap  = pickle.load(cachefile)
-         results   = pickle.load(cachefile)
-         cachefile.close()
+        cachefile = open(opt.syst, 'r')
+        calibMap  = pickle.load(cachefile)
+        results   = pickle.load(cachefile)
+        cachefile.close()
+        catsByChan =   ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0']
+        catsByTracks = ['comb_0','comb_3','comb_4','comb_5']
+        # showSystematicsTable(results=results, filterCats=catsByChan)
+        # showSystematicsTable(results=results, filterCats=catsByTracks)
 
-         showSystematicsTable(results=results,
-                              filterCats=['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0'])
-         showSystematicsTable(results=results,
-                              filterCats=['comb_0','comb_3','comb_4','comb_5'])
-         #showSystematicsTable(results=results,
-         #                     filterCats=['e_3','e_4','e_5','m_3','m_4','m_5'])
-         #showSystematicsTable(results=results,
-         #                     filterCats=['ee_3','ee_4','ee_5','em_3','em_4','em_5','mm_3','mm_4','mm_5'])
+        systfile = os.path.join(os.path.dirname(opt.syst),'systematics_%s.tex')
+        writeSystematicsTable(results=results, filterCats=catsByChan,
+                             ofile=systfile%'bychan')
+        writeSystematicsTable(results=results, filterCats=catsByTracks,
+                             ofile=systfile%'bytracks')
 
     #compare inputs for pseudo-experiments
     if opt.peInput:

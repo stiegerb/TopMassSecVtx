@@ -191,7 +191,7 @@ Loops over the results in a directory and builds a map of PE results
 """
 def parsePEResultsFromFile(url,verbose=False):
 
-    results, calibGrMap = {}, {}
+    results, calibGrMap, resCalibGrMap = {}, {}, {}
     fileNames=[f for f in os.listdir(url) if f.endswith('results.root')]
     for f in fileNames:
         fIn=ROOT.TFile.Open(os.path.join(url,f))
@@ -250,21 +250,26 @@ def parsePEResultsFromFile(url,verbose=False):
                   np=calibGrMap[keyName][selection].GetN()
              except KeyError:
                   if not keyName in calibGrMap:
-                        calibGrMap[keyName] = {}
+                       calibGrMap[keyName]    = {}
+                       resCalibGrMap[keyName] = {}
                   calibGrMap[keyName][selection] = ROOT.TGraphErrors()
                   calibGrMap[keyName][selection].SetName(keyName)
                   calibGrMap[keyName][selection].SetTitle(selection)
                   calibGrMap[keyName][selection].SetMarkerStyle(20)
                   calibGrMap[keyName][selection].SetMarkerSize(1.0)
+                  resCalibGrMap[keyName][selection]=calibGrMap[keyName][selection].Clone(keyName+'_res')
                   np = calibGrMap[keyName][selection].GetN()
 
              #require less than 1 GeV in unc.
              if biasErr<1:
                   calibGrMap[keyName][selection].SetPoint     (np, mass, mass+bias)
                   calibGrMap[keyName][selection].SetPointError(np, 0, biasErr)
+                  resCalibGrMap[keyName][selection].SetPoint     (np, mass, bias)
+                  resCalibGrMap[keyName][selection].SetPointError(np, 0, biasErr)
+
         fIn.Close()
 
-    return results, calibGrMap
+    return results, calibGrMap, resCalibGrMap
 
 """
 Shows results
@@ -469,7 +474,7 @@ def main():
 
     #parse calibration results from directory
     if opt.calib:
-        results,calibGrMap = parsePEResultsFromFile(url=opt.calib)
+        results,calibGrMap, resCalibGrMap = parsePEResultsFromFile(url=opt.calib)
         calibMap = show(grCollMap=calibGrMap,
                         outDir=opt.calib+'/plots',
                         outName='svlcalib',
@@ -479,6 +484,16 @@ def main():
                         y_range=(165,180),
                         doFit=True,
                         verbose=True)
+        show(grCollMap=resCalibGrMap,
+             outDir=opt.calib+'/plots',
+             outName='svlrescalib',
+             xaxisTitle='m_{t}^{gen} [GeV]',
+             x_range=(165,180),
+             yaxisTitle='<m_{t}^{fit}>-m_{t}^{gen} [GeV]',
+             y_range=(-1.5,1.5),
+             doFit=False,
+             verbose=True)
+
         calibFile=os.path.join(opt.calib,'.svlcalib.pck')
         cachefile = open(calibFile, 'w')
         pickle.dump(calibMap, cachefile, pickle.HIGHEST_PROTOCOL)

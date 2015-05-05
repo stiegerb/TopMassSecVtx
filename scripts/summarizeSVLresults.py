@@ -509,7 +509,7 @@ def writeSystematicsTable(results,filterCats,ofile):
             for cat in filterCats:
                 if not cat in sectionsums:
                     sectionsums[cat] = (0.,0.)
-                tag2diff='172.5' if not 'p11' in tag else 'p11'
+                tag2diff='172.5' if not tag.startswith('p11') else 'p11'
 
                 try:
                     diff =               results[(cat,sel)][tag][0]  - results[(cat,sel)][tag2diff][0]

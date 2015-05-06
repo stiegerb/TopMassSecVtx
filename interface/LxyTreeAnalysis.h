@@ -11,8 +11,9 @@
 #include <TLorentzVector.h>
 
 #include <iostream>
-
+#include "UserCode/TopMassSecVtx/interface/PDFInfo.h"
 #include "UserCode/TopMassSecVtx/interface/LxyTreeAnalysisBase.h"
+
  // Plot class defined here
 #include "UserCode/TopMassSecVtx/interface/SVLInfoTreeAnalysis.h"
 
@@ -102,7 +103,10 @@ public:
       }
    }
 
+
     /////////////////////////////////////////////
+    PDFInfo *fPDFInfo;
+
     std::vector<Plot*> fPlotList;
     Long64_t fMaxevents;
     Float_t fProcessNorm;
@@ -145,6 +149,7 @@ public:
     Float_t fTSVLMass, fTSVLMass_sf[2], fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot;
     Float_t fTLPt, fTSVMass, fTSVPt, fTSVLxy, fTSVLxySig, fTJPt, fTJEta, fMjj,fTSVPtChFrac, fTSVPzChFrac,fTSVProjFrac,fTSVPtRel;
     Float_t fTSVBfragWeight[6];
+    Float_t fPDFWeight[100];
     Int_t fTBHadNeutrino;
     Int_t fTSVLMinMassRank, fTSVLCombRank, fTSVLDeltaRRank, fTSVLMinMassRank_rot, fTSVLDeltaRRank_rot;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;

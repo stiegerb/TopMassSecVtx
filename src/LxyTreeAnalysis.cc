@@ -94,6 +94,28 @@ TLorentzVector LxyTreeAnalysis::RotateLepton(TLorentzVector &origLep,
 
 void LxyTreeAnalysis::RunJob(TString filename){
 	TFile *file = TFile::Open(filename, "recreate");
+
+	//add PDF information, if relevant
+	fPDFInfo=0;
+	TString curFile=fChain->GetCurrentFile()->GetName();
+	if(curFile.Contains("/MC"))
+	  {
+	    TString pdfFileName=curFile;
+	    pdfFileName=pdfFileName.ReplaceAll("/MC","/pdf/MC");
+	    pdfFileName=pdfFileName.ReplaceAll(".root","_pdf.root");
+	    fPDFInfo=new PDFInfo(pdfFileName,"CT10");
+	    if(fPDFInfo->numberPDFs())
+	      {
+		std::cout << "Read " << fPDFInfo->numberPDFs() << " PDF variations from " << pdfFileName << " (have fun with those)" << std::endl;
+	      }
+	    else
+	      {
+		delete fPDFInfo;
+		fPDFInfo=0;
+	      }
+	  }
+
+	//do the analysis
 	Begin(file);
 	Loop();
 	End(file);
@@ -702,6 +724,11 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("METWeight",  fTMETWeight, "METWeight[2]/F");
 	fSVLInfoTree->Branch("XSWeight",  &fTXSWeight,  "XSWeight/F");
 	fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[6]/F");
+	TString pdfWeightAlloc("PDFWeight[");
+	if(fPDFInfo && fPDFInfo->numberPDFs()) pdfWeightAlloc += fPDFInfo->numberPDFs();
+	else                                   pdfWeightAlloc += "1";
+	pdfWeightAlloc += "]/F";
+	fSVLInfoTree->Branch("PDFWeight", fPDFWeight,   pdfWeightAlloc);
 	fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
 	fSVLInfoTree->Branch("MET",       &fTMET,       "MET/F");
 	fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
@@ -754,7 +781,6 @@ void LxyTreeAnalysis::ResetSVLTree() {
 
 	for (int i = 0; i < 3; ++i) fTJESWeight[i] = -99.99;
 	for (int i=0; i<6; i++) fTSVBfragWeight[i] = -99.99;
-
 	fTNCombs         = -99.99;
 	fTSVLMass        = -99.99;
 	fTSVLDeltaR      = -99.99;
@@ -1162,6 +1188,17 @@ void LxyTreeAnalysis::Loop(){
 		if (ientry < 0) break;
 		nb = fChain->GetEntry(jentry);
 		nbytes += nb;
+
+		//pdf information
+		if( fPDFInfo ) 
+		  {
+		    const std::vector<float> &wgts=fPDFInfo->getWeights(jentry);
+		    for(size_t i=0; i<wgts.size(); i++) fPDFWeight[i]=wgts[i];
+		  }
+		else
+		  {
+		    for (int i=0; i<100; i++) fPDFWeight[i]    = 1.0;
+		  }
 
 		if (jentry%500 == 0){
 			printf("\r [ %3d/100 ]", int(100*float(jentry)/float(nentries)));

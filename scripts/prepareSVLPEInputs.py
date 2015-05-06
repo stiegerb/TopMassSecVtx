@@ -6,7 +6,7 @@ import pickle
 from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
 from makeSVLMassHistos import NBINS, XMIN, XMAX, MASSXAXISTITLE
 from makeSVLMassHistos import NTRKBINS, COMMONWEIGHT, TREENAME, LUMI
-from makeSVLMassHistos import SELECTIONS, COMBINATIONS, CHANMASSTOPROCNAME
+from makeSVLMassHistos import SELECTIONS, CHANMASSTOPROCNAME
 from makeSVLMassHistos import runSVLInfoTreeAnalysis, runTasks
 from makeSVLDataMCPlots import resolveFilename
 from makeSVLSystPlots import ALLSYSTS, SYSTTOPROCNAME
@@ -32,6 +32,19 @@ QCDTEMPLATESTOADD = {
 	'e_optmrank'         : ('_optmrank',['e']),
 	'm_optmrank'         : ('_optmrank',['m']),
 }
+
+SYSTSTOBERENORMALIZED = [
+## Renormalize these variations to the nominal one
+## (to account for non-normalized event weights)
+	'toppt',
+	'topptup',
+	'bfrag',
+	'bfragup',
+	'bfragdn',
+	'bfragp11',
+	'bfragpete',
+	'bfraglund',
+]
 
 def makeSystTask(tag, sel, pname, hname_to_keys, weight='1'):
 	tasks = []
@@ -262,14 +275,14 @@ def main(args, opt):
 		                         dySFs=dySFs,
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
-		                         qcdScale=1.3)
+		                         qcdScale=1.1)
 	bghistos_added_qcddn = sumBGHistos(processes=treefiles.keys(),
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
 		                         dySFs=dySFs,
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
-		                         qcdScale=0.7)
+		                         qcdScale=0.9)
 
 	## Save the background only shapes separately as templates for the fit
 	cachefile = open(".svlbgtemplates.pck", 'w')
@@ -298,14 +311,16 @@ def main(args, opt):
 	ofi = ROOT.TFile.Open(osp.join(opt.outDir,'pe_inputs.root'),'RECREATE')
 	ofi.cd()
 
+	#####################################################
 	## Central mass point and syst samples
-	for syst in [s for s,_,_ in ALLSYSTS]+['dyup','dydown','qcdup','qcddown']:
+	for syst in ([s for s,_,_,_ in ALLSYSTS] +
+	             ['dyup','dydown','qcdup','qcddown','ntkmult']):
 		odir = ofi.mkdir(syst + '_172v5')
 		odir.cd()
 		for tag,_,_ in SELECTIONS:
 			for ntk,_ in NTRKBINS:
 				hname = "SVLMass_%s_%s_%s" % (tag,syst+'_172v5',ntk)
-				if not syst in ['dyup','dydown','qcdup','qcddown']:
+				if not syst in ['dyup','dydown','qcdup','qcddown','ntkmult']:
 					hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
 				else:
 					hfinal = systhistos[(tag,'nominal','tot',ntk)].Clone(hname)
@@ -317,6 +332,12 @@ def main(args, opt):
 					scale = LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]]
 				hfinal.Scale(scale)
 
+				## Renormalize some variations with event weights
+				if syst in SYSTSTOBERENORMALIZED:
+					normintegral = systhistos[(tag,'nominal','tot',ntk)].Integral()
+					normintegral *= LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]]
+					normintegral /= hfinal.Integral()
+					hfinal.Scale(normintegral)
 
 				## Add single top
 				for st in ['t', 'tbar', 'tW', 'tbarW']:
@@ -341,12 +362,14 @@ def main(args, opt):
 					hfinal.Rebin(opt.rebin)
 
 				## Scale by SV track multiplicity weights:
-				hfinal.Scale(ntkWeights['inclusive'][ntk])
+				if not syst == 'ntkmult':
+					hfinal.Scale(ntkWeights['inclusive'][ntk])
 
 				## Write out to file
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
 
+	#####################################################
 	## Non-central mass points
 	ROOT.gSystem.Load('libUserCodeTopMassSecVtx.so')
 	from ROOT import th1fmorph
@@ -431,7 +454,7 @@ if __name__ == "__main__":
 					  type='int', default=1,
 					  help='Verbose mode [default: %default (semi-quiet)]')
 	parser.add_option('-r', '--rebin', dest='rebin', action="store",
-					  type='int', default=0,
+					  type='int', default=2,
 					  help='Rebin the histograms [default: %default]')
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')

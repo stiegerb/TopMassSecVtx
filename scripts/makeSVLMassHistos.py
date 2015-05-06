@@ -12,7 +12,7 @@ FITRANGE = (20., 140.)
 MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
 LUMI = 19701.0
 
-#NTRKBINS = [(2,3), (3,4), (4,5), (5,7) ,(7,1000)]
+# NTRKBINS = [(2,3), (3,4), (4,5), (5,6) ,(6,7), (7,1000)]
 # NTRKBINS = [(2,3), (3,4), (4,1000)]
 NTRKBINS = [(3,4), (4,5), (5,6)]
 # BR fix x PU x Lep Sel x JES
@@ -26,12 +26,12 @@ SELECTIONS = [
 	('mm',        'EvCat==-169',    '#mu#mu'),
 	('e',         'abs(EvCat)==11', 'e'),
 	('m',         'abs(EvCat)==13', '#mu'),
-	('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
-	('em_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
-	('mm_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
-	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
-	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
+	# ('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
+	# ('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
+	# ('em_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
+	# ('mm_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
+	# ('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
+	# ('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
 	('inclusive_optmrank', 'SVLCombRank>0 && abs(EvCat)<200', '#geq 1 lepton'),
 	('ee_optmrank',        'SVLCombRank>0 && EvCat==-121',    'ee'),
 	('em_optmrank',        'SVLCombRank>0 && EvCat==-143',    'e#mu'),
@@ -40,12 +40,12 @@ SELECTIONS = [
 	('m_optmrank',         'SVLCombRank>0 && abs(EvCat)==13', '#mu')
 ]
 
-COMBINATIONS = [
-	('tot', '1'),
-	('cor', 'CombInfo==1'),
-	('wro', 'CombInfo==0'),
-	('unm', 'CombInfo==-1'),
-]
+COMBINATIONS = {
+	'tot': '1',
+	'cor': 'CombInfo==1',
+	'wro': 'CombInfo==0',
+	'unm': 'CombInfo==-1',
+}
 
 
 CHANMASSTOPROCNAME = {
@@ -154,7 +154,7 @@ def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 			print "ERROR: file %s does not exist! Aborting" % filename
 			return -1
 		chain.Add(filename)
-	print ' ... processing %s for %d histos from %7d entries' %(taskname, len(histos), chain.GetEntries())
+	print ' ... processing %-36s for %4d histos from %7d entries' %(taskname, len(histos), chain.GetEntries())
 
 	from ROOT import gSystem
 	gSystem.Load('libUserCodeTopMassSecVtx.so')
@@ -176,6 +176,10 @@ def runTasks(inputfiles, tasklist, opt, subdir):
 		if hasattr(opt,'filter'):
 			if len(opt.filter)>0:
 				if not key in opt.filter.split(','): continue
+
+		# #### DEBUG: run only central mass point for tt
+		# ####        to speed things up
+		# if not key == (172.5, 'tt'): continue
 
 		for ifilep in inputfiles[key]:
 			ofilen = os.path.basename(ifilep)
@@ -293,9 +297,6 @@ def gatherHistosFromFiles(tasklist, massfiles, dirname, hname_to_keys):
 """
 """
 def main(args, opt):
-
-
-
 	os.system('mkdir -p %s'%opt.outDir)
 	masstrees, massfiles = getMassTrees(args[0], verbose=True)
 	masspoints = sorted(list(set([mass for mass,_ in masstrees.keys()])))
@@ -311,7 +312,7 @@ def main(args, opt):
 			#if not chan == 'tt':
 			htag = ("%s_%5.1f_%s"%(tag,mass,chan)).replace('.','')
 
-			for comb,combsel in COMBINATIONS:
+			for comb,combsel in COMBINATIONS.iteritems():
 				hname = "SVLMass_%s_%s" % (comb, htag)
 				finalsel = "%s*(%s&&%s)"%(COMMONWEIGHT,sel,combsel)
 				tasks.append((hname, 'SVLMass', finalsel,
@@ -332,19 +333,25 @@ def main(args, opt):
 	if not opt.cache:
 		runTasks(massfiles, tasklist, opt, 'mass_histos')
 
-	## Retrieve the histograms from the individual files
-	# (tag, chan, mass, comb)      -> histo
-	# (tag, chan, mass, comb, ntk) -> histo
-	masshistos = gatherHistosFromFiles(tasklist, massfiles,
-					   os.path.join(opt.outDir,
-							'mass_histos'),
-					   hname_to_keys)
+		## Retrieve the histograms from the individual files
+		# (tag, chan, mass, comb)      -> histo
+		# (tag, chan, mass, comb, ntk) -> histo
+		masshistos = gatherHistosFromFiles(tasklist, massfiles,
+						   os.path.join(opt.outDir,
+								'mass_histos'),
+						   hname_to_keys)
 
-	cachefile = open(".svlmasshistos.pck", 'w')
-	pickle.dump(masshistos, cachefile, pickle.HIGHEST_PROTOCOL)
-	cachefile.close()
-	print 'Wrote .svlmasshistos.pck with all the mass histos'
+		cachefile = open(".svlmasshistos.pck", 'w')
+		pickle.dump(masshistos, cachefile, pickle.HIGHEST_PROTOCOL)
+		cachefile.close()
+		print 'Wrote .svlmasshistos.pck with all the mass histos'
 
+	else:
+		## Read mass scan histos:
+		cachefile = open(".svlmasshistos.pck", 'r')
+		masshistos = pickle.load(cachefile)
+		print '>>> Read mass scan histograms from cache (.svlmasshistos.pck)'
+		cachefile.close()
 
 	# ofi = ROOT.TFile(os.path.join(opt.outDir,'masshistos.root'),
 	# 													   'recreate')
@@ -356,7 +363,7 @@ def main(args, opt):
 	# 		outDir = ofi.mkdir(tag)
 	# 		outDir.cd()
 
-	# 	for comb,_ in COMBINATIONS:
+	# 	for comb in COMBINATIONS.keys():
 	# 		masshistos[(tag,chan,mass,comb)].Write()
 	# 		for ntk,_ in NTRKBINS:
 	# 			masshistos[(tag,chan,mass,comb,ntk)].Write()
@@ -383,6 +390,9 @@ def main(args, opt):
 	mass_scan_dir = os.path.join(opt.outDir, 'mass_scans')
 	for tag,sel,seltag in SELECTIONS:
 		print "... processing %s"%tag
+		pairing = 'inclusive'
+		try: pairing = tag.split('_',1)[1]
+		except IndexError: pass
 
 		for chan in ['tt', 't', 'tbar', 'tW', 'tbarW']:
 			# print "   %s channel" % chan
@@ -457,8 +467,30 @@ def main(args, opt):
 			ratplot.show("massscan_%s_%s_unm"%(tag,chan), mass_scan_dir)
 			ratplot.reset()
 
+
+		## ntkscan plot
+		if 'inclusive' in tag:
+			ntkmassplot = RatioPlot('ntkmassplot_%s'%tag)
+			ntkmassplot.add(masshistos[(tag, 'tt', 172.5, 'tot')], 'Sum')
+			for ntk1,ntk2 in NTRKBINS:
+				title = "%d #leq N_{trk.} < %d" %(ntk1, ntk2)
+				if ntk2 > 100:
+					title = "%d #leq N_{trk.}" %(ntk1)
+				ntkmassplot.add(masshistos[(tag, 'tt', 172.5, 'tot', ntk1)],
+					            title)
+			ntkmassplot.colors = [ROOT.kOrange+8,
+			                      ROOT.kGreen+3, ROOT.kGreen+1,
+								  ROOT.kGreen, ROOT.kGreen-10,
+								  ROOT.kYellow-3, ROOT.kYellow-5]
+			ntkmassplot.ratiorange = (0,3.0)
+			ntkmassplot.ratiotitle = "Ratio wrt Sum"
+			ntkmassplot.tag = 'm_{t} = 172.5 GeV'
+			ntkmassplot.subtag = '%s, %s' %(pairing, seltag)
+			ntkmassplot.show("ntkscan_%s"%tag, opt.outDir)
+			ntkmassplot.reset()
+
 	#fractions
-	for tag,sel,seltag in SELECTIONS:  
+	for tag,sel,seltag in SELECTIONS:
 		print 70*'-'
 	 	print '%-10s: %s %s' % (tag, sel,seltag)
 		if not('inclusive' in tag): continue
@@ -466,7 +498,7 @@ def main(args, opt):
 	 	for mass,proc in sorted(massfiles.keys()):
 			# mass = 172.5
 			ncount={}
-			for comb in ['tot','cor','wro','unm']:				
+			for comb in ['tot','cor','wro','unm']:
 				hist = masshistos[(tag,proc, mass,comb)]
 				ncount[comb]=hist.Integral()
 			fcor[mass] = 100.*(ncount['cor']/float(ncount['tot']))
@@ -475,8 +507,8 @@ def main(args, opt):
 	 		print ('  %5.1f GeV: %7d entries \t'
 	 			   '(%4.1f%% corr, %4.1f%% wrong, %4.1f%% unmatched)' %
 	 			   (mass, ncount['tot'], fcor[mass], fwro[mass], funm[mass]))
-		oname = os.path.join(opt.outDir, 'fracvsmt_%s'%tag) 
-		plotFracVsTopMass(fcor, fwro, funm, tag, seltag, oname)    
+		oname = os.path.join(opt.outDir, 'fracvsmt_%s'%tag)
+		plotFracVsTopMass(fcor, fwro, funm, tag, seltag, oname)
 
 
 	return 0

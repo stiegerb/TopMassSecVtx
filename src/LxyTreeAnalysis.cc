@@ -720,6 +720,7 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("SVLxySig",  &fTSVLxySig,  "SVLxySig/F");
 	fSVLInfoTree->Branch("SVPtChFrac",  &fTSVPtChFrac, "SVPtChFrac/F");
 	fSVLInfoTree->Branch("SVPzChFrac",  &fTSVPzChFrac, "SVPzChFrac/F");
+	fSVLInfoTree->Branch("SVProjFrac",  &fTSVProjFrac, "SVProjFrac/F");
 	fSVLInfoTree->Branch("SVPtRel",   &fTSVPtRel,   "SVPtRel/F");
 	fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
 	fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
@@ -766,6 +767,7 @@ void LxyTreeAnalysis::ResetSVLTree() {
 	fTSVLxySig       = -99.99;
 	fTSVPtChFrac     = -99.99;
 	fTSVPzChFrac     = -99.99;
+	fTSVProjFrac     = -99.99;
 	fTSVPtRel        = -99.99;
 	fTJEta           = -99.99;
 	fTJPt            = -99.99;
@@ -1078,6 +1080,8 @@ void LxyTreeAnalysis::analyze(){
 			}
 			TLorentzVector svp4;
 			svp4.SetPtEtaPhiM( svpt[svl.svindex],sveta[svl.svindex],svphi[svl.svindex],svmass[svl.svindex]);
+			TLorentzVector lp4;
+			lp4.SetPtEtaPhiM(lpt[svl.lepindex],leta[svl.lepindex],lphi[svl.lepindex],0.0);
 
 			fTLPt          = lpt  [svl.lepindex];
 			fTSVPt         = svpt [svl.svindex];
@@ -1088,6 +1092,7 @@ void LxyTreeAnalysis::analyze(){
 			  fTSVPzChFrac = svp4.Pz()/p_trks.Pz();			 
 			  fTSVPtRel    = ROOT::Math::VectorUtil::Perp(svp4.Vect(),p_trks.Vect());
 			}
+			fTSVProjFrac = 1.0+svp4.Vect().Dot(lp4.Vect())/lp4.Vect().Mag2();
 			fTJPt          = jpt  [svl.svindex];
 			fTJFlav        = jflav[svl.svindex];
 			fTJEta         = jeta [svl.svindex];

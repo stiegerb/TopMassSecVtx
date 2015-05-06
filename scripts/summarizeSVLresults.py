@@ -193,8 +193,7 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 Loops over the results in a directory and builds a map of PE results
 """
 def parsePEResultsFromFile(url,verbose=False):
-
-	results, calibGrMap = {}, {}
+	results, calibGrMap, resCalibGrMap = {}, {}, {}
 	fileNames=[f for f in os.listdir(url) if f.endswith('results.root')]
 	for f in fileNames:
 		fIn=ROOT.TFile.Open(os.path.join(url,f))
@@ -253,21 +252,26 @@ def parsePEResultsFromFile(url,verbose=False):
 				np=calibGrMap[keyName][selection].GetN()
 			except KeyError:
 				if not keyName in calibGrMap:
-						calibGrMap[keyName] = {}
+					calibGrMap[keyName]    = {}
+					resCalibGrMap[keyName] = {}
 				calibGrMap[keyName][selection] = ROOT.TGraphErrors()
 				calibGrMap[keyName][selection].SetName(keyName)
 				calibGrMap[keyName][selection].SetTitle(selection)
 				calibGrMap[keyName][selection].SetMarkerStyle(20)
 				calibGrMap[keyName][selection].SetMarkerSize(1.0)
+				resCalibGrMap[keyName][selection]=calibGrMap[keyName][selection].Clone(keyName+'_res')
 				np = calibGrMap[keyName][selection].GetN()
 
 			#require less than 1 GeV in unc.
 			if biasErr<1:
 				calibGrMap[keyName][selection].SetPoint     (np, mass, mass+bias)
 				calibGrMap[keyName][selection].SetPointError(np, 0, biasErr)
+				resCalibGrMap[keyName][selection].SetPoint     (np, mass, bias)
+				resCalibGrMap[keyName][selection].SetPointError(np, 0, biasErr)
+
 		fIn.Close()
 
-	return results, calibGrMap
+	return results, calibGrMap, resCalibGrMap
 
 """
 Shows results
@@ -347,8 +351,8 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
 					try: keyname = CATTOLABEL[key]
 					except KeyError: keyname = key
 					print ('%-20s (%5.3f, %6.3f GeV) (slope, offset at central point)' %
-					                    (keyname,
-					                    slope, (offset+slope*172.5)-172.5))
+										(keyname,
+										slope, (offset+slope*172.5)-172.5))
 				#add to map
 				title=gr.GetTitle()
 				if not (title in fitParamsMap): fitParamsMap[title]={}
@@ -389,7 +393,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
 			title += ' tracks'
 		label.DrawLatex(0.2,0.8,'#it{'+title+'}')
 
-	#independentently of 'comb_0' being found, draw legend in first pad
+	# independently of 'comb_0' being found, draw legend in first pad
 	try:
 		canvas.cd(1)
 		allLegs[nleg].Draw()
@@ -403,7 +407,6 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
 				canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
 	except UnboundLocalError:
 		print 'WARNING: Missing some variations!'
-		pass
 	return fitParamsMap
 
 
@@ -507,14 +510,12 @@ def writeSystematicsTable(results,filterCats,ofile):
 			ofile.write('%-30s & '%title)
 
 			for cat in filterCats:
-				if not cat in sectionsums:
-					sectionsums[cat] = (0.,0.)
+				prev, preverr = sectionsums.setdefault(cat, (0.,0.))
 				tag2diff='172.5' if not tag.startswith('p11') else 'p11'
 
 				try:
 					diff =               results[(cat,sel)][tag][0]  - results[(cat,sel)][tag2diff][0]
 					diffErr = math.sqrt( results[(cat,sel)][tag][1]**2+results[(cat,sel)][tag2diff][1]**2 )
-					prev, preverr = sectionsums[cat]
 					sectionsums[cat] = (prev+diff**2, preverr+diffErr**2)
 
 					if diff > 0:
@@ -559,7 +560,6 @@ def writeSystematicsTable(results,filterCats,ofile):
 				of.write(30*' '+' & Combined & $=~3$ Tracks & $=~4$ Tracks & $=~5$ Tracks \\\\\n')
 
 			of.write('\n')
-			of.write('\n')
 
 			of.write('\\hline\n')
 			if 'combe_0' in filterCats:
@@ -580,6 +580,11 @@ def writeSystematicsTable(results,filterCats,ofile):
 
 			of.write('\\hline\n')
 		of.close()
+
+		print 50*'#'
+		print 'Wrote systematics to file: %s', ofile
+		with open(ofile,'r') as of:
+			for line in of: print line.strip()
 	return 0
 
 
@@ -605,16 +610,26 @@ def main():
 
 	#parse calibration results from directory
 	if opt.calib:
-		results,calibGrMap = parsePEResultsFromFile(url=opt.calib, verbose=True)
+		results,calibGrMap, resCalibGrMap = parsePEResultsFromFile(url=opt.calib)
 		calibMap = show(grCollMap=calibGrMap,
-		                outDir=opt.calib+'/plots',
-		                outName='svlcalib',
-		                xaxisTitle='m_{t}^{gen} [GeV]',
-		                x_range=(165,180),
-		                yaxisTitle='<m_{t}^{fit}> [GeV]',
-		                y_range=(165,180),
-		                doFit=True,
-		                verbose=True)
+						outDir=opt.calib+'/plots',
+						outName='svlcalib',
+						xaxisTitle='m_{t}^{gen} [GeV]',
+						x_range=(165,180),
+						yaxisTitle='<m_{t}^{fit}> [GeV]',
+						y_range=(165,180),
+						doFit=True,
+						verbose=True)
+		show(grCollMap=resCalibGrMap,
+			 outDir=opt.calib+'/plots',
+			 outName='svlrescalib',
+			 xaxisTitle='m_{t}^{gen} [GeV]',
+			 x_range=(165,180),
+			 yaxisTitle='<m_{t}^{fit}>-m_{t}^{gen} [GeV]',
+			 y_range=(-1.5,1.5),
+			 doFit=False,
+			 verbose=True)
+
 		calibFile=os.path.join(opt.calib,'.svlcalib.pck')
 		cachefile = open(calibFile, 'w')
 		pickle.dump(calibMap, cachefile, pickle.HIGHEST_PROTOCOL)
@@ -630,35 +645,34 @@ def main():
 		cachefile.close()
 		catsByChan =   ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0']
 		catsByTracks = ['comb_0','comb_3','comb_4','comb_5']
-		showSystematicsTable(results=results, filterCats=catsByChan)
-		showSystematicsTable(results=results, filterCats=catsByTracks)
+		# showSystematicsTable(results=results, filterCats=catsByChan)
+		# showSystematicsTable(results=results, filterCats=catsByTracks)
 
 		systfile = os.path.join(os.path.dirname(opt.syst),'systematics_%s.tex')
 		writeSystematicsTable(results=results, filterCats=catsByChan,
-		                      ofile=systfile%'bychan')
+							 ofile=systfile%'bychan')
 		writeSystematicsTable(results=results, filterCats=catsByTracks,
-		                      ofile=systfile%'bytracks')
+							 ofile=systfile%'bytracks')
 
 	#compare inputs for pseudo-experiments
 	if opt.peInput:
-		outDir=os.path.dirname(opt.peInput)+'/pe_plots'
-		for sel in ['','optmrank']:
-			ensemblesMap=parsePEInputs(url=opt.peInput,
-			                           selection=sel,
-			                           rebin=opt.rebin)
-			for tag,grMap in ensemblesMap.items():
-				outName = tag if sel == '' else '%s_%s'%(tag,sel)
-				show(grCollMap=ensemblesMap[tag],
-				     outDir=outDir,
-				     outName=outName,
-				     yaxisTitle='Ratio to reference',
-				     xaxisTitle='m(SV,lepton) [GeV]',
-				     y_range=(0.75,1.25),
-				     x_range=(0,200),
-				     baseDrawOpt='lx',
-				     doFit=False)
+		 outDir=os.path.dirname(opt.peInput)+'/pe_plots'
+		 for sel in ['','optmrank']:
+			  ensemblesMap=parsePEInputs(url=opt.peInput,
+										 selection=sel,
+										 rebin=opt.rebin)
+			  for tag,grMap in ensemblesMap.items():
+				   outName = tag if sel == '' else '%s_%s'%(tag,sel)
+				   show(grCollMap=ensemblesMap[tag],
+						outDir=outDir,
+						outName=outName,
+						yaxisTitle='Ratio to reference',
+						xaxisTitle='m(SV,lepton) [GeV]',
+						y_range=(0.75,1.25),
+						x_range=(0,200),
+						baseDrawOpt='lx',
+						doFit=False)
 	return
-
 
 if __name__ == "__main__":
 	sys.exit(main())

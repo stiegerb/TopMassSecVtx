@@ -26,22 +26,25 @@ class PDFInfo
 	  tree->GetBranch("w")->SetAddress(&iwgt_);
 	  trees_.push_back(tree);
 	}
+
+      if(trees_.size())
+	evWeights_.resize(trees_.size(),1);
     }
 
   int numberPDFs() { return trees_.size(); }
 
-  std::vector<float> getWeights(int entry)
+  const std::vector<float> &getWeights(int entry)
     {
-      std::vector<float> wgts(trees_.size(),1);
+
       float normWgt(1.0);
       for(size_t i=0; i<trees_.size(); i++)
 	{
 	  trees_[i]->GetEntry(entry);
-	  wgts[i]=iwgt_;
+	  evWeights_[i]=iwgt_;
 	  if(i==0) normWgt=iwgt_;
-	  wgts[i]=wgts[i]/normWgt;
+	  evWeights_[i]=evWeights_[i]/normWgt;
 	}
-      return wgts;
+      return evWeights_;
     }
   
   ~PDFInfo()
@@ -54,6 +57,7 @@ class PDFInfo
   TFile *fIn_;
   std::vector<TTree *> trees_;
   float iwgt_;
+  std::vector<float> evWeights_;
 };
 
 

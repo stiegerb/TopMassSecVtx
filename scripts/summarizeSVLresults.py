@@ -462,93 +462,99 @@ def writeSystematicsTable(results,filterCats,ofile):
 	categories = list(set([k for k,_ in results.keys()]))
 
 	theosysts = [
-		('powpyth'      , 'Signal model'           ),
-		('scaleup'      , '$Q^2$ scale up'         ),
-		('scaledown'    , '$Q^2$ scale down'       ),
-		('matchingup'   , 'ME-PS scale up'         ),
-		('matchingdown' , 'ME-PS scale down'       ),
-		('pdfup'        , 'PDF up'                 ),
-		('pdfdn'        , 'PDF down'               ),
-		('hadmod'       , 'Hadronization model'    ),
-		('bfnuup'       , 'Semi-lep. B decays up'  ),
-		('bfnudn'       , 'Semi-lep. B decays down'),
-		('bfrag'        , 'Z2$^{*}$ rb LEP'        ),
-		('bfragup'      , 'Z2$^{*}$ rb LEP hard'   ),
-		('bfragdn'      , 'Z2$^{*}$ rb LEP soft'   ),
-		('bfragp11'     , 'P11'                    ),
-		('bfragpete'    , 'Z2$^{*}$ Peterson'      ),
-		('bfraglund'    , 'Z2$^{*}$ Lund'          ),
-		('toppt'        , 'Top quark \\pt'         ),
-		('p11mpihi'     , 'Underlying event'       ),
-		('p11nocr'      , 'Color reconnection'     ),
+	##   systname   ,variations [up, down],          title,       variation to compare with, included in sum?
+		('powpyth'   , ['powpyth'],                    'Signal model',         '172.5', True ),
+		('scale'     , ['scaleup', 'scaledown'],       '$Q^2$ scales',         '172.5', True ),
+		('matching'  , ['matchingup', 'matchingdown'], 'ME-PS scale',          '172.5', True ),
+		('pdf'       , ['pdfup', 'pdfdn'],             'PDF',                  '172.5', True ),
+		('hadmod'    , ['hadmod'],                     'Hadronization model',  '172.5', True ),
+		('bfnu'      , ['bfnuup', 'bfnudn'],           'Semi-lep. B decays',   '172.5', True ),
+		('bfragdn'   , ['bfragdn'],                    'Z2$^{*}$ rb LEP soft', '172.5', False ),
+		('bfrag'     , ['bfrag'],                      'Z2$^{*}$ rb LEP',      '172.5', True ),
+		('bfragup'   , ['bfragup'],                    'Z2$^{*}$ rb LEP hard', '172.5', False ),
+		('bfragp11'  , ['bfragp11'],                   'P11',                  '172.5', False ),
+		('bfragpete' , ['bfragpete'],                  'Z2$^{*}$ Peterson',    '172.5', False ),
+		('bfraglund' , ['bfraglund'],                  'Z2$^{*}$ Lund',        '172.5', False ),
+		('toppt'     , ['toppt'],                      'Top quark \\pt',       '172.5', True ),
+		('p11mpihi'  , ['p11mpihi'],                   'Underlying event',     'p11',   True ),
+		('p11nocr'   , ['p11nocr'],                    'Color reconnection',   'p11',   True ),
 	]
 	expsysts = [
-		('jesup'        , 'Jet energy scale up'         ),
-		('jesdn'        , 'Jet energy scale down'       ),
-		('jerup'        , 'Jet energy resolution up'    ),
-		('jerdn'        , 'Jet energy resolution down'  ),
-		('umetup'       , 'Unclustered energy up'       ),
-		('umetdn'       , 'Unclustered energy down'     ),
-		('lesup'        , 'Lepton energy scale up'      ),
-		('lesdn'        , 'Lepton energy scale down'    ),
-		('puup'         , 'Pileup up'                   ),
-		('pudn'         , 'Pileup down'                 ),
-		('btagup'       , '\\cPqb-tagging up'           ),
-		('btagdn'       , '\\cPqb-tagging down'         ),
-		('qcdup'        , 'QCD normalization up'        ),
-		('qcddown'      , 'QCD normalization down'      ),
-		('dyup'         , 'Drell-Yan normalization up'  ),
-		('dydown'       , 'Drell-Yan normalization down'),
-		('lepselup'     , 'Lepton selection up'         ),
-		('lepseldn'     , 'Lepton selection down'       ),
-		('ntkmult'      , 'Track multiplicity'          ),
+		('jesup'     , ['jesup',    'jesdn'],    'Jet energy scale',           '172.5', True) ,
+		('jerup'     , ['jerup',    'jerdn'],    'Jet energy resolution',      '172.5', True) ,
+		('umetup'    , ['umetup',   'umetdn'],   'Unclustered energy',         '172.5', True) ,
+		('lesup'     , ['lesup',    'lesdn'],    'Lepton energy scale',        '172.5', True) ,
+		('puup'      , ['puup',     'pudn'],     'Pileup',                     '172.5', True) ,
+		('btagup'    , ['btagup',   'btagdn'],   '\\cPqb-tagging',             '172.5', True) ,
+		('qcdup'     , ['qcdup',    'qcddown'],  'QCD normalization',          '172.5', True) ,
+		('dyup'      , ['dyup',     'dydown'],   'Drell-Yan normalization',    '172.5', True) ,
+		('lepselup'  , ['lepselup', 'lepseldn'], 'Lepton selection',           '172.5', True) ,
+		('ntkmult'   , ['ntkmult'],              'Track multiplicity',         '172.5', True) ,
 	]
 
-	def writeSection(systs,ofile):
-		sectionsums = {}
-		for tag,title in systs:
-			ofile.write('%-30s & '%title)
+	def writeSection(systs,sel,ofile,name=''):
+		uncup = {} # cat -> [up, up, up, ...] # all the positive shifts
+		uncdn = {} # cat -> [down, down, ...] # all the negative shifts
+		for syst,variations,title,difftag,insum in systs:
+			for var in variations:
+				# Print title only first time
+				if var == variations[0]: ofile.write('%-30s & '%title)
+				else:                    ofile.write('%-30s & ' % ' ')
 
-			for cat in filterCats:
-				prev, preverr = sectionsums.setdefault(cat, (0.,0.))
-				tag2diff='172.5' if not tag.startswith('p11') else 'p11'
 
-				try:
-					diff =               results[(cat,sel)][tag][0]  - results[(cat,sel)][tag2diff][0]
-					diffErr = math.sqrt( results[(cat,sel)][tag][1]**2+results[(cat,sel)][tag2diff][1]**2 )
-					sectionsums[cat] = (prev+diff**2, preverr+diffErr**2)
+				for cat in filterCats:
+					ups = uncup.setdefault(cat, [])
+					dns = uncdn.setdefault(cat, [])
 
-					if diff > 0:
-						diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (diff, diffErr)
-					else:
-						diffstr = '$ %5.2f \\pm %4.2f $ & ' % (diff, diffErr)
+					try:
+						diff =               results[(cat,sel)][var][0]  - results[(cat,sel)][difftag][0]
+						diffErr = math.sqrt( results[(cat,sel)][var][1]**2+results[(cat,sel)][difftag][1]**2 )
 
-				except KeyError:
-					## Syst not defined, write empty entry
-					diffstr = '$ %14s $ & ' % (' ')
+						if diff > 0:
+							diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (diff, diffErr)
+							if insum: ups.append((diff,diffErr))
+						else:
+							diffstr = '$ %5.2f \\pm %4.2f $ & ' % (diff, diffErr)
+							if insum: dns.append((diff,diffErr))
 
-				## Remove trailing &
-				if cat == filterCats[-1]: diffstr = diffstr[:-2]
+					except KeyError:
+						## Syst not defined, write empty entry
+						diffstr = '$ %14s $ & ' % (' ')
 
-				ofile.write(diffstr)
+					## Remove trailing &
+					if cat == filterCats[-1]: diffstr = diffstr[:-2]
 
-			ofile.write('\\\\')
-			ofile.write('\n')
+					ofile.write(diffstr)
 
-		ofile.write('Total uncertainty  FIXME       & ')
+				ofile.write('\\\\')
+				ofile.write('\n')
+
+		totup, totdn = {}, {}
+		totupE, totdnE = {}, {}
 		for cat in filterCats:
-			diff, diffErr = sectionsums[cat]
-			diff = math.sqrt(diff)
-			diffErr = math.sqrt(diffErr)
-			diffstr = '$ %5.2f \\pm %4.2f $ & ' % (diff, diffErr)
+			totup[cat]  = math.sqrt(sum([x**2 for x,_ in uncup[cat]]))
+			totdn[cat]  = math.sqrt(sum([x**2 for x,_ in uncdn[cat]]))*-1.
+			totupE[cat] = math.sqrt(sum([x**2 for _,x in uncup[cat]]))
+			totdnE[cat] = math.sqrt(sum([x**2 for _,x in uncdn[cat]]))
+
+		of.write('\\hline\n')
+		ofile.write('%-30s & ' % ('Total %s uncertainty'%name))
+		for cat in filterCats:
+			diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (totup[cat], totupE[cat])
 			if cat == filterCats[-1]: diffstr = diffstr[:-2]
 			ofile.write(diffstr)
 		ofile.write('\\\\')
 		ofile.write('\n')
-		return sectionsums
+		ofile.write('                               & ')
+		for cat in filterCats:
+			diffstr = '$ %5.2f \\pm %4.2f $ & ' % (totdn[cat], totdnE[cat])
+			if cat == filterCats[-1]: diffstr = diffstr[:-2]
+			ofile.write(diffstr)
+		ofile.write('\\\\')
+		ofile.write('\n')
+		of.write('\\hline\n')
+		return totup,totupE,totdn,totdnE
 
-	# pprint(results)
-	# return 0
 	for sel in selections:
 		with open(ofile,'w') as of:
 			of.write('\\hline\n')
@@ -567,7 +573,7 @@ def writeSystematicsTable(results,filterCats,ofile):
 			else:
 				of.write('\multicolumn{5}{l}{\\bf Theory uncertainties}\\\\\n')
 			of.write('\\hline\n')
-			sums_theo = writeSection(theosysts, of)
+			totup_th,totupE_th,totdn_th,totdnE_th = writeSection(theosysts, sel, of, name='theo.')
 
 			of.write('\\hline\n')
 			if 'combe_0' in filterCats:
@@ -576,15 +582,42 @@ def writeSystematicsTable(results,filterCats,ofile):
 				of.write('\multicolumn{5}{l}{\\bf Experimental uncertainties}\\\\\n')
 			of.write('\\hline\n')
 
-			sums_exp = writeSection(expsysts, of)
+			totup_ex,totupE_ex,totdn_ex,totdnE_ex = writeSection(expsysts, sel, of, name='exp.')
 
 			of.write('\\hline\n')
+
+			## Compute the total uncertainty
+			assert(totup_th.keys() == totup_ex.keys())
+			totup, totupE, totdn, totdnE, = {}, {}, {}, {}
+			for cat in totup_th:
+				totup[cat]  = math.sqrt(totup_th[cat]**2 + totup_ex[cat]**2)
+				totdn[cat]  = math.sqrt(totdn_th[cat]**2 + totdn_ex[cat]**2)*-1.
+				totupE[cat] = math.sqrt(totupE_th[cat]**2 + totupE_ex[cat]**2)
+				totdnE[cat] = math.sqrt(totdnE_th[cat]**2 + totdnE_ex[cat]**2)
+
+			of.write('Total uncertainty  FIXME       & ')
+			for cat in filterCats:
+				diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (totup[cat], totupE[cat])
+				if cat == filterCats[-1]: diffstr = diffstr[:-2]
+				of.write(diffstr)
+			of.write('\\\\')
+			of.write('\n')
+			of.write('                               & ')
+			for cat in filterCats:
+				diffstr = '$ %5.2f \\pm %4.2f $ & ' % (totdn[cat], totdnE[cat])
+				if cat == filterCats[-1]: diffstr = diffstr[:-2]
+				of.write(diffstr)
+			of.write('\\\\')
+			of.write('\n')
+			of.write('\\hline\n')
+
+
 		of.close()
 
 		print 50*'#'
-		print 'Wrote systematics to file: %s', ofile
+		print 'Wrote systematics to file: %s' % ofile
 		with open(ofile,'r') as of:
-			for line in of: print line.strip()
+			for line in of: sys.stdout.write(line)
 	return 0
 
 

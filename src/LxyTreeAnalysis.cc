@@ -27,7 +27,7 @@ struct SVLInfo{ // needed for sorting...
   float svldeltar, svldeltar_rot;
   float svlmass_sf[2];
   float umetweights[2];
-  int jesweights[3];
+  int jesweights[5];
   float bfragweights[6];
 };
 bool compare_mass (SVLInfo svl1, SVLInfo svl2){
@@ -980,9 +980,13 @@ void LxyTreeAnalysis::analyze(){
 				svl_pairing.jesweights[0] = 0;
 				svl_pairing.jesweights[1] = 0;
 				svl_pairing.jesweights[2] = 0;
+				svl_pairing.jesweights[3] = 0;
+				svl_pairing.jesweights[4] = 0;
 				if(jpt[svind]       > 30.) svl_pairing.jesweights[0] = 1; // nominal
 				if(jjesup[svind][0] > 30.) svl_pairing.jesweights[1] = 1; // jes up
 				if(jjesdn[svind][0] > 30.) svl_pairing.jesweights[2] = 1; // jes down
+				if(jjerup[svind]    > 30.) svl_pairing.jesweights[3] = 1; // jes up
+				if(jjerdn[svind]    > 30.) svl_pairing.jesweights[4] = 1; // jes down				
 				svl_pairing.bfragweights[0] = bwgt[svind][0];
 				svl_pairing.bfragweights[1] = bwgt[svind][1];
 				svl_pairing.bfragweights[2] = bwgt[svind][2];
@@ -1130,6 +1134,8 @@ void LxyTreeAnalysis::analyze(){
 			fTJESWeight[0] = svl.jesweights[0]; // nominal
 			fTJESWeight[1] = svl.jesweights[1]; // jes up
 			fTJESWeight[2] = svl.jesweights[2]; // jes down
+			fTJESWeight[3] = svl.jesweights[3]; // jer up
+			fTJESWeight[4] = svl.jesweights[4]; // jer down
 			fTMETWeight[0] = svl.umetweights[0]; // unclustered met down
 			fTMETWeight[1] = svl.umetweights[1]; // unclustered met up
 			fTSVBfragWeight[0] = svl.bfragweights[0]; // nominal (Z2star_rbLEP_weight)

@@ -55,6 +55,7 @@ public :
    Float_t         jtoraw[50];   //[nj]
    Float_t         jjesup[50][26];   //[nj]
    Float_t         jjesdn[50][26];   //[nj]
+   Float_t         jjerup[50],jjerdn[50];
    Float_t         jbhadmatchdr[50];   //[nj]
    Float_t         gjpt[50];   //[nj]
    Float_t         gjeta[50];   //[nj]
@@ -126,8 +127,8 @@ public :
    TBranch        *b_jcsv;   //!
    TBranch        *b_jarea;   //!
    TBranch        *b_jtoraw;   //!
-   TBranch        *b_jjesup;   //!
-   TBranch        *b_jjesdn;   //!
+   TBranch        *b_jjesup, *b_jjerup;   //!
+   TBranch        *b_jjesdn, *b_jjerdn;   //!
    TBranch        *b_jbhadmatchdr;   //!
    TBranch        *b_gjpt;   //!
    TBranch        *b_gjeta;   //!

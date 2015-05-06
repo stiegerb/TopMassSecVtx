@@ -90,6 +90,10 @@ SYSTSFROMWEIGHTS = [
 		['tot']),
 	('jesdn',       'Jet energy scale down',     'JESWeight[2]',
 		['tot']),
+	('jerup',       'Jet energy resolution up',       'JESWeight[3]',
+		['tot']),
+	('jerdn',       'Jet energy resolution down',     'JESWeight[4]',
+		['tot']),
 	('lesup',       'Lepton energy scale up',    '1',
 		['tot']),
 	('lesdn',       'Lepton energy scale down',  '1',
@@ -146,6 +150,10 @@ SYSTPLOTS = [
 
 	('jes', 'Jet energy scale',
 	 ['nominal', 'jesup', 'jesdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('jer', 'Jet energy resolution',
+	 ['nominal', 'jerup', 'jerdn'],
 	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
 	('les', 'Lepton energy scale',
@@ -249,7 +257,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 		combsel = COMBINATIONS[comb]
 		finalsel = "%s*%s*(%s&&%s)"%(COMMONWEIGHT, weight, sel, combsel)
 		## Fix the duplicate weight in case of JESWeight
-		if syst in ['jesup', 'jesdn']:
+		if syst in ['jesup', 'jesdn', 'jerup', 'jerdn']:
 			finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
 				                        'JESWeight[')
 
@@ -266,7 +274,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			finalsel = "%s*%s*(%s&&%s&&%s)"%(COMMONWEIGHT, weight,
 				                             sel, combsel,tksel)
 			## Fix the duplicate weight in case of JESWeight
-			if syst in ['jesup', 'jesdn']:
+			if syst in ['jesup', 'jesdn', 'jerup', 'jerdn']:
 				finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
 					                        'JESWeight[')
 

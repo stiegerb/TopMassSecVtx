@@ -206,17 +206,29 @@ def main(args, options) :
 
 		pdf  = w.pdf("model_%s"%(cat))
 		data = w.data("roohist_data_%s"%(cat))
+		poi=ROOT.RooArgSet( w.var('mu_%s'%cat) )
 
 		#systematic from fixing strength of other processes
+		w.var('nu_%s'%cat).setConstant(True)
+		w.var('nu_%s'%cat).setRange(1.0,1.0)
+		nll_fix=pdf.createNLL(data, ROOT.RooFit.Extended())
+		minuit_fix=ROOT.RooMinuit(nll_fix)
+		minuit_fix.setErrorLevel(0.5)
+		minuit_fix.migrad()
+		minuit_fix.hesse()
+		minuit_fix.minos(poi)
+		bkgvar=w.var('mu_%s'%cat).getVal()
+
+		#nominal fit by profiling strength of other processes
+		w.var('mu_%s'%cat).setVal(1.0)
+		w.var('nu_%s'%cat).setVal(1.0)
 		w.var('nu_%s'%cat).setConstant(False)
 		w.var('nu_%s'%cat).setRange(0.7,1.3)
-		
 		nll=pdf.createNLL(data, ROOT.RooFit.Extended())
 		minuit=ROOT.RooMinuit(nll)
 		minuit.setErrorLevel(0.5)
 		minuit.migrad()
 		minuit.hesse()
-		poi=ROOT.RooArgSet( w.var('mu_%s'%cat) )
 		minuit.minos(poi)
 		pll=nll.createProfile(poi)
 		#pdf.fitTo(data, ROOT.RooFit.Extended())
@@ -230,11 +242,13 @@ def main(args, options) :
 
 		showFitResults(w=w, cat=cat, options=options)
 
-		qcdSF[cat] = (bkgnom,w.var('mu_%s'%cat).getError())
+		qcdSF[cat] = (bkgnom,w.var('mu_%s'%cat).getError(),bkgvar-bkgnom)
 
-		print ('bkg scalefactor (%s) = %3.3f +- %3.3f' % ( cat,
-								   qcdSF[cat][0],
-								   qcdSF[cat][1]))
+		print ('bkg scalefactor (%s) = %3.3f +- %3.3f (stat+syst)+- %3.3f (fix others)' % ( cat,
+												    qcdSF[cat][0],
+												    qcdSF[cat][1],
+												    qcdSF[cat][2]
+												    ))
 
 	print '-'*50
 

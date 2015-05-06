@@ -82,6 +82,8 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("jtoraw", jtoraw, &b_jtoraw);
    fChain->SetBranchAddress("jjesup", jjesup, &b_jjesup);
    fChain->SetBranchAddress("jjesdn", jjesdn, &b_jjesdn);
+   fChain->SetBranchAddress("jjerup", jjerup, &b_jjerup);
+   fChain->SetBranchAddress("jjerdn", jjerdn, &b_jjerdn);
    fChain->SetBranchAddress("jbhadmatchdr", jbhadmatchdr, &b_jbhadmatchdr);
    fChain->SetBranchAddress("gjpt", gjpt, &b_gjpt);
    fChain->SetBranchAddress("gjeta", gjeta, &b_gjeta);

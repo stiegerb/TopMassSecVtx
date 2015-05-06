@@ -60,6 +60,8 @@ SYSTSFROMWEIGHTS = [
 	('bfragdn',     'rb LEP soft weighted',      'SVBfragWeight[2]'),
 	('jesup',       'Jet energy scale up',       'JESWeight[1]'),
 	('jesdn',       'Jet energy scale down',     'JESWeight[2]'),
+	('jerup',       'Jet energy resolution up',       'JESWeight[3]'),
+	('jerdn',       'Jet energy resolution down',     'JESWeight[4]'),
 	('lesup',       'Lepton energy scale up',    '1'),
 	('lesdn',       'Lepton energy scale down',  '1'),
 	('bfnuup',      'B hadron semi-lep BF up',
@@ -111,6 +113,10 @@ SYSTPLOTS = [
 
 	('jes', 'Jet energy scale',
 	 ['nominal', 'jesup', 'jesdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('jer', 'Jet energy resolution',
+	 ['nominal', 'jerup', 'jerdn'],
 	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
 	('les', 'Lepton energy scale',
@@ -213,7 +219,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 		hname = "SVLMass_%s_%s" % (comb, htag)
 		finalsel = "%s*%s*(%s&&%s)"%(COMMONWEIGHT, weight, sel, combsel)
 		## Fix the duplicate weight in case of JESWeight
-		if syst in ['jesup', 'jesdn']:
+		if syst in ['jesup', 'jesdn', 'jerup', 'jerdn']:
 			finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
 				                        'JESWeight[')
 
@@ -230,7 +236,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1'):
 			finalsel = "%s*%s*(%s&&%s&&%s)"%(COMMONWEIGHT, weight,
 				                             sel, combsel,tksel)
 			## Fix the duplicate weight in case of JESWeight
-			if syst in ['jesup', 'jesdn']:
+			if syst in ['jesup', 'jesdn', 'jerup', 'jerdn']:
 				finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
 					                        'JESWeight[')
 

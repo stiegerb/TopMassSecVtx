@@ -98,21 +98,23 @@ void LxyTreeAnalysis::RunJob(TString filename){
 	//add PDF information, if relevant
 	fPDFInfo=0;
 	TString curFile=fChain->GetCurrentFile()->GetName();
-	if(curFile.Contains("/MC"))
-	  {
-	    TString pdfFileName=curFile;
-	    pdfFileName=pdfFileName.ReplaceAll("/MC","/pdf/MC");
-	    pdfFileName=pdfFileName.ReplaceAll(".root","_pdf.root");
-	    fPDFInfo=new PDFInfo(pdfFileName,"CT10");
-	    if(fPDFInfo->numberPDFs())
-	      {
-		std::cout << "Read " << fPDFInfo->numberPDFs() << " PDF variations from " << pdfFileName << " (have fun with those)" << std::endl;
-	      }
-	    else
-	      {
-		delete fPDFInfo;
-		fPDFInfo=0;
-	      }
+	if(curFile.Contains("/MC")){
+		TString pdfFileName=curFile;
+		pdfFileName=pdfFileName.ReplaceAll("/MC","/pdf/MC");
+		pdfFileName=pdfFileName.ReplaceAll(".root","_pdf.root");
+		fPDFInfo=new PDFInfo(pdfFileName,"CT10");
+		if(fPDFInfo->numberPDFs()){
+			std::cout << "Read "
+			          << fPDFInfo->numberPDFs()
+			          << " PDF variations from "
+			          << pdfFileName
+			          << " (have fun with those)"
+			          << std::endl;
+	    }
+	    else{
+			delete fPDFInfo;
+			fPDFInfo=0;
+	    }
 	  }
 
 	//do the analysis
@@ -279,6 +281,7 @@ void LxyTreeAnalysis::WriteHistos(){
 void LxyTreeAnalysis::BookCharmTree() {
 	fCharmInfoTree = new TTree("CharmInfo", "Charm Info Tree");
 	fCharmInfoTree->Branch("EvCat",        &fTCharmEvCat,   "EvCat/I");
+	fCharmInfoTree->Branch("BFragWeight",   fTSVBfragWeight,"BFragWeight[6]/F");
 	fCharmInfoTree->Branch("CandType",     &fTCandType,     "CandType/I");
 	fCharmInfoTree->Branch("CandMass",     &fTCandMass,     "CandMass/F");
 	fCharmInfoTree->Branch("CandPt",       &fTCandPt,       "CandPt/F");
@@ -310,6 +313,7 @@ void LxyTreeAnalysis::ResetCharmTree() {
 	fTSoftTkPt     = -99.99;
 	fTSumPtCharged = -99.99;
 	fTSumPzCharged = -99.99;
+	for (int i=0; i<6; i++) fTSVBfragWeight[i] = -99.99;
 }
 
 int LxyTreeAnalysis::firstTrackIndex(int jetindex){
@@ -396,6 +400,14 @@ void LxyTreeAnalysis::FillCharmTree(int type, int jind,
 
 	fTSumPtCharged = p_trks.Pt();
 	fTSumPzCharged = p_trks.Pz();
+
+	fTSVBfragWeight[0] = bwgt[jind][0];
+	fTSVBfragWeight[1] = bwgt[jind][1];
+	fTSVBfragWeight[2] = bwgt[jind][2];
+	fTSVBfragWeight[3] = bwgt[jind][3];
+	fTSVBfragWeight[4] = bwgt[jind][4];
+	fTSVBfragWeight[5] = bwgt[jind][5];
+
 	fCharmInfoTree->Fill();
 	return;
 }
@@ -969,7 +981,7 @@ void LxyTreeAnalysis::analyze(){
 	    fHMT_m      ->Fill(mT,      w[0]*w[1]*w[4]);
 	    fHMET_m     ->Fill(metpt,   w[0]*w[1]*w[4]);
 	  }
-	  
+
 		// First find all pairs and get their ranking in mass and deltar
 		std::vector<SVLInfo> svl_pairs;
 		for (int il = 0; il < nl; ++il){ // lepton loop
@@ -986,7 +998,7 @@ void LxyTreeAnalysis::analyze(){
 				if(jjesup[svind][0] > 30.) svl_pairing.jesweights[1] = 1; // jes up
 				if(jjesdn[svind][0] > 30.) svl_pairing.jesweights[2] = 1; // jes down
 				if(jjerup[svind]    > 30.) svl_pairing.jesweights[3] = 1; // jes up
-				if(jjerdn[svind]    > 30.) svl_pairing.jesweights[4] = 1; // jes down				
+				if(jjerdn[svind]    > 30.) svl_pairing.jesweights[4] = 1; // jes down
 				svl_pairing.bfragweights[0] = bwgt[svind][0];
 				svl_pairing.bfragweights[1] = bwgt[svind][1];
 				svl_pairing.bfragweights[2] = bwgt[svind][2];
@@ -1010,7 +1022,7 @@ void LxyTreeAnalysis::analyze(){
 
 					svl_pairing.svlmass = (p_lep + p_sv).M();
 					svl_pairing.svldeltar = p_lep.DeltaR(p_sv);
-					
+
 					//lepton energy scale variation on mass
 					for(size_t ivar=0; ivar<2; ivar++)
 					  {
@@ -1047,13 +1059,13 @@ void LxyTreeAnalysis::analyze(){
 		if(npairs)
 		  {
 		    svl_pairs_combranked.push_back( svl_pairs_massranked[0] );
-		    if(npairs==4) 
+		    if(npairs==4)
 		      {
 			svl_pairs_combranked.push_back( svl_pairs_massranked[1] );
 			if(svl_pairs_massranked[0].lepindex!=svl_pairs_massranked[1].lepindex) svl_pairs_combranked.push_back( svl_pairs_massranked[2] );
 		      }
 		  }
-		
+
 		std::vector<SVLInfo> svl_pairs_drranked = svl_pairs;
 		std::sort (svl_pairs_drranked.begin(), svl_pairs_drranked.end(), compare_deltar);
 		std::vector<SVLInfo> svl_pairs_massranked_rot = svl_pairs;
@@ -1118,8 +1130,8 @@ void LxyTreeAnalysis::analyze(){
 			fTSVLxy        = svlxy[svl.svindex];
 			if(svlxyerr[svl.svindex]) fTSVLxySig =  svlxy[svl.svindex]/svlxyerr[svl.svindex];
 			if(p_trks.Pt()>0) {
-			  fTSVPtChFrac = fTSVPt/p_trks.Pt();			 
-			  fTSVPzChFrac = svp4.Pz()/p_trks.Pz();			 
+			  fTSVPtChFrac = fTSVPt/p_trks.Pt();
+			  fTSVPzChFrac = svp4.Pz()/p_trks.Pz();
 			  fTSVPtRel    = ROOT::Math::VectorUtil::Perp(svp4.Vect(),p_trks.Vect());
 			}
 			fTSVProjFrac = 1.0+svp4.Vect().Dot(lp4.Vect())/lp4.Vect().Mag2();
@@ -1127,7 +1139,7 @@ void LxyTreeAnalysis::analyze(){
 			fTJFlav        = jflav[svl.svindex];
 			fTJEta         = jeta [svl.svindex];
 			fTSVNtrk       = svntk[svl.svindex];
-			fTSVMass       = svmass[svl.svindex];			
+			fTSVMass       = svmass[svl.svindex];
 			fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1
 			if(fTBHadNeutrino < 0) fTBHadNeutrino = -1; // set -999 to -1
 
@@ -1144,7 +1156,7 @@ void LxyTreeAnalysis::analyze(){
 			fTSVBfragWeight[3] = svl.bfragweights[3]; // p11
 			fTSVBfragWeight[4] = svl.bfragweights[4]; // Z2star_peterson
 			fTSVBfragWeight[5] = svl.bfragweights[5]; // Z2star_lund
-			
+
 			// MC truth information on correct/wrong matchings
 			fTCombInfo = -1;    // unmatched
 			if( (lid[svl.lepindex] > 0 && bid[svl.svindex] == -5 ) || // el-/mu- / tbar/bbar
@@ -1196,7 +1208,7 @@ void LxyTreeAnalysis::Loop(){
 		nbytes += nb;
 
 		//pdf information
-		if( fPDFInfo ) 
+		if( fPDFInfo )
 		  {
 		    const std::vector<float> &wgts=fPDFInfo->getWeights(jentry);
 		    for(size_t i=0; i<wgts.size(); i++) fPDFWeight[i]=wgts[i];

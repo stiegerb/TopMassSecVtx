@@ -24,12 +24,26 @@ def main():
    #configuration
    usage = 'usage: %prog [options]'
    parser = optparse.OptionParser(usage)
-   parser.add_option('-i', '--input'      ,    dest='InputDirs'       , help='csv list of directories'    , default=None,     type='string')
-   parser.add_option('-t', '--title'      ,    dest='InputTitles'     , help='titles'                     , default=None,     type='string')
-   parser.add_option('-d', '--dist'       ,    dest='Dist'            , help='distribution to compare'    , default='ptfrac', type='string')
-   parser.add_option('-m', '--maxY'       ,    dest='MaxY'            , help='max y'                      , default=0.75,     type=float)
-   parser.add_option('-b', '--base'       ,    dest='BaseName'        , help='base name for root files'   , default='UnfoldedDistributions', type='string')
-   parser.add_option('--tag'       ,    dest='Tag'        , help='Add a tag label'   , default='', type='string')
+   parser.add_option('-i', '--input' , dest='InputDirs',
+                     help='csv list of directories',
+                     default=None, type='string')
+   parser.add_option('-t', '--title', dest='InputTitles',
+                     help='titles',
+                     default=None, type='string')
+   parser.add_option('-o', '--outDir' , dest='outDir',
+                     help='destination for output plots',
+                     default='charmplots', type='string')
+   parser.add_option('-d', '--dist' , dest='Dist',
+                     help='distribution to compare',
+                     default='ptfrac', type='string')
+   parser.add_option('-m', '--maxY', dest='MaxY',
+                     help='max y',
+                     default=0.75, type=float)
+   parser.add_option('-b', '--base', dest='BaseName',
+                     help='base name for root files' ,
+                     default='UnfoldedDistributions', type='string')
+   parser.add_option('--tag', dest='Tag', help='Add a tag label',
+                     default='', type='string')
    (opt, args) = parser.parse_args()
 
    #global ROOT configuration
@@ -39,6 +53,8 @@ def main():
    ROOT.gStyle.SetPadBottomMargin(0.1)
    ROOT.gStyle.SetPadLeftMargin(0.15)
    ROOT.gStyle.SetPadRightMargin(0.05)
+
+   print "Will store plots in", opt.outDir
 
    #get graphs from files
    allGr=[]
@@ -152,10 +168,11 @@ def main():
       leg.AddEntry(allGr[i],allGr[i].GetTitle(),'f')
    leg.Draw()
 
-   c.SaveAs('%s.pdf'%opt.Dist)
-   c.SaveAs('%s.png'%opt.Dist)
-   c.SaveAs('%s.C'%opt.Dist)
-   #raw_input()
+
+   os.system('mkdir -p %s' % opt.outDir)
+   # for ext in ['.pdf', '.png', '.C']:
+   for ext in ['.pdf']:
+      c.SaveAs(os.path.join(opt.outDir,'%s%s'%(opt.Dist,ext)))
 
 """
 for execution from another script

@@ -239,11 +239,9 @@ void DataAnalyzer::analyze(const edm::Event &event, const edm::EventSetup &iSetu
         event.getByLabel(analysisCfg_.getParameter<edm::InputTag>("genSource"), genParticlesH);
 
         //analyze first hard process
-        bool isSherpa(false);
         for(size_t i = 0; i < genParticlesH->size(); ++ i)
         {
             const reco::GenParticle & p = dynamic_cast<const reco::GenParticle &>( (*genParticlesH)[i] );
-            if(abs(p.pdgId())==2212 && p.status()==4) isSherpa=true; //this is only used by sherpa
             bool isHardProc(p.status()==3);
             bool isStableOfInterest( keepFullGenInfo_ && p.status()==1 && p.charge()!=0 && p.pt()>0.5 && fabs(p.eta())<3.0 );
             isStableOfInterest |= (p.status()==1 && abs(p.pdgId())==22 && p.pt()>20 && fabs(p.eta())<2.5);  // I really need this line always active...
@@ -326,9 +324,9 @@ void DataAnalyzer::analyze(const edm::Event &event, const edm::EventSetup &iSetu
             const reco::GenParticle & p = dynamic_cast<const reco::GenParticle &>( (*genParticlesH)[i] );
             if(p.status()!=3 || abs(p.pdgId())!=5) continue;
 
-            const reco::Candidate *fs = utils::cmssw::getGeneratorFinalStateFor(&p,isSherpa);
+            const reco::Candidate *fs = utils::cmssw::getGeneratorFinalStateFor(&p);
             if(fs->numberOfDaughters()==0) continue;
-            fs = utils::cmssw::getGeneratorFinalStateFor( fs->daughter(0), isSherpa );
+            fs = utils::cmssw::getGeneratorFinalStateFor( fs->daughter(0) );
             for(size_t j=0; j<fs->numberOfDaughters(); j++)
             {
                 const reco::Candidate *d=fs->daughter(j);

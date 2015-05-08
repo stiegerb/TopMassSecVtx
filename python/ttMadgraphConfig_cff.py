@@ -1,5 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
+from Configuration.Generator.PythiaUEZ2starSettings_cfi    import pythiaUESettingsBlock as pythiaUESettings_Z2starBlock
 from Configuration.Generator.PythiaUEZ2starLEPSettings_cfi import pythiaUESettingsBlock as pythiaUESettings_Z2starLEPBlock
 from Configuration.Generator.PythiaUEP11Settings_cfi       import pythiaUESettingsBlock as pythiaUESettings_P11Block
 
@@ -8,6 +9,8 @@ def configureTTGenerator(process,tune):
   pythiaUESettingsBlock=None
 
   #UE
+  if tune=='Z2star':
+    pythiaUESettingsBlock=pythiaUESettings_Z2starBlock.clone()
   if 'Z2starLEP' in tune:
       pythiaUESettingsBlock=pythiaUESettings_Z2starLEPBlock.clone()
   if 'P11' in tune:

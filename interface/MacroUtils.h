@@ -37,7 +37,7 @@ namespace utils
   namespace cmssw
   {
     //retrieve last state before decay
-    const reco::Candidate *getGeneratorFinalStateFor(const reco::Candidate *p, bool isSherpa);
+    const reco::Candidate *getGeneratorFinalStateFor(const reco::Candidate *p);
 
     //check pdg id code for b-flavored hadrons
     bool isBhadron(int pdgId);

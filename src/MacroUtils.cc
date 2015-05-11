@@ -29,7 +29,7 @@ namespace utils
     }
  
     //
-    const reco::Candidate *getGeneratorFinalStateFor(const reco::Candidate *p, bool isSherpa)
+    const reco::Candidate *getGeneratorFinalStateFor(const reco::Candidate *p)
     {
       if(p==0) return 0;
       

@@ -54,7 +54,7 @@ if [ "$step" == "control" ]; then
     #runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d /store/cmst3/user/psilva/5311_qcd_ntuples -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
     #done
 
-    ctrlJsons=("z_samples" "photon_samples") # "w_samples"
+    ctrlJsons=("z_syst_samples") # "z_samples" "photon_samples") # "w_samples"
     for ijson in ${ctrlJsons[@]}; do
 	runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d ${indir} -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
     done

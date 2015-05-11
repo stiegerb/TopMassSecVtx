@@ -6,6 +6,7 @@ import optparse
 import math
 from CMS_lumi import CMS_lumi
 from runPlotter import openTFile
+from fitSecVtxProperties import normalizeDistribution
 
 VARIABLES = ["mass", "pt", "eta", "ptfrac", "pzfrac", "ptrel", "pfrac", "ptchfrac", "pzchfrac", "dr", "wgt"]
 XAXIS = {
@@ -13,43 +14,6 @@ XAXIS = {
 	"Dpm":  "m(K^{+}#pi^{-}#pi^{-}) [GeV]",
 	"JPsi": "m(#mu^{+}#mu^{-}) [GeV]"
 }
-
-"""
-returns a normalized distribution
-"""
-def normalizeDistribution(gr) :
-	norm_gr=gr.Clone('norm_'+gr.GetName())
-	x, y = ROOT.Double(0), ROOT.Double(0)
-
-	#find the integral first
-	totalY=0
-	for ip in xrange(0,gr.GetN()):
-		gr.GetPoint(ip,x,y)
-		# dx=gr.GetErrorXhigh(ip)-gr.GetErrorXlow(ip)
-		totalY+=y
-		# totalY+=y*dx
-
-	# totalY = gr.Integral()
-
-	#normalize
-	for ip in xrange(0,gr.GetN()):
-		gr.GetPoint(ip,x,y)
-		try:
-			norm_gr.SetPoint(ip,x,y/totalY)
-			norm_gr.SetPointError(ip,gr.GetErrorXlow(ip),
-											 gr.GetErrorXhigh(ip),
-											 gr.GetErrorYlow(ip)/totalY,
-											 gr.GetErrorYhigh(ip)/totalY)
-		except ZeroDivisionError:
-			print "totalY is zero!"
-			norm_gr.SetPoint(ip,x,0.0)
-			norm_gr.SetPointError(ip,gr.GetErrorXlow(ip),
-											 gr.GetErrorXhigh(ip),
-											 0.0,
-											 0.0)
-
-
-	return norm_gr
 
 """
 builds a canvas with the unfolded distributions and saves the distributions to a file (if given)

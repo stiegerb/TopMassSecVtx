@@ -121,50 +121,6 @@
       "data":[
         { "dtag":"MC8TeV_TTJets_MSDecays_matchingup"                   , "split":10, "xsec":245.8       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
       ]
-    },
-    {
-      "tag":"DYsystmatchup",
-      "isdata":false,
-      "spimpose":true,
-      "color":8,
-      "lcolor":1,
-      "isinvisible":true,
-      "data":[
-        { "dtag":"MC8TeV_DYJetsToLL_50toInf_matchingup"           , "split":5, "xsec":3503.71       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
-      ]
-    },
-    {
-      "tag":"DYsystmatchdown",
-      "isdata":false,
-      "spimpose":true,
-      "color":8,
-      "lcolor":1,
-      "isinvisible":true,
-      "data":[
-        { "dtag":"MC8TeV_DYJetsToLL_50toInf_matchingdown"           , "split":5, "xsec":3503.71       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
-      ]
-    },
-    {
-      "tag":"DYsystscaledown",
-      "isdata":false,
-      "spimpose":true,
-      "color":8,
-      "lcolor":1,
-      "isinvisible":true,
-      "data":[
-        { "dtag":"MC8TeV_DYJetsToLL_50toInf_scaledown"           , "split":5, "xsec":3503.71       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
-      ]
-    },
-    {
-      "tag":"DYsystscaleup",
-      "isdata":false,
-      "spimpose":true,
-      "color":8,
-      "lcolor":1,
-      "isinvisible":true,
-      "data":[
-        { "dtag":"MC8TeV_DYJetsToLL_50toInf_scaleup"           , "split":5, "xsec":3503.71       , "br":[ 1.0 ]                 , "dset":"Unknown"        }
-      ]
     }
   ]
 }

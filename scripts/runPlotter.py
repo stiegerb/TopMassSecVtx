@@ -436,7 +436,7 @@ def makeXSecWeights(inDir, jsonfiles, options):
         if 'syst'      in jfname: dirname = os.path.join(inDir,'syst')
         if 'mass_scan' in jfname: dirname = os.path.join(inDir,'mass_scan')
         if 'qcd'       in jfname: dirname = os.path.join(inDir,'qcd_control')
-        if 'z_samples' in jfname: dirname = os.path.join(inDir,'z_control')
+        if 'z_s'       in jfname: dirname = os.path.join(inDir,'z_control')
         if 'photon_samples' in jfname: dirname = os.path.join(inDir,'photon_control')
         jsonFile = open(jfname,'r')
         procList = json.load(jsonFile,encoding = 'utf-8').items()

@@ -19,11 +19,11 @@ mkdir -p ${outdir}
 
 case $WHAT in
 	TREES )
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}      ${eosdir}      -p MC8TeV_TTJets_MSDecays_172v5
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}      ${eosdir}      -p Data8TeV
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/ ${eosdir}syst/ -p MC8TeV_TTJets_TuneP11_
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/ ${eosdir}syst/ -p MC8TeV_TT_Z2star_powheg_pythia
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/ ${eosdir}syst/ -p MC8TeV_TT_AUET2_powheg_herwig
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}           ${eosdir}           -p MC8TeV_TTJets_MSDecays_172v5
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}           ${eosdir}           -p Data8TeV
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/      ${eosdir}syst/      -p MC8TeV_TTJets_TuneP11_
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/      ${eosdir}syst/      -p MC8TeV_TT_Z2star_powheg_pythia
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/      ${eosdir}syst/      -p MC8TeV_TT_AUET2_powheg_herwig
 	;;
 	MERGE )
 		./scripts/mergeSVLInfoFiles.py ${treedir}

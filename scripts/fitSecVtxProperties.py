@@ -156,7 +156,10 @@ def buildWorkspace(opt):
                       histos[hkey+'_'+pf].SetDirectory(0)
                       
     #add files to the corresponding chain
-    chains={'data':ROOT.TChain('SVLInfo'), 'mc':ROOT.TChain('SVLInfo'),'mcscaleup':ROOT.TChain('SVLInfo'),'mcscaledown':ROOT.TChain('SVLInfo')}
+    chains={'data'       : ROOT.TChain('SVLInfo'), 
+            'mc'         : ROOT.TChain('SVLInfo'),
+            'mcscaleup'  : ROOT.TChain('SVLInfo'),
+            'mcscaledown': ROOT.TChain('SVLInfo')}
     for f in [ f for f in os.listdir(opt.inDir) if 'root' in f]:      
         pathToF=os.path.join(opt.inDir,f)
         if 'DY' in f and 'scale' in f : continue

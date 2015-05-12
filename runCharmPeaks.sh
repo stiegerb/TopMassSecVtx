@@ -10,8 +10,8 @@ eosdir=/store/cmst3/group/top/summer2014/${hash}/
 # cands=("421")
 # cands=("411")
 # cands=("44300") ## j/psi mumu
-cands=("421013,421011")
-# cands=("44300" "411" "421013,421011")
+#cands=("421013,421011")
+cands=("44300" "411" "421013,421011")
 
 echo "Running on "${treedir}
 outdir=charmplots/${tag}
@@ -19,23 +19,27 @@ mkdir -p ${outdir}
 
 case $WHAT in
 	TREES )
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}           ${eosdir}           -p MC8TeV_TTJets_MSDecays_172v5
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}           ${eosdir}           -p Data8TeV
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/      ${eosdir}syst/      -p MC8TeV_TTJets_TuneP11_
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/      ${eosdir}syst/      -p MC8TeV_TT_Z2star_powheg_pythia
-		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/      ${eosdir}syst/      -p MC8TeV_TT_AUET2_powheg_herwig
+#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}              ${eosdir}           -p MC8TeV_TTJets_MSDecays_172v5
+#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}              ${eosdir}           -p Data8TeV
+#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/         ${eosdir}syst/      -p MC8TeV_TTJets_TuneP11_
+#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/         ${eosdir}syst/      -p MC8TeV_TT_Z2star_powheg_pythia
+#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/         ${eosdir}syst/      -p MC8TeV_TT_AUET2_powheg_herwig
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}z_control/    ${eosdir}z_control/ 
 	;;
 	MERGE )
-		./scripts/mergeSVLInfoFiles.py ${treedir}
-		./scripts/mergeSVLInfoFiles.py ${treedir}syst/
+#		./scripts/mergeSVLInfoFiles.py ${treedir}
+#		./scripts/mergeSVLInfoFiles.py ${treedir}syst/
+		./scripts/mergeSVLInfoFiles.py ${treedir}z_control/
 	;;
 	UNFOLD )
 		# inputs=("MC8TeV_TTJets_MSDecays_172v5")
-		inputs=("Data8TeV_merged"
-		        "MC8TeV_TTJets_MSDecays_172v5"
-		        "syst/MC8TeV_TT_Z2star_powheg_pythia"
-		        "syst/MC8TeV_TTJets_TuneP11"
-		        "syst/MC8TeV_TT_AUET2_powheg_herwig")
+		inputs=(#"Data8TeV_merged"
+		        #"MC8TeV_TTJets_MSDecays_172v5"
+		        #"syst/MC8TeV_TT_Z2star_powheg_pythia"
+		        #"syst/MC8TeV_TTJets_TuneP11"
+		        #"syst/MC8TeV_TT_AUET2_powheg_herwig"
+		        "z_control/MC8TeV_DY_merged_filt23"
+		        "z_control/Data8TeV_DoubleLepton_merged_filt23")
 		for c in ${cands[@]}; do
 			for i in ${inputs[@]}; do
 				if [ ! -f ${treedir}/${i}.root ]; then
@@ -46,19 +50,20 @@ case $WHAT in
 				ctag="${c}";
 				ctag=${ctag/","/"_"}
 				python scripts/unfoldResonanceProperties.py -c ${c} -i ${treedir}/${i}.root -o ${outdir}/c_${ctag};
-				if [[ ${i} == "MC8TeV_TTJets_MSDecays_172v5" ]]; then
-					for w in {0..5}; do
-						python scripts/unfoldResonanceProperties.py --weight BFragWeight[${w}] -c ${c} -i ${treedir}/${i}.root -o ${outdir}/c_${ctag};
-					done
+				if [ "$i" == "MC8TeV_TTJets_MSDecays_172v5" ] || [ "$i" != "${i/DY_merged/}" ]; then
+				    for w in {0..5}; do
+					python scripts/unfoldResonanceProperties.py --weight BFragWeight[${w}] -c ${c} -i ${treedir}/${i}.root -o ${outdir}/c_${ctag};
+				    done
 				fi
 				echo '-----------------------------'
-				i="${i#syst/}"
+				i="${i/syst/}"
+				i="${i/z_control/}"
 				python scripts/unfoldResonanceProperties.py -w ${outdir}/c_${ctag}/${i}/CharmInfo_workspace_${ctag}.root -o ${outdir}/c_${ctag}/${i}/diff;
-				if [[ ${i} == "MC8TeV_TTJets_MSDecays_172v5" ]]; then
-					fragvars=("bfragup" "bfragdn" "bfragp11" "bfragpete" "bfraglund")
-					for w in ${fragvars}; do
-						python scripts/unfoldResonanceProperties.py -w ${outdir}/c_${ctag}/${i}_${w}/CharmInfo_workspace_${ctag}.root -o ${outdir}/c_${ctag}/${i}_${w}/diff;
-					done
+				if [ "$i" == "MC8TeV_TTJets_MSDecays_172v5" ] || [ "$i" != "${i/DY_merged/}" ]; then
+				    fragvars=("bfragup" "bfragdn" "bfragp11" "bfragpete" "bfraglund")
+				    for w in ${fragvars}; do
+					python scripts/unfoldResonanceProperties.py -w ${outdir}/c_${ctag}/${i}_${w}/CharmInfo_workspace_${ctag}.root -o ${outdir}/c_${ctag}/${i}_${w}/diff;
+				    done
 				fi
 				echo ${i} "done"
 				echo "########################################"

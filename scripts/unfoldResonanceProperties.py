@@ -6,6 +6,7 @@ import optparse
 import math
 from CMS_lumi import CMS_lumi
 from runPlotter import openTFile
+from makeSVLMassHistos import LUMI
 
 VARIABLES = ["mass", "pt", "eta", "ptfrac", "pzfrac", "ptrel", "pfrac", "ptchfrac", "pzchfrac", "dr", "wgt"]
 XAXIS = {
@@ -286,14 +287,16 @@ def generateWorkspace(CandTypes,inputUrl,postfixForOutputs,options):
 		ws.var("ptchfrac") .setVal(chain.CandPt/chain.SumPtCharged)
 		ws.var("pzchfrac") .setVal(chain.CandPz/chain.SumPzCharged)
 		ws.var("dr")       .setVal(chain.CandDeltaR)
-		ws.var("wgt")      .setVal(1.0)
+		baseWeight = chain.Weight[0]*chain.XSWeight
+		if chain.XSWeight != 1 : baseWeight *= LUMI
+		ws.var("wgt")      .setVal(baseWeight)
 		if options.weight:
 			wvar = getattr(chain, wvarname)
 			try:
 				weight = float(wvar[int(wind)])
 			except TypeError:
 				weight = float(wvar)
-			ws.var("wgt").setVal(weight)
+			ws.var("wgt").setVal(weight*baseWeight)
 		argset = ROOT.RooArgSet()
 		for var in VARIABLES:
 			argset.add(ws.var(var))

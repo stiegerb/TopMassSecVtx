@@ -176,20 +176,23 @@ def buildWorkspace(opt):
 
                            
     #prepare to weight tag pT, if required
-    weightGr={}
+    ptWeightGr={}
     for itk in xrange(NTKMIN,NTKMAX+1):        
         if opt.weightPt:
-            hdata=ROOT.TH1F('hptdata','',50,0,500)
+            hdata=ROOT.TH1F('hptdata','',50,0,250)
             hdata.Sumw2()
             extraCond=''
             if opt.onlyCentral : extraCond+='&&TMath::Abs(JEta)<1.1'
             if opt.vetoCentral : extraCond+='&&TMath::Abs(JEta)>0.1'
             chains['data'].Draw('LPt>>hptdata','SVNtrk==%d && SVLxySig>%f %s'%(itk,opt.minLxySig,extraCond),'norm goff')
-            hmc=ROOT.TH1F('hptmc','',50,0,500)
+            hmc=ROOT.TH1F('hptmc','',50,0,250)
             hmc.Sumw2()
-            chains['mc'].Draw('LPt>>hptmc','(SVNtrk==%d %s)*Weight[0]*XSWeight*%f'%(itk,extraCond,LUMI),'norm goff')
-            hdata.Divide(hmc)
-            weightGr[itk]=ROOT.TGraphErrors(hdata)
+            for key in ['mc','mcscaleup','mcscaledown']:
+               hmc.Reset('ICE')
+               chains[key].Draw('LPt>>hptmc','(SVNtrk==%d %s)*Weight[0]*XSWeight*%f'%(itk,extraCond,LUMI),'norm goff')
+               hmc.Divide(hdata)
+               if not (key in ptWeightGr): ptWeightGr[key]={}
+               ptWeightGr[key][itk]=ROOT.TGraphErrors(hmc)
             hdata.Delete()
             hmc.Delete()
             
@@ -224,8 +227,10 @@ def buildWorkspace(opt):
             totalWeight=1.0
             if 'mc' in key:
                totalWeight=chains[key].Weight[0]*chains[key].XSWeight*LUMI
-               lpt=ROOT.TMath.Min(chains[key].LPt,500)
-               totalWeight *= weightGr[ntk].Eval(lpt)
+               lpt=ROOT.TMath.Min(chains[key].LPt,250)
+               if key in ptWeightGr:
+                  ptWeightInv=ptWeightGr[key][ntk].Eval(lpt)
+                  if ptWeightInv>0.01 : totalWeight /= ptWeightInv 
 
             #count and fill histograms
             histoVars={}

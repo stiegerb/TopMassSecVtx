@@ -73,7 +73,7 @@ case $WHAT in
 		done
 	;;
 	DIFF )
-		plotdir=${outdir}/finalplots/
+		plotdir=${outdir}/finalplots/tt
 		mkdir -p ${plotdir}
 		a=("D0" "JPsi" "Dpm")
 
@@ -107,14 +107,41 @@ case $WHAT in
 			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.50 --tag ${a} -d norm_dr_signal
 		done
 	;;
+	DIFFZ )
+		plotdir=${outdir}/finalplots/z
+		mkdir -p ${plotdir}
+		a=("D0" "JPsi" "Dpm")
+
+		for c in ${cands[@]}; do
+			a="D0"
+			if [[ ${c} == "411" ]]; then
+				a="Dpm";
+			elif [[ ${c} == "44300" ]]; then
+				a="JPsi";
+			fi
+			mkdir -p ${plotdir}${a}
+			ctag="${c}"
+			ctag=${ctag/","/"_"}
+
+			#differential measurements
+			titles="Madgraph+Pythia+Z2*,Data";
+			mcs="${outdir}/c_${ctag}/MC8TeV_DY_merged_filt23/diff/,${outdir}/c_${ctag}/Data8TeV_DoubleLepton_merged_filt23/diff/";
+
+			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5 --tag ${a};
+			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS -m 0.75 --tag ${a};
+			#unfolded
+			mcs="${outdir}/c_${ctag}/MC8TeV_DY_merged_filt23/,${outdir}/c_${ctag}/Data8TeV_DoubleLepton_merged_filt23/";
+
+			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.35 --tag ${a} -d norm_ptrel_signal
+			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.45 --tag ${a} -d norm_pfrac_signal
+			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.45 --tag ${a} -d norm_ptfrac_signal
+			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.45 --tag ${a} -d norm_pzfrac_signal
+			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.40 --tag ${a} -d norm_ptchfrac_signal
+			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.40 --tag ${a} -d norm_pzchfrac_signal
+			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.50 --tag ${a} -d norm_dr_signal
+		done
+	;;
+
 esac
 
-
-# Deprecated:
-# for f in ${treedir}*.root ; do ./scripts/unfoldResonanceProperties.py -i $f -c 44300 -o unfolded_JPsi_${tag}/ ; done
-# for f in ${treedir}*.root ; do ./scripts/unfoldResonanceProperties.py -i $f -c 421011,421013 -o unfolded_D0_${tag}/ ; done
-# for f in ${treedir}*.root ; do ./scripts/unfoldResonanceProperties.py -i $f -c 411 -o unfolded_Dpm_${tag}/ ; done
-# for f in unfolded_JPsi_${tag}/* ; do ./scripts/unfoldResonanceProperties.py -w unfolded_JPsi_${tag}/$f/CharmInfo_workspace_44300.root ; done
-# for f in unfolded_D0_${tag}/* ; do ./scripts/unfoldResonanceProperties.py -w unfolded_D0_${tag}/$f/CharmInfo_workspace_421013_421011.root ; done
-# for f in unfolded_Dpm_${tag}/* ; do ./scripts/unfoldResonanceProperties.py -w unfolded_Dpm_${tag}/$f/CharmInfo_workspace_411.root ; done
 

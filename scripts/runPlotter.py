@@ -31,6 +31,19 @@ def getCMSPfn(path, protocol='rfio'):
     cmsf = cmsFile(url, protocol)
     return cmsf.pfn
 
+def checkKeyInFile(key, filehandle, doraise=True):
+    obj = ROOT.TObject()
+    try:
+        filehandle.GetObject(key, obj)
+        return True
+    except LookupError, e:
+        print ("Error: key %s not found in file %s" %
+               (key, filehandle.GetName()))
+        if doraise:
+            raise e
+        else:
+            return False
+
 def getNormalization(tfile):
     constVals = tfile.Get('constVals')
     try:
@@ -378,7 +391,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
             if options.verbose > 0:
                 print ("  adding %s (Integral: %s) (Color %d) (Isdata %d)" %
                         (hist.GetName(), hist.Integral(), color, isData))
-
+            
             newPlot.add(hist,title,color,isData)
 
     if options.normToData :

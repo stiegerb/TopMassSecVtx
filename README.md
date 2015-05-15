@@ -98,7 +98,7 @@ To print event yields, run ```printSVLEventYields.py``` on the output of the scr
 It takes as input a runPlotter output file produced by ```makeSVLQCDTemplates.py``` called ```scaled_met_inputs.root``` with properly scaled MET distributions in the signal region, and a file with the final qcd templates, also produced by ```makeSVLQCDTemplates.py``` called ```qcd_templates.root```.
 ```
 ./scripts/makeSVLQCDTemplates.py treedir/ -o svlplots/qcd/
-./test/topss2014/qcdFitter.py svlplots/qcd/scaled_met_inputs.root svlplots/qcd/qcd_templates.root
+./test/topss2014/qcdFitter.py svlplots/qcd/scaled_met_inputs.root svlplots/qcd/qcd_templates.root -s
 ```
 
 

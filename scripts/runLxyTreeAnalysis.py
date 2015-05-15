@@ -200,7 +200,9 @@ def runLxyTreeAnalysis(name, location, treeloc, xsecweights, maxevents=-1):
         print 50*'<'
         return False
 
-    ana = LxyTreeAnalysis(ch)
+    weightsDir='data/weights'
+    if 'Data' in name: weightsDir=''
+    ana = LxyTreeAnalysis(ch,weightsDir)
     if maxevents > 0:
         ana.setMaxEvents(maxevents)
 

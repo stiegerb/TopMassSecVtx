@@ -10,7 +10,6 @@ eosdir=/store/cmst3/group/top/summer2014/${hash}/
 # cands=("421")
 # cands=("411")
 # cands=("44300") ## j/psi mumu
-#cands=("421013,421011")
 cands=("44300" "411" "421013,421011")
 
 echo "Running on "${treedir}
@@ -19,25 +18,29 @@ mkdir -p ${outdir}
 
 case $WHAT in
 	TREES )
-#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}              ${eosdir}           -p MC8TeV_TTJets_MSDecays_172v5
-#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}              ${eosdir}           -p Data8TeV
-#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/         ${eosdir}syst/      -p MC8TeV_TTJets_TuneP11_
-#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/         ${eosdir}syst/      -p MC8TeV_TT_Z2star_powheg_pythia
-#		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/         ${eosdir}syst/      -p MC8TeV_TT_AUET2_powheg_herwig
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}              ${eosdir}           -p MC8TeV_TTJets_MSDecays_172v5
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}              ${eosdir}           -p Data8TeV
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/         ${eosdir}syst/      -p MC8TeV_TTJets_TuneP11_
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/         ${eosdir}syst/      -p MC8TeV_TT_Z2star_powheg_pythia
+		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}syst/         ${eosdir}syst/      -p MC8TeV_TT_AUET2_powheg_herwig
 		./scripts/runLxyTreeAnalysis.py -j 8 -o ${treedir}z_control/    ${eosdir}z_control/ 
 	;;
 	MERGE )
-#		./scripts/mergeSVLInfoFiles.py ${treedir}
-#		./scripts/mergeSVLInfoFiles.py ${treedir}syst/
+		./scripts/mergeSVLInfoFiles.py ${treedir}
+		./scripts/mergeSVLInfoFiles.py ${treedir}syst/
 		./scripts/mergeSVLInfoFiles.py ${treedir}z_control/
 	;;
+        PLOT)
+	         runPlotter.py ${treedir}z_control/ --filter "JPsi,D0,Dpm" --cutUnderOverFlow --json test/topss2014/z_samples.json
+        ;;
 	UNFOLD )
-		# inputs=("MC8TeV_TTJets_MSDecays_172v5")
-		inputs=(#"Data8TeV_merged"
-		        #"MC8TeV_TTJets_MSDecays_172v5"
-		        #"syst/MC8TeV_TT_Z2star_powheg_pythia"
-		        #"syst/MC8TeV_TTJets_TuneP11"
-		        #"syst/MC8TeV_TT_AUET2_powheg_herwig"
+
+         	 #here it is assuming we went to the directory and merged by hand
+		inputs=("Data8TeV_merged"
+		        "MC8TeV_TTJets_MSDecays_172v5"
+		        "syst/MC8TeV_TT_Z2star_powheg_pythia"
+		        "syst/MC8TeV_TTJets_TuneP11"
+		        "syst/MC8TeV_TT_AUET2_powheg_herwig"
 		        "z_control/MC8TeV_DY_merged_filt23"
 		        "z_control/Data8TeV_DoubleLepton_merged_filt23")
 		for c in ${cands[@]}; do
@@ -60,10 +63,11 @@ case $WHAT in
 				i="${i/z_control/}"
 				python scripts/unfoldResonanceProperties.py -w ${outdir}/c_${ctag}/${i}/CharmInfo_workspace_${ctag}.root -o ${outdir}/c_${ctag}/${i}/diff;
 				if [ "$i" == "MC8TeV_TTJets_MSDecays_172v5" ] || [ "$i" != "${i/DY_merged/}" ]; then
-				    fragvars=("bfragup" "bfragdn" "bfragp11" "bfragpete" "bfraglund")
-				    for w in ${fragvars}; do
+				    fragvars=("bfrag" "bfragup" "bfragdn" "bfragp11" "bfragpete" "bfraglund")
+				    for w in ${fragvars[@]}; do
+					echo "   ${w}"
 					python scripts/unfoldResonanceProperties.py -w ${outdir}/c_${ctag}/${i}_${w}/CharmInfo_workspace_${ctag}.root -o ${outdir}/c_${ctag}/${i}_${w}/diff;
-				    done
+					done
 				fi
 				echo ${i} "done"
 				echo "########################################"
@@ -88,23 +92,15 @@ case $WHAT in
 			ctag="${c}"
 			ctag=${ctag/","/"_"}
 
-			titles="Madgraph+Pythia+Z2*,Madgraph+Pythia+P11,Powheg+Herwig+AUET2,Powheg+Pythia+Z2*,Data";
-
 			#differential measurements
-			mcs="${outdir}/c_${ctag}/MC8TeV_TTJets_MSDecays_172v5/diff/,${outdir}/c_${ctag}/MC8TeV_TTJets_TuneP11/diff/,${outdir}/c_${ctag}/MC8TeV_TT_AUET2_powheg_herwig/diff,${outdir}/c_${ctag}/MC8TeV_TT_Z2star_powheg_pythia/diff,${outdir}/c_${ctag}/Data8TeV_merged/diff/";
+			python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5  --tag ${a} --pullrange -3.8,3.8;
+			python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS  -m 0.75 --tag ${a} --pullrange -3.8,3.8;
 
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5 --tag ${a};
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS -m 0.75 --tag ${a};
 			#unfolded
-			mcs="${outdir}/c_${ctag}/MC8TeV_TTJets_MSDecays_172v5/,${outdir}/c_${ctag}/MC8TeV_TTJets_TuneP11/,${outdir}/c_${ctag}/MC8TeV_TT_AUET2_powheg_herwig/,${outdir}/c_${ctag}/MC8TeV_TT_Z2star_powheg_pythia/,${outdir}/c_${ctag}/Data8TeV_merged/";
-
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.35 --tag ${a} -d norm_ptrel_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.45 --tag ${a} -d norm_pfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.45 --tag ${a} -d norm_ptfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.45 --tag ${a} -d norm_pzfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.40 --tag ${a} -d norm_ptchfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.40 --tag ${a} -d norm_pzchfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.50 --tag ${a} -d norm_dr_signal
+			unfvars=("norm_ptrel_signal" "norm_pfrac_signal" "norm_ptfrac_signal" "norm_pzfrac_signal" "norm_ptchfrac_signal" "norm_pzchfrac_signal" "norm_dr_signal")
+			for var in ${unfvars[@]}; do
+				python scripts/compareUnfoldedDistributions.py -d ${var} --pullrange -6.8,10.8 -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b UnfoldedDistributions --tag ${a}
+			done
 		done
 	;;
 	DIFFZ )
@@ -124,21 +120,14 @@ case $WHAT in
 			ctag=${ctag/","/"_"}
 
 			#differential measurements
-			titles="Madgraph+Pythia+Z2*,Data";
-			mcs="${outdir}/c_${ctag}/MC8TeV_DY_merged_filt23/diff/,${outdir}/c_${ctag}/Data8TeV_DoubleLepton_merged_filt23/diff/";
+			python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5  --tag ${a} --pullrange -3.8,3.8 -z;
+			python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS  -m 0.75 --tag ${a} --pullrange -3.8,3.8 -z;
 
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5 --tag ${a};
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS -m 0.75 --tag ${a};
 			#unfolded
-			mcs="${outdir}/c_${ctag}/MC8TeV_DY_merged_filt23/,${outdir}/c_${ctag}/Data8TeV_DoubleLepton_merged_filt23/";
-
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.35 --tag ${a} -d norm_ptrel_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.45 --tag ${a} -d norm_pfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.45 --tag ${a} -d norm_ptfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.45 --tag ${a} -d norm_pzfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.40 --tag ${a} -d norm_ptchfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.40 --tag ${a} -d norm_pzchfrac_signal
-			python scripts/compareUnfoldedDistributions.py -i ${mcs} -t ${titles} -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.50 --tag ${a} -d norm_dr_signal
+			unfvars=("norm_ptrel_signal" "norm_pfrac_signal" "norm_ptfrac_signal" "norm_pzfrac_signal" "norm_ptchfrac_signal" "norm_pzchfrac_signal" "norm_dr_signal")
+			for var in ${unfvars[@]}; do
+			    python scripts/compareUnfoldedDistributions.py -d ${var} --pullrange -6.8,10.8 -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b UnfoldedDistributions --tag ${a} --pullrange -3.8,3.8 -z;
+			done
 		done
 	;;
 

@@ -144,8 +144,8 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("jtoraw",       bev_.jtoraw,       "jtoraw[nj]/F");
   outT_->Branch("jjesup",       bev_.jjesup,       "jjesup[nj][26]/F");
   outT_->Branch("jjesdn",       bev_.jjesdn,       "jjesdn[nj][26]/F");
-  outT_->Branch("jjerup",      &bev_.jjerup,       "jjerup[nj]/F");
-  outT_->Branch("jjerdn",      &bev_.jjerdn,       "jjesdn[nj]/F");
+  outT_->Branch("jjerup",       bev_.jjerup,       "jjerup[nj]/F");
+  outT_->Branch("jjerdn",       bev_.jjerdn,       "jjesdn[nj]/F");
   outT_->Branch("jbhadmatchdr", bev_.jbhadmatchdr, "jbhadmatchdr[nj]/F");
   outT_->Branch("gjpt",         bev_.gjpt,         "gjpt[nj]/F");
   outT_->Branch("gjeta",        bev_.gjeta,        "gjeta[nj]/F");

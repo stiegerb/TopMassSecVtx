@@ -28,10 +28,6 @@
 #define IS_BHADRON_PDGID(id) ( ((abs(id)/100)%10 == 5) || (abs(id) >= 5000 && abs(id) <= 5999) )
 #define IS_NEUTRINO_PDGID(id) ( (abs(id) == 12) || (abs(id) == 14) || (abs(id) == 16) )
 
-bool compare_mlB( std::vector<float> a, std::vector<float> b)
-{
-  return a[0]<b[0];
-}
 
 class FragmentationAnalyzer : public edm::EDAnalyzer {
 
@@ -67,8 +63,8 @@ FragmentationAnalyzer::FragmentationAnalyzer(const edm::ParameterSet& cfg) :
   //summary tree
   ntuple_ = fs->make<TTree>("FragTree","FragTree");
   ntuple_->Branch("nB",    &nB_,    "nB/I");
-  ntuple_->Branch("Bid",    Bid_,   "Bid[nB]/F");
-  ntuple_->Branch("Bntk",   Bntk_,  "Bntk[nB]/F");
+  ntuple_->Branch("Bid",    Bid_,   "Bid[nB]/I");
+  ntuple_->Branch("Bntk",   Bntk_,  "Bntk[nB]/I");
   ntuple_->Branch("Bpt",    Bpt_,   "Bpt[nB]/F");
   ntuple_->Branch("Beta",   Beta_,  "Beta[nB]/F");
   ntuple_->Branch("Bphi",   Bphi_,  "Bphi[nB]/F");
@@ -82,7 +78,7 @@ FragmentationAnalyzer::FragmentationAnalyzer(const edm::ParameterSet& cfg) :
   ntuple_->Branch("Bsvphi", Bsvphi_,"Bsvphi[nB]/F");
   ntuple_->Branch("Bsvm",   Bsvm_,  "Bsvm[nB]/F");
   ntuple_->Branch("nL",    &nL_,    "nL/I");
-  ntuple_->Branch("Lid",    Lid_,   "Lid[nL]/F");
+  ntuple_->Branch("Lid",    Lid_,   "Lid[nL]/I");
   ntuple_->Branch("Lpt",    Lpt_,   "Lpt[nL]/F");
   ntuple_->Branch("Leta",   Leta_,  "Leta[nL]/F");
   ntuple_->Branch("Lphi",   Lphi_,  "Lphi[nL]/F");
@@ -92,14 +88,13 @@ FragmentationAnalyzer::FragmentationAnalyzer(const edm::ParameterSet& cfg) :
 //
 void FragmentationAnalyzer::analyze(const edm::Event& evt, const edm::EventSetup& setup)
 {  
+  std::vector<int> leptons,bHadrons;
+
+  //gen jets
   edm::Handle<std::vector< reco::GenJet > > genJets;
   evt.getByLabel(genJets_, genJets);
   
-  //////////////////////////////////////////////////////////////////////////
-  // GENPARTICLES
-  ////////////////////////////////////////////////////////////////////////  
-  std::vector<int> leptons,bHadrons,bHadrons_jet;
-
+  //gen particles
   edm::Handle<reco::GenParticleCollection> genParticles;
   evt.getByLabel("genParticles", genParticles);
   for(size_t i = 0; i < genParticles->size(); ++ i) 
@@ -114,8 +109,7 @@ void FragmentationAnalyzer::analyze(const edm::Event& evt, const edm::EventSetup
 	{ 
 	  if(p.pt()<20 || fabs(p.eta())>2.5 || mother==0 || abs(mother->pdgId())!=24) continue;
 	  leptons.push_back(i); 
-	}
-      
+	}      
 
       //B hadrons
       if (!IS_BHADRON_PDGID(id)) continue;
@@ -138,40 +132,83 @@ void FragmentationAnalyzer::analyze(const edm::Event& evt, const edm::EventSetup
 	}
       if(hasBDaughter) continue;
       
+      bHadrons.push_back(i);
+
       // Weakly decaying B hadron
       hists.find("genBHadronNuDecay")->second->Fill( hasNuDaughter );
       
       // Fragmentation distribution
-      int matchedJet(-1);
-      int jetCtr(0);
       for (std::vector< reco::GenJet >::const_iterator ijet = genJets->begin(); 
 	   ijet != genJets->end(); 
-	   ++ijet, jetCtr++) 
+	   ++ijet)
 	{
 	  if (p.pt() == 0 || ijet->pt() == 0) continue;
-	  double deta = p.eta() - ijet->eta();
-	  double dphi = TVector2::Phi_mpi_pi(p.phi() - ijet->phi());
-	  double dr   = sqrt( deta*deta + dphi*dphi );
+	  double dr   = deltaR(p,*ijet);
 	  
 	  // Simple dR match of hadron and GenJet
 	  if (dr < 0.5) 
 	    {
 	      double xb = p.pt()/ijet->pt();
-	      hists.find("genBHadronPtFraction")->second->Fill(xb);
-	      matchedJet=jetCtr;
+	      hists.find("genBHadronPtFraction")->second->Fill(xb);	      
 	      break;
 	    }
 	}
-	  
-      //require some fiducial jet reconstruction criteria
-      bHadrons.push_back(i);
-      bHadrons_jet.push_back(-1);
-      if(matchedJet>=0)
+    }
+
+  if(bHadrons.size()==0) return;
+
+  //for b-hadron studies
+  nB_=0;
+  for (std::vector< reco::GenJet >::const_iterator ijet = genJets->begin();
+       ijet != genJets->end();
+       ++ijet)
+    {
+      //fiducial cuts
+      if(ijet->pt()<20) continue;
+      if(fabs(ijet->eta())>2.5) continue;
+
+      //quality cuts
+      if(ijet->hadEnergy()/ijet->energy()<0.05) continue; 
+      if(ijet->emEnergy()/ijet->energy()>0.95)  continue; 
+      if(ijet->getGenConstituents().size()<2)   continue;
+	
+      //check if a B hadron can be matched
+      bool isBjet(false);
+      for(int k=bHadrons.size()-1; k>=0; --k)
 	{
-	  const reco::GenJet & bjet = (*genJets)[ matchedJet ];
-	  if(bjet.pt()>25 && fabs(bjet.eta())<2.5)
-	    bHadrons_jet[bHadrons_jet.size()-1]=matchedJet;
-	}    
+	  const reco::GenParticle & bhad = (*genParticles)[ bHadrons[k] ];
+	  float dR=deltaR(bhad,*ijet);
+	  if(dR>0.5) continue;
+
+	  Bid_[nB_]  = bhad.pdgId();
+	  Bpt_[nB_]  = bhad.pt();
+	  Beta_[nB_] = bhad.eta();      
+	  Bphi_[nB_] = bhad.phi();
+	  Bm_[nB_]   = bhad.mass();
+	  Bntk_[nB_] = 0;
+	  LorentzVector svP4(0,0,0,0);
+	  for(size_t j = 0; j < bhad.numberOfDaughters(); ++j) 
+	    {
+	      const reco::Candidate * d = bhad.daughter(j);
+	      if(d==0) continue;
+	      if(d->charge()==0) continue;
+	      svP4 += d->p4();
+	      Bntk_[nB_] += (d->charge()!=0);
+	    }
+	  Bsvpt_[nB_]=svP4.pt();
+	  Bsveta_[nB_]=svP4.eta();
+	  Bsvphi_[nB_]=svP4.phi();
+	  Bsvm_[nB_]=svP4.mass();
+	  isBjet=true;
+	  break;
+	}
+      if(!isBjet) continue;
+
+      Bjpt_[nB_]  = ijet->pt();
+      Bjeta_[nB_] = ijet->eta();
+      Bjphi_[nB_] = ijet->phi();
+      Bjm_[nB_]   = ijet->mass();
+      nB_++;
     }
   
   //leptons from W may be from semileptonic hadron decays (at least in Sherpa)
@@ -194,63 +231,8 @@ void FragmentationAnalyzer::analyze(const edm::Event& evt, const edm::EventSetup
       Lm_[nL_]   = lep.mass();
       nL_++;
     }
-
-  nB_=0;
-  for(size_t ib=0; ib<bHadrons.size(); ib++)
-    {
-      const reco::GenParticle & bhad = (*genParticles)[ bHadrons[ib] ];
-      Bid_[nB_]  = bhad.pdgId();
-      Bpt_[nB_]  = bhad.pt();
-      Beta_[nB_] = bhad.eta();      
-      Bphi_[nB_] = bhad.phi();
-      Bm_[nB_]   = bhad.mass();
-
-      //loop over daughters
-      Bntk_[nB_]=0;
-      LorentzVector svP4(0,0,0,0);
-      const reco::Candidate *fs=utils::cmssw::getGeneratorFinalStateFor(&bhad);
-      for(size_t j = 0; j < fs->numberOfDaughters(); ++j) 
-	{
-	  const reco::Candidate * d = utils::cmssw::getGeneratorFinalStateFor( fs->daughter( j ) );
-	  if(d==0) continue;
-
-	  //if stable take it
-	  if(d->numberOfDaughters()==0)
-	    {
-	      if(d->charge()==0) continue;
-	      svP4 += d->p4();
-	      Bntk_[nB_] += (d->charge()!=0);
-	    }
-	  //otherwise look once more to the grand-daughters
-	  else
-	    {
-	      for(size_t k = 0; k < d->numberOfDaughters(); ++k) 
-		{
-		  const reco::Candidate * dd = d->daughter(k);
-		  if(dd->charge()==0) continue;
-		  svP4 += dd->p4();
-		  Bntk_[nB_] += (dd->charge()!=0);
-		}
-	    }
-	}
-
-      Bsvpt_[nB_]=svP4.pt();
-      Bsveta_[nB_]=svP4.eta();
-      Bsvphi_[nB_]=svP4.phi();
-      Bsvm_[nB_]=svP4.mass();
-
-
-      Bjpt_[nB_]=0;      Bjeta_[nB_]=0;      Bjphi_[nB_]=0;      Bjm_[nB_]=0;
-      if( bHadrons_jet[ib]>=0 )
-	{
-	  const reco::GenJet & bjet = (*genJets)[ bHadrons_jet[ib] ];
-	  Bjpt_[nB_]=bjet.pt();
-	  Bjeta_[nB_]=bjet.eta();
-	  Bjphi_[nB_]=bjet.phi();
-	  Bjm_[nB_]=bjet.mass();
-	}
-      nB_++;
-    }
+  
+  //fill ntuple
   if(nL_ && nB_) ntuple_->Fill();
 }
 

@@ -4,7 +4,7 @@ import os,sys
 import pickle
 import ROOT
 
-CATEGORIES = ['e','m']
+CATEGORIES = ['e','m','etoppt','mtoppt']
 OUTDIR = 'qcdfits'
 
 
@@ -13,43 +13,82 @@ Displays the results of the fit
 """
 def showFitResults(w,cat,options) :
 	c=ROOT.TCanvas('c'+cat,'c'+cat,500,500)
-	c.SetRightMargin(0.05)
-	c.SetTopMargin(0.05)
-	c.SetBottomMargin(0.1)
-	c.SetLeftMargin(0.15)
+	c.SetRightMargin(0)
+	c.SetLeftMargin(0)
+	c.SetTopMargin(0)
+	c.SetBottomMargin(0)
 
+	p1 = ROOT.TPad('p1','p1',0.0,0.85,1.0,0.0)
+	p1.Draw()
+	c.cd()
+	p2 = ROOT.TPad('p2','p2',0.0,0.85,1.0,1.0)
+	p2.Draw()
+	
 	frame=w.var('x').frame()
 	data=w.data('roohist_data_'+cat)
 	data.plotOn(frame, ROOT.RooFit.Name('data'))
 	pdf=w.pdf('model_'+cat)
+	pdf.plotOn(frame,ROOT.RooFit.MoveToBack(), ROOT.RooFit.FillColor(592), ROOT.RooFit.LineColor(1), ROOT.RooFit.LineWidth(1), ROOT.RooFit.DrawOption('lf'), ROOT.RooFit.Name('other') )
+	
+	# the pull
+	p2.cd()
+	p2.Clear()
+	p2.SetBottomMargin(0.005)
+	p2.SetRightMargin(0.05)
+	p2.SetLeftMargin(0.12)
+	p2.SetTopMargin(0.05)
+	p2.SetGridx(True)
+	p2.SetGridy(True)
 
+	hpull = frame.pullHist()
+	pullFrame = w.var('x').frame()
+	pullFrame.addPlotable(hpull,"P") ;
+	pullFrame.Draw()
+	pullFrame.GetYaxis().SetTitle("Pull")
+	pullFrame.GetYaxis().SetTitleSize(0.3)
+	pullFrame.GetYaxis().SetLabelSize(0.2)
+	pullFrame.GetXaxis().SetTitleSize(0)
+	pullFrame.GetXaxis().SetLabelSize(0)
+	pullFrame.GetYaxis().SetTitleOffset(0.1)
+	pullFrame.GetYaxis().SetNdivisions(4)
+	pullFrame.GetYaxis().SetRangeUser(-3.1,3.1)
+	pullFrame.GetXaxis().SetTitleOffset(0.8)
+
+	#complete the initial frame
+	p1.cd()
+	p1.Clear()
+	p1.SetRightMargin(0.05)
+	p1.SetLeftMargin(0.12)
+	p1.SetTopMargin(0.008)
+	p1.SetBottomMargin(0.15)
+	p1.SetGridx(True)
 	if not options.useSideBand:
 		pdfSubSet=ROOT.RooArgSet(w.pdf('pdf_bkg_cont_%s'%(cat) ))
 		pdf.plotOn(frame, ROOT.RooFit.Components( pdfSubSet ), ROOT.RooFit.MoveToBack(), ROOT.RooFit.FillColor(17),  ROOT.RooFit.LineColor(1), ROOT.RooFit.LineWidth(1), ROOT.RooFit.DrawOption('lf'), ROOT.RooFit.Name('bkg') )
-		pdf.plotOn(frame,                                      ROOT.RooFit.MoveToBack(), ROOT.RooFit.FillColor(592), ROOT.RooFit.LineColor(1), ROOT.RooFit.LineWidth(1), ROOT.RooFit.DrawOption('lf'), ROOT.RooFit.Name('other') )
+
 	else:
 		pdfSubSet=ROOT.RooArgSet( w.pdf('pdf_bkg_%s'%(cat) ) )
-		pdf.plotOn(frame,ROOT.RooFit.Components( pdfSubSet ), ROOT.RooFit.MoveToBack(), ROOT.RooFit.FillColor(17),  ROOT.RooFit.LineColor(1), ROOT.RooFit.LineWidth(1), ROOT.RooFit.DrawOption('lf'), ROOT.RooFit.Name('bkg') )
-		pdf.plotOn(frame,                                     ROOT.RooFit.MoveToBack(), ROOT.RooFit.FillColor(592), ROOT.RooFit.LineColor(1), ROOT.RooFit.LineWidth(1), ROOT.RooFit.DrawOption('lf'), ROOT.RooFit.Name('other') )
+		pdf.plotOn(frame,ROOT.RooFit.Components( pdfSubSet ),                           ROOT.RooFit.FillColor(17),  ROOT.RooFit.LineColor(1), ROOT.RooFit.LineWidth(1), ROOT.RooFit.DrawOption('lf'), ROOT.RooFit.Name('bkg') )
 
-	frame.Draw()
+		frame.Draw()
 	frame.GetYaxis().SetTitle('Events')
 	frame.GetXaxis().SetTitle(w.var('x').GetTitle())
 	frame.GetYaxis().SetLabelSize(0.04)
 	frame.GetYaxis().SetTitleSize(0.05)
-	frame.GetYaxis().SetTitleOffset(1.5)
+	frame.GetYaxis().SetTitleOffset(1.2)
 	frame.GetXaxis().SetLabelSize(0.04)
 	frame.GetXaxis().SetTitleSize(0.05)
 	frame.GetXaxis().SetTitleOffset(0.8)
 
 	#the CMS header
-	pt = ROOT.TPaveText(0.12,0.96,0.9,1.0,"brNDC")
+	pt = ROOT.TPaveText(0.12,0.95,0.9,0.98,"brNDC")
 	pt.SetBorderSize(0)
 	pt.SetFillColor(0)
 	pt.SetFillStyle(0)
+	pt.SetTextSize(0.04)
 	pt.SetTextAlign(12)
 	pt.SetTextFont(42)
-	pt.AddText("#bf{CMS} #it{work in progress} 19.7 fb^{-1} (8 TeV)")
+	pt.AddText("#bf{CMS} #it{preliminary} 19.7 fb^{-1} (8 TeV)")
 	pt.Draw()
 
 	#region header
@@ -59,7 +98,8 @@ def showFitResults(w,cat,options) :
 	regpt.SetFillStyle(0)
 	regpt.SetTextAlign(12)
 	regpt.SetTextFont(42)
-	regpt.AddText('%s events' % ({'e':'e', 'm':'#mu'}[cat]))
+	if cat.find('m')==0 : regpt.AddText('#mu events')
+	else                : regpt.AddText('e events')
 	regpt.Draw()
 
 	leg=ROOT.TLegend(0.6,0.76,0.9,0.95)
@@ -87,12 +127,16 @@ def showFitResults(w,cat,options) :
 	fitpt.AddText('SF_{others} = %3.2f' % (w.var('nu_%s'%cat).getVal()))
 	fitpt.Draw()
 
+	c.cd()
 	c.Modified()
 	c.Update()
 	outname = 'qcd_met_fit_%s'%cat
 	if options.useSideBand: outname += '_sidebands'
 	c.SaveAs(os.path.join(OUTDIR, '%s.pdf'% outname))
 	c.SaveAs(os.path.join(OUTDIR, '%s.png'% outname))
+	p1.Delete()
+	p2.Delete()
+	c.Delete()
 
 """
 Auxiliary function: fill the histograms which contain data and MC in the different regions from file
@@ -265,7 +309,11 @@ def main(args, options) :
 		for ntk in [tk1 for tk1,_ in NTRKBINS]:
 			for sel in ['_mrank1','','_optmrank']:
 				h_ntk = fQCD.Get('%s%s_qcd_template_%d'%(cat,sel,ntk))
-				iniNorm = h_ntk.Integral()
+				iniNorm=1
+				try:
+					iniNorm = h_ntk.Integral()
+				except:
+					continue
 				frac = iniNorm/totalIncSideBand
 				finalNorm = frac*totalInc
 				h_ntk.Scale(finalNorm/iniNorm)

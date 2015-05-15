@@ -21,7 +21,7 @@ sh test/topss2014/submitNtupleProduction.sh [sample=presel,syst,mass,control,pdf
 ```
 Will create the base ntuple summary
 ```
-./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json,test/topss2014/qcd_samples.json,test/topss2014/z_samples.json,test/topss2014/photon_samples.json
+./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json,test/topss2014/qcd_samples.json,test/topss2014/z_samples.json,test/topss2014/z_syst_samples.json,test/topss2014/photon_samples.json
 ```
 Will create a pickle file summarizing all the cross section-based normalization to be used
 ```
@@ -98,7 +98,7 @@ To print event yields, run ```printSVLEventYields.py``` on the output of the scr
 It takes as input a runPlotter output file produced by ```makeSVLQCDTemplates.py``` called ```scaled_met_inputs.root``` with properly scaled MET distributions in the signal region, and a file with the final qcd templates, also produced by ```makeSVLQCDTemplates.py``` called ```qcd_templates.root```.
 ```
 ./scripts/makeSVLQCDTemplates.py treedir/ -o svlplots/qcd/
-./test/topss2014/qcdFitter.py svlplots/qcd/scaled_met_inputs.root svlplots/qcd/qcd_templates.root
+./test/topss2014/qcdFitter.py svlplots/qcd/scaled_met_inputs.root svlplots/qcd/qcd_templates.root -s
 ```
 
 

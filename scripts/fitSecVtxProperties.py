@@ -128,8 +128,8 @@ def buildWorkspace(opt):
 
    #prepare histograms for re-composition, after the fit
     baseHistos=[
-       ROOT.TH1F('chfrac',  ';p_{T}(SecVtx)/|#sigma\vec{p}_{T}(ch.)};Events;', 36,0,1.5),
-       ROOT.TH1F('chfracz', ';p_{z}(SecVtx)/|#sigmap_{z}(ch.)|;Events;',       36,0,1.5),
+       ROOT.TH1F('chfrac',  ';p_{T}(SecVtx)/|#Sigma#vec{p}_{T}(ch.)};Events;', 36,0,1.5),
+       ROOT.TH1F('chfracz', ';p_{z}(SecVtx)/|#Sigmap_{z}(ch.)|;Events;',       36,0,1.5),
        ROOT.TH1F('svprojfrac', ';R_{SPF}=1+#vec{p}(SecVtx).#vec{p}(tag)/|#vec{p}(tag)|^{2};Events;', 36,0,2),
        ROOT.TH1F('lxy',     ';L_{xy} [cm];Events;',                      36,0,15),
        ROOT.TH1F('lxysig',  ';L_{xy} significance;Events;',              36,0,100),
@@ -149,35 +149,60 @@ def buildWorkspace(opt):
                 histos[hkey]=h.Clone(hkey)
                 histos[hkey].Sumw2()
                 histos[hkey].SetDirectory(0)
- 
+                if key!='data':
+                   for pf in ['scaleup','scaledown']:
+                      histos[hkey+'_'+pf]=h.Clone(hkey+'_'+pf)
+                      histos[hkey+'_'+pf].Sumw2()
+                      histos[hkey+'_'+pf].SetDirectory(0)
+                      
     #add files to the corresponding chain
-    chains={'data':ROOT.TChain('SVLInfo'), 'mc':ROOT.TChain('SVLInfo')}
+    chains={'data'       : ROOT.TChain('SVLInfo'), 
+            'mc'         : ROOT.TChain('SVLInfo'),
+            'mcscaleup'  : ROOT.TChain('SVLInfo'),
+            'mcscaledown': ROOT.TChain('SVLInfo')}
     for f in [ f for f in os.listdir(opt.inDir) if 'root' in f]:      
-        key = 'data'
-        if f.find('MC')==0: key='mc'
-        print key,f
-        chains[key].Add(os.path.join(opt.inDir,f))
+        pathToF=os.path.join(opt.inDir,f)
+        if 'DY' in f and 'scale' in f : continue
+        if f.find('MC')==0: 
+           chains['mc'].Add(pathToF)
+           pathToF_up, pathToF_dn = pathToF, pathToF
+           if 'DY1' in f or 'DY2' in f or 'DY3' in f:
+              pathToF_up=pathToF_up.replace('50toInf','50toInf_scaleup')
+              pathToF_dn=pathToF_up.replace('scaleup','scaledown')
+           chains['mcscaleup'].Add(pathToF_up)
+           chains['mcscaledown'].Add(pathToF_dn)
+        else:
+           chains['data'].Add(pathToF)
+
                            
     #prepare to weight tag pT, if required
-    weightGr={}
+    ptWeightGr={}
     for itk in xrange(NTKMIN,NTKMAX+1):        
         if opt.weightPt:
-            hdata=ROOT.TH1F('hptdata','',50,0,500)
+            hdata=ROOT.TH1F('hptdata','',50,0,250)
             hdata.Sumw2()
             extraCond=''
             if opt.onlyCentral : extraCond+='&&TMath::Abs(JEta)<1.1'
             if opt.vetoCentral : extraCond+='&&TMath::Abs(JEta)>0.1'
             chains['data'].Draw('LPt>>hptdata','SVNtrk==%d && SVLxySig>%f %s'%(itk,opt.minLxySig,extraCond),'norm goff')
-            hmc=ROOT.TH1F('hptmc','',50,0,500)
+            hmc=ROOT.TH1F('hptmc','',50,0,250)
             hmc.Sumw2()
-            chains['mc'].Draw('LPt>>hptmc','(SVNtrk==%d %s)*Weight[0]*XSWeight*%f'%(itk,extraCond,LUMI),'norm goff')
-            hdata.Divide(hmc)
-            weightGr[itk]=ROOT.TGraphErrors(hdata)
+            for key in ['mc','mcscaleup','mcscaledown']:
+               hmc.Reset('ICE')
+               chains[key].Draw('LPt>>hptmc','(SVNtrk==%d %s)*Weight[0]*XSWeight*%f'%(itk,extraCond,LUMI),'norm goff')
+               hmc.Divide(hdata)
+               if not (key in ptWeightGr): ptWeightGr[key]={}
+               ptWeightGr[key][itk]=ROOT.TGraphErrors(hmc)
             hdata.Delete()
             hmc.Delete()
             
     #fill the histograms
     for key in chains:
+       
+        chain_pfix=''
+        if 'scaledown' in key: chain_pfix='_scaledown'
+        if 'scaleup'   in key: chain_pfix='_scaleup'
+
         nEntries = chains[key].GetEntries()
         print "Will loop over %s with %d entries"%(key,nEntries)
         for i in xrange(0,nEntries):
@@ -200,24 +225,26 @@ def buildWorkspace(opt):
                 
             #compute global event weight
             totalWeight=1.0
-            if key=='mc':
+            if 'mc' in key:
                totalWeight=chains[key].Weight[0]*chains[key].XSWeight*LUMI
-               lpt=ROOT.TMath.Min(chains[key].LPt,500)
-               totalWeight *= weightGr[ntk].Eval(lpt)
+               lpt=ROOT.TMath.Min(chains[key].LPt,250)
+               if key in ptWeightGr:
+                  ptWeightInv=ptWeightGr[key][ntk].Eval(lpt)
+                  if ptWeightInv>0.01 : totalWeight /= ptWeightInv 
 
             #count and fill histograms
             histoVars={}
-            histoVars['svpt']    = chains[key].SVPt
-            histoVars['svptrel'] = chains[key].SVPtRel
-            histoVars['lxy']     = chains[key].SVLxy
-            histoVars['lxysig']  = chains[key].SVLxySig
-            histoVars['chfrac']  = chains[key].SVPtChFrac
+            histoVars['svpt']       = chains[key].SVPt
+            histoVars['svptrel']    = chains[key].SVPtRel
+            histoVars['lxy']        = chains[key].SVLxy
+            histoVars['lxysig']     = chains[key].SVLxySig
+            histoVars['chfrac']     = chains[key].SVPtChFrac
             histoVars['svprojfrac'] = chains[key].SVProjFrac
-            histoVars['chfracz']  = chains[key].SVPzChFrac
-            histoVars['svmass']  = chains[key].SVMass
-            histoVars['tagpt']   = chains[key].LPt
+            histoVars['chfracz']    = chains[key].SVPzChFrac
+            histoVars['svmass']     = chains[key].SVMass
+            histoVars['tagpt']      = chains[key].LPt
             histoKey='_'
-            if key=='mc':
+            if 'mc' in  key:
                if ROOT.TMath.Abs(chains[key].JFlav)==5   : histoKey+='b'
                elif ROOT.TMath.Abs(chains[key].JFlav)==4 : histoKey+='c'
                else                                      : histoKey+='other'
@@ -226,8 +253,8 @@ def buildWorkspace(opt):
             for ifrag in xrange(0,7):
                fragWeight=1.0
                pfix=''
-               if key=='mc' : 
-                  pfix='_fw%d'%ifrag
+               if 'mc' in key:
+                  pfix='_fw%d%s'%(ifrag,chain_pfix)
                   if ROOT.TMath.Abs(chains[key].JFlav)==5 and ifrag>0: 
                      fragWeight = chains[key].SVBfragWeight[ifrag-1]
                      if fragWeight<0 : fragWeight=0
@@ -237,9 +264,13 @@ def buildWorkspace(opt):
                   histos[hname].Fill(histoVars[var],totalWeight*fragWeight)
 
     for key in histos:
-       if not ('_b_' in key): continue
-       if '_fw0' in key : continue
-       normKey=key[:-1]+'0'
+       normKey=None
+       if 'scale' in key:
+          normKey='_'.join(key.split('_')[:-1])[:-1]+'0'
+       else:
+          if not ('_b_' in key): continue
+          if '_fw0' in key : continue
+          normKey=key[:-1]+'0'
        print key,'->', normKey
        histos[key].Scale(histos[normKey].Integral()/histos[key].Integral())
     
@@ -336,7 +367,7 @@ def comparePostFitDistributions(opt):
    fIn=ROOT.TFile(opt.wsUrl)
    
    #fit and save results 
-   canvas=ROOT.TCanvas('c','c',500,1000)
+   canvas=ROOT.TCanvas('c','c',500,1200)
    canvas.SetRightMargin(0)
    canvas.SetLeftMargin(0)
    canvas.SetTopMargin(0)
@@ -345,10 +376,11 @@ def comparePostFitDistributions(opt):
    pads=[]
    pads.append( ROOT.TPad('pad0','pad0',0,0.6,1.0,1.0) )
    pads[0].SetBottomMargin(0.01)
-   pads.append( ROOT.TPad('pad1','pad1',0.0,0.60,1.0,0.42) )
-   pads.append( ROOT.TPad('pad2','pad2',0.0,0.42,1.0,0.24) )
-   pads.append( ROOT.TPad('pad3','pad3',0.0,0.24,1.0,0.00) )
-   for i in xrange(1,4):
+   pads.append( ROOT.TPad('pad1','pad1',0.0,0.60,1.0,0.45) )
+   pads.append( ROOT.TPad('pad2','pad2',0.0,0.45,1.0,0.30) )
+   pads.append( ROOT.TPad('pad3','pad3',0.0,0.30,1.0,0.15) )
+   pads.append( ROOT.TPad('pad4','pad4',0.0,0.15,1.0,0.0) )
+   for i in xrange(1,5):
       pads[i].SetTopMargin(0.01)
       pads[i].SetBottomMargin(0.01)
    pads[-1].SetBottomMargin(0.22)
@@ -378,14 +410,23 @@ def comparePostFitDistributions(opt):
          leg.SetBorderSize(0)
          leg.SetTextFont(42)
          leg.SetTextSize(0.03)
-         for iw in xrange(0,len(flavorFracs['exp']['b'][itk])):
+         nfragw=len(flavorFracs['exp']['b'][itk])
+         for iw in xrange(0,nfragw+2):
             dataResPull.append( data.Clone('%s_data_%d_res_%d'%(var,itk,iw)) )
-            dataResPull[iw].SetDirectory(0)
+            dataResPull[-1].SetDirectory(0)
             hb=None
+
+            #for scale up/down use nominal frag weight
+            ifw=iw if iw<nfragw else 0
             for flav in ['other','c','b']:
-               if flavorFracs['exp'][flav][itk][iw][0]<=0 : continue
-               h=fIn.Get('%s_%s_%d_fw%d'%(var,flav,itk,iw))
-               h.Scale(flavorFracs['obs'][flav][itk][iw][0]/flavorFracs['exp'][flav][itk][iw][0])
+               if flavorFracs['exp'][flav][itk][ifw][0]<=0 : continue
+
+               pfix=''
+               if iw==nfragw   : pfix='_scaleup'
+               if iw==nfragw+1 : pfix='_scaledown'
+               h=fIn.Get('%s_%s_%d_fw%d%s'%(var,flav,itk,ifw,pfix))
+
+               h.Scale(flavorFracs['obs'][flav][itk][ifw][0]/flavorFracs['exp'][flav][itk][ifw][0])
                if opt.rebin!=0 : h.Rebin(opt.rebin)
                dataResPull[iw].Add(h,-1)
 
@@ -441,7 +482,8 @@ def comparePostFitDistributions(opt):
          canvas.cd()
          pullsToDraw=[{0:('Z2*',ROOT.kBlack),          4:('P11',ROOT.kMagenta)},
                       {1:('Z2* r_{b}',ROOT.kBlack),    2:('Z2* r_{b} hard',ROOT.kMagenta), 3:('Z2* r_{b} soft',ROOT.kViolet+2)},
-                      {5:('Z2* peterson',ROOT.kBlack), 6:('Z2* Lund',ROOT.kMagenta) }
+                      {5:('Z2* peterson',ROOT.kBlack), 6:('Z2* Lund',ROOT.kMagenta)},
+                      {7:('#mu_{R}/#mu_{F} up',ROOT.kBlack), 8:('#mu_{R}/#mu_{F} down',ROOT.kMagenta)}
                       ]
 
          for ip in xrange(0,len(pullsToDraw)):
@@ -476,7 +518,7 @@ def comparePostFitDistributions(opt):
                dataResPull[pkey].GetYaxis().SetNdivisions(5)
                dataResPull[pkey].GetXaxis().SetNdivisions(5)
                dataResPull[pkey].GetYaxis().SetRangeUser(-5.7,6)
-               if ip+1==3 :
+               if ip+1==4 :
                   dataResPull[pkey].GetXaxis().SetTitleSize(0.1)
                   dataResPull[pkey].GetXaxis().SetLabelSize(0.1)
                   dataResPull[pkey].GetXaxis().SetTitle(title)

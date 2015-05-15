@@ -1,10 +1,14 @@
 #ifndef LxyTreeAnalysis_h
 #define LxyTreeAnalysis_h
 
+#include "UserCode/TopMassSecVtx/interface/BtagUncertaintyComputer.h"
+
+#include "TSystem.h"
+#include "TGraphErrors.h"
 #include <TFile.h>
 #include <TH1D.h>
 #include <TH2D.h>
-#include <TRandom3.h>
+#include <TRandom2.h>
 #include <TString.h>
 #include <TVectorD.h>
 #include <TTreeFormula.h>
@@ -19,9 +23,32 @@
 
 class LxyTreeAnalysis : public LxyTreeAnalysisBase {
 public:
- LxyTreeAnalysis(TTree *tree=0):LxyTreeAnalysisBase(tree) {
+ LxyTreeAnalysis(TTree *tree=0,TString weightsDir=""):LxyTreeAnalysisBase(tree) {
         fMaxevents = -1;
         fProcessNorm = 1.0;
+
+	//b-tag efficiencies read b-tag efficiency map
+	if(weightsDir!="")
+	  {
+	    TString btagEffCorrUrl(weightsDir); btagEffCorrUrl += "/btagEff.root";
+	    gSystem->ExpandPathName(btagEffCorrUrl);
+	    TFile *btagF=TFile::Open(btagEffCorrUrl);
+	    if(btagF!=0 && !btagF->IsZombie())
+	      {
+		TList *dirs=btagF->GetListOfKeys();
+		for(int itagger=0; itagger<dirs->GetEntries(); itagger++)
+		  {
+		    TString iDir(dirs->At(itagger)->GetName());
+		    btagEffCorr_[ std::pair<TString,TString>(iDir,"b") ] 
+		      = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/beff"),(TGraphErrors *) btagF->Get(iDir+"/sfb") );
+		    btagEffCorr_[ std::pair<TString,TString>(iDir,"c") ] 
+		      = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/ceff"),(TGraphErrors *) btagF->Get(iDir+"/sfc") );
+		    btagEffCorr_[ std::pair<TString,TString>(iDir,"udsg") ] 
+		      = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/udsgeff"),(TGraphErrors *) btagF->Get(iDir+"/sfudsg") );
+		  }
+	      }
+	    std::cout << btagEffCorr_.size() << " b-tag correction factors have been read" << std::endl;
+	  }
     }
     virtual ~LxyTreeAnalysis() {}
     virtual void RunJob(TString);
@@ -52,7 +79,8 @@ public:
 
     virtual void analyze();
     virtual bool selectEvent();
-    virtual bool selectSVLEvent();
+    virtual bool selectSVLEvent(bool &passBtagNom, bool &passBtagUp, bool &passBtagDown,
+				bool &passMETNom, bool &passMETUp, bool &passMETDown);
     virtual bool selectDYControlEvent();
     virtual int firstTrackIndex(int jetindex);
     void fillJPsiHists(int jetindex);
@@ -145,7 +173,7 @@ public:
     TTree *fSVLInfoTree;
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
     Float_t fTMET, fTNJets;
-    Float_t fTWeight[11], fTJESWeight[5], fTMETWeight[2], fTXSWeight;
+    Float_t fTWeight[11], fTJESWeight[5], fTMETWeight[3], fTBtagWeight[3], fTXSWeight;
     Float_t fTSVLMass, fTSVLMass_sf[2], fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot;
     Float_t fTLPt, fTSVMass, fTSVPt, fTSVLxy, fTSVLxySig, fTJPt, fTJEta, fMjj,fTSVPtChFrac, fTSVPzChFrac,fTSVProjFrac,fTSVPtRel;
     Float_t fTSVBfragWeight[6];
@@ -156,7 +184,9 @@ public:
     Int_t fTJFlav;
     Float_t fTGenMlb, fTGenTopPt;
 
-   TRandom3 rndGen_;
+    TRandom2 rndGen_;
+    BTagSFUtil btsfutil_;
+    std::map<std::pair<TString,TString>, std::pair<TGraphErrors *,TGraphErrors *> > btagEffCorr_;
 };
 #endif
 

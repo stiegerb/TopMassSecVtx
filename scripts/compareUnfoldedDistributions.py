@@ -6,8 +6,7 @@ import optparse
 import glob
 import math
 from CMS_lumi import CMS_lumi
-from runPlotter import openTFile
-from myRootFunctions import checkKeyInFile
+from runPlotter import openTFile,checkKeyInFile
 
 COLORS=[862,800,1,922]
 FILLS=[1001,3001,3004,3002]
@@ -148,7 +147,27 @@ def main():
                      default='UnfoldedDistributions', type='string')
    parser.add_option('--tag', dest='Tag', help='Add a tag label',
                      default='', type='string')
+   parser.add_option('-z', dest='z', help='use Z control region inputs',
+                     default=False, action='store_true')
    (opt, args) = parser.parse_args()
+
+   if opt.z:
+      print 'Using Z control region inputs'
+      INPUTS = [
+         ('data'       , 'Data'                , 'Data8TeV_DoubleLepton_merged_filt23' , ROOT.kBlack),
+         ('z2s'        , 'Madgraph+Pythia+Z2*' , 'MC8TeV_DY_merged_filt23'             , ROOT.kBlue+3),
+         ('z2srblep'   , 'MG+PY+Z2*rbLEP'      , 'MC8TeV_DY_merged_filt23_bfrag'       , ROOT.kMagenta),
+         ('z2srblepup' , 'MG+PY+Z2*rbLEP hard' , 'MC8TeV_DY_merged_filt23_bfragup'     , ROOT.kMagenta+2),
+         ('z2srblepdn' , 'MG+PY+Z2*rbLEP soft' , 'MC8TeV_DY_merged_filt23_bfragdn'     , ROOT.kMagenta-9),
+         ('p11frag'    , 'MG+PY+P11 (frag)'    , 'MC8TeV_DY_merged_filt23_bfragp11'    , ROOT.kRed-9),
+         ('z2spete'    , 'MG+PY+Z2* Peterson'  , 'MC8TeV_DY_merged_filt23_bfragpete'   , ROOT.kAzure+7),
+         ('z2slund'    , 'MG+PY+Z2* Lund'      , 'MC8TeV_DY_merged_filt23_bfraglund'   , ROOT.kBlue-7)
+         ]
+      TAGS = {
+         'D0':   'Z/#gamma^{*}(ll) #mu D^{0} (K^{-}#pi^{+}) + X',
+         'Dpm':  'Z/#gamma^{*}(ll) D^{#pm}(K^{-}#pi^{+}#pi^{+}) + X',
+         'JPsi': 'Z/#gamma^{*}(ll) J/#Psi(#mu^{+}#mu^{-}) + X'
+         }
 
    #global ROOT configuration
    ROOT.gStyle.SetOptStat(0)
@@ -225,12 +244,16 @@ def main():
    canvas.SetBottomMargin(0)
    allLegs=[]
    pads=[]
-   pads.append( ROOT.TPad('pad0', 'pad0', 0.0, 0.60, 1.0, 1.00) )
-   pads.append( ROOT.TPad('pad1', 'pad1', 0.0, 0.60, 1.0, 0.42) )
-   pads.append( ROOT.TPad('pad2', 'pad2', 0.0, 0.42, 1.0, 0.24) )
-   pads.append( ROOT.TPad('pad3', 'pad3', 0.0, 0.24, 1.0, 0.00) )
+   if opt.z:
+      pads.append( ROOT.TPad('pad0', 'pad0', 0.0, 0.40, 1.0, 1.00) )
+      pads.append( ROOT.TPad('pad1', 'pad1', 0.0, 0.40, 1.0, 0.00) )
+   else:
+      pads.append( ROOT.TPad('pad0', 'pad0', 0.0, 0.60, 1.0, 1.00) )
+      pads.append( ROOT.TPad('pad1', 'pad1', 0.0, 0.60, 1.0, 0.42) )
+      pads.append( ROOT.TPad('pad2', 'pad2', 0.0, 0.42, 1.0, 0.24) )
+      pads.append( ROOT.TPad('pad3', 'pad3', 0.0, 0.24, 1.0, 0.00) )
 
-   for i in xrange(0,4):
+   for i in xrange(0,len(pads)):
       pads[i].SetTopMargin(0.0)
       pads[i].SetBottomMargin(0.0)
    pads[0].SetTopMargin(0.1)
@@ -313,16 +336,18 @@ def main():
       pad.Clear()
       # pad.SetGridy(True)
       haxispulls.Draw("axis")
-      if n==0:
-         leg0 = drawPulls(['z2s','p11','p11frag'])
-         leg0.Draw()
-      if n==1:
-         leg1 = drawPulls(['powpyth','powherw'])
-         leg1.Draw()
-      if n==2:
+      if opt.z or n==2:
          leg2 = drawPulls(['z2srblep', 'z2srblepdn', 'z2srblepup',
                            'z2spete', 'z2slund'], drawOpt='LX')
          leg2.Draw()
+      elif not opt.z:
+         if n==0:
+            leg0 = drawPulls(['z2s','p11','p11frag'])
+            leg0.Draw()
+         if n==1:
+            leg1 = drawPulls(['powpyth','powherw'])
+            leg1.Draw()
+        
       line.DrawLine(xaxisrange[0], 0., xaxisrange[1], 0.,)
 
 

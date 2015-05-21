@@ -18,21 +18,33 @@ SELECTIONS = [
 	('etoppt_qcd',   'Weight[10]*(abs(EvCat)==1100)', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('mtoppt_qcd',   'Weight[10]*(abs(EvCat)==1300)', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 
+	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
+	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
+	('etoppt_mrank1',    'Weight[10]*(SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11)', 'e'),
+	('mtoppt_mrank1',    'Weight[10]*(SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13)', '#mu'),
+	('e_mrank1_qcd',
+	 '(SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1100)',
+	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('m_mrank1_qcd',
+	 '(SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1300)',
+	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('etoppt_mrank1_qcd',
 	 'Weight[10]*(SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1100)',
 	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('mtoppt_mrank1_qcd',
 	 'Weight[10]*(SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1300)',
 	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
-	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
-	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
-	('etoppt_mrank1',    'Weight[10]*(SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11)', 'e'),
-	('mtoppt_mrank1',    'Weight[10]*(SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13)', '#mu'),
-
+	
 	('e_optmrank',         'SVLCombRank>0&&abs(EvCat)==11', 'e'),
 	('m_optmrank',         'SVLCombRank>0&&abs(EvCat)==13', '#mu'),
 	('etoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&abs(EvCat)==11)', 'e'),
 	('mtoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&abs(EvCat)==13)', '#mu'),
+	('e_optmrank_qcd',
+	 '(SVLCombRank>0&&abs(EvCat)==1100)',
+	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('m_optmrank_qcd',
+	 '(SVLCombRank>0&&abs(EvCat)==1300)',
+	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 	('etoppt_optmrank_qcd',
 	 'Weight[10]*(SVLCombRank>0&&abs(EvCat)==1100)',
 	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
@@ -129,14 +141,11 @@ def main(args, options):
 									   var='SVLMass',
 									   titlex=MASSXAXISTITLE)
 
-
 		cachefile = open(".svlqcdmasshistos.pck", 'w')
 		pickle.dump(masshistos,     cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(methistos,      cachefile, pickle.HIGHEST_PROTOCOL)
 		pickle.dump(fittertkhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
-
-
 	else:
 		cachefile = open(".svlqcdmasshistos.pck", 'r')
 		masshistos     = pickle.load(cachefile)

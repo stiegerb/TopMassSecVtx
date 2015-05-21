@@ -16,7 +16,7 @@ LUMI = 19701.0
 # NTRKBINS = [(2,3), (3,4), (4,1000)]
 NTRKBINS = [(3,4), (4,5), (5,6)]
 # BR fix x PU x Lep Sel x JES
-COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*JESWeight[0]"
+COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*METWeight[0]*BtagWeight[0]*JESWeight[0]"
 LUMIWEIGHT = "XSWeight*%f"%LUMI  # x XS weight
 TREENAME = 'SVLInfo'
 SELECTIONS = [

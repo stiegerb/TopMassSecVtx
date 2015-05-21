@@ -320,13 +320,16 @@ def main(args, opt):
 		for tag,_,_ in SELECTIONS:
 			for ntk,_ in NTRKBINS:
 				hname = "SVLMass_%s_%s_%s" % (tag,syst+'_172v5',ntk)
-				if not syst in ['dyup','dydown','qcdup','qcddown','ntkmult']:
+				if not syst in ['dyup','dydown','qcdup','qcddown','ntkmult','tchscaleup','tchscaledown','twchscaleup','twchscaledown']:
 					hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
 				else:
 					hfinal = systhistos[(tag,'nominal','tot',ntk)].Clone(hname)
 				try:
 					## Systs from separate samples
-					scale = LUMI*xsecweights[SYSTTOPROCNAME[syst]]
+					if syst in ['tchscaleup','tchscaledown','twchscaleup','twchscaledown']:
+						scale = LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]]
+					else:
+						scale = LUMI*xsecweights[SYSTTOPROCNAME[syst][0]]
 				except KeyError:
 					## Systs from event weights
 					scale = LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]]
@@ -340,10 +343,23 @@ def main(args, opt):
 					hfinal.Scale(normintegral)
 
 				## Add single top
-				for st in ['t', 'tbar', 'tW', 'tbarW']:
+				stProcs=['t', 'tbar', 'tW', 'tbarW']
+				stSystProcs=[]
+				if 'tchscale' in syst:
+					stProcs=['tW', 'tbarW']
+					stSystProcs=['t', 'tbar']
+				if 'twchscale' in syst:
+					stProcs=['t', 'tbar']
+					stSystProcs=['tW', 'tbarW']
+				for st in stProcs:
 					hsinglet = masshistos[(tag, st, 172.5,'tot',ntk)].Clone('%s_%s'%(hname,st))
 					hsinglet.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(st, 172.5)]])
 					hfinal.Add(hsinglet)
+				for st in stSystProcs:
+					hsinglet = systhistos[(tag, syst, 'tot', ntk)].Clone('%s_%s'%(hname,st))
+					hsinglet.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(st, 172.5)]])
+					hfinal.Add(hsinglet)
+
 
 				## Add the backgrounds
 				if not syst in ['dyup','dydown','qcdup','qcddown']:

@@ -34,22 +34,27 @@ def parsePEInputs(url,selection='',rebin=4):
 
 		#check tag to be assigned
 		tag=''
-		tag='les'      if 'les'      in experimentTag else tag
+		tag='pu'       if 'pu'       in experimentTag else tag
 		tag='lepsel'   if 'lepsel'   in experimentTag else tag
 		tag='umet'     if 'umet'     in experimentTag else tag
-		tag='pu'       if 'pu'       in experimentTag else tag
-		tag='massscan' if 'nominal'  in experimentTag else tag
-		tag='matching' if 'matching' in experimentTag else tag
-		tag='scale'    if 'scale'    in experimentTag else tag
 		tag='toppt'    if 'toppt'    in experimentTag else tag
 		tag='bfrag'    if 'bfrag'    in experimentTag else tag
-		tag='bfn'      if 'bfn'      in experimentTag else tag
-		tag='p11'      if 'p11'      in experimentTag else tag
 		tag='jes'      if 'jes'      in experimentTag else tag
+		tag='jer'      if 'jer'      in experimentTag else tag
+		tag='btag'     if 'btag'     in experimentTag else tag
+		tag='les'      if 'les'      in experimentTag else tag
+		tag='bfn'      if 'bfn'      in experimentTag else tag
+		tag='pdf'      if 'pdf'      in experimentTag else tag
+		tag='massscan' if 'nominal'  in experimentTag else tag
+		tag='scale'    if 'scale'    in experimentTag else tag
+		tag='width'    if 'width'    in experimentTag else tag
+		tag='matching' if 'matching' in experimentTag else tag
+		tag='p11'      if 'p11'      in experimentTag else tag
 		tag='powheg'   if 'powpyth'  in experimentTag else tag
 		tag='powheg'   if 'powherw'  in experimentTag else tag
 		tag='qcd'      if 'qcd'      in experimentTag else tag
 		tag='dy'       if 'dy'       in experimentTag else tag
+		tag='ntkmult'  if 'ntkmult'  in experimentTag else tag
 
 		if len(tag)==0 :
 			continue
@@ -95,7 +100,7 @@ def parsePEInputs(url,selection='',rebin=4):
 				ensemblesMap[tag][key][grKey]=ROOT.TGraphErrors(ihist)
 				ensemblesMap[tag][key][grKey].SetName('ratio_%s_%s_%d'%(chsel,experimentTag,ntrk))
 				ensemblesMap[tag][key][grKey].SetTitle(grKey)
-				color=COLORS[len(ensemblesMap[tag][key])-1]
+				color = ROOT.kGray if 'pdf' in experimentTag else COLORS[len(ensemblesMap[tag][key])-1]
 				if tag==refTag: color=1
 				ensemblesMap[tag][key][grKey].SetFillStyle(0)
 				ensemblesMap[tag][key][grKey].SetMarkerColor(color)
@@ -339,8 +344,12 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
 		for tag,gr in sorted(grColl.items()):
 			gr.Sort()
 			gr.SetMarkerStyle(20+igrctr)
-			gr.SetMarkerColor(color[igrctr])
-			gr.SetLineColor(color[igrctr])
+			if len(grColl)>len(color) :
+				gr.SetMarkerColor(ROOT.kGray)
+				gr.SetLineColor(ROOT.kGray)
+			else:
+				gr.SetMarkerColor(color[igrctr])
+				gr.SetLineColor(color[igrctr])
 			if doFit:
 				gr.Fit('pol1','MQ+','same')
 				offset=gr.GetFunction('pol1').GetParameter(0)

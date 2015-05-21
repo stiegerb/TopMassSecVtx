@@ -26,7 +26,6 @@ process.source = cms.Source("PoolSource",
                             fileNames = inputList
                             #,skipEvents=cms.untracked.uint32(4000) 
                             )
-
 try:
     print 'Will store all PF candidates?' + str(storeAllPF)
 except:

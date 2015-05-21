@@ -9,6 +9,8 @@ gtag="START53_V29A::All"
 from UserCode.TopMassSecVtx.storeTools_cff import configureSourceFromCommandLine
 outFile, inputListArray = configureSourceFromCommandLine()
 inputList=cms.untracked.vstring(inputListArray)
+#from UserCode.TopMassSecVtx.tbar_scaledown_cfi import readFiles as inputList
+#from UserCode.TopMassSecVtx.t_scaledown_cfi import readFiles as inputList
 tfsOutputFile=outFile
 outFile=os.path.dirname(outFile)+'/edm_'+os.path.basename(outFile)
 

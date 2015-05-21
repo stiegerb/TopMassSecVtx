@@ -87,7 +87,10 @@ To print event yields, run ```printSVLEventYields.py``` on the output of the scr
 ```
 ./scripts/printSVLEventYields.py outDir/plotter.root
 ```
-
+To extract the parametrization to reweight the number of tracks in the SVtx to data
+```
+python scripts/extractNtrkWeights.py outDir/plotter.root -v 5
+````
 
 ---------------------------------------------------
 ### Produce QCD Templates

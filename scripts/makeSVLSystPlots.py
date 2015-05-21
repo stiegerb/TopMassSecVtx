@@ -22,91 +22,89 @@ CONTROLVARS = [
 
 SYSTSFROMFILES = [
 	('scaleup', 'Q^{2} Scale up',
-		'MC8TeV_TTJets_MSDecays_scaleup.root',
-		['tot']),
+	 ['MC8TeV_TTJets_MSDecays_scaleup.root'],
+	  ['tot']),
 	('scaledown', 'Q^{2} Scale down',
-		'MC8TeV_TTJets_MSDecays_scaledown.root',
-		['tot']),
+	 ['MC8TeV_TTJets_MSDecays_scaledown.root'],
+	 ['tot']),
+	('tchscaleup', 't-ch Q^{2} Scale up',
+	 ['MC8TeV_SingleT_t_scaleup.root','MC8TeV_SingleTbar_t_scaleup.root'],
+	 ['tot']),
+	('tchscaledown', 't-ch Q^{2} Scale down',
+	 ['MC8TeV_SingleT_t_scaledown.root','MC8TeV_SingleTbar_t_scaledown.root'],
+	 ['tot']),
+	('twchscaleup', 'tW-ch Q^{2} Scale up',
+	 ['MC8TeV_SingleT_tW_scaleup.root','MC8TeV_SingleTbar_tW_scaleup.root'],
+	 ['tot']),
+	('twchscaledown', 'tW-ch Q^{2} Scale down',
+	 ['MC8TeV_SingleT_tW_scaledown.root','MC8TeV_SingleTbar_tW_scaledown.root'],
+	 ['tot']),
+	('width', 'Top width (x5)',
+	 ['MC8TeV_TTJets_widthx5.root'],
+	 ['tot']),
 	('matchingup', 'ME/PS maching Scale up',
-		'MC8TeV_TTJets_MSDecays_matchingup.root',
-		['tot']),
+	 ['MC8TeV_TTJets_MSDecays_matchingup.root'],
+	 ['tot']),
 	('matchingdown', 'ME/PS maching Scale down',
-		'MC8TeV_TTJets_MSDecays_matchingdown.root',
-		['tot']),
+	 ['MC8TeV_TTJets_MSDecays_matchingdown.root'],
+	 ['tot']),
 	('p11', 'P11 nominal',
-		'MC8TeV_TTJets_TuneP11.root',
-		['tot']),
+	 ['MC8TeV_TTJets_TuneP11.root'],
+	 ['tot']),
 	('p11nocr', 'P11 no color-reconnection',
-		'MC8TeV_TTJets_TuneP11noCR.root',
-		['tot']),
+	 ['MC8TeV_TTJets_TuneP11noCR.root'],
+	 ['tot']),
 	('p11tev', 'P11 Tevatron tune',
-		'MC8TeV_TTJets_TuneP11TeV.root',
-		['tot']),
+	 ['MC8TeV_TTJets_TuneP11TeV.root'],
+	 ['tot']),
 	('p11mpihi', 'P11 high multi-parton interaction',
-		'MC8TeV_TTJets_TuneP11mpiHi.root',
-		['tot']),
+	 ['MC8TeV_TTJets_TuneP11mpiHi.root'],
+	 ['tot']),
 	('powherw', 'Powhew/HERWIG AUET2',
-		'MC8TeV_TT_AUET2_powheg_herwig.root',
-		['tot']),
+	 ['MC8TeV_TT_AUET2_powheg_herwig.root'],
+	 ['tot']),
 	('powpyth', 'Powhew/PYTHIA Z2*',
-		'MC8TeV_TT_Z2star_powheg_pythia.root',
-		['tot']),
+	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
+	 ['tot']),
 ]
 
-SYSTTOPROCNAME = dict([(k,v.replace('.root','')) for k,_,v,_ in SYSTSFROMFILES])
+SYSTTOPROCNAME = dict([(k,[v.replace('.root','') for v in vlist]) for k,_,vlist,_ in SYSTSFROMFILES])
 
 SYSTSFROMWEIGHTS = [
-	('nominal',     'Nominal',                   '1',
-		['tot','cor','wro','unm']),
-	('puup',        'Pileup up',                 'Weight[2]/Weight[1]',
-		['tot']),
-	('pudn',        'Pileup down',               'Weight[3]/Weight[1]',
-		['tot']),
-	('lepselup',    'Lepton selection up',       'Weight[5]/Weight[4]',
-		['tot']),
-	('lepseldn',    'Lepton selection down',     'Weight[6]/Weight[4]',
-		['tot']),
-	('umetup',      'Uncl. MET up',              'METWeight[0]',
-		['tot']),
-	('umetdn',      'Uncl. MET down',            'METWeight[1]',
-		['tot']),
-	('toppt',       'Top p_{T} weight applied',  'Weight[10]',
-		['tot','cor','wro']),
-	('topptup',     'Top p_{T} weight up',       'Weight[7]',
-		['tot','cor','wro']),
-	('bfrag',       'Z2* rb LEP',                'SVBfragWeight[0]',
-		['tot']),
-	('bfragup',     'Z2* rb LEP hard',           'SVBfragWeight[1]',
-		['tot']),
-	('bfragdn',     'Z2* rb LEP soft',           'SVBfragWeight[2]',
-		['tot']),
-	('bfragp11',    'P11 fragmentation',         'SVBfragWeight[3]',
-		['tot']),
-	('bfragpete',   'Z2* Peterson',              'SVBfragWeight[4]',
-		['tot']),
-	('bfraglund',   'Z2* Lund',                  'SVBfragWeight[5]',
-		['tot']),
-	('jesup',       'Jet energy scale up',       'JESWeight[1]',
-		['tot']),
-	('jesdn',       'Jet energy scale down',     'JESWeight[2]',
-		['tot']),
-	('jerup',       'Jet energy resolution up',       'JESWeight[3]',
-		['tot']),
-	('jerdn',       'Jet energy resolution down',     'JESWeight[4]',
-		['tot']),
-	('lesup',       'Lepton energy scale up',    '1',
-		['tot']),
-	('lesdn',       'Lepton energy scale down',  '1',
-		['tot']),
+	('nominal',     'Nominal',                   '1',                      ['tot','cor','wro','unm']),
+	('puup',        'Pileup up',                 'Weight[2]',    ['tot']),
+	('pudn',        'Pileup down',               'Weight[3]',    ['tot']),
+	('lepselup',    'Lepton selection up',       'Weight[5]',    ['tot']),
+	('lepseldn',    'Lepton selection down',     'Weight[6]',    ['tot']),
+	('umetup',      'Uncl. MET up',              'METWeight[1]',           ['tot']),
+	('umetdn',      'Uncl. MET down',            'METWeight[2]',           ['tot']),
+	('toppt',       'Top p_{T} weight applied',  'Weight[10]',             ['tot','cor','wro']),
+	('topptup',     'Top p_{T} weight up',       'Weight[7]',              ['tot','cor','wro']),
+	('bfrag',       'Z2* rb LEP',                'SVBfragWeight[0]',       ['tot']),
+	('bfragup',     'Z2* rb LEP hard',           'SVBfragWeight[1]',       ['tot']),
+	('bfragdn',     'Z2* rb LEP soft',           'SVBfragWeight[2]',       ['tot']),
+	('bfragp11',    'P11 fragmentation',         'SVBfragWeight[3]',       ['tot']),
+	('bfragpete',   'Z2* Peterson',              'SVBfragWeight[4]',       ['tot']),
+	('bfraglund',   'Z2* Lund',                  'SVBfragWeight[5]',       ['tot']),
+	('jesup',       'Jet energy scale up',       'JESWeight[1]',           ['tot']),
+	('jesdn',       'Jet energy scale down',     'JESWeight[2]',           ['tot']),
+	('jerup',       'Jet energy resolution up',  'JESWeight[3]',           ['tot']),
+	('jerdn',       'Jet energy resolution down','JESWeight[4]',           ['tot']),
+	('btagup',      'b-tag eff up',              'BtagWeight[1]',          ['tot']),
+	('btagdn',      'b-tag eff down',            'BtagWeight[2]',          ['tot']),
+	('lesup',       'Lepton energy scale up',    '1',                      ['tot']),
+	('lesdn',       'Lepton energy scale down',  '1',                      ['tot']),
 	('bfnuup',      'B hadron semi-lep BF up',
-	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))',
-	 ['tot']),
+	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))', ['tot']),
 	('bfnudn',   'B hadron semi-lep BF down',
-	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))',
-	 ['tot']),
-]
+	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))', ['tot'])
+	]
+
+#fun...
+for i in xrange(1,53): SYSTSFROMWEIGHTS.append( ('pdf%d'%i, 'PDF variation %d'%i,'PDFWeight[%d]'%i, ['tot']) )
 
 ALLSYSTS = SYSTSFROMFILES + SYSTSFROMWEIGHTS
+
 SYSTNAMES = dict([(syst,name) for syst,name,_,_ in ALLSYSTS])
 SELNAMES = dict([(tag,name) for tag,_,name in SELECTIONS])
 COMBNAMES = {
@@ -137,11 +135,15 @@ SYSTPLOTS = [
 	 ['nominal', 'matchingup', 'matchingdown'],
 	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
 
+	('width', 'Top quark width',
+	 ['nominal', 'width'],
+	 [ROOT.kBlack, ROOT.kGreen+1], 'tot'),
+
 	('uecr', 'Underlying event / Color reconnection',
 	 ['p11', 'p11tev', 'p11mpihi', 'p11nocr', 'nominal'],
 	 [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
 	  ROOT.kViolet+2, ROOT.kBlack],'tot'),
-
+	
 	('bfrag', 'b fragmentation',
 	 ['nominal', 'bfrag', 'bfragup', 'bfragdn', 'bfragp11',
 	  'bfraglund', 'bfragpete'],
@@ -154,6 +156,10 @@ SYSTPLOTS = [
 
 	('jer', 'Jet energy resolution',
 	 ['nominal', 'jerup', 'jerdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('btag', 'b-tag efficiency',
+	 ['nominal', 'btagup', 'btagdn'],
 	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
 
 	('les', 'Lepton energy scale',
@@ -176,6 +182,14 @@ SYSTPLOTS = [
 	 ['nominal', 'bfnuup', 'bfnudn'],
 	 [ROOT.kBlack, ROOT.kYellow-3, ROOT.kYellow+3],'tot'),
 ]
+
+
+#fun...
+PDFPLOTDESC=('pdf', 'PDF variations',	 ['nominal'], [ROOT.kBlack], 'tot')
+for i in xrange(1,53): 
+	PDFPLOTDESC[2].append('pdf%d'%i)
+	PDFPLOTDESC[3].append(ROOT.kGray)
+SYSTPLOTS.append(PDFPLOTDESC)
 
 
 def makeControlPlot(systhistos, syst, tag, seltag, opt):
@@ -256,27 +270,45 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 		hname = "SVLMass_%s_%s" % (comb, htag)
 		combsel = COMBINATIONS[comb]
 		finalsel = "%s*%s*(%s&&%s)"%(COMMONWEIGHT, weight, sel, combsel)
-		## Fix the duplicate weight in case of JESWeight
+
+		## Fix the duplicate weight in case of JES/MET/Btag/Lep sel Weights
 		if syst in ['jesup', 'jesdn', 'jerup', 'jerdn']:
-			finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
-				                        'JESWeight[')
+			finalsel = finalsel.replace('JESWeight[0]*JESWeight[','JESWeight[')
+		if syst in ['btagup','btagdn']:
+			finalsel = finalsel.replace('BtagWeight[0]*','')
+		if syst in ['umetup','umetdn']:
+			finalsel = finalsel.replace('METWeight[0]*','')
+		if syst in ['lepselup','lepseldn']:
+			finalsel = finalsel.replace('Weight[4]*','')
 
 		## Remove the BR weight for the POWHEG samples
 		if syst in ['powherw', 'powpyth'] or 'p11' in syst:
 			finalsel = finalsel[len('Weight[0]*'):]
 
-		tasks.append((hname, 'SVLMass', finalsel,
+
+		#add scale factor
+		svlmassVar='SVLMass'
+		if syst=='lesdn' : svlmassVar='SVLMass*SVLMass_sf[0]'
+		if syst=='lesup' : svlmassVar='SVLMass*SVLMass_sf[1]'
+
+
+		tasks.append((hname, svlmassVar, finalsel,
 			          NBINS, XMIN, XMAX, MASSXAXISTITLE))
 		hname_to_keys[hname] = (tag, syst, comb)
 
 		for ntk1,ntk2 in NTRKBINS:
 			tksel = "(SVNtrk>=%d&&SVNtrk<%d)"%(ntk1,ntk2)
 			finalsel = "%s*%s*(%s&&%s&&%s)"%(COMMONWEIGHT, weight,
-				                             sel, combsel,tksel)
-			## Fix the duplicate weight in case of JESWeight
+							 sel, combsel,tksel)
+			## Fix the duplicate weight in case of JES/MET/Btag Weight
 			if syst in ['jesup', 'jesdn', 'jerup', 'jerdn']:
-				finalsel = finalsel.replace('JESWeight[0]*JESWeight[',
-					                        'JESWeight[')
+				finalsel = finalsel.replace('JESWeight[0]*JESWeight[','JESWeight[')
+			if syst in ['btagup','btagdn']:
+				finalsel = finalsel.replace('BtagWeight[0]*','')
+			if syst in ['umetup','umetdn']:
+				finalsel = finalsel.replace('METWeight[0]*','')
+			if syst in ['lepselup','lepseldn']:
+				finalsel = finalsel.replace('Weight[4]*','')
 
 			## Remove the BR weight for the POWHEG samples
 			if syst in ['powherw', 'powpyth'] or 'p11' in syst:
@@ -301,7 +333,7 @@ def gatherHistosFromFiles(tasklist, files, dirname, hname_to_keys):
 	for ifilen in os.listdir(dirname):
 		if not os.path.splitext(ifilen)[1] == '.root': continue
 		ifile = ROOT.TFile.Open(os.path.join(dirname,ifilen), 'READ')
-
+	
 		for hname in hnames:
 			keys = hname_to_keys[hname]
 			syst = keys[1]
@@ -314,6 +346,8 @@ def gatherHistosFromFiles(tasklist, files, dirname, hname_to_keys):
 			if syst in [x[0] for x in SYSTSFROMWEIGHTS]:
 				tfilens = [os.path.basename(x) for x in files['nominal']]
 				if not ifilen in tfilens: continue
+
+			if 'scale' in syst: print syst,ifilen
 
 			try:
 				histo = ifile.Get(hname)
@@ -338,9 +372,9 @@ def main(args, opt):
 		for fname in os.listdir(os.path.join(args[0],'syst')):
 			if not os.path.splitext(fname)[1] == '.root': continue
 			for syst,_,systfile,_ in SYSTSFROMFILES:
-				if fname == systfile:
+				if fname in systfile:
 					systfiles[syst] = [os.path.join(args[0], 'syst', fname)]
-
+					
 		# Get the split nominal files
 		systfiles['nominal'] = []
 		for fname in os.listdir(os.path.join(args[0],'Chunks')):
@@ -422,7 +456,8 @@ def main(args, opt):
 	print '>>> Read syst histos from cache (.svlsysthistos.pck)'
 	cachefile.close()
 
-	# pprint(sorted(set(systhistos.keys())))
+	pprint(sorted(set(systhistos.keys())))
+	raw_input()
 
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gStyle.SetOptStat(0)
@@ -468,8 +503,11 @@ def main(args, opt):
 			plot = RatioPlot('%s_%s'%(name,comb))
 
 			for syst in systs:
-				plot.add(systhistos[(tag,syst,comb)], SYSTNAMES[syst])
-
+				try:
+					plot.add(systhistos[(tag,syst,comb)], SYSTNAMES[syst])
+				except:
+					print 'failed to add',(tag,syst,comb),syst
+				
 			plot.tag = title
 			subtag = SELNAMES[tag] + COMBNAMES[comb]
 			plot.subtag = subtag

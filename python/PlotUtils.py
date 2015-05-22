@@ -255,7 +255,9 @@ class RatioPlot(object):
         tl.SetShadowColor(0)
         tl.SetTextFont(43)
         tl.SetTextSize(20)
-
+        if len(self.histos)>30 : 
+            tl.SetTextSize(10)
+            tl.SetNColumns(3)
 
         mainframe = self.histos[0].Clone('mainframe')
         self._garbageList.append(mainframe)

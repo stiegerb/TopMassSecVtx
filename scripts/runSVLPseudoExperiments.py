@@ -519,7 +519,7 @@ def main():
                        help='calibration file')
     parser.add_option('-f', '--filter', dest='filter', default='',
                        help='Run only on these variations (comma separated list)')
-    parser.add_option('-n', '--nPexp', dest='nPexp', default=200, type=int,
+    parser.add_option('-n', '--nPexp', dest='nPexp', default=250, type=int,
                        help='Total # pseudo-experiments.')
     parser.add_option('-o', '--outDir', dest='outDir', default='svlfits',
                        help='Output directory [default: %default]')

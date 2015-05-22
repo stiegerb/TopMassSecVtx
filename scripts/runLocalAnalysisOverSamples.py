@@ -64,9 +64,10 @@ segment=0
 jsonFile = open(opt.samplesDB,'r')
 try:
     procList=json.load(jsonFile,encoding='utf-8').items()
-except ValueError:
+except ValueError as e:
     print 40*'#'
     print "Error parsing JSON file, check syntax!"
+    print e
     print 40*'#'
     exit(-1)
 

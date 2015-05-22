@@ -463,12 +463,15 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     wsfilepath = os.path.abspath(wsfile)
     pefilepath = os.path.abspath(pefile)
     odirpath = os.path.abspath(jobsDir)
+    if options.calib:
+        odirpath = os.path.abspath(os.path.join(jobsDir,'calibrated'))
+        os.system('mkdir -p %s'%odirpath)
 
     ## Feedback before submitting the jobs
     raw_input('This will submit %d jobs to batch. %s Did you remember to run scram b?%s \n Continue?'%(len(experimentTags), bcolors.RED, bcolors.ENDC))
 
     for n,tag in enumerate(experimentTags):
-        sys.stdout.write(' ... processing job %2d - %-22s' % (n, tag))
+        sys.stdout.write(' ... processing job %2d - %-22s' % (n+1, tag))
         sys.stdout.flush()
         scriptFileN = '%s/runSVLPE_%s.sh'%(jobsDir,tag)
         scriptFile = open(scriptFileN, 'w')
@@ -480,6 +483,8 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
                       (wsfilepath, pefilepath, odirpath, tag, options.nPexp))
         if options.genFromPDF:
             command += ' --genFromPDF'
+        if options.calib:
+            command += ' --calib %s' % os.path.abspath(options.calib)
         if len(options.selection):
             command += ' --selection %s'%options.selection
         scriptFile.write('%s\n'%command)

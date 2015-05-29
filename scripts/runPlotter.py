@@ -391,7 +391,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
             if options.verbose > 0:
                 print ("  adding %s (Integral: %s) (Color %d) (Isdata %d)" %
                         (hist.GetName(), hist.Integral(), color, isData))
-            
+
             newPlot.add(hist,title,color,isData)
 
     if options.normToData :
@@ -417,8 +417,9 @@ def readXSecWeights(jsonfile=None):
         print '>>> Reading xsec weights from cache (.xsecweights.pck)'
         return xsecweights
     except IOError:
-        print '>>> Failed to read .xsecweights.pck file'
-        raise RuntimeError
+        print '>>> ERROR: Failed to read .xsecweights.pck file'
+        print '>>>        Did you forget to produce it with the --rereadXsecWeights option?'
+        exit(-1)
 
     ## Should check that all the dtags in the given json file are in the dictionary
     if jsonfile:

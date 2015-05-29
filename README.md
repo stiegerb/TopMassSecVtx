@@ -83,4 +83,6 @@ To work properly, we first need to generate a cache file that stores the proper 
 ```
 (This needs to be done only once.)
 
+If everything worked, the final plot should look something like this:
+![Inclusive mlb distribution](http://stiegerb.web.cern.ch/stiegerb/topLxy/Mlb.png)
 ------------------------------------------------------

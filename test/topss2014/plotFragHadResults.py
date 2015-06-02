@@ -38,9 +38,9 @@ for tag in histos['Cluster']:
     refH=None
     hctr=0
     for model in histos:
-        #if not model in ['Z2starLEP','Z2starLEP_peterson','Z2starLEP_lund']: continue
+        if not model in ['Z2starLEP','Z2starLEP_peterson','Z2starLEP_lund']: continue
         #if not model in ['Z2starLEP','Z2star']:continue
-        if not model in ['Cluster','Lund']: continue
+        #if not model in ['Cluster','Lund']: continue
         if not 'Bpt_jpt' in histos[model][tag].GetName() and not 'Btype' in histos[model][tag].GetName() :
             histos[model][tag].Rebin(4)
         total=histos[model][tag].Integral()
@@ -67,6 +67,8 @@ for tag in histos['Cluster']:
             pulls[-1].Divide(refH)
             chi2=refH.Chi2Test(histos[model][tag],'WW CHI2/NDF')
             title='#splitline{%s}{#scale[0.8]{#chi^{2}/ndf:%3.2f}}'%(histos[model][tag].GetTitle(),chi2)
+            #pval=refH.Chi2Test(histos[model][tag],'WW')
+            #title='#splitline{%s}{#scale[0.8]{p-val:%3.2f}}'%(histos[model][tag].GetTitle(),pval)
             title=title.replace('star','*')
             title=title.replace('LEP_','LEP')
             histos[model][tag].SetTitle(title)
@@ -130,6 +132,7 @@ for tag in histos['Cluster']:
     c.Modified()
     c.Update()
     c.SaveAs('%s.png'%tag)
+    c.SaveAs('%s.pdf'%tag)
 
 p1.Delete()
 p2.Delete()

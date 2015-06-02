@@ -47,6 +47,8 @@ def parsePEInputs(url,selection='',rebin=4):
 		tag='pdf'      if 'pdf'      in experimentTag else tag
 		tag='massscan' if 'nominal'  in experimentTag else tag
 		tag='scale'    if 'scale'    in experimentTag else tag
+		tag='tchscale' if 'tchscale' in experimentTag else tag
+		tag='twchscale' if 'twchscale' in experimentTag else tag
 		tag='width'    if 'width'    in experimentTag else tag
 		tag='matching' if 'matching' in experimentTag else tag
 		tag='p11'      if 'p11'      in experimentTag else tag
@@ -470,28 +472,45 @@ def writeSystematicsTable(results,filterCats,ofile):
 	selections = list(set([s for _,s in results.keys()]))
 	categories = list(set([k for k,_ in results.keys()]))
 
+	#create summary histograms
+	expUnc=ROOT.TH1F('expunc',';Category;Uncertainty [GeV]',len(filterCats),0,len(filterCats))
+	thUnc=ROOT.TH1F('thunc',';Category;Uncertainty [GeV]',len(filterCats),0,len(filterCats))
+	icat=0
+	for cat in filterCats:
+		expUnc.GetXaxis().SetBinLabel(icat+1,CATTOLABEL[cat].replace('mu','#mu'))
+		thUnc.GetXaxis().SetBinLabel(icat+1,CATTOLABEL[cat].replace('mu','#mu'))
+		icat+=1
+
+
 	theosysts = [
 	##   systname   ,variations [up, down],          title,       variation to compare with, included in sum?
 		('powpyth'   , ['powpyth'],                    'Signal model',         '172.5', True ),
-		('scale'     , ['scaleup', 'scaledown'],       '$Q^2$ scales',         '172.5', True ),
-		('matching'  , ['matchingup', 'matchingdown'], 'ME-PS scale',          '172.5', True ),
-		('pdf'       , ['pdfup', 'pdfdn'],             'PDF',                  '172.5', True ),
-		('hadmod'    , ['hadmod'],                     'Hadronization model',  '172.5', True ),
+		('scale'     , ['scaleup', 'scaledown'],       '$\\mu_R/\\mu_F$ scales \\ttbar',         '172.5', True ),
+		('tchscale'  , ['tchscaleup', 'tchscaledown'], '~~~~~~t-channel',       '172.5', True ),
+		('twchscale' , ['twchscaleup','twchscaledown'],'~~~~~~tW-channel',      '172.5', True ),
+		('matching'  , ['matchingup', 'matchingdown'], 'ME-PS scale',          '172.5', True ),		
+		('width'     , ['width'],                      'Width',                '172.5', True ),
+		#('hadmod'   , ['hadmod'],                     'Hadronization model',  '172.5', True ),
 		('bfnu'      , ['bfnuup', 'bfnudn'],           'Semi-lep. B decays',   '172.5', True ),
-		('bfragdn'   , ['bfragdn'],                    'Z2$^{*}$ rb LEP soft', '172.5', False ),
-		('bfrag'     , ['bfrag'],                      'Z2$^{*}$ rb LEP',      '172.5', True ),
-		('bfragup'   , ['bfragup'],                    'Z2$^{*}$ rb LEP hard', '172.5', False ),
-		('bfragp11'  , ['bfragp11'],                   'P11',                  '172.5', False ),
-		('bfragpete' , ['bfragpete'],                  'Z2$^{*}$ Peterson',    '172.5', False ),
-		('bfraglund' , ['bfraglund'],                  'Z2$^{*}$ Lund',        '172.5', False ),
+		#('bfragdn'   , ['bfragdn'],                    'Z2$^{*}$ rb LEP soft', '172.5', False ),
+		('bfrag'     , ['bfrag'],                      'Fragmentation Z2$^{*}$ rb LEP',      '172.5', True ),
+		#('bfragup'   , ['bfragup'],                    'Z2$^{*}$ rb LEP hard', '172.5', False ),
+		#('bfragp11'  , ['bfragp11'],                   'P11',                  '172.5', False ),
+		('bfragpete' , ['bfragpete'],                  '~~~Z2$^{*}$ Peterson',    '172.5', False ),
+		('bfraglund' , ['bfraglund'],                  '~~~Z2$^{*}$ Lund',        '172.5', False ),
 		('toppt'     , ['toppt'],                      'Top quark \\pt',       '172.5', True ),
-		('p11mpihi'  , ['p11mpihi'],                   'Underlying event',     'p11',   True ),
+		('p11mpihi'  , ['p11mpihi','p11tev'],          'Underlying event',     'p11',   True ),
 		('p11nocr'   , ['p11nocr'],                    'Color reconnection',   'p11',   True ),
 	]
+
+	for i in xrange(1,52,2):		
+		theosysts.append( ('pdf',['pdf%d'%i,'pdf%d'%(i+1)],'PDF %d' % ((i+1)/2), '172.5', True) )
+
 	expsysts = [
 		('jesup'     , ['jesup',    'jesdn'],    'Jet energy scale',           '172.5', True) ,
 		('jerup'     , ['jerup',    'jerdn'],    'Jet energy resolution',      '172.5', True) ,
-		('umetup'    , ['umetup',   'umetdn'],   'Unclustered energy',         '172.5', True) ,
+		#('umetup'    , ['umetup',   'umetdn'],   'Unclustered energy',         '172.5', True) ,
+		('umetup'    , ['umetup'],   'Unclustered energy',         '172.5', True) ,
 		('lesup'     , ['lesup',    'lesdn'],    'Lepton energy scale',        '172.5', True) ,
 		('puup'      , ['puup',     'pudn'],     'Pileup',                     '172.5', True) ,
 		('btagup'    , ['btagup',   'btagdn'],   '\\cPqb-tagging',             '172.5', True) ,
@@ -519,6 +538,13 @@ def writeSystematicsTable(results,filterCats,ofile):
 						diff =               results[(cat,sel)][var][0]  - results[(cat,sel)][difftag][0]
 						diffErr = math.sqrt( results[(cat,sel)][var][1]**2+results[(cat,sel)][difftag][1]**2 )
 
+						if 'pdf' in syst: 
+							diff    *= 1.64485
+							diffErr *= 1.64485
+						if 'width' in syst:
+							diff    *= 0.1/5.0
+							diffErr *= 0.1/5.0
+							
 						if diff > 0:
 							diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (diff, diffErr)
 							if insum: ups.append((diff,diffErr))
@@ -584,6 +610,7 @@ def writeSystematicsTable(results,filterCats,ofile):
 			of.write('\\hline\n')
 			totup_th,totupE_th,totdn_th,totdnE_th = writeSection(theosysts, sel, of, name='theo.')
 
+
 			of.write('\\hline\n')
 			if 'combe_0' in filterCats:
 				of.write('\multicolumn{7}{l}{\\bf Experimental uncertainties}\\\\\n')
@@ -600,15 +627,21 @@ def writeSystematicsTable(results,filterCats,ofile):
 			totup, totupE, totdn, totdnE, = {}, {}, {}, {}
 			for cat in totup_th:
 				totup[cat]  = math.sqrt(totup_th[cat]**2 + totup_ex[cat]**2)
-				totdn[cat]  = math.sqrt(totdn_th[cat]**2 + totdn_ex[cat]**2)*-1.
+				totdn[cat]  = math.sqrt(totdn_th[cat]**2 + totdn_ex[cat]**2) #*-1.
 				totupE[cat] = math.sqrt(totupE_th[cat]**2 + totupE_ex[cat]**2)
 				totdnE[cat] = math.sqrt(totdnE_th[cat]**2 + totdnE_ex[cat]**2)
-
+	
+			icat=0
 			of.write('Total uncertainty  FIXME       & ')
 			for cat in filterCats:
 				diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (totup[cat], totupE[cat])
 				if cat == filterCats[-1]: diffstr = diffstr[:-2]
 				of.write(diffstr)
+				icat+=1
+				expUnc.SetBinContent(icat,ROOT.TMath.Max(ROOT.TMath.Abs(totup_ex[cat]),ROOT.TMath.Abs(totdn_ex[cat])))
+				thUnc.SetBinContent(icat,ROOT.TMath.Max(ROOT.TMath.Abs(totup_th[cat]),ROOT.TMath.Abs(totdn_th[cat])))
+
+
 			of.write('\\\\')
 			of.write('\n')
 			of.write('                               & ')
@@ -627,8 +660,57 @@ def writeSystematicsTable(results,filterCats,ofile):
 		print 'Wrote systematics to file: %s' % ofile
 		with open(ofile,'r') as of:
 			for line in of: sys.stdout.write(line)
+
+
+	rootfile=ofile.replace('.tex','.root')
+	outF=ROOT.TFile.Open(rootfile,'RECREATE')
+	outF.cd()
+	expUnc.Write()
+	thUnc.Write()
+	outF.Close()
+
 	return 0
 
+"""
+"""
+def compareResults(files):
+	c=ROOT.TCanvas('c','c',700,500)
+	for unc in ['expunc','thunc']:
+
+		#get histos from files
+		allH=[]
+		for ifile in xrange(0,len(files)):
+			inF=ROOT.TFile.Open(files[ifile])
+			label='inclusive'
+			if 'optmrank' in files[ifile] : label='optmrank'
+			allH.append( inF.Get(unc).Clone(unc+'_'+label) )
+			allH[-1].SetTitle(label)
+			allH[-1].SetDirectory(0)
+
+		#dump to canvas
+		c.Clear()
+		leg=ROOT.TLegend(0.15,0.7,0.5,0.88)
+		leg.SetFillStyle(0)
+		leg.SetTextFont(42)
+		leg.SetTextSize(0.04)
+		leg.SetBorderSize(0)
+		for i in xrange(0,len(allH)):
+			drawOpt='hist' if i==0 else 'histsame'
+			allH[i].Draw(drawOpt)
+			allH[i].SetDirectory(0)
+			allH[i].SetLineColor(COLORS[i])
+			allH[i].SetDirectory(0)
+			allH[i].GetYaxis().SetRangeUser(0,3)			
+			leg.AddEntry(allH[i],allH[i].GetTitle(),'l')
+		leg.Draw()
+
+		txt=ROOT.TLatex()
+		txt.SetNDC()
+		txt.SetTextFont(42)
+		txt.SetTextSize(0.04)
+		txt.DrawLatex(0.12,0.92,'#bf{CMS} #it{simulation}')
+		for ext in ['png','pdf']: c.SaveAs('%s_comp.%s'%(unc,ext))
+			
 
 """
 steer
@@ -644,11 +726,17 @@ def main():
 	parser.add_option('--calib', dest='calib',   default=None, help='show calibration')
 	parser.add_option('--syst',  dest='syst',    default=None, help='show systematics table')
 	parser.add_option('--rebin', dest='rebin',   default=2,    type=int, help='rebin pe plots by this factor')
+	parser.add_option('--compare', dest='compare',   default='',    type='string', help='compare uncertainties from ROOT summaries (CSV list)')
 	(opt, args) = parser.parse_args()
 
 	ROOT.gStyle.SetOptStat(0)
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gROOT.SetBatch(True)
+	
+	#compare final results from ROOT files
+	if opt.compare:
+		compareResults(files=opt.compare.split(','))
+		return
 
 	#parse calibration results from directory
 	if opt.calib:

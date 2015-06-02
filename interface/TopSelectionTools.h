@@ -150,7 +150,7 @@ data::PhysicsObjectCollection_t selectJets(data::PhysicsObjectCollection_t &jets
     data::PhysicsObjectCollection_t selJets;
     for(size_t ijet=0; ijet<jets.size(); ijet++)
     {
-        data::PhysicsObject_t selJet = getTopSelectionTaggedJet(jets[ijet], leptons, 25., 2.5);
+        data::PhysicsObject_t selJet = getTopSelectionTaggedJet(jets[ijet], leptons, 25., 5.0);
 
         if(!selJet.getFlag("passGoodJet")) continue;
 

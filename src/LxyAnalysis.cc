@@ -202,10 +202,11 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
         bev_.lpt[bev_.nl]  = leptons[i]->pt();
         bev_.leta[bev_.nl] = leptons[i]->eta();
         bev_.lphi[bev_.nl] = leptons[i]->phi();
-        bev_.glid[bev_.nl]  = leptons[i]->get("id"); // ???? who ordered a copy ????
-        bev_.glpt[bev_.nl]  = leptons[i]->pt();
-        bev_.gleta[bev_.nl] = leptons[i]->eta();
-        bev_.glphi[bev_.nl] = leptons[i]->phi();
+	const data::PhysicsObject_t &genLepton=leptons[i]->getObject("gen");
+        bev_.glid[bev_.nl]  = genLepton.info.find("id")->second;
+        bev_.glpt[bev_.nl]  = genLepton.pt();
+        bev_.gleta[bev_.nl] = genLepton.eta();
+        bev_.glphi[bev_.nl] = genLepton.phi();
         bev_.nl++;
     }
 

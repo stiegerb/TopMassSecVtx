@@ -55,7 +55,8 @@ public:
     virtual void Begin(TFile*);
     virtual void End(TFile*);
     virtual void Loop();
-
+    virtual void BookDileptonTree();
+    virtual void ResetDileptonTree();
     virtual void BookHistos();
     virtual void BookCharmHistos();
     virtual void BookSVLHistos();
@@ -183,6 +184,11 @@ public:
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
     Int_t fTJFlav;
     Float_t fTGenMlb, fTGenTopPt;
+
+    //Dilepton specific
+    TTree *fDileptonInfoTree;
+    Float_t fLpPt,fLmPt,fLpEta,fLmEta,fLpPhi,fLmPhi,fLmId,fLpId;
+    Float_t fGenLpPt,fGenLmPt,fGenLpEta,fGenLmEta,fGenLpPhi,fGenLmPhi,fGenLpId,fGenLmId;
 
     TRandom2 rndGen_;
     BTagSFUtil btsfutil_;

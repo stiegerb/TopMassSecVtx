@@ -315,10 +315,11 @@ int main(int argc, char* argv[])
 
     if(isTTbarMC) {
         if(weightsFile.size()) {
-            TString shapesDir("");
-            shapesDir=weightsFile[0].c_str();
-            fTopPtWgt = new TopPtWeighter( proctag, out, shapesDir, evSummary.getTree() );
-	}
+            TString shapesDir(weightsFile[0].c_str());
+            TString weightsDir(weightsFile[0].c_str());
+            weightsDir += "toppt";
+            fTopPtWgt = new TopPtWeighter( proctag, weightsDir, shapesDir, evSummary.getTree() );
+    	}
     }
 
     if(isMC) {

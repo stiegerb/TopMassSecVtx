@@ -25,6 +25,7 @@ void LxyAnalysis::resetBeautyEvent()
     bev_.nw     = 0;
     bev_.nl     = 0;
     bev_.nj     = 0;
+    bev_.nfj    = 0;
     bev_.npf    = 0;
     bev_.npfb1  = 0;
 
@@ -54,9 +55,24 @@ void LxyAnalysis::resetBeautyEvent()
             bev_.jjesup[i][iunc] = -999.99;
             bev_.jjesdn[i][iunc] = -999.99;
         }
-	bev_.jjerup[i]=-999.99;
-	bev_.jjerdn[i]=-999.99;
+        bev_.jjerup[i]=-999.99;
+        bev_.jjerdn[i]=-999.99;
         bev_.jbhadmatchdr[i] = 999.99;
+    }
+    for(size_t i=0; i<bev_.gMaxNFwdJets; i++) {
+        bev_.fjflav[i]  = 0;
+        bev_.fjpt[i]    = -999.99;
+        bev_.fjeta[i]   = -999.99;
+        bev_.fjphi[i]   = -999.99;
+        bev_.fjarea[i]  = -999.99;
+        bev_.fjtoraw[i] = -999.99;
+        for(size_t iunc=0; iunc<26; iunc++)
+        {
+            bev_.jjesup[i][iunc] = -999.99;
+            bev_.jjesdn[i][iunc] = -999.99;
+        }
+    	bev_.jjerup[i]=-999.99;
+    	bev_.jjerdn[i]=-999.99;
     }
     for(size_t i=0; i<bev_.gMaxNSV; i++) {
         bev_.tid[i] = 0;
@@ -65,11 +81,16 @@ void LxyAnalysis::resetBeautyEvent()
         bev_.tphi[i]  = -999.99;
         bev_.tmass[i] = -999.99;
 
-	bev_.bid[i] = 0;
-	for(size_t j=0; j<6; j++) bev_.bwgt[i][j] = 1.0;
-	bev_.bpt[i]  = -999.99;
-	bev_.beta[i] = -999.99;
-	bev_.bphi[i] = -999.99;
+        bev_.bid[i] = 0;
+        for(size_t j=0; j<6; j++) bev_.bwgt[i][j] = 1.0;
+        bev_.bpt[i]  = -999.99;
+        bev_.beta[i] = -999.99;
+        bev_.bphi[i] = -999.99;
+
+    	bev_.fbid[i] = 0;
+    	bev_.fbpt[i]  = -999.99;
+    	bev_.fbeta[i] = -999.99;
+    	bev_.fbphi[i] = -999.99;
 
         bev_.bhadid[i]       = 0;
         bev_.bhadpt[i]       = -999.99;
@@ -147,6 +168,17 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("jjerup",       bev_.jjerup,       "jjerup[nj]/F");
   outT_->Branch("jjerdn",       bev_.jjerdn,       "jjesdn[nj]/F");
   outT_->Branch("jbhadmatchdr", bev_.jbhadmatchdr, "jbhadmatchdr[nj]/F");
+  outT_->Branch("nfj",         &bev_.nfj,          "nfj/I");
+  outT_->Branch("fjflav",       bev_.fjflav,       "fjflav[nfj]/I");
+  outT_->Branch("fjpt",         bev_.fjpt,         "fjpt[nfj]/F");
+  outT_->Branch("fjeta",        bev_.fjeta,        "fjeta[nfj]/F");
+  outT_->Branch("fjphi",        bev_.fjphi,        "fjphi[nfj]/F");
+  outT_->Branch("fjarea",       bev_.fjarea,       "fjarea[nfj]/F");
+  outT_->Branch("fjtoraw",      bev_.fjtoraw,      "fjtoraw[nfj]/F");
+  outT_->Branch("fjjesup",      bev_.fjjesup,      "fjjesup[nfj][26]/F");
+  outT_->Branch("fjjesdn",      bev_.fjjesdn,      "fjjesdn[nfj][26]/F");
+  outT_->Branch("fjjerup",      bev_.fjjerup,      "fjjerup[nfj]/F");
+  outT_->Branch("fjjerdn",      bev_.fjjerdn,      "fjjesdn[nfj]/F");
   outT_->Branch("gjpt",         bev_.gjpt,         "gjpt[nj]/F");
   outT_->Branch("gjeta",        bev_.gjeta,        "gjeta[nj]/F");
   outT_->Branch("gjphi",        bev_.gjphi,        "gjphi[nj]/F");
@@ -162,6 +194,10 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
   outT_->Branch("bpt",          bev_.bpt,          "bpt[nj]/F");
   outT_->Branch("beta",         bev_.beta,         "beta[nj]/F");
   outT_->Branch("bphi",         bev_.bphi,         "bphi[nj]/F");
+  outT_->Branch("fbid",         bev_.fbid,         "fbid[nfj]/I");
+  outT_->Branch("fbpt",         bev_.fbpt,         "fbpt[nfj]/F");
+  outT_->Branch("fbeta",        bev_.fbeta,        "fbeta[nfj]/F");
+  outT_->Branch("fbphi",        bev_.fbphi,        "fbphi[nfj]/F");
   outT_->Branch("bhadid",       bev_.bhadid,       "bhadid[nj]/I");
   outT_->Branch("bhadpt",       bev_.bhadpt,       "bhadpt[nj]/F");
   outT_->Branch("bhadeta",      bev_.bhadeta,      "bhadeta[nj]/F");
@@ -190,6 +226,7 @@ void LxyAnalysis::attachToDir(TDirectory *outDir)
 //
 void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
                           std::vector<data::PhysicsObject_t *> &jets,
+                          std::vector<data::PhysicsObject_t *> &fwdjets,
                           std::vector<LorentzVector> &mets,
                           data::PhysicsObjectCollection_t &pf,
                           data::PhysicsObjectCollection_t &mctruth)
@@ -240,8 +277,8 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
             bev_.jjesup[bev_.nj][iunc] = jets[i]->getVal(altName+"_up");
             bev_.jjesdn[bev_.nj][iunc] = jets[i]->getVal(altName+"_down");
         }
-	bev_.jjerup[bev_.nj] = jets[i]->getVal("jerup");
-	bev_.jjerdn[bev_.nj] = jets[i]->getVal("jerdown");
+        bev_.jjerup[bev_.nj] = jets[i]->getVal("jerup");
+        bev_.jjerdn[bev_.nj] = jets[i]->getVal("jerdown");
 
         const data::PhysicsObject_t &genParton=jets[i]->getObject("gen");
         if(genParton.pt()>0) {
@@ -331,6 +368,46 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
             bev_.jbhadmatchdr[i] = deltar;
         }
     }
+
+    //look at the forward jets now
+    bev_.nfj=0;
+    for(size_t i=0; i<fwdjets.size(); i++)
+    {
+        const data::PhysicsObject_t &genJet=fwdjets[i]->getObject("genJet");
+        bev_.fjpt[bev_.nfj]  = fwdjets[i]->pt();
+        bev_.fjeta[bev_.nfj] = fwdjets[i]->eta();
+        bev_.fjphi[bev_.nfj] = fwdjets[i]->phi();
+        if(genJet.pt()>0) {
+            bev_.fjflav[bev_.nfj] = genJet.info.find("id")->second;
+        }
+
+        const data::PhysicsObject_t &genParton=fwdjets[i]->getObject("gen");
+        if(genParton.pt()>0) {
+            bev_.fbid[bev_.nfj]  = genParton.info.find("id")->second;
+            bev_.fbpt[bev_.nfj]  = genParton.pt();
+            bev_.fbeta[bev_.nfj] = genParton.eta();
+            bev_.fbphi[bev_.nfj] = genParton.phi();
+        }
+
+        bev_.fjarea[bev_.nfj]  = fwdjets[i]->getVal("area");
+        bev_.fjtoraw[bev_.nfj] = fwdjets[i]->getVal("torawsf");
+
+        size_t nUncs(fwdjets[i]->get("nJetUncs"));
+        if(nUncs>26) {
+            cout << nUncs << ">26 unc found for this jet? setting to 26" << endl;
+            nUncs=26;
+        }
+        for(size_t iunc=0; iunc<nUncs; iunc++)
+        {
+            TString altName("unc");
+            altName += iunc;
+            bev_.fjjesup[bev_.nfj][iunc] = fwdjets[i]->getVal(altName+"_up");
+            bev_.fjjesdn[bev_.nfj][iunc] = fwdjets[i]->getVal(altName+"_down");
+        }
+        bev_.fjjerup[bev_.nfj] = fwdjets[i]->getVal("jerup");
+        bev_.fjjerdn[bev_.nfj] = fwdjets[i]->getVal("jerdown");
+        bev_.nfj++;
+    } // end jet loop
 
     //met
     bev_.metpt  = mets[0].pt();

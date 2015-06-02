@@ -70,7 +70,7 @@ public:
     ~AnalysisBox() { }
     Int_t cat;
     TString chCat, lCat, jetCat, metCat;
-    std::vector<data::PhysicsObject_t *> leptons,jets;
+    std::vector<data::PhysicsObject_t *> leptons,jets,fjets;
     LorentzVector met;
     float metsig;
 };
@@ -85,7 +85,8 @@ AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons,
     AnalysisBox box;
     box.cat=0;
     for(size_t i=0; i<jets.size(); i++) {
-        box.jets.push_back( &(jets[i]) );
+        if(fabs(jets[i].eta()) < 2.5) box.jets.push_back( &(jets[i]) );
+        else                          box.fjets.push_back(&(jets[i]) );
     }
     box.met=met;
 
@@ -325,7 +326,7 @@ int main(int argc, char* argv[])
       burl += "/BfragWeights.root";
       fBfragWgt = new BfragWeighter( burl );
     }
-    
+
 
     //control the sec vtx analysis
     LxyAnalysis lxyAn;
@@ -643,20 +644,20 @@ int main(int argc, char* argv[])
 
         //Fill lxy tree
         data::PhysicsObjectCollection_t pf = evSummary.getPhysicsObject(DataEventSummaryHandler::PFCANDIDATES);
-        lxyAn.analyze( box.leptons, box.jets, met, pf, gen);
+        lxyAn.analyze( box.leptons, box.jets, box.fjets, met, pf, gen);
 
         //add fragmentation weights using matched b's and B hadrons
         if(fBfragWgt) {
             for(Int_t ij=0; ij<bev.nj; ij++)
-	      {
-		if(abs(bev.bid[ij])!=5 || bev.gjpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
-		std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.gjpt[ij] );
+            {
+        		if(abs(bev.bid[ij])!=5 || bev.gjpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
+        		std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.gjpt[ij] );
                 bev.bwgt[ij][0]=bfragWeights[0];
                 bev.bwgt[ij][1]=bfragWeights[1];
                 bev.bwgt[ij][2]=bfragWeights[2];
-		bev.bwgt[ij][3]=bfragWeights[3];
-		bev.bwgt[ij][4]=bfragWeights[4];
-		bev.bwgt[ij][5]=bfragWeights[5];
+        		bev.bwgt[ij][3]=bfragWeights[3];
+        		bev.bwgt[ij][4]=bfragWeights[4];
+        		bev.bwgt[ij][5]=bfragWeights[5];
             }
         }
 

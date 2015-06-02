@@ -11,6 +11,7 @@ struct BeautyEvent_t
   static const unsigned gMaxNWeights = 50;
   static const unsigned gMaxNLeps = 5;
   static const unsigned gMaxNJets = 50;
+  static const unsigned gMaxNFwdJets = 20;
   static const unsigned gMaxNSV = 50;
   static const unsigned gMaxNPFCands = 1000;
 
@@ -33,12 +34,18 @@ struct BeautyEvent_t
   Float_t jcsv[gMaxNJets],jarea[gMaxNJets];
   Float_t jtoraw[gMaxNJets],jjesup[gMaxNJets][26],jjesdn[gMaxNJets][26],jjerup[gMaxNJets],jjerdn[gMaxNJets];
   Float_t jbhadmatchdr[gMaxNJets];
+  // Forward Jets
+  Int_t nfj,fjflav[gMaxNFwdJets];
+  Float_t fjpt[gMaxNFwdJets],fjeta[gMaxNFwdJets],fjphi[gMaxNFwdJets];
+  Float_t fjarea[gMaxNFwdJets];
+  Float_t fjtoraw[gMaxNFwdJets],fjjesup[gMaxNFwdJets][26],fjjesdn[gMaxNFwdJets][26],fjjerup[gMaxNFwdJets],fjjerdn[gMaxNFwdJets];
   // Sec.Vertices
   Float_t svpt[gMaxNSV],sveta[gMaxNSV],svphi[gMaxNSV];
   Float_t svmass[gMaxNSV],svntk[gMaxNSV],svlxy[gMaxNSV],svlxyerr[gMaxNSV];
   // Gen Bhadrons
-  Int_t bid[gMaxNSV],bhadid[gMaxNSV], bhadneutrino[gMaxNSV];
+  Int_t bid[gMaxNSV],fbid[gMaxNFwdJets],bhadid[gMaxNSV], bhadneutrino[gMaxNSV];
   Float_t bpt[gMaxNSV],beta[gMaxNSV],bphi[gMaxNSV],bwgt[gMaxNSV][6];
+  Float_t fbpt[gMaxNFwdJets],fbeta[gMaxNFwdJets],fbphi[gMaxNFwdJets];
   Float_t bhadpt[gMaxNSV],bhadeta[gMaxNSV],bhadphi[gMaxNSV];
   Float_t bhadmass[gMaxNSV],bhadlxy[gMaxNSV];
   // Gen Top
@@ -61,7 +68,12 @@ class LxyAnalysis
   LxyAnalysis();
   void attachToDir(TDirectory *outDir);
   inline BeautyEvent_t &getBeautyEvent(){ return bev_; }
-  void analyze(std::vector<data::PhysicsObject_t *> &leptons, std::vector<data::PhysicsObject_t *> &jets, std::vector<LorentzVector> &mets, data::PhysicsObjectCollection_t &pf, data::PhysicsObjectCollection_t &mctruth);
+  void analyze(std::vector<data::PhysicsObject_t *> &leptons,
+               std::vector<data::PhysicsObject_t *> &jets,
+               std::vector<data::PhysicsObject_t *> &fwdjets,
+               std::vector<LorentzVector> &mets,
+               data::PhysicsObjectCollection_t &pf,
+               data::PhysicsObjectCollection_t &mctruth);
   void save();
   void resetBeautyEvent();
  private:

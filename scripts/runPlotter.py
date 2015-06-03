@@ -305,7 +305,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                                 fixExtremities(ihist,False,False)
 
                             ## Apply xsec weights
-                            ihist.Scale(xsecweights[str(dtag)])
+                            if xsecweights : ihist.Scale(xsecweights[str(dtag)])
 
                             ## Apply external scale factor
                             if (key,str(title)) in scaleFactors:
@@ -340,7 +340,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                             fixExtremities(ihist,False,False)
 
                         ## Apply xsec weights
-                        ihist.Scale(xsecweights[str(dtag)])
+                        if xsecweights : ihist.Scale(xsecweights[str(dtag)])
 
                         ## Apply external scale factor
                         if (key,str(title)) in scaleFactors:
@@ -369,7 +369,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                         fixExtremities(ihist,False,False)
 
                     ## Apply xsec weights
-                    ihist.Scale(xsecweights[str(dtag)])
+                    if xsecweights : ihist.Scale(xsecweights[str(dtag)])
 
                     ## Apply external scale factor
                     if (key,str(title)) in scaleFactors:
@@ -543,7 +543,11 @@ def runPlotter(inDir, options, scaleFactors={}):
     plots = []
 
     # Read the xsection weights (from cache or from the input files)
-    xsecweights = readXSecWeights(jsonfile=options.json)
+    xsecweights = None
+    try :
+        xsecweights = readXSecWeights(jsonfile=options.json)
+    except:
+        print '[WARNING] default normalization as stored in the histos will be used'
 
     missing_files = []
     tagsToFilter = options.filter.split(',')

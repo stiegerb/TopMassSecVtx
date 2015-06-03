@@ -1148,11 +1148,9 @@ void LxyTreeAnalysis::analyze(){
 		      if(svl_pairing.svlmass<=0) continue;
 		      float lesf(1.0);
 		      int varSign( ivar==0 ? -1 : 1 );
-		      if(abs(lid[il])==13) lesf=(1.0+varSign*0.005);
-		      if(abs(lid[il])==11) {
-			if(fabs(leta[il])<1.442) lesf=(1.0+varSign*0.005);
-			else                     lesf=(1.0-varSign*0.01);
-		      }
+		      float lesUnc(0.002);
+		      if(abs(lid[il])==11) lesUnc=utils::cmssw::getElectronEnergyScale(lpt[il],leta[il]);
+		      lesf=(1.0+varSign*lesUnc);
 		      TLorentzVector p_lep_var;
 		      p_lep_var.SetPtEtaPhiM(lesf*lpt[il], leta[il], lphi[il], 0.);
 		      svl_pairing.svlmass_sf[ivar]=((p_lep_var + p_sv).M() / svl_pairing.svlmass );

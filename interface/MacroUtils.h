@@ -107,6 +107,9 @@ namespace utils
 
     Float_t getEffectiveArea(int id, float eta,int cone=3,TString isoSum="");
 
+    // cf. AN-14-145
+    Float_t getElectronEnergyScale(float pt, float eta);
+    
     // Single muon trigger efficiency
     void getSingleMuTrigEff(const double&, const double&, double& );
 

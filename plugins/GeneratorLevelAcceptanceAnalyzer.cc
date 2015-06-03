@@ -21,11 +21,12 @@
 #include "DataFormats/JetReco/interface/GenJet.h"
 
 #include "UserCode/TopMassSecVtx/interface/MacroUtils.h"
+#include "UserCode/TopMassSecVtx/interface/GenTopEvent.h"
 
 #include <TLorentzVector.h>
 #include <TH1.h>
 #include <TH2.h>
-
+#include <TTree.h>
 
 class GeneratorLevelAcceptanceAnalyzer : public edm::EDFilter {
 public:
@@ -47,6 +48,8 @@ private:
   
   // ----------member data ---------------------------
   TH1F *h_cutflow, *h_cutflow1b, *h_ptTop, *h_totLeptonsMass;
+  TTree *ntuple_;
+  GenTopEvent_t genev_;
 };
 
 //
@@ -102,6 +105,9 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
    std::vector<TLorentzVector> chLeptons;
    std::vector<TLorentzVector> bQuarks;
    TLorentzVector totLeptons(0,0,0,0);
+   int itop(0);
+   
+   genev_.nl=0;
    for(std::vector<reco::GenParticle>::const_iterator genParticle = genParticles->begin(); genParticle != genParticles->end(); ++genParticle) 
      {
        int status=genParticle->status();
@@ -110,19 +116,42 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
 	 TLorentzVector p4( genParticle->px(), genParticle->py(), genParticle->pz(), genParticle->energy() );
 	 totLeptons += p4;
        } 
-       if(status==3 && abs(pid)==6) h_ptTop->Fill(genParticle->pt());
-       if(status==3 && abs(pid)==5) {
-	 TLorentzVector p4( genParticle->px(), genParticle->py(), genParticle->pz(), genParticle->energy() );
-	 bQuarks.push_back(p4);
-       }
+       if(status==3 && abs(pid)==6)
+	 {
+	   h_ptTop->Fill(genParticle->pt());
+	   if(itop<2 && genParticle->pt()>0)
+	     {
+	       genev_.tpt[itop]=genParticle->pt();
+	       genev_.teta[itop]=genParticle->eta();
+	       genev_.tphi[itop]=genParticle->phi();
+	       genev_.tmass[itop]=genParticle->mass();
+	       genev_.tid[itop]=genParticle->pdgId();
+	       itop++;
+	     }
+	 }
+       if(abs(pid)==5 && genParticle->pt()>0) 
+	 {
+	   TLorentzVector p4( genParticle->px(), genParticle->py(), genParticle->pz(), genParticle->energy() );
+	   bQuarks.push_back(p4);
+	 }
        if(status==1)
 	 {
 	   TLorentzVector p4( genParticle->px(), genParticle->py(), genParticle->pz(), genParticle->energy() );
-	   if(abs(pid)==11 || abs(pid)==13) {
-	     if(p4.Pt()<20 || fabs(p4.Eta()>2.5) ) continue;
-	     chLeptonsId.push_back( pid );
-	     chLeptons.push_back(p4);
-	   }
+	   if(abs(pid)==11 || abs(pid)==13) 
+	     {
+	       if(genParticle->pt()<20 || fabs(genParticle->eta())>2.5 ) continue;
+	       chLeptonsId.push_back( pid );
+	       chLeptons.push_back(p4);
+	       if(genev_.nl<10)
+		 {
+		   genev_.lid[genev_.nl]=pid;
+		   genev_.lpt[genev_.nl]=genParticle->pt();
+		   genev_.leta[genev_.nl]=genParticle->eta();
+		   genev_.lphi[genev_.nl]=genParticle->phi();
+		   genev_.lmass[genev_.nl]=genParticle->mass();
+		   genev_.nl++;
+		 }
+	     }
 	   if(abs(pid)==12 || abs(pid)==14 || abs(pid)==16) neutFlux += p4;
 	 }
      }
@@ -136,7 +165,7 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
        else if(chLeptons[i].Pt()>trailerPt) { trailerId=chLeptonsId[i]; trailerPt=chLeptons[i].Pt();                                                  }
      }
    int ch(leadId*trailerId);
-   
+
    //
    // gen jets
    //
@@ -145,21 +174,18 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
    if(!genJets.isValid())     cerr << "  WARNING: genJets is not valid! " << endl;
    std::vector<TLorentzVector> jets;
    std::vector<TLorentzVector> bJets;
+   genev_.nj=0;
    for(std::vector<reco::GenJet>::const_iterator genJet=genJets->begin(); genJet!=genJets->end(); genJet++)
      {
+       if(genJet->energy()<10 || genJet->pt()<25 || fabs(genJet->eta())>4.7) continue;
+
+       //quality cuts                                                                        
+       if(genJet->hadEnergy()/genJet->energy()<0.05) continue;
+       if(genJet->emEnergy()/genJet->energy()>0.95)  continue;
+       if(genJet->getGenConstituents().size()<2)   continue;
+
+       //
        TLorentzVector p4( genJet->px(), genJet->py(), genJet->pz(), genJet->energy() );
-       if(p4.Pt()<25 || fabs(p4.Eta())>2.5) continue;
-
-       bool matchesLepton(false);
-       for(size_t i=0; i<chLeptons.size(); i++)
-	 {
-	   float dR=p4.DeltaR(chLeptons[i]);
-	   if(dR>0.4) continue;
-	   matchesLepton=true;
-	   break;
-	 }
-       if(matchesLepton) continue;
-
        bool matchesBquark(false);
        for(size_t i=0; i<bQuarks.size(); i++)
 	 {
@@ -167,13 +193,40 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
 	   if(dR>0.4) continue;
 	   matchesBquark=true;
 	 }
+       
+       if(genev_.nj<100)
+	 {
+	   genev_.jpt[genev_.nj]=genJet->pt();
+	   genev_.jeta[genev_.nj]=genJet->eta();
+	   genev_.jphi[genev_.nj]=genJet->phi();
+	   genev_.jmass[genev_.nj]=genJet->mass();
+	   genev_.jflav[genev_.nj]=(matchesBquark? 5 : 0);
+	   genev_.nj++;
+	 }
 
-       jets.push_back(p4);
-       if(matchesBquark) bJets.push_back(p4);
+       //standard selection
+       if(fabs(genJet->eta())>2.5) continue; 
+       bool matchesLepton(false);
+       for(size_t i=0; i<chLeptons.size(); i++)
+       	 {
+          float dR=p4.DeltaR(chLeptons[i]);
+       	   if(dR>0.4) continue;
+       	   matchesLepton=true;
+       	   break;
+       	 }
+        if(matchesLepton) continue;
+	jets.push_back(p4);
+	if(matchesBquark) bJets.push_back(p4);
      }
 
+   //fill the ntuple
+   if(genev_.nl>0 && genev_.nj>2) ntuple_->Fill();
+
+   //
+   // dilepton selection
+   //
    //total leptons mass
-   h_totLeptonsMass->Fill(totLeptons.M());
+   //h_totLeptonsMass->Fill(totLeptons.M());
 
    //compute acceptance
    bool passLeptons(abs(ch)==11*11 || abs(ch)==11*13 || abs(ch)==13*13);
@@ -217,7 +270,7 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
    if(passLeptons && jets.size()>=5 && bJets.size()>=1 && passMET && passOS ) h_cutflow1b->Fill(15);
 
    //   std::cout << totLeptons.M() << " " << (totLeptons.M()>180) << std::endl;
-   return totLeptons.M()>180;
+   return true; //totLeptons.M()>180;
 }
 
 
@@ -227,7 +280,9 @@ GeneratorLevelAcceptanceAnalyzer::beginJob()
 {
   //book the histograms
   edm::Service<TFileService> fs;
- 
+  ntuple_ = fs->make<TTree>("genev","genev");
+  bookGenTopEvent(ntuple_,genev_);
+
   h_totLeptonsMass   = fs->make<TH1F>("totleptonsmass",   ";Mass [GeV];Events",1000,0.,1000.);
 
   h_ptTop            = fs->make<TH1F>("pttop",        ";Generated top transverse momentum [GeV];Events x2",100,0.,250.);

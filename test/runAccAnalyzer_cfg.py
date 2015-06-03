@@ -17,23 +17,20 @@ process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True),
                                         ) 
 
 #the source and output
+from UserCode.TopMassSecVtx.MarkusSherpaSamples_cfi import getMarkusSherpaSamplesFor
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('/store/relval/CMSSW_5_3_6-START53_V14/RelValTTbar/GEN-SIM-RECO/v2/00000/16D5D599-F129-E211-AB60-00261894390B.root')
+                            fileNames = getMarkusSherpaSamplesFor('Lund'),
+                            duplicateCheckMode = cms.untracked.string('noDuplicateCheck')
                             )
+
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
-process.out = cms.OutputModule("PoolOutputModule",
-                               outputCommands = cms.untracked.vstring('keep *'),
-                               fileName = cms.untracked.string("Events.root")
-                               )
-
-
 process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
 
-process.TFileService = cms.Service("TFileService", fileName = cms.string("DataAnalysis.root"))
+process.TFileService = cms.Service("TFileService", fileName = cms.string("AcceptanceAnalysis.root"))
 
-process.accAnalyzer = cms.EDAnalyzer("GeneratorLevelAcceptanceAnalyzer")
+process.accAnalyzer = cms.EDFilter("GeneratorLevelAcceptanceAnalyzer")
 
 process.p = cms.Path( process.accAnalyzer )
 

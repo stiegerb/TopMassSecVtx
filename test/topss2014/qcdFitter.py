@@ -307,7 +307,7 @@ def main(args, options) :
 		totalIncSideBand = inc.Integral()
 		totalInc = w.function('N_bkg_%s'%cat).getVal()
 		for ntk in [tk1 for tk1,_ in NTRKBINS]:
-			for sel in ['_mrank1','','_optmrank']:
+			for sel in ['_mrankinc','_mrank','_mrank1','_drrankink','_drrank','_drrank1','','_optmrank']:
 				h_ntk = fQCD.Get('%s%s_qcd_template_%d'%(cat,sel,ntk))
 				iniNorm=1
 				try:

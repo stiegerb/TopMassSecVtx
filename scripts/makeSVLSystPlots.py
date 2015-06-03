@@ -467,8 +467,18 @@ def main(args, opt):
 	for var,_,_,_,_ in CONTROLVARS:
 		makeControlPlot(systhistos, var,
 			            'inclusive', 'Fully Inclusive', opt)
-		# makeControlPlot(systhistos, var,
-		# 	            'inclusive_mrank1', 'Mass ranked', opt)
+		makeControlPlot(systhistos, var,
+				'inclusive_mrankinc', 'Mass ranked', opt)
+		makeControlPlot(systhistos, var,
+				'inclusive_mrank', 'Mass ranked, #DeltaR<2', opt)
+		makeControlPlot(systhistos, var,
+				'inclusive_mrank1', 'Mass ranked, #DeltaR<2, leading p_{T}', opt)
+		makeControlPlot(systhistos, var,
+				'inclusive_drrankinc', '#DeltaR ranked', opt)
+		makeControlPlot(systhistos, var,
+				'inclusive_drrank', '#DeltaR ranked, #DeltaR<2', opt)
+		makeControlPlot(systhistos, var,
+				'inclusive_drrank1', '#DeltaR ranked, #DeltaR<2, leading p_{T}', opt)
 		makeControlPlot(systhistos, var,
 			            'inclusive_optmrank', 'Optimized mass rank', opt)
 
@@ -480,7 +490,7 @@ def main(args, opt):
 	# 	            'inclusive_optmrank', 'Optimized mass rank', opt)
 
 	for tag,_,_ in SELECTIONS:
-		if not tag in ['inclusive', 'inclusive_mrank1','inclusive_optmrank']: continue
+		if not 'inclusive' in tag : continue
 		print "... processing %s"%tag
 
 		# Make plot of mass with and without neutrino:

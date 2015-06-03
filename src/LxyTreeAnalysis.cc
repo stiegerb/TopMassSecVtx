@@ -123,25 +123,30 @@ void LxyTreeAnalysis::RunJob(TString filename){
 	Loop();
 	End(file);
 }
-void LxyTreeAnalysis::Begin(TFile *file){
-	// Anything that has to be done once at the beginning
-	file->cd();
-	BookHistos();
-	BookCharmTree();
-	BookSVLTree();
 
-	fTXSWeight = fProcessNorm;
+//
+void LxyTreeAnalysis::Begin(TFile *file)
+{
+  // Anything that has to be done once at the beginning
+  file->cd();
+  BookHistos();
+  BookCharmTree();
+  BookSVLTree();
+  BookDileptonTree();
+  fTXSWeight = fProcessNorm;
 }
 
-void LxyTreeAnalysis::End(TFile *file){
-	// Anything that has to be done once at the end
-	file->cd();
-	WritePlots();
-	WriteHistos();
-	fCharmInfoTree->Write(fCharmInfoTree->GetName());
-	fSVLInfoTree->Write(fSVLInfoTree->GetName());
-	file->Write();
-	file->Close();
+void LxyTreeAnalysis::End(TFile *file)
+{
+  // Anything that has to be done once at the end
+  file->cd();
+  WritePlots();
+  WriteHistos();
+  fCharmInfoTree->Write(fCharmInfoTree->GetName());
+  fSVLInfoTree->Write(fSVLInfoTree->GetName());
+  fDileptonInfoTree->Write(fDileptonInfoTree->GetName());
+  file->Write();
+  file->Close();
 }
 
 void LxyTreeAnalysis::BookCharmHistos(){
@@ -835,52 +840,102 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("SVLMassRank_rot",   &fTSVLMinMassRank_rot, "SVLMassRank_rot/I");
 	fSVLInfoTree->Branch("SVLDeltaRRank_rot", &fTSVLDeltaRRank_rot,  "SVLDeltaRRank_rot/I");
 }
-void LxyTreeAnalysis::ResetSVLTree() {
-	fTEvent     = event;
-	fTRun       = run;
-	fTLumi      = lumi;
-	fTEvCat     = evcat;
-	fTMET       = metpt;
-	fTNJets     = nj;
-	fTNPVtx     = nvtx;
-	for (int i = 0; i < 11; ++i) {
-	  if(nw<i+1) fTWeight[i]=0;
-	  else       fTWeight[i]=w[i];
-	}
 
-	for (int i = 0; i < 3; ++i) fTMETWeight[i] = -99.99;
-	for (int i = 0; i < 3; ++i) fTBtagWeight[i] = -99.99;
-	for (int i = 0; i < 5; ++i) fTJESWeight[i] = -99.99;
-	for (int i=0; i<6; i++) fTSVBfragWeight[i] = -99.99;
-	fTNCombs         = -99.99;
-	fTSVLMass        = -99.99;
-	fTSVLDeltaR      = -99.99;
-	fTSVLMass_rot    = -99.99;
-	fTSVLDeltaR_rot  = -99.99;
-	fTBHadNeutrino   = -99;
-	fTLPt            = -99.99;
-	fTSVPt           = -99.99;
-	fTSVLxy          = -99.99;
-	fTSVLxySig       = -99.99;
-	fTSVPtChFrac     = -99.99;
-	fTSVPzChFrac     = -99.99;
-	fTSVProjFrac     = -99.99;
-	fTSVPtRel        = -99.99;
-	fTJEta           = -99.99;
-	fTJPt            = -99.99;
-	fTJFlav          = 0;
-	fTSVNtrk         = -99;
-	fTSVMass         = -99;
-	fTCombCat        = -99;
-	fTCombInfo       = -99;
-
-	fTGenMlb         = -99.99;
-	fTGenTopPt       = -99.99;
-
-	fTSVLMinMassRank = -99;
-	fTSVLDeltaRRank  = -99;
+//
+void LxyTreeAnalysis::ResetSVLTree() 
+{
+  fTEvent     = event;
+  fTRun       = run;
+  fTLumi      = lumi;
+  fTEvCat     = evcat;
+  fTMET       = metpt;
+  fTNJets     = nj;
+  fTNPVtx     = nvtx;
+  for (int i = 0; i < 11; ++i) {
+    if(nw<i+1) fTWeight[i]=0;
+    else       fTWeight[i]=w[i];
+  }
+  
+  for (int i = 0; i < 3; ++i) fTMETWeight[i] = -99.99;
+  for (int i = 0; i < 3; ++i) fTBtagWeight[i] = -99.99;
+  for (int i = 0; i < 5; ++i) fTJESWeight[i] = -99.99;
+  for (int i=0; i<6; i++) fTSVBfragWeight[i] = -99.99;
+  fTNCombs         = -99.99;
+  fTSVLMass        = -99.99;
+  fTSVLDeltaR      = -99.99;
+  fTSVLMass_rot    = -99.99;
+  fTSVLDeltaR_rot  = -99.99;
+  fTBHadNeutrino   = -99;
+  fTLPt            = -99.99;
+  fTSVPt           = -99.99;
+  fTSVLxy          = -99.99;
+  fTSVLxySig       = -99.99;
+  fTSVPtChFrac     = -99.99;
+  fTSVPzChFrac     = -99.99;
+  fTSVProjFrac     = -99.99;
+  fTSVPtRel        = -99.99;
+  fTJEta           = -99.99;
+  fTJPt            = -99.99;
+  fTJFlav          = 0;
+  fTSVNtrk         = -99;
+  fTSVMass         = -99;
+  fTCombCat        = -99;
+  fTCombInfo       = -99;
+  
+  fTGenMlb         = -99.99;
+  fTGenTopPt       = -99.99;
+  
+  fTSVLMinMassRank = -99;
+  fTSVLDeltaRRank  = -99;
 }
 
+//
+void LxyTreeAnalysis::BookDileptonTree() 
+{
+  fDileptonInfoTree = new TTree("DileptonInfo", "DiLepton Tree");
+  fDileptonInfoTree->Branch("Event",     &fTEvent,     "Event/I");
+  fDileptonInfoTree->Branch("Run",       &fTRun,       "Run/I");
+  fDileptonInfoTree->Branch("Lumi",      &fTLumi,      "Lumi/I");
+  fDileptonInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
+  fDileptonInfoTree->Branch("Weight",     fTWeight,    "Weight[11]/F");
+  fDileptonInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[5]/F");
+  fDileptonInfoTree->Branch("METWeight",  fTMETWeight, "METWeight[3]/F");
+  fDileptonInfoTree->Branch("BtagWeight",  fTBtagWeight, "BtagWeight[3]/F");
+  fDileptonInfoTree->Branch("XSWeight",  &fTXSWeight,  "XSWeight/F");
+  TString pdfWeightAlloc("PDFWeight[");
+  if(fPDFInfo && fPDFInfo->numberPDFs()) pdfWeightAlloc += fPDFInfo->numberPDFs();
+  else                                   pdfWeightAlloc += "1";
+  pdfWeightAlloc += "]/F";
+  fDileptonInfoTree->Branch("PDFWeight", fPDFWeight,   pdfWeightAlloc);
+  fDileptonInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
+  fDileptonInfoTree->Branch("MET",       &fTMET,       "MET/F");
+  fDileptonInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
+  fDileptonInfoTree->Branch("LpPt",      &fLpPt,     "LpPt/F");
+  fDileptonInfoTree->Branch("LmPt",      &fLmPt,     "LmPt/F");
+  fDileptonInfoTree->Branch("LpEta",      &fLpEta,     "LpEta/F");
+  fDileptonInfoTree->Branch("LpId",      &fLpId,     "LpId/I");
+  fDileptonInfoTree->Branch("LmEta",      &fLmEta,     "LmEta/F");
+  fDileptonInfoTree->Branch("LpPhi",      &fLpPhi,     "LpPhi/F");
+  fDileptonInfoTree->Branch("LmPhi",      &fLmPhi,     "LmPhi/F");
+  fDileptonInfoTree->Branch("LmId",      &fLmId,     "LmId/I");
+  fDileptonInfoTree->Branch("GenLpPt",      &fGenLpPt,     "GenLpPt/F");
+  fDileptonInfoTree->Branch("GenLmPt",      &fGenLmPt,     "GenLmPt/F");
+  fDileptonInfoTree->Branch("GenLpEta",     &fGenLpEta,    "GenLpEta/F");
+  fDileptonInfoTree->Branch("GenLpId",      &fGenLpId,     "GenLpId/I");
+  fDileptonInfoTree->Branch("GenLmEta",     &fGenLmEta,    "GenLmEta/F");
+  fDileptonInfoTree->Branch("GenLpPhi",     &fGenLpPhi,    "GenLpPhi/F");
+  fDileptonInfoTree->Branch("GenLmPhi",     &fGenLmPhi,    "GenLmPhi/F");
+  fDileptonInfoTree->Branch("GenLmId",      &fGenLmId,     "GenLmId/I");
+}
+
+void LxyTreeAnalysis::ResetDileptonTree() 
+{
+  fLpPt=0;fLmPt=0;fLpEta=0;fLmEta=0;fLpPhi=0;fLmPhi=0;fGenLpPt=0;fGenLmPt=0;fGenLpEta=0;fGenLmEta=0;fGenLpPhi=0;fGenLmPhi=0;
+  fLpId=0; fLmId=0;  fGenLpId=0; fGenLmId=0;
+}
+
+
+//
 void LxyTreeAnalysis::analyze(){
 	///////////////////////////////////////////////////
 	// Remove events with spurious PF candidate information (npf == 1000)
@@ -893,6 +948,8 @@ void LxyTreeAnalysis::analyze(){
 	//reset trees
 	ResetCharmTree();
 	ResetSVLTree();
+	ResetDileptonTree();
+	bool storeDileptonTree(false);
 
 	///////////////////////////////////////////////////
 	// Charm resonance stuff:
@@ -1006,18 +1063,21 @@ void LxyTreeAnalysis::analyze(){
 	      fHNSVJets_em->Fill(nsvjets, w[0]*w[1]*w[4]);
 	      fHNbJets_em ->Fill(nbjets,  w[0]*w[1]*w[4]);
 	      fHMET_em    ->Fill(metpt,   w[0]*w[1]*w[4]);
+	      storeDileptonTree=true;
 	    }
 	    else if (abs(evcat) == 11*11){
 	      fHNJets_ee  ->Fill(nj,      w[0]*w[1]*w[4]);
 	      fHNSVJets_ee->Fill(nsvjets, w[0]*w[1]*w[4]);
 	      fHNbJets_ee ->Fill(nbjets,  w[0]*w[1]*w[4]);
 	      fHMET_ee    ->Fill(metpt,   w[0]*w[1]*w[4]);
+	      storeDileptonTree=true;
 	    }
 	    else if (abs(evcat) == 13*13){
 	      fHNJets_mm  ->Fill(nj,      w[0]*w[1]*w[4]);
 	      fHNSVJets_mm->Fill(nsvjets, w[0]*w[1]*w[4]);
 	      fHNbJets_mm ->Fill(nbjets,  w[0]*w[1]*w[4]);
 	      fHMET_mm    ->Fill(metpt,   w[0]*w[1]*w[4]);
+	      storeDileptonTree=true;
 	    }
 	    else if (abs(evcat) == 11){
 	      fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
@@ -1240,6 +1300,14 @@ void LxyTreeAnalysis::analyze(){
 	      
 	      fSVLInfoTree->Fill();
 	    }
+
+	    if(storeDileptonTree)
+	      {
+		int pidx(lid[0]>0 ? 1 : 0), midx(lid[0]>0 ? 0 : 1);
+		fLmPt=lpt[midx]; fLmEta=leta[midx]; fLmPhi=lphi[midx]; fLmId=lid[midx]; fGenLmPt=glpt[midx]; fGenLmEta=gleta[midx]; fGenLmPhi=glphi[midx]; fGenLmId=glid[midx];
+		fLpPt=lpt[pidx]; fLpEta=leta[pidx]; fLpPhi=lphi[pidx]; fLpId=lid[pidx]; fGenLpPt=glpt[pidx]; fGenLpEta=gleta[pidx]; fGenLpPhi=glphi[pidx]; fGenLmId=glid[pidx];
+		fDileptonInfoTree->Fill();
+	      }
 	  }
 	
 	// Fill DY control histograms

@@ -393,6 +393,8 @@ int main(int argc, char* argv[])
             if(isSingleMuPD  && !muTrigger)   continue;
             if(isSingleElePD && !eTrigger)    continue;
         }
+        // Disable single electron trigger for MC
+        if(isMC) eTrigger = true;
 
         //leptons
         data::PhysicsObjectCollection_t leptons( evSummary.getPhysicsObject(DataEventSummaryHandler::LEPTONS) );

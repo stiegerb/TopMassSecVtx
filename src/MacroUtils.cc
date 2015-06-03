@@ -6,6 +6,24 @@ namespace utils
 {
   namespace cmssw
   {
+    Float_t getElectronEnergyScale(float pt, float eta)
+    {
+      float par0(-2.27e-02), par1(-7.01e-02), par2(-3.71e-04);
+      if (fabs(eta) > 0.8 && fabs(eta)<1.5)
+	{
+	  par0 = -2.92e-02;
+	  par1 = -6.59e-02;
+	  par2 = -7.22e-04;
+	}
+      else if(fabs(eta)>1.5)
+	{
+	  par0 = -2.27e-02;
+	  par1 = -7.01e-02;
+	  par2 = -3.71e-04;
+	}
+      return fabs(par0 * TMath::Exp(par1 * pt) + par2);
+    }
+    
     //
     FactorizedJetCorrector *getJetCorrector(TString baseDir, bool isMC)
     {

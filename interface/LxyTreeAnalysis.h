@@ -39,11 +39,11 @@ public:
 		for(int itagger=0; itagger<dirs->GetEntries(); itagger++)
 		  {
 		    TString iDir(dirs->At(itagger)->GetName());
-		    btagEffCorr_[ std::pair<TString,TString>(iDir,"b") ] 
+		    btagEffCorr_[ std::pair<TString,TString>(iDir,"b") ]
 		      = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/beff"),(TGraphErrors *) btagF->Get(iDir+"/sfb") );
-		    btagEffCorr_[ std::pair<TString,TString>(iDir,"c") ] 
+		    btagEffCorr_[ std::pair<TString,TString>(iDir,"c") ]
 		      = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/ceff"),(TGraphErrors *) btagF->Get(iDir+"/sfc") );
-		    btagEffCorr_[ std::pair<TString,TString>(iDir,"udsg") ] 
+		    btagEffCorr_[ std::pair<TString,TString>(iDir,"udsg") ]
 		      = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/udsgeff"),(TGraphErrors *) btagF->Get(iDir+"/sfudsg") );
 		  }
 	      }
@@ -72,6 +72,10 @@ public:
                                int trackind2, float mass2,
                                int trackind3, float mass3);
     virtual void FillCharmTree(int type, int jind,
+                               TLorentzVector p_cand, TLorentzVector p_jet,
+                               float hardpt=-88.88, float softpt=-88.88);
+    virtual void FillCharmTree(int type, int jind,
+                               float candmass,
                                TLorentzVector p_cand, TLorentzVector p_jet,
                                float hardpt=-88.88, float softpt=-88.88);
 
@@ -147,8 +151,8 @@ public:
     TH1D *fHMD0Incl5TrkDR;
     TH1D *fHMD0Incl3Trk;
     TH1D *fHMD0mu, *fHMD0e, *fHMD0lep;
-    TH1D *fHMDs2010lep;
-    TH1D *fHDMDs2010D0lep;
+    TH1D *fHMDsm;
+    TH1D *fHDMDsmD0;
     TH1D *fHMDpm, *fHMDpmZO;
     TH1D *fHMDpme, *fHMDpmmu, *fHMDpmlep;
 

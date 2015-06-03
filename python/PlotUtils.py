@@ -255,7 +255,7 @@ class RatioPlot(object):
         tl.SetShadowColor(0)
         tl.SetTextFont(43)
         tl.SetTextSize(20)
-        if len(self.histos)>30 : 
+        if len(self.histos)>30 :
             tl.SetTextSize(10)
             tl.SetNColumns(3)
 
@@ -396,9 +396,12 @@ class Plot(object):
         if "GeV" in h.GetXaxis().GetTitle():
             if h.GetBinWidth(1) > 0.1:
                 h.GetYaxis().SetTitle("Events / %3.1f GeV" %h.GetBinWidth(1))
-            else:
+            elif h.GetBinWidth(1) > 0.001:
                 h.GetYaxis().SetTitle("Events / %.0f MeV" %
                                                  (h.GetBinWidth(1)*1000))
+            else:
+                h.GetYaxis().SetTitle("Events / %.0f keV" %
+                                                 (h.GetBinWidth(1)*1000000))
         else:
             h.GetYaxis().SetTitle("Events / %3.1f" % h.GetBinWidth(1))
 

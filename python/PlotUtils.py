@@ -373,8 +373,9 @@ class Plot(object):
     A wrapper to store data and MC histograms for comparison
     """
 
-    def __init__(self,name):
+    def __init__(self,name,usePoissonStatsForData=True):
         self.name = name
+        self.usePoissonStatsForData=usePoissonStatsForData
         self.mc = []
         self.dataH = None
         self.data = None
@@ -410,7 +411,8 @@ class Plot(object):
             h.SetFillColor(0)
             h.SetFillStyle(0)
             self.dataH = h
-            self.data = convertToPoissonErrorGr(h)
+            if self.usePoissonStatsForData:
+                self.data = convertToPoissonErrorGr(h)
         else:
             h.SetMarkerStyle(1)
             h.SetMarkerColor(color)
@@ -504,7 +506,7 @@ class Plot(object):
             f.write(pval.ljust(40),)
         f.write('\n')
 
-        if self.data is None: return
+        if self.dataH is None: return
         f.write('------------------------------------------\n')
         f.write('Data'.ljust(20),)
         for xbin in xrange(1,self.dataH.GetXaxis().GetNbins()+1):
@@ -557,6 +559,12 @@ class Plot(object):
             self._garbageList.append(frame)
             maxY = self.dataH.GetMaximum()
             frame.Reset('ICE')
+        elif self.dataH is not None:
+            leg.AddEntry( self.dataH, self.dataH.GetTitle(),'p')
+            frame = self.dataH.Clone('frame')
+            self._garbageList.append(frame)
+            maxY = self.dataH.GetMaximum()
+            frame.Reset('ICE')
 
         # Add the legend entries for the visible backgrounds
         for h in sorted(hists_to_add, key=lambda x: x.Integral(), reverse=True):
@@ -582,7 +590,7 @@ class Plot(object):
                 frame.Reset('ICE')
                 self._garbageList.append(frame)
 
-        if self.data is not None: nlegCols = nlegCols+1
+        if self.data is not None or self.dataH is not None: nlegCols = nlegCols+1
         if nlegCols == 0:
             print '%s is empty'%self.name
             return
@@ -597,6 +605,9 @@ class Plot(object):
         stack.Draw('hist same')
         if self.data is not None:
             self.data.Draw('P')
+        elif self.dataH is not None:
+            self.dataH.Draw('e1same')
+
         # leg.SetNColumns(nlegCols)
         leg.Draw()
         redrawBorder(t1)
@@ -615,7 +626,7 @@ class Plot(object):
             txt.SetTextAlign(12)
             txt.DrawLatex(0.05,0.05,'#it{Normalized to data}')
 
-        if totalMC is None or self.data is None:
+        if totalMC is None or (self.data is None and self.dataH is None):
             t1.SetPad(0,0,1,1)
             t1.SetBottomMargin(0.12)
         else:
@@ -632,7 +643,7 @@ class Plot(object):
             ratioframe.Reset('ICE')
             ratioframe.Draw()
             ratioframe.GetYaxis().SetRangeUser(self.ratiorange[0], self.ratiorange[1])
-            ratioframe.GetYaxis().SetTitle('Data/#SigmaBkg')
+            ratioframe.GetYaxis().SetTitle('Obs./Exp.')
             ratioframe.GetYaxis().SetNdivisions(5)
             ratioframe.GetYaxis().SetLabelSize(0.15)
             ratioframe.GetXaxis().SetLabelSize(0.15)
@@ -644,11 +655,11 @@ class Plot(object):
 
             gr=ROOT.TGraphAsymmErrors()
             gr.SetName("data2bkg")
-            gr.SetMarkerStyle(self.data.GetMarkerStyle())
-            gr.SetMarkerSize(self.data.GetMarkerSize())
-            gr.SetMarkerColor(self.data.GetMarkerColor())
-            gr.SetLineColor(self.data.GetLineColor())
-            gr.SetLineWidth(self.data.GetLineWidth())
+            gr.SetMarkerStyle(self.dataH.GetMarkerStyle())
+            gr.SetMarkerSize(self.dataH.GetMarkerSize())
+            gr.SetMarkerColor(self.dataH.GetMarkerColor())
+            gr.SetLineColor(self.dataH.GetLineColor())
+            gr.SetLineWidth(self.dataH.GetLineWidth())
             bkgUncGr=ROOT.TGraphErrors()
             bkgUncGr.SetName('bkgunc')
             bkgUncGr.SetMarkerColor(920)
@@ -660,8 +671,12 @@ class Plot(object):
                 x            = self.dataH.GetXaxis().GetBinCenter(xbin)
                 dx           = self.dataH.GetXaxis().GetBinWidth(xbin)
                 dataCts      = self.dataH.GetBinContent(xbin)
-                data_err_low = self.data.GetErrorYlow(xbin-1) #get errors from the graph
-                data_err_up  = self.data.GetErrorYhigh(xbin-1)
+                if self.data:
+                    data_err_low = self.data.GetErrorYlow(xbin-1) #get errors from the graph
+                    data_err_up  = self.data.GetErrorYhigh(xbin-1)
+                else:
+                    data_err_low=self.dataH.GetBinError(xbin)
+                    data_err_up=data_err_low
                 bkgCts       = totalMC.GetBinContent(xbin);
                 bkgCts_err   = totalMC.GetBinError(xbin);
                 if bkgCts==0 : continue

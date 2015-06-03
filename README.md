@@ -74,7 +74,7 @@ There are more samples in the ```syst``` sub-folder on eos, which will be needed
 
 The histograms defined in MlbWidthAnalysis are stored in the output files and can be used to produce a plot comparing data and simulation, using the ```runPlotter.py``` script:
 ```
-runPlotter.py --cutUnderOverFlow -l 19701 -j test/topss2014/samples.json -o treedir/plots treedir
+./scripts/runPlotter.py --cutUnderOverFlow -l 19701 -j test/topss2014/samples.json -o treedir/plots treedir
 ```
 
 To work properly, we first need to generate a cache file that stores the proper normalizations for each simulated sample:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import ROOT
-import os,sys,re
+import os,sys,re,pickle
 import optparse
 import math
 from CMS_lumi import CMS_lumi
@@ -13,7 +13,8 @@ VARIABLES = ["mass", "pt", "eta", "ptfrac", "pzfrac", "ptrel", "pfrac", "ptchfra
 XAXIS = {
 	"D0":   "m(K^{+}#pi^{-}) [GeV]",
 	"Dpm":  "m(K^{+}#pi^{-}#pi^{-}) [GeV]",
-	"JPsi": "m(#mu^{+}#mu^{-}) [GeV]"
+	"JPsi": "m(#mu^{+}#mu^{-}) [GeV]",
+	"Dsm":  "m(K^{+}#pi^{-}#pi^{-}) - m(K^{+}#pi^{-}) [GeV]",
 }
 
 """
@@ -111,7 +112,6 @@ def doTheMassFit(ws,data=None,
 	except:
 		width    = ws.var("sig_Gauss1_sigma").getVal()
 		widthErr = ws.var("sig_Gauss1_sigma").getError()
-	bkg_lambda=ws.var('bkg_lambda').getVal()
 
 	#show result of the fit
 	cfit=ROOT.TCanvas("cfit","cfit",500,500)
@@ -129,8 +129,15 @@ def doTheMassFit(ws,data=None,
 								  ROOT.RooFit.MoveToBack(),
 			  ROOT.RooFit.Name("bkg"))
 	frame.Draw()
-	ymin=nbkg*math.exp(frame.GetXaxis().GetXmax()*bkg_lambda)*0.2;
-	ymax=1.4*frame.GetMaximum()
+
+	if not '413' in str(CandTypes):
+		bkg_lambda=ws.var('bkg_lambda').getVal()
+		ymin=nbkg*math.exp(frame.GetXaxis().GetXmax()*bkg_lambda)*0.2;
+		ymax=1.4*frame.GetMaximum()
+	else:
+		ymin=0
+		ymax=1.1*frame.GetMaximum()
+
 	frame.GetYaxis().SetRangeUser(ymin,ymax)
 	frame.GetYaxis().SetTitle("Candidates")
 	frame.GetYaxis().SetTitleOffset(1.6)
@@ -140,6 +147,8 @@ def doTheMassFit(ws,data=None,
 		frame.GetXaxis().SetTitle(XAXIS['D0'])
 	if '443' in str(CandTypes):
 		frame.GetXaxis().SetTitle(XAXIS['JPsi'])
+	if '413' in str(CandTypes):
+		frame.GetXaxis().SetTitle(XAXIS['Dsm'])
 	frame.GetXaxis().SetTitleOffset(0.9)
 	frame.GetYaxis().SetTitleSize(0.05)
 	frame.GetYaxis().SetLabelSize(0.04)
@@ -161,16 +170,26 @@ def doTheMassFit(ws,data=None,
 
 	#display fit results on the canvas
 	CMS_lumi(cfit,2,10)
-	pt=ROOT.TPaveText(0.17,0.85,0.5,0.6,"brNDC")
+	if not '413' in str(CandTypes):
+		pt=ROOT.TPaveText(0.17,0.85,0.5,0.6,"brNDC")
+	else:
+		pt=ROOT.TPaveText(0.50,0.70,0.89,0.45,"brNDC")
 	pt.SetFillStyle(0)
 	pt.SetBorderSize(0)
 	pt.SetTextFont(42)
 	pt.SetTextAlign(12)
 	pt.SetTextSize(0.04)
-	pt.AddText("m=%3.4f #pm %3.4f"%(mass,massErr))
-	pt.AddText("#sigma=%3.4f #pm %3.4f"%(width,widthErr))
-	pt.AddText("N_{signal}=%3.0f #pm %3.0f"%(nsig,nsigErr))
-	pt.AddText("N_{bkg}=%3.0f #pm %3.0f"%(nbkg,nbkgErr))
+
+	if not '413' in str(CandTypes):
+		pt.AddText("m = %3.4f #pm %3.4f GeV"%(mass,massErr))
+		pt.AddText("#sigma = %3.4f #pm %3.4f GeV"%(width,widthErr))
+		pt.AddText("N_{signal} = %3.0f #pm %3.0f"%(nsig,nsigErr))
+		pt.AddText("N_{bkg} = %3.0f #pm %3.0f"%(nbkg,nbkgErr))
+	else:
+		pt.AddText("dm = %3.2f #pm %3.2f MeV"%(mass*1000,massErr*1000))
+		pt.AddText("#sigma = %3.2f #pm %3.2f MeV"%(width*1000,widthErr*1000))
+		pt.AddText("N_{signal} = %3.0f #pm %3.0f"%(nsig,nsigErr))
+		pt.AddText("N_{bkg} = %3.0f #pm %3.0f"%(nbkg,nbkgErr))
 	pt.Draw()
 
 	#save to file
@@ -189,107 +208,141 @@ def generateWorkspace(CandTypes,inputUrl,postfixForOutputs,options):
 	import math
 
 	outputDir=options.output
-	#init the workspace
-	ws=ROOT.RooWorkspace("w")
+	#################################
+	foundWS = False
+	try:
+		cachefile = open(".charmpeakworkspaces.pck", 'r')
+		workspaces = pickle.load(cachefile)
+		ws = workspaces[(tuple(inputUrl),tuple(CandTypes))]
+		print ws.keys()
+		print ">>> Read workspace from .charmpeakworkspaces.pck"
+		cachefile.close()
+		foundWS = True
+	except KeyError:
+		ws = ROOT.RooWorkspace("w")
+		print ">>> Workspace not found in cache, recreating it"
 
-	#create the data set
-	variables=ROOT.RooArgSet()
-	if '421' in str(CandTypes): ## D0 #note: str([1,2,3]) = '[1,2,3]'
-		variables.add( ws.factory("mass[1.85,1.70,2.0]") )
-	elif '411' in str(CandTypes): ## D+
-		variables.add( ws.factory("mass[1.87,1.75,1.98]") )
-	elif '443' in str(CandTypes): ## J/Psi
-		variables.add( ws.factory("mass[3.1,2.50,3.40]") )
+	except EOFError:
+		workspaces = {}
+		ws = ROOT.RooWorkspace("w")
+		print ">>> Workspace not found in cache, recreating it"
 
-	variables.add(ws.factory("pt[0,0,100]") )
-	variables.add(ws.factory("eta[0,0,2.5]") )
-	variables.add(ws.factory("ptfrac[0,0,1.1]") )
-	variables.add(ws.factory("pzfrac[0,0,1.1]") )
-	variables.add(ws.factory("ptrel[0,0,4.0]") )
-	variables.add(ws.factory("pfrac[0,0,1.1]") )
-	variables.add(ws.factory("ptchfrac[0,0,1.1]") )
-	variables.add(ws.factory("pzchfrac[0,0,1.1]") )
-	variables.add(ws.factory("dr[0,0,0.3]") )
-	variables.add(ws.factory("wgt[0,0,9999999.]") )
-	data=ROOT.RooDataSet("data","data",variables,"wgt")
+	except IOError:
+		workspaces = {}
+		ws = ROOT.RooWorkspace("w")
+		print ">>> Cache not found, creating it"
 
-	if options.weight:
-		wmatch = re.match(r'([\w]*)(?:\[([\d]{1,2})\])?',options.weight)
-		wvarname = wmatch.group(1)
-		wind = wmatch.group(2)
-		print "Will weight events using", wvarname,
-		if wind: print "index",wind
-		else: print ''
+	if not foundWS:
+		#create the data set
+		variables=ROOT.RooArgSet()
+		if '421' in str(CandTypes): ## D0 #note: str([1,2,3]) = '[1,2,3]'
+			variables.add( ws.factory("mass[1.85,1.70,2.0]") )
+		elif '411' in str(CandTypes): ## D+
+			variables.add( ws.factory("mass[1.87,1.75,1.98]") )
+		elif '443' in str(CandTypes): ## J/Psi
+			variables.add( ws.factory("mass[3.1,2.50,3.40]") )
+		elif '-413' in str(CandTypes): ## D*-
+			variables.add( ws.factory("mass[0.1455,0.1400,0.1700]") )
 
+		variables.add(ws.factory("pt[0,0,100]") )
+		variables.add(ws.factory("eta[0,0,2.5]") )
+		variables.add(ws.factory("ptfrac[0,0,1.1]") )
+		variables.add(ws.factory("pzfrac[0,0,1.1]") )
+		variables.add(ws.factory("ptrel[0,0,4.0]") )
+		variables.add(ws.factory("pfrac[0,0,1.1]") )
+		variables.add(ws.factory("ptchfrac[0,0,1.1]") )
+		variables.add(ws.factory("pzchfrac[0,0,1.1]") )
+		variables.add(ws.factory("dr[0,0,0.3]") )
+		variables.add(ws.factory("wgt[0,0,9999999.]") )
+		data=ROOT.RooDataSet("data","data",variables,"wgt")
 
-	#fill the dataset
-	chain=ROOT.TChain("CharmInfo")
-	for f in inputUrl: chain.AddFile(f)
-	nEntries = chain.GetEntries()
-	print "Will loop over", nEntries, "entries."
-	for i in xrange(0,nEntries):
-		if i%500 == 0:
-			sys.stdout.write("[%3d/100]\r" % (100*i/float(nEntries)))
-			sys.stdout.flush()
-
-		chain.GetEntry(i)
-
-		#filter on candidate type and mass range
-		if not (chain.CandType in CandTypes) : continue
-		if (chain.CandMass > ws.var("mass").getMax() or
-			 chain.CandMass < ws.var("mass").getMin()): continue
-
-		#compute the variables and add to the dataset
-		ws.var("mass")     .setVal(chain.CandMass)
-		ws.var("pt")       .setVal(chain.CandPt)
-		ws.var("eta")      .setVal(abs(chain.CandEta))
-		ws.var("ptfrac")   .setVal(chain.CandPt/chain.JetPt)
-		ws.var("pzfrac")   .setVal(chain.CandPz/chain.JetPz)
-		ws.var("ptrel")    .setVal(chain.CandPtRel)
-		ws.var("pfrac")    .setVal(chain.CandPt*math.cosh(chain.CandEta)/
-											(chain.JetPt*math.cosh(chain.JetEta)))
-		ws.var("ptchfrac") .setVal(chain.CandPt/chain.SumPtCharged)
-		ws.var("pzchfrac") .setVal(chain.CandPz/chain.SumPzCharged)
-		ws.var("dr")       .setVal(chain.CandDeltaR)
-		baseWeight = chain.Weight[0]*chain.XSWeight
-		if chain.XSWeight != 1 : baseWeight *= LUMI
-		ws.var("wgt")      .setVal(baseWeight)
 		if options.weight:
-			wvar = getattr(chain, wvarname)
-			try:
-				weight = float(wvar[int(wind)])
-			except TypeError:
-				weight = float(wvar)
-			ws.var("wgt").setVal(weight*baseWeight)
-		argset = ROOT.RooArgSet()
-		for var in VARIABLES:
-			argset.add(ws.var(var))
-		argset.add(ws.var("wgt"))
+			wmatch = re.match(r'([\w]*)(?:\[([\d]{1,2})\])?',options.weight)
+			wvarname = wmatch.group(1)
+			wind = wmatch.group(2)
+			print "Will weight events using", wvarname,
+			if wind: print "index",wind
+			else: print ''
 
-		data.add(argset, ws.var("wgt").getVal())
 
-	print "[  done ]"
+		#fill the dataset
+		chain=ROOT.TChain("CharmInfo")
+		for f in inputUrl: chain.AddFile(f)
+		nEntries = chain.GetEntries()
+		print "Will loop over", nEntries, "entries."
+		for i in xrange(0,nEntries):
+			if i%500 == 0:
+				sys.stdout.write("[%3d/100]\r" % (100*i/float(nEntries)))
+				sys.stdout.flush()
 
-	#import dataset to workspace
-	getattr(ws,'import')(data)
+			chain.GetEntry(i)
+			#filter on candidate type and mass range
+			if not (chain.CandType in CandTypes) : continue
+			if (chain.CandMass > ws.var("mass").getMax() or
+				chain.CandMass < ws.var("mass").getMin()): continue
 
-	#now create a fitting model for the mass spectrum
-	getattr(ws,'import')( ROOT.RooRealVar("nsig","Signal candidates",     0.,
-								 0., data.sumEntries()*2) )
-	getattr(ws,'import')( ROOT.RooRealVar("nbkg","Background candidates", 0.,
-								 0., data.sumEntries()*2) )
+			#compute the variables and add to the dataset
+			ws.var("mass")     .setVal(chain.CandMass)
+			ws.var("pt")       .setVal(chain.CandPt)
+			ws.var("eta")      .setVal(abs(chain.CandEta))
+			ws.var("ptfrac")   .setVal(chain.CandPt/chain.JetPt)
+			ws.var("pzfrac")   .setVal(chain.CandPz/chain.JetPz)
+			ws.var("ptrel")    .setVal(chain.CandPtRel)
+			ws.var("pfrac")    .setVal(chain.CandPt*math.cosh(chain.CandEta)/
+												(chain.JetPt*math.cosh(chain.JetEta)))
+			ws.var("ptchfrac") .setVal(chain.CandPt/chain.SumPtCharged)
+			ws.var("pzchfrac") .setVal(chain.CandPz/chain.SumPzCharged)
+			ws.var("dr")       .setVal(chain.CandDeltaR)
+			baseWeight = chain.Weight[0]*chain.XSWeight
+			if chain.XSWeight != 1 : baseWeight *= LUMI
+			ws.var("wgt")      .setVal(baseWeight)
+			if options.weight:
+				wvar = getattr(chain, wvarname)
+				try:
+					weight = float(wvar[int(wind)])
+				except TypeError:
+					weight = float(wvar)
+				ws.var("wgt").setVal(weight*baseWeight)
+			argset = ROOT.RooArgSet()
+			for var in VARIABLES:
+				argset.add(ws.var(var))
+			argset.add(ws.var("wgt"))
 
-	#specialization by candidate type may be needed
-	## D+-
+			data.add(argset, ws.var("wgt").getVal())
+
+		print "[  done ]"
+
+		#import dataset to workspace
+		getattr(ws,'import')(data)
+
+		#now create a fitting model for the mass spectrum
+		getattr(ws,'import')( ROOT.RooRealVar("nsig","Signal candidates",     0.,
+									 0., data.sumEntries()*2) )
+		getattr(ws,'import')( ROOT.RooRealVar("nbkg","Background candidates", 0.,
+									 0., data.sumEntries()*2) )
+
+
+		workspaces[(tuple(inputUrl),tuple(CandTypes))] = ws
+		cachefile = open(".charmpeakworkspaces.pck", 'a')
+		pickle.dump(workspaces, cachefile, pickle.HIGHEST_PROTOCOL)
+		cachefile.close()
+		print ">>> Wrote workspace to cache"
+
+
+	##################################################
+	# Specialization by candidate type
+	## D+-  ##############
 	if '411' in str(CandTypes):
 		ws.factory("RooGaussian::sig_model(mass,sig_mu[1.87,1.86,1.88],sig_sigma[0.01,0.001,0.05])")
 		#ws.factory("RooCBShape::sig_model(mass,sig_mu[1.87,1.86,1.88],sig_sigma[0.001,0,0.025],sig_alpha[1,0.5,2],sig_n[5,0,10])")
 		ws.factory("RooExponential::bkg_model(mass,bkg_lambda[-0.5,-4,0])")
-	## D0
+
+	## D0   ##############
 	elif '421' in str(CandTypes):
 		ws.factory("RooCBShape::sig_model(mass,sig_mu[1.87,1.86,1.88],sig_sigma[0.001,0,0.025],sig_alpha[1,0.5,2],sig_n[5,0,10])")
 		ws.factory("RooExponential::bkg_model(mass,bkg_lambda[-0.5,-4,0])")
-	## J/Psi
+
+	## J/Psi  ############
 	elif '443' in str(CandTypes):
 		# ws.factory("RooCBShape::sig_CB(mass,sig_mu[3.1,3.05,3.15],sig_CB_sigma[0.07,0.01,0.5],sig_CB_alpha[1,0.5,2],sig_CB_n[5,0,10])")
 		# ws.factory("RooGaussian::sig_Gauss(mass,sig_mu,sig_Gauss_sigma[0.1,0,0.2])")
@@ -306,6 +359,24 @@ def generateWorkspace(CandTypes,inputUrl,postfixForOutputs,options):
 		getattr(ws,'import')( sig_model )
 
 		ws.factory("RooExponential::bkg_model(mass,bkg_lambda[-1,-2,0])")
+
+	## D*- ##############
+	elif '-413' in str(CandTypes):
+		getattr(ws,'import')( ROOT.RooRealVar("sig_mu","Signal gaussian mean", 0.1455, 0.1445, 0.1465) )
+		getattr(ws,'import')( ROOT.RooRealVar("sig_Gauss1_sigma","Signal gaussian1 sigma", 0.001, 0.0005, 0.0015) )
+		getattr(ws,'import')( ROOT.RooRealVar("sig_Gauss2_sigma","Signal gaussian2 sigma", 0.002, 0.001,  0.005 ) )
+		ws.factory("RooGaussian::sig_Gauss1(mass,sig_mu,sig_Gauss1_sigma)")
+		ws.factory("RooGaussian::sig_Gauss2(mass,sig_mu,sig_Gauss2_sigma)")
+		# getattr(ws,'import')( ROOT.RooRealVar("frac_Gauss1","Gauss1 Fraction", 0.9, 0.55, 1.) )
+		getattr(ws,'import')( ROOT.RooRealVar("frac_Gauss1","Gauss1 Fraction", 0.9, 0.3, 1.) )
+		sig_model=ROOT.RooAddPdf("sig_model","signal model",
+										  ws.pdf("sig_Gauss1"), ws.pdf("sig_Gauss2"),
+										  ws.var("frac_Gauss1") )
+		getattr(ws,'import')( sig_model )
+		# ws.factory("RooGaussian::sig_model(mass,sig_mu[0.1455,0.1445,0.1465],sig_sigma[0.001,0.0005,0.002])")
+		ws.factory("RooDstD0BG::bkg_model(mass,0.139, bgparC[0.03,0.005,0.05],"
+			                                         "bgparA[-10.,-0.5,-50.],"
+			                                         "bgparB[2,1,5])")
 
 	#an expected pdf of signal+background
 	model=ROOT.RooAddPdf("model","signal+background model",
@@ -449,10 +520,10 @@ def main():
 
 	ROOT.gSystem.Load("libUserCodeTopMassSecVtx")
 	ROOT.AutoLibraryLoader.enable()
-	ROOT.shushRooFit()
+	# ROOT.shushRooFit()
 	# see TError.h - gamma function prints lots of errors when scanning
-	ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
-	ROOT.RooMsgService.instance().setSilentMode(True)
+	# ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
+	# ROOT.RooMsgService.instance().setSilentMode(True)
 
 	ROOT.gStyle.SetPadTopMargin(0.05)
 	ROOT.gStyle.SetPadBottomMargin(0.1)

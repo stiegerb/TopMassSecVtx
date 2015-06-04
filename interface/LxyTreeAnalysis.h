@@ -152,7 +152,7 @@ public:
     TH1D *fHMD0Incl3Trk;
     TH1D *fHMD0mu, *fHMD0e, *fHMD0lep;
     TH1D *fHMDsm;
-    TH1D *fHDMDsmD0;
+    TH1D *fHDMDsmD0, *fHDMDsmD0loose;
     TH1D *fHMDpm, *fHMDpmZO;
     TH1D *fHMDpme, *fHMDpmmu, *fHMDpmlep;
 

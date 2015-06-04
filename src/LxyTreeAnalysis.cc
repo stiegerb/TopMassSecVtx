@@ -191,7 +191,11 @@ void LxyTreeAnalysis::BookCharmHistos() {
     fHistos.push_back(fHMDsm);
     fHMDsm->SetXTitle("m(K#pi#pi) [GeV]");
 
-    fHDMDsmD0 = new TH1D("DMDsmD0", "DMDsmD0",100, 0.135, 0.17);
+    fHDMDsmD0loose = new TH1D("DMDsmD0loose", "DMDsmD0, 100 MeV mass window on D0",100, 0.135, 0.17);
+    fHistos.push_back(fHDMDsmD0loose);
+    fHDMDsmD0loose->SetXTitle("m(K#pi#pi) - m(K#pi) [GeV]");
+
+    fHDMDsmD0 = new TH1D("DMDsmD0", "DMDsmD0, 50 MeV mass window on D0",100, 0.135, 0.17);
     fHistos.push_back(fHDMDsmD0);
     fHDMDsmD0->SetXTitle("m(K#pi#pi) - m(K#pi) [GeV]");
 
@@ -633,8 +637,6 @@ void LxyTreeAnalysis::fillD0Hists(int jetindex) {
                 if(abs(mass12-1.864) < 0.10) { // mass window cut
                     TLorentzVector p_track3;
                     p_track3.SetPtEtaPhiM(pfpt[tk3], pfeta[tk3], pfphi[tk3], gMassPi);
-                    FillCharmTree(413,  jetindex, tk1, gMassPi, tk2, gMassK, tk3, gMassPi);
-                    FillCharmTree(4210, jetindex, tk1, gMassPi, tk2, gMassK); // to draw the difference
 
 				    TLorentzVector p_cand, p_jet;
 				    p_cand = p_track1+p_track2+p_track3;
@@ -644,8 +646,12 @@ void LxyTreeAnalysis::fillD0Hists(int jetindex) {
 				    float softpt = std::min(pfpt[tk3], std::min(pfpt[tk1], pfpt[tk2]));
 				    float deltam = (p_track1+p_track2+p_track3).M() - mass12;
 
-				    FillCharmTree(-413, jetindex, deltam, p_cand, p_jet, hardpt, softpt);
-                    fHDMDsmD0->Fill(deltam, w[0]);
+                    fHDMDsmD0loose->Fill(deltam, w[0]);
+	                if(abs(mass12-1.864) < 0.05) { // tighter mass window cut
+	                    FillCharmTree(413,  jetindex, tk1, gMassPi, tk2, gMassK, tk3, gMassPi);
+					    FillCharmTree(-413, jetindex, deltam, p_cand, p_jet, hardpt, softpt);
+	                	fHDMDsmD0->Fill(deltam, w[0]);
+	                }
                 }
             }
         }

@@ -11,7 +11,7 @@
         { "dtag":"MC8TeV_WW", "split":2, "xsec":57.1097, "br":[ 0.104976 ], "dset":"/WWJetsTo2L2Nu_TuneZ2star_8TeV-madgraph-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
         { "dtag":"MC8TeV_ZZ", "split":2, "xsec":0.380  , "br":[ 1.0 ]     , "dset":"/ZZJetsTo2L2Nu_TuneZ2star_8TeV-madgraph-tauola/Summer12_DR53X-PU_S10_START53_V7A-v3/AODSIM"},
         { "dtag":"MC8TeV_WZ", "split":2, "xsec":1.057  , "br":[ 1.0 ]     , "dset":"/WZJetsTo3LNu_TuneZ2_8TeV-madgraph-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
-        { "dtag":"MC8TeV_TTJets_MSDecays_172v5"     , "split":5,  "xsec":245.8, "dset":"MC8TeV_TTJets_MSDecays" },
+        { "dtag":"MC8TeV_TTJets_MSDecays_172v5"     , "split":20,  "xsec":245.8, "dset":"MC8TeV_TTJets_MSDecays" },
         { "dtag":"MC8TeV_SingleTbar_tW", "split":1, "xsec":11.1, "br":[ 0.1061456 ], "dset":"/Tbar_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
         { "dtag":"MC8TeV_SingleT_tW"   , "split":1, "xsec":11.1, "br":[ 0.1061456 ], "dset":"/T_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"}
 	]

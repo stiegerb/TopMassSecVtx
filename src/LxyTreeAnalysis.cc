@@ -813,6 +813,7 @@ void LxyTreeAnalysis::BookSVLTree() {
 	fSVLInfoTree->Branch("SVLMass_rot",   &fTSVLMass_rot,   "SVLMass_rot/F");
 	fSVLInfoTree->Branch("SVLDeltaR_rot", &fTSVLDeltaR_rot, "SVLDeltaR_rot/F");
 	fSVLInfoTree->Branch("BHadNeutrino", &fTBHadNeutrino, "BHadNeutrino/I");
+	fSVLInfoTree->Branch("BHadId", &fTBHadId, "BHadId/I");
 	fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
 	fSVLInfoTree->Branch("SVMass",    &fTSVMass,    "SVMass/F");
 	fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
@@ -866,6 +867,7 @@ void LxyTreeAnalysis::ResetSVLTree()
   fTSVLMass_rot    = -99.99;
   fTSVLDeltaR_rot  = -99.99;
   fTBHadNeutrino   = -99;
+  fTBHadId         = 0;
   fTLPt            = -99.99;
   fTSVPt           = -99.99;
   fTSVLxy          = -99.99;
@@ -1257,7 +1259,8 @@ void LxyTreeAnalysis::analyze(){
 	      fTJEta         = jeta [svl.svindex];
 	      fTSVNtrk       = svntk[svl.svindex];
 	      fTSVMass       = svmass[svl.svindex];
-	      fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1
+	      fTBHadNeutrino = bhadneutrino[svl.svindex]; //svl.svindex]; // either -999, 0, or 1
+	      fTBHadId       = bhadid[svl.svindex];
 	      if(fTBHadNeutrino < 0) fTBHadNeutrino = -1; // set -999 to -1
 	      
 	      fTJESWeight[0] = svl.jesweights[0]; // nominal

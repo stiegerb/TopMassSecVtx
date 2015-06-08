@@ -119,22 +119,31 @@ def doTheMassFit(ws,data=None,
 	frame=ws.var("mass").frame()#ROOT.RooFit.Bins(50))
 	data.plotOn(frame,ROOT.RooFit.DrawOption("p"),ROOT.RooFit.MarkerStyle(20),ROOT.RooFit.Name("data"))
 	ws.pdf("model").plotOn(frame, ROOT.RooFit.FillStyle(0), ROOT.RooFit.MoveToBack(), ROOT.RooFit.Name("total"))
+	# ws.pdf("model").plotOn(frame,
+ #                           ROOT.RooFit.Components('sig_model'),
+ #                           ROOT.RooFit.LineColor(5),
+ #                           ROOT.RooFit.LineWidth(1),
+ #                           ROOT.RooFit.FillStyle(1001),
+ #                           ROOT.RooFit.FillColor(5),
+ #                           ROOT.RooFit.DrawOption("LF"),
+ #                           ROOT.RooFit.MoveToBack(),
+ #                           ROOT.RooFit.Name("sig"))
 	ws.pdf("model").plotOn(frame,
-			  ROOT.RooFit.Components('bkg_model'),
-								  ROOT.RooFit.LineColor(1),
-								  ROOT.RooFit.LineWidth(2),
-			  ROOT.RooFit.FillStyle(1001),
-								  ROOT.RooFit.FillColor(920),
-			  ROOT.RooFit.DrawOption("LF"),
-								  ROOT.RooFit.MoveToBack(),
-			  ROOT.RooFit.Name("bkg"))
+                           ROOT.RooFit.Components('bkg_model'),
+                           ROOT.RooFit.LineColor(1),
+                           ROOT.RooFit.LineWidth(2),
+                           ROOT.RooFit.FillStyle(1001),
+                           ROOT.RooFit.FillColor(920),
+                           ROOT.RooFit.DrawOption("LF"),
+                           ROOT.RooFit.MoveToBack(),
+                           ROOT.RooFit.Name("bkg"))
 	frame.Draw()
 
-	if not '413' in str(CandTypes):
+	try:
 		bkg_lambda=ws.var('bkg_lambda').getVal()
 		ymin=nbkg*math.exp(frame.GetXaxis().GetXmax()*bkg_lambda)*0.2;
 		ymax=1.4*frame.GetMaximum()
-	else:
+	except TypeError:
 		ymin=0
 		ymax=1.1*frame.GetMaximum()
 
@@ -158,14 +167,16 @@ def doTheMassFit(ws,data=None,
 	cfit.Update()
 
 	#build a legend
-	leg=ROOT.TLegend(0.7,0.75,0.9,0.9,"","brNDC")
+	leg=ROOT.TLegend(0.7,0.79,0.9,0.94,"","brNDC")
+	# leg=ROOT.TLegend(0.7,0.72,0.9,0.95,"","brNDC")
 	leg.SetFillStyle(0)
 	leg.SetBorderSize(0)
 	leg.SetTextFont(42)
 	leg.SetTextSize(0.04)
 	leg.AddEntry("data",  "Data",       "p")
 	leg.AddEntry("bkg",   "Background", "f")
-	leg.AddEntry("total", "Signal",     "f")
+	# leg.AddEntry("sig",   "Signal",     "f")
+	leg.AddEntry("total", "Total",      "f")
 	leg.Draw()
 
 	#display fit results on the canvas
@@ -173,7 +184,7 @@ def doTheMassFit(ws,data=None,
 	if not '413' in str(CandTypes):
 		pt=ROOT.TPaveText(0.17,0.85,0.5,0.6,"brNDC")
 	else:
-		pt=ROOT.TPaveText(0.50,0.70,0.89,0.45,"brNDC")
+		pt=ROOT.TPaveText(0.50,0.77,0.89,0.52,"brNDC")
 	pt.SetFillStyle(0)
 	pt.SetBorderSize(0)
 	pt.SetTextFont(42)
@@ -214,23 +225,28 @@ def generateWorkspace(CandTypes,inputUrl,postfixForOutputs,options):
 		cachefile = open(".charmpeakworkspaces.pck", 'r')
 		workspaces = pickle.load(cachefile)
 		ws = workspaces[(tuple(inputUrl),tuple(CandTypes))]
-		print ws.keys()
+		print workspaces.keys()
 		print ">>> Read workspace from .charmpeakworkspaces.pck"
 		cachefile.close()
 		foundWS = True
 	except KeyError:
 		ws = ROOT.RooWorkspace("w")
-		print ">>> Workspace not found in cache, recreating it"
+		print (tuple(inputUrl),tuple(CandTypes))
+		print workspaces.keys()
+		print ">>> Cache found, but not workspace, recreating it"
 
 	except EOFError:
 		workspaces = {}
 		ws = ROOT.RooWorkspace("w")
-		print ">>> Workspace not found in cache, recreating it"
+		print ">>> EOF: Workspace not found in cache, recreating it"
 
 	except IOError:
 		workspaces = {}
 		ws = ROOT.RooWorkspace("w")
 		print ">>> Cache not found, creating it"
+
+	# workspaces = {}
+	# ws = ROOT.RooWorkspace("w")
 
 	if not foundWS:
 		#create the data set
@@ -322,8 +338,11 @@ def generateWorkspace(CandTypes,inputUrl,postfixForOutputs,options):
 									 0., data.sumEntries()*2) )
 
 
-		workspaces[(tuple(inputUrl),tuple(CandTypes))] = ws
-		cachefile = open(".charmpeakworkspaces.pck", 'a')
+		if not options.weight:
+			workspaces[(tuple(inputUrl),tuple(CandTypes))] = ws
+		else:
+			workspaces[(tuple(inputUrl),tuple(CandTypes), options.weight)] = ws
+		cachefile = open(".charmpeakworkspaces.pck", 'w')
 		pickle.dump(workspaces, cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 		print ">>> Wrote workspace to cache"
@@ -362,19 +381,17 @@ def generateWorkspace(CandTypes,inputUrl,postfixForOutputs,options):
 
 	## D*- ##############
 	elif '-413' in str(CandTypes):
-		getattr(ws,'import')( ROOT.RooRealVar("sig_mu","Signal gaussian mean", 0.1455, 0.1445, 0.1465) )
+		getattr(ws,'import')( ROOT.RooRealVar("sig_mu","Signal gaussian mean", 0.1456, 0.1450, 0.1460) )
 		getattr(ws,'import')( ROOT.RooRealVar("sig_Gauss1_sigma","Signal gaussian1 sigma", 0.001, 0.0005, 0.0015) )
-		getattr(ws,'import')( ROOT.RooRealVar("sig_Gauss2_sigma","Signal gaussian2 sigma", 0.002, 0.001,  0.005 ) )
+		getattr(ws,'import')( ROOT.RooRealVar("sig_Gauss2_sigma","Signal gaussian2 sigma", 0.0015, 0.001,  0.002 ) )
 		ws.factory("RooGaussian::sig_Gauss1(mass,sig_mu,sig_Gauss1_sigma)")
 		ws.factory("RooGaussian::sig_Gauss2(mass,sig_mu,sig_Gauss2_sigma)")
-		# getattr(ws,'import')( ROOT.RooRealVar("frac_Gauss1","Gauss1 Fraction", 0.9, 0.55, 1.) )
 		getattr(ws,'import')( ROOT.RooRealVar("frac_Gauss1","Gauss1 Fraction", 0.9, 0.3, 1.) )
 		sig_model=ROOT.RooAddPdf("sig_model","signal model",
 										  ws.pdf("sig_Gauss1"), ws.pdf("sig_Gauss2"),
 										  ws.var("frac_Gauss1") )
 		getattr(ws,'import')( sig_model )
-		# ws.factory("RooGaussian::sig_model(mass,sig_mu[0.1455,0.1445,0.1465],sig_sigma[0.001,0.0005,0.002])")
-		ws.factory("RooDstD0BG::bkg_model(mass,0.139, bgparC[0.03,0.005,0.05],"
+		ws.factory("RooDstD0BG::bkg_model(mass,0.139, bgparC[0.03,0.002,0.05],"
 			                                         "bgparA[-10.,-0.5,-50.],"
 			                                         "bgparB[2,1,5])")
 
@@ -520,10 +537,10 @@ def main():
 
 	ROOT.gSystem.Load("libUserCodeTopMassSecVtx")
 	ROOT.AutoLibraryLoader.enable()
-	# ROOT.shushRooFit()
+	ROOT.shushRooFit()
 	# see TError.h - gamma function prints lots of errors when scanning
-	# ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
-	# ROOT.RooMsgService.instance().setSilentMode(True)
+	ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
+	ROOT.RooMsgService.instance().setSilentMode(True)
 
 	ROOT.gStyle.SetPadTopMargin(0.05)
 	ROOT.gStyle.SetPadBottomMargin(0.1)
@@ -644,7 +661,7 @@ def main():
 		sigData = ROOT.RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),'','nsig_sw')
 		bkgData = ROOT.RooDataSet(data.GetName(),data.GetTitle(),data,data.get(),'','nbkg_sw')
 
-		#show the unfolded distributions and save then to a file
+		#show the unfolded distributions and save them to a file
 		outFurl = os.path.join(opt.output,'UnfoldedDistributions%s.root'%postfixForOutputs)
 		outF = ROOT.TFile.Open(outFurl,'RECREATE')
 		varsToUnfold = [

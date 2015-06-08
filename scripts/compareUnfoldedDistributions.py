@@ -14,7 +14,8 @@ FILLS=[1001,3001,3004,3002]
 TAGS = {
 	'D0':   't#bar{t} #rightarrow #mu D^{0} (K^{-}#pi^{+}) X',
 	'Dpm':  't#bar{t} #rightarrow D^{#pm}(K^{-}#pi^{+}#pi^{+}) X',
-	'JPsi': 't#bar{t} #rightarrow J/#Psi(#mu^{+}#mu^{-}) X'
+   'JPsi': 't#bar{t} #rightarrow J/#Psi(#mu^{+}#mu^{-}) X',
+	'Dsm':  't#bar{t} #rightarrow D*^{#pm}(D^{0}(K^{-}#pi^{+})#pi^{+}) X',
 }
 
 INPUTS = [
@@ -120,7 +121,8 @@ def computePullFromGraphs(graph, reference):
 steer the script
 """
 def main():
-
+   global INPUTS
+   global TAGS
    #configuration
    usage = 'usage: %prog [options]'
    parser = optparse.OptionParser(usage)
@@ -166,7 +168,8 @@ def main():
       TAGS = {
          'D0':   'Z/#gamma^{*}(ll) #mu D^{0} (K^{-}#pi^{+}) + X',
          'Dpm':  'Z/#gamma^{*}(ll) D^{#pm}(K^{-}#pi^{+}#pi^{+}) + X',
-         'JPsi': 'Z/#gamma^{*}(ll) J/#Psi(#mu^{+}#mu^{-}) + X'
+         'JPsi': 'Z/#gamma^{*}(ll) J/#Psi(#mu^{+}#mu^{-}) + X',
+         'Dsm':  'Z/#gamma^{*}(ll) D*^{#pm}(D^{0}(K^{-}#pi^{+})#pi^{+}) X',
          }
 
    #global ROOT configuration
@@ -347,7 +350,7 @@ def main():
          if n==1:
             leg1 = drawPulls(['powpyth','powherw'])
             leg1.Draw()
-        
+
       line.DrawLine(xaxisrange[0], 0., xaxisrange[1], 0.,)
 
 

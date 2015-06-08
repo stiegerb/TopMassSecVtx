@@ -23,7 +23,7 @@ def getBaseNames(dirname):
                 postfix=number
                 basename, number=basename.rsplit('_',1)
                 basename += '_'+postfix
-            
+
             if not number == 'missing' and not isint(number):
                 raise ValueError
             key = '_'.join([header,basename])
@@ -56,7 +56,6 @@ chunkdir = os.path.join(inputdir, 'Chunks')
 
 os.system('mkdir -p %s' % chunkdir)
 
-print counters
 for basename, files in counters.iteritems():
 
     filenames = " ".join(files)

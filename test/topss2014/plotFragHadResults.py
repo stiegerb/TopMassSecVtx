@@ -38,7 +38,8 @@ for tag in histos['Cluster']:
     refH=None
     hctr=0
     for model in histos:
-        if not model in ['Z2starLEP','Z2starLEP_peterson','Z2starLEP_lund']: continue
+        if not model in ['Z2star','Z2starLEP'] : continue
+        #if not model in ['Z2starLEP','Z2starLEP_peterson','Z2starLEP_lund']: continue
         #if not model in ['Z2starLEP','Z2star']:continue
         #if not model in ['Cluster','Lund']: continue
         if not 'Bpt_jpt' in histos[model][tag].GetName() and not 'Btype' in histos[model][tag].GetName() :

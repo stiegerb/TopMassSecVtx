@@ -183,7 +183,7 @@ public:
     Float_t fTLPt, fTSVMass, fTSVPt, fTSVLxy, fTSVLxySig, fTJPt, fTJEta, fMjj,fTSVPtChFrac, fTSVPzChFrac,fTSVProjFrac,fTSVPtRel;
     Float_t fTSVBfragWeight[6];
     Float_t fPDFWeight[100];
-    Int_t fTBHadNeutrino;
+    Int_t fTBHadNeutrino,fTBHadId;
     Int_t fTSVLMinMassRank, fTSVLCombRank, fTSVLDeltaRRank, fTSVLMinMassRank_rot, fTSVLDeltaRRank_rot;
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
     Int_t fTJFlav;

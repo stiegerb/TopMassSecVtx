@@ -72,8 +72,12 @@ int main(int argc, char* argv[])
   }
   std::vector<std::string> urls=runProcess.getParameter<std::vector<std::string> >("input");
   TString url = TString(urls[0]);
+  //if(url.Contains("/store")) url="root://eoscms//eos/cms/"+url; //not needed
+
+  //prepare output
   TString outFileUrl(gSystem->BaseName(url));
   outFileUrl.ReplaceAll(".root","");
+  
 
   //INITIALIZE THE PDF TOOL
   //notice cteq66.LHgrid and CT10, yields 90% CI so the final uncertainty is obtained after re-scaling by 1/C90=1/1.64485

@@ -881,106 +881,108 @@ bool LxyTreeAnalysis::selectDYControlEvent() {
 }
 
 void LxyTreeAnalysis::BookSVLTree() {
-    fSVLInfoTree = new TTree("SVLInfo", "SecVtx Lepton Tree");
-    fSVLInfoTree->Branch("Event",     &fTEvent,     "Event/I");
-    fSVLInfoTree->Branch("Run",       &fTRun,       "Run/I");
-    fSVLInfoTree->Branch("Lumi",      &fTLumi,      "Lumi/I");
-    fSVLInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
-    fSVLInfoTree->Branch("Weight",     fTWeight,    "Weight[11]/F");
-    fSVLInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[5]/F");
-    fSVLInfoTree->Branch("METWeight",  fTMETWeight, "METWeight[3]/F");
-    fSVLInfoTree->Branch("BtagWeight",  fTBtagWeight, "BtagWeight[3]/F");
-    fSVLInfoTree->Branch("XSWeight",  &fTXSWeight,  "XSWeight/F");
-    fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[6]/F");
-    TString pdfWeightAlloc("PDFWeight[");
-    if(fPDFInfo && fPDFInfo->numberPDFs()) pdfWeightAlloc += fPDFInfo->numberPDFs();
-    else                                   pdfWeightAlloc += "1";
-    pdfWeightAlloc += "]/F";
-    fSVLInfoTree->Branch("PDFWeight", fPDFWeight,   pdfWeightAlloc);
-    fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
-    fSVLInfoTree->Branch("MET",       &fTMET,       "MET/F");
-    fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
-    fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
-    fSVLInfoTree->Branch("SVLMass",   &fTSVLMass,   "SVLMass/F");
-    fSVLInfoTree->Branch("SVLMass_sf",   fTSVLMass_sf,   "SVLMass_sf[2]/F");
-    fSVLInfoTree->Branch("SVLDeltaR", &fTSVLDeltaR, "SVLDeltaR/F");
-    fSVLInfoTree->Branch("SVLMass_rot",   &fTSVLMass_rot,   "SVLMass_rot/F");
-    fSVLInfoTree->Branch("SVLDeltaR_rot", &fTSVLDeltaR_rot, "SVLDeltaR_rot/F");
-    fSVLInfoTree->Branch("BHadNeutrino", &fTBHadNeutrino, "BHadNeutrino/I");
-    fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
-    fSVLInfoTree->Branch("SVMass",    &fTSVMass,    "SVMass/F");
-    fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
-    fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
-    fSVLInfoTree->Branch("SVLxy",     &fTSVLxy,     "SVLxy/F");
-    fSVLInfoTree->Branch("SVLxySig",  &fTSVLxySig,  "SVLxySig/F");
-    fSVLInfoTree->Branch("SVPtChFrac",  &fTSVPtChFrac, "SVPtChFrac/F");
-    fSVLInfoTree->Branch("SVPzChFrac",  &fTSVPzChFrac, "SVPzChFrac/F");
-    fSVLInfoTree->Branch("SVProjFrac",  &fTSVProjFrac, "SVProjFrac/F");
-    fSVLInfoTree->Branch("SVPtRel",   &fTSVPtRel,   "SVPtRel/F");
-    fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
-    fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
-    fSVLInfoTree->Branch("JFlav",     &fTJFlav,     "JFlav/I");
-    fSVLInfoTree->Branch("GenMlb",    &fTGenMlb,    "GenMlb/F");
-    fSVLInfoTree->Branch("GenTopPt",  &fTGenTopPt,  "GenTopPt/F");
-    // CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
-    fSVLInfoTree->Branch("CombCat"       , &fTCombCat       , "CombCat/I");
-    // CombInfo = -1 for data or unmatched, 0 for wrong combs, 1 for correct combs
-    fSVLInfoTree->Branch("CombInfo"      , &fTCombInfo      , "CombInfo/I");
-
-    // Intra event rankings
-    fSVLInfoTree->Branch("SVLMassRank",       &fTSVLMinMassRank,     "SVLMassRank/I");
-    fSVLInfoTree->Branch("SVLCombRank",       &fTSVLCombRank,        "SVLCombRank/I");
-    fSVLInfoTree->Branch("SVLDeltaRRank",     &fTSVLDeltaRRank,      "SVLDeltaRRank/I");
-    fSVLInfoTree->Branch("SVLMassRank_rot",   &fTSVLMinMassRank_rot, "SVLMassRank_rot/I");
-    fSVLInfoTree->Branch("SVLDeltaRRank_rot", &fTSVLDeltaRRank_rot,  "SVLDeltaRRank_rot/I");
+  fSVLInfoTree = new TTree("SVLInfo", "SecVtx Lepton Tree");
+  fSVLInfoTree->Branch("Event",     &fTEvent,     "Event/I");
+  fSVLInfoTree->Branch("Run",       &fTRun,       "Run/I");
+  fSVLInfoTree->Branch("Lumi",      &fTLumi,      "Lumi/I");
+  fSVLInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
+  fSVLInfoTree->Branch("Weight",     fTWeight,    "Weight[11]/F");
+  fSVLInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[5]/F");
+  fSVLInfoTree->Branch("METWeight",  fTMETWeight, "METWeight[3]/F");
+  fSVLInfoTree->Branch("BtagWeight",  fTBtagWeight, "BtagWeight[3]/F");
+  fSVLInfoTree->Branch("XSWeight",  &fTXSWeight,  "XSWeight/F");
+  fSVLInfoTree->Branch("SVBfragWeight" , fTSVBfragWeight  , "SVBfragWeight[6]/F");
+  TString pdfWeightAlloc("PDFWeight[");
+  if(fPDFInfo && fPDFInfo->numberPDFs()) pdfWeightAlloc += fPDFInfo->numberPDFs();
+  else                                   pdfWeightAlloc += "1";
+  pdfWeightAlloc += "]/F";
+  fSVLInfoTree->Branch("PDFWeight", fPDFWeight,   pdfWeightAlloc);
+  fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
+  fSVLInfoTree->Branch("MET",       &fTMET,       "MET/F");
+  fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
+  fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
+  fSVLInfoTree->Branch("SVLMass",   &fTSVLMass,   "SVLMass/F");
+  fSVLInfoTree->Branch("SVLMass_sf",   fTSVLMass_sf,   "SVLMass_sf[2]/F");
+  fSVLInfoTree->Branch("SVLDeltaR", &fTSVLDeltaR, "SVLDeltaR/F");
+  fSVLInfoTree->Branch("SVLMass_rot",   &fTSVLMass_rot,   "SVLMass_rot/F");
+  fSVLInfoTree->Branch("SVLDeltaR_rot", &fTSVLDeltaR_rot, "SVLDeltaR_rot/F");
+  fSVLInfoTree->Branch("BHadNeutrino", &fTBHadNeutrino, "BHadNeutrino/I");
+  fSVLInfoTree->Branch("BHadId", &fTBHadId, "BHadId/I");
+  fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
+  fSVLInfoTree->Branch("SVMass",    &fTSVMass,    "SVMass/F");
+  fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
+  fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
+  fSVLInfoTree->Branch("SVLxy",     &fTSVLxy,     "SVLxy/F");
+  fSVLInfoTree->Branch("SVLxySig",  &fTSVLxySig,  "SVLxySig/F");
+  fSVLInfoTree->Branch("SVPtChFrac",  &fTSVPtChFrac, "SVPtChFrac/F");
+  fSVLInfoTree->Branch("SVPzChFrac",  &fTSVPzChFrac, "SVPzChFrac/F");
+  fSVLInfoTree->Branch("SVProjFrac",  &fTSVProjFrac, "SVProjFrac/F");
+  fSVLInfoTree->Branch("SVPtRel",   &fTSVPtRel,   "SVPtRel/F");
+  fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
+  fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
+  fSVLInfoTree->Branch("JFlav",     &fTJFlav,     "JFlav/I");
+  fSVLInfoTree->Branch("GenMlb",    &fTGenMlb,    "GenMlb/F");
+  fSVLInfoTree->Branch("GenTopPt",  &fTGenTopPt,  "GenTopPt/F");
+  // CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
+  fSVLInfoTree->Branch("CombCat"       , &fTCombCat       , "CombCat/I");
+  // CombInfo = -1 for data or unmatched, 0 for wrong combs, 1 for correct combs
+  fSVLInfoTree->Branch("CombInfo"      , &fTCombInfo      , "CombInfo/I");
+  
+  // Intra event rankings
+  fSVLInfoTree->Branch("SVLMassRank",       &fTSVLMinMassRank,     "SVLMassRank/I");
+  fSVLInfoTree->Branch("SVLCombRank",       &fTSVLCombRank,        "SVLCombRank/I");
+  fSVLInfoTree->Branch("SVLDeltaRRank",     &fTSVLDeltaRRank,      "SVLDeltaRRank/I");
+  fSVLInfoTree->Branch("SVLMassRank_rot",   &fTSVLMinMassRank_rot, "SVLMassRank_rot/I");
+  fSVLInfoTree->Branch("SVLDeltaRRank_rot", &fTSVLDeltaRRank_rot,  "SVLDeltaRRank_rot/I");
 }
 
 //
 void LxyTreeAnalysis::ResetSVLTree()
 {
-    fTEvent     = event;
-    fTRun       = run;
-    fTLumi      = lumi;
-    fTEvCat     = evcat;
-    fTMET       = metpt;
-    fTNJets     = nj;
-    fTNPVtx     = nvtx;
-    for (int i = 0; i < 11; ++i) {
-        if(nw<i+1) fTWeight[i]=0;
-        else       fTWeight[i]=w[i];
-    }
-
-    for (int i = 0; i < 3; ++i) fTMETWeight[i] = -99.99;
-    for (int i = 0; i < 3; ++i) fTBtagWeight[i] = -99.99;
-    for (int i = 0; i < 5; ++i) fTJESWeight[i] = -99.99;
-    for (int i=0; i<6; i++) fTSVBfragWeight[i] = -99.99;
-    fTNCombs         = -99.99;
-    fTSVLMass        = -99.99;
-    fTSVLDeltaR      = -99.99;
-    fTSVLMass_rot    = -99.99;
-    fTSVLDeltaR_rot  = -99.99;
-    fTBHadNeutrino   = -99;
-    fTLPt            = -99.99;
-    fTSVPt           = -99.99;
-    fTSVLxy          = -99.99;
-    fTSVLxySig       = -99.99;
-    fTSVPtChFrac     = -99.99;
-    fTSVPzChFrac     = -99.99;
-    fTSVProjFrac     = -99.99;
-    fTSVPtRel        = -99.99;
-    fTJEta           = -99.99;
-    fTJPt            = -99.99;
-    fTJFlav          = 0;
-    fTSVNtrk         = -99;
-    fTSVMass         = -99;
-    fTCombCat        = -99;
-    fTCombInfo       = -99;
-
-    fTGenMlb         = -99.99;
-    fTGenTopPt       = -99.99;
-
-    fTSVLMinMassRank = -99;
-    fTSVLDeltaRRank  = -99;
+  fTEvent     = event;
+  fTRun       = run;
+  fTLumi      = lumi;
+  fTEvCat     = evcat;
+  fTMET       = metpt;
+  fTNJets     = nj;
+  fTNPVtx     = nvtx;
+  for (int i = 0; i < 11; ++i) {
+    if(nw<i+1) fTWeight[i]=0;
+    else       fTWeight[i]=w[i];
+  }
+  
+  for (int i = 0; i < 3; ++i) fTMETWeight[i] = -99.99;
+  for (int i = 0; i < 3; ++i) fTBtagWeight[i] = -99.99;
+  for (int i = 0; i < 5; ++i) fTJESWeight[i] = -99.99;
+  for (int i=0; i<6; i++) fTSVBfragWeight[i] = -99.99;
+  fTNCombs         = -99.99;
+  fTSVLMass        = -99.99;
+  fTSVLDeltaR      = -99.99;
+  fTSVLMass_rot    = -99.99;
+  fTSVLDeltaR_rot  = -99.99;
+  fTBHadNeutrino   = -99;
+  fTBHadId         = 0;
+  fTLPt            = -99.99;
+  fTSVPt           = -99.99;
+  fTSVLxy          = -99.99;
+  fTSVLxySig       = -99.99;
+  fTSVPtChFrac     = -99.99;
+  fTSVPzChFrac     = -99.99;
+  fTSVProjFrac     = -99.99;
+  fTSVPtRel        = -99.99;
+  fTJEta           = -99.99;
+  fTJPt            = -99.99;
+  fTJFlav          = 0;
+  fTSVNtrk         = -99;
+  fTSVMass         = -99;
+  fTCombCat        = -99;
+  fTCombInfo       = -99;
+  
+  fTGenMlb         = -99.99;
+  fTGenTopPt       = -99.99;
+  
+  fTSVLMinMassRank = -99;
+  fTSVLDeltaRRank  = -99;
 }
 
 //
@@ -1292,15 +1294,15 @@ void LxyTreeAnalysis::analyze() {
         size_t npairs=svl_pairs_massranked.size();
         if(npairs)
         {
-            svl_pairs_combranked.push_back( svl_pairs_massranked[0] );
-            if(npairs==4)
+	  svl_pairs_combranked.push_back( svl_pairs_massranked[0] );
+	  if(npairs==4)
             {
-                svl_pairs_combranked.push_back( svl_pairs_massranked[1] );
-                if(svl_pairs_massranked[0].lepindex!=svl_pairs_massranked[1].lepindex)
-                    svl_pairs_combranked.push_back( svl_pairs_massranked[2] );
+	      svl_pairs_combranked.push_back( svl_pairs_massranked[1] );
+	      if(svl_pairs_massranked[0].lepindex==svl_pairs_massranked[1].lepindex)
+		svl_pairs_combranked.push_back( svl_pairs_massranked[2] );
             }
         }
-
+	
         std::vector<SVLInfo> svl_pairs_drranked = svl_pairs;
         std::sort (svl_pairs_drranked.begin(), svl_pairs_drranked.end(), compare_deltar);
         std::vector<SVLInfo> svl_pairs_massranked_rot = svl_pairs;

@@ -10,11 +10,11 @@ from makeSVLMassHistos import XMIN, XMAX, MASSXAXISTITLE
 from makeSVLMassHistos import COMMONWEIGHT
 
 DATAMCPLOTS = [
-	('SVLDeltaR' , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
-	('SVNtrk'    , 8,     2  , 10, 'SV Track Multiplicity'),
-	('LPt'       , NBINS, 20 , 200, 'Lepton pt [GeV]'),
-	('JPt'       , NBINS, 30 , 200, 'Jet pt [GeV]'),
-	('SVLMass'   , NBINS, XMIN, XMAX, MASSXAXISTITLE),
+	('SVLDeltaR'   , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
+	('SVNtrk'      , 8,     2  , 10, 'SV Track Multiplicity'),
+	('LPt'         , NBINS, 20 , 200, 'Lepton pt [GeV]'),
+	('JPt'         , NBINS, 30 , 200, 'Jet pt [GeV]'),
+	('SVLMass'     , NBINS, XMIN, XMAX, MASSXAXISTITLE),
 ]
 
 def projectFromTree(hist, varname, sel, tree, option=''):
@@ -52,6 +52,18 @@ def writeDataMCHistos(tree, processName, outputFile):
 				              hname="%s_%s_%s"%(var,tag,processName),
 			                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
 			hist.Write(hist.GetName())
+
+			#MC truth
+			if 'SVNtrk' in var:
+				for b,addSel in [('Bpm',   'abs(BHadId)==521'),
+						 ('B0',    'abs(BHadId)==511'),
+						 ('Bs',    'abs(BHadId)==531'),
+						 ('Others','abs(BHadId)!=521 && abs(BHadId)!=511 && abs(BHadId)!=531 && BHadId!=0'),
+						 ('Fakes', 'BHadId==0')]:
+					hist=getHistoFromTree(tree, sel=sel, var=var,
+							      hname="%s_%s_%s_%s"%(var,tag,processName,b),
+							      nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+					hist.Write(hist.GetName())
 
 def resolveFilename(fname):
 	if not os.path.splitext(fname)[1] == '.root': return None

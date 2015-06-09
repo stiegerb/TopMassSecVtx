@@ -12,7 +12,7 @@ synchdir="/store/cmst3/group/top/summer2014/synchEx"
 plotsdir="${HOME}/public/html/TopMassSecVtx/"
 cfg="$CMSSW_BASE/src/UserCode/TopMassSecVtx/test/runAnalysis_cfg.py.templ"
 queue=1nd
-hash=a176401
+hash=bbbcb36
 
 #prepare output directories
 mkdir -p ${outdir}/summary/
@@ -43,7 +43,9 @@ if [ "$step" == "mass" ]; then
 fi
 
 if [ "${step}" == "pdf" ]; then
-    runLocalAnalysisOverSamples.py -e computePDFvariations -j ${outdir}/samples.json -o ${outdir}/summary/${hash} -d ${outdir}/summary/${hash} -c ${cfg} -t TTJets -s 2nw;
+    MCTREEDIR=/store/cmst3/group/top/summer2015/${hash};
+    echo "WARNING: Using MC trees stored at ${MCTREEDIR}";
+    runLocalAnalysisOverSamples.py -e computePDFvariations -j ${outdir}/samples.json -o ${outdir}/summary/${hash} -d ${MCTREEDIR} -c ${cfg} -t MC -s 2nw;
 fi
 
 if [ "$step" == "control" ]; then
@@ -54,7 +56,7 @@ if [ "$step" == "control" ]; then
     #runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d /store/cmst3/user/psilva/5311_qcd_ntuples -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
     #done
 
-    ctrlJsons=("z_samples") #"z_syst_samples" "z_samples" "photon_samples") # "w_samples"
+    ctrlJsons=("z_syst_samples") #"z_samples"  "photon_samples" "w_samples")
     for ijson in ${ctrlJsons[@]}; do
 	runLocalAnalysisOverSamples.py -e runControlAnalysis -j ${outdir}/${ijson}.json  -d ${indir} -o ${outdir}/${ijson}/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
     done

@@ -391,7 +391,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
             if options.verbose > 0:
                 print ("  adding %s (Integral: %s) (Color %d) (Isdata %d)" %
                         (hist.GetName(), hist.Integral(), color, isData))
-            
+
             newPlot.add(hist,title,color,isData)
 
     if options.normToData :

@@ -45,17 +45,17 @@ public :
    Float_t         glpt[5];   //[nl]
    Float_t         gleta[5];   //[nl]
    Float_t         glphi[5];   //[nl]
-   Int_t           nj;
-   Int_t           jflav[50];   //[nj]
-   Float_t         jpt[50];   //[nj]
-   Float_t         jeta[50];   //[nj]
-   Float_t         jphi[50];   //[nj]
-   Float_t         jcsv[50];   //[nj]
-   Float_t         jarea[50];   //[nj]
-   Float_t         jtoraw[50];   //[nj]
-   Float_t         jjesup[50][26];   //[nj]
-   Float_t         jjesdn[50][26];   //[nj]
-   Float_t         jjerup[50],jjerdn[50];
+   Int_t           nj,nfj;
+   Int_t           jflav[50],fjflav[20];   //[nj]
+   Float_t         jpt[50],fjpt[20];   //[nj]
+   Float_t         jeta[50],fjeta[20];   //[nj]
+   Float_t         jphi[50],fjphi[20];   //[nj]
+   Float_t         jcsv[50],fjcsv[20];   //[nj]
+   Float_t         jarea[50],fjarea[20];   //[nj]
+   Float_t         jtoraw[50],fjtoraw[20];   //[nj]
+   Float_t         jjesup[50][26],fjjesup[20][26];   //[nj]
+   Float_t         jjesdn[50][26],fjjesdn[20][26];   //[nj]
+   Float_t         jjerup[50],jjerdn[50],fjjerup[20],fjjerdn[20];
    Float_t         jbhadmatchdr[50];   //[nj]
    Float_t         gjpt[50];   //[nj]
    Float_t         gjeta[50];   //[nj]
@@ -67,11 +67,11 @@ public :
    Float_t         svntk[50];   //[nj]
    Float_t         svlxy[50];   //[nj]
    Float_t         svlxyerr[50];   //[nj]
-   Int_t           bid[50];   //[nj]
+   Int_t           bid[50],fbid[20];   //[nj]
    Float_t         bwgt[50][6];   //[nj]
-   Float_t         bpt[50];   //[nj]
-   Float_t         beta[50];   //[nj]
-   Float_t         bphi[50];   //[nj]
+   Float_t         bpt[50],fbpt[20];   //[nj]
+   Float_t         beta[50],fbeta[20];   //[nj]
+   Float_t         bphi[50],fbphi[20];   //[nj]
    Int_t           bhadid[50];   //[nj]
    Float_t         bhadpt[50];   //[nj]
    Float_t         bhadeta[50];   //[nj]
@@ -119,16 +119,16 @@ public :
    TBranch        *b_glpt;   //!
    TBranch        *b_gleta;   //!
    TBranch        *b_glphi;   //!
-   TBranch        *b_nj;   //!
-   TBranch        *b_jflav;   //!
-   TBranch        *b_jpt;   //!
-   TBranch        *b_jeta;   //!
-   TBranch        *b_jphi;   //!
-   TBranch        *b_jcsv;   //!
-   TBranch        *b_jarea;   //!
-   TBranch        *b_jtoraw;   //!
-   TBranch        *b_jjesup, *b_jjerup;   //!
-   TBranch        *b_jjesdn, *b_jjerdn;   //!
+   TBranch        *b_nj,*b_nfj;   //!
+   TBranch        *b_jflav,*b_fjflav;   //!
+   TBranch        *b_jpt, *b_fjpt;   //!
+   TBranch        *b_jeta, *b_fjeta;   //!
+   TBranch        *b_jphi, *b_fjphi;   //!
+   TBranch        *b_jcsv, *b_fjcsv;   //!
+   TBranch        *b_jarea, *b_fjarea;   //!
+   TBranch        *b_jtoraw, *b_fjtoraw;   //!
+   TBranch        *b_jjesup, *b_jjerup, *b_fjjesup, *b_fjjerup;   //!
+   TBranch        *b_jjesdn, *b_jjerdn, *b_fjjesdn, *b_fjjerdn;   //!
    TBranch        *b_jbhadmatchdr;   //!
    TBranch        *b_gjpt;   //!
    TBranch        *b_gjeta;   //!
@@ -140,11 +140,11 @@ public :
    TBranch        *b_svntk;   //!
    TBranch        *b_svlxy;   //!
    TBranch        *b_svlxyerr;   //!
-   TBranch        *b_bid;   //!
+   TBranch        *b_bid, *b_fbid;   //!
    TBranch        *b_bwgt;   //!
-   TBranch        *b_bpt;   //!
-   TBranch        *b_beta;   //!
-   TBranch        *b_bphi;   //!
+   TBranch        *b_bpt, *b_fbpt;   //!
+   TBranch        *b_beta, *b_fbeta;   //!
+   TBranch        *b_bphi, *b_fbphi;   //!
    TBranch        *b_bhadid;   //!
    TBranch        *b_bhadpt;   //!
    TBranch        *b_bhadeta;   //!

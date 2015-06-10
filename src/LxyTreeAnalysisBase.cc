@@ -73,6 +73,7 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("gleta", gleta, &b_gleta);
    fChain->SetBranchAddress("glphi", glphi, &b_glphi);
    fChain->SetBranchAddress("nj", &nj, &b_nj);
+   fChain->SetBranchAddress("nfj", &nfj, &b_nfj);
    fChain->SetBranchAddress("jflav", jflav, &b_jflav);
    fChain->SetBranchAddress("jpt", jpt, &b_jpt);
    fChain->SetBranchAddress("jeta", jeta, &b_jeta);
@@ -84,6 +85,18 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("jjesdn", jjesdn, &b_jjesdn);
    fChain->SetBranchAddress("jjerup", jjerup, &b_jjerup);
    fChain->SetBranchAddress("jjerdn", jjerdn, &b_jjerdn);
+
+   fChain->SetBranchAddress("fjflav",  fjflav,  &b_fjflav);
+   fChain->SetBranchAddress("fjpt",    fjpt,    &b_fjpt);
+   fChain->SetBranchAddress("fjeta",   fjeta,   &b_fjeta);
+   fChain->SetBranchAddress("fjphi",   fjphi,   &b_fjphi);
+   fChain->SetBranchAddress("fjcsv",   fjcsv,   &b_fjcsv);
+   fChain->SetBranchAddress("fjarea",  fjarea,  &b_fjarea);
+   fChain->SetBranchAddress("fjtoraw", fjtoraw, &b_fjtoraw);
+   fChain->SetBranchAddress("fjjesup", fjjesup, &b_fjjesup);
+   fChain->SetBranchAddress("fjjesdn", fjjesdn, &b_fjjesdn);
+   fChain->SetBranchAddress("fjjerup", fjjerup, &b_fjjerup);
+   fChain->SetBranchAddress("fjjerdn", fjjerdn, &b_fjjerdn);
    fChain->SetBranchAddress("jbhadmatchdr", jbhadmatchdr, &b_jbhadmatchdr);
    fChain->SetBranchAddress("gjpt", gjpt, &b_gjpt);
    fChain->SetBranchAddress("gjeta", gjeta, &b_gjeta);
@@ -96,10 +109,14 @@ void LxyTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("svlxy", svlxy, &b_svlxy);
    fChain->SetBranchAddress("svlxyerr", svlxyerr, &b_svlxyerr);
    fChain->SetBranchAddress("bid", bid, &b_bid);
+   fChain->SetBranchAddress("fbid", fbid, &b_fbid);
    fChain->SetBranchAddress("bwgt", bwgt, &b_bwgt);
    fChain->SetBranchAddress("bpt", bpt, &b_bpt);
    fChain->SetBranchAddress("beta", beta, &b_beta);
    fChain->SetBranchAddress("bphi", bphi, &b_bphi);
+   fChain->SetBranchAddress("fbpt",  fbpt,  &b_fbpt);
+   fChain->SetBranchAddress("fbeta", fbeta, &b_fbeta);
+   fChain->SetBranchAddress("fbphi", fbphi, &b_fbphi);
    fChain->SetBranchAddress("bhadid", bhadid, &b_bhadid);
    fChain->SetBranchAddress("bhadpt", bhadpt, &b_bhadpt);
    fChain->SetBranchAddress("bhadeta", bhadeta, &b_bhadeta);

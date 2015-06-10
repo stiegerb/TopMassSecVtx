@@ -527,15 +527,18 @@ int main(int argc, char* argv[])
 	if(abs(box.cat)==11 || abs(box.cat)==13)                              passJetSelection = (box.jets.size()>=1 && box.jets.size()+box.fjets.size()>=2);
 	if(abs(box.cat)==11*11 || abs(box.cat)==13*13 || abs(box.cat)==11*13) passJetSelection = (box.jets.size()>=2);
         bool passMetSelection( box.metCat=="" );
-
+	float mt(utils::cmssw::getMT<LorentzVector>( *(box.leptons[0]), box.met)),thetall(0);
         //used for background estimates in the dilepton channel
-        float mt(utils::cmssw::getMT<LorentzVector>( *(box.leptons[0]), box.met)),thetall(0);
         LorentzVector ll(*(box.leptons[0]));
         if(box.leptons.size()>=2)
         {
             thetall = utils::cmssw::getArcCos<LorentzVector>( *(box.leptons[0]), *(box.leptons[1]) );
             ll     += *(box.leptons[1]);
         }
+	if(abs(box.cat)==11 || abs(box.cat)==13)  
+	  {
+	    if( box.jets.size()<4) passMetSelection=(mt>50);
+	  }
 
         //leading lepton charge
         int lepid = box.leptons[0]->get("id");

@@ -832,7 +832,7 @@ bool LxyTreeAnalysis::selectSVLEvent(bool &passBtagNom, bool &passBtagUp, bool &
 
     // For single lepton, at least 4 jets, and either 2 SV or 1 SV + 1 CSVM
     if (abs(evcat) == 11 || abs(evcat) == 13) {
-        if (nj < 4) return false;
+        if (nj < 4 && nfj==0) return false;
 
         if (nsvjets > 1)
         {
@@ -897,9 +897,10 @@ void LxyTreeAnalysis::BookSVLTree() {
   else                                   pdfWeightAlloc += "1";
   pdfWeightAlloc += "]/F";
   fSVLInfoTree->Branch("PDFWeight", fPDFWeight,   pdfWeightAlloc);
-  fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
-  fSVLInfoTree->Branch("MET",       &fTMET,       "MET/F");
   fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
+  fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/I");
+  fSVLInfoTree->Branch("NBTags",    &fTNBTags,    "NBTags/I");
+  fSVLInfoTree->Branch("MET",       &fTMET,       "MET/F");
   fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
   fSVLInfoTree->Branch("SVLMass",   &fTSVLMass,   "SVLMass/F");
   fSVLInfoTree->Branch("SVLMass_sf",   fTSVLMass_sf,   "SVLMass_sf[2]/F");
@@ -921,6 +922,9 @@ void LxyTreeAnalysis::BookSVLTree() {
   fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
   fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
   fSVLInfoTree->Branch("JFlav",     &fTJFlav,     "JFlav/I");
+  fSVLInfoTree->Branch("FJPt",       &fTFJPt,       "FJPt/F");
+  fSVLInfoTree->Branch("MT",       &fTMT,       "MT/F");
+  fSVLInfoTree->Branch("FJEta",      &fTFJEta,      "FJEta/F");
   fSVLInfoTree->Branch("GenMlb",    &fTGenMlb,    "GenMlb/F");
   fSVLInfoTree->Branch("GenTopPt",  &fTGenTopPt,  "GenTopPt/F");
   // CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
@@ -945,6 +949,7 @@ void LxyTreeAnalysis::ResetSVLTree()
   fTEvCat     = evcat;
   fTMET       = metpt;
   fTNJets     = nj;
+  fTNBTags    = -1;
   fTNPVtx     = nvtx;
   for (int i = 0; i < 11; ++i) {
     if(nw<i+1) fTWeight[i]=0;
@@ -972,6 +977,9 @@ void LxyTreeAnalysis::ResetSVLTree()
   fTSVPtRel        = -99.99;
   fTJEta           = -99.99;
   fTJPt            = -99.99;
+  fTFJEta          = -99.99;
+  fTFJPt           = -99.99;
+  fTMT             = 0;
   fTJFlav          = 0;
   fTSVNtrk         = -99;
   fTSVMass         = -99;
@@ -1003,7 +1011,7 @@ void LxyTreeAnalysis::BookDileptonTree()
     else                                   pdfWeightAlloc += "1";
     pdfWeightAlloc += "]/F";
     fDileptonInfoTree->Branch("PDFWeight", fPDFWeight,   pdfWeightAlloc);
-    fDileptonInfoTree->Branch("NJets",     &fTNJets,     "NJets/F");
+    fDileptonInfoTree->Branch("NJets",     &fTNJets,     "NJets/I");
     fDileptonInfoTree->Branch("MET",       &fTMET,       "MET/F");
     fDileptonInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
     fDileptonInfoTree->Branch("LpPt",      &fLpPt,     "LpPt/F");
@@ -1216,6 +1224,8 @@ void LxyTreeAnalysis::analyze() {
             fHMET_m     ->Fill(metpt,   w[0]*w[1]*w[4]);
         }
 
+	fTNBTags=nbjets;	
+
         // First find all pairs and get their ranking in mass and deltar
         std::vector<SVLInfo> svl_pairs;
         for (int il = 0; il < nl; ++il) { // lepton loop
@@ -1361,7 +1371,10 @@ void LxyTreeAnalysis::analyze() {
             svp4.SetPtEtaPhiM( svpt[svl.svindex],sveta[svl.svindex],svphi[svl.svindex],svmass[svl.svindex]);
             TLorentzVector lp4;
             lp4.SetPtEtaPhiM(lpt[svl.lepindex],leta[svl.lepindex],lphi[svl.lepindex],0.0);
+	    TLorentzVector metp4;
+	    metp4.SetPtEtaPhiM(metpt,0,metphi,0.);
 
+	    fTMT           = utils::cmssw::getMT<TLorentzVector,TLorentzVector>( lp4, metp4);
             fTLPt          = lpt  [svl.lepindex];
             fTSVPt         = svpt [svl.svindex];
             fTSVLxy        = svlxy[svl.svindex];
@@ -1375,7 +1388,9 @@ void LxyTreeAnalysis::analyze() {
             fTJPt          = jpt  [svl.svindex];
             fTJFlav        = jflav[svl.svindex];
             fTJEta         = jeta [svl.svindex];
-            fTSVNtrk       = svntk[svl.svindex];
+	    fTFJPt         = fjpt [0];
+            fTFJEta        = fjeta[0];	    
+	    fTSVNtrk       = svntk[svl.svindex];
             fTSVMass       = svmass[svl.svindex];
             fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1
             if(fTBHadNeutrino < 0) fTBHadNeutrino = -1; // set -999 to -1

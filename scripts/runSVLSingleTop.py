@@ -53,7 +53,7 @@ def runSingleTopAnalysis(inDir,filename,isData,outDir):
 		jetCat="%dj" % (SVLInfo.NJets)
 
 		#require =1 btag
-		if SVLInfo.NBtags != 1 : continue
+		if SVLInfo.NBTags != 1 : continue
 
 		#re-inforce the cut in MT
 		if SVLInfo.MT<50 : continue

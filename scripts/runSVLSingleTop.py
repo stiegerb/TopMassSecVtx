@@ -19,10 +19,12 @@ def runSingleTopAnalysis(inDir,filename,isData,outDir):
 			histos['NPVtx_'+tag]      = ROOT.TH1F('NPVtx_'+tag,';N_{PV}-N_{HP};Events',30,0,30)
 			histos['MT_'+tag]         = ROOT.TH1F('MT_'+tag,';Transverse mass [GeV];Events',50,50,250)
 			histos['MET_'+tag]        = ROOT.TH1F('MET_'+tag,';Missing transverse energy [GeV];Events',50,0,200)
+			histos['FJPt_'+tag]       = ROOT.TH1F('FJPt_'+tag,';Transverse momentum [GeV];Events',10,30,230)
 			histos['FJEta_'+tag]      = ROOT.TH1F('FJEta_'+tag,';Pseudo-rapidity;Events',12,2.5,4.9)
 			histos['DeltaEtaJB_'+tag] = ROOT.TH1F('DeltaEtaJB_'+tag,';|#eta_{j}-#eta_{b}|;Events',25,0,8)
-			histos['EtaJxEtaB_'+tag]   = ROOT.TH1F('EtaJxEtaB_'+tag,';#eta_{j}.#eta_{b};Events',25,-10,10)
+			histos['EtaJxEtaB_'+tag]  = ROOT.TH1F('EtaJxEtaB_'+tag,';#eta_{j}.#eta_{b};Events',25,-10,10)
 			histos['SVLMass_'+tag]    = ROOT.TH1F('SVLMass_'+tag,';m(SV,lepton) [GeV]',50,0,200)
+			histos['SVMass_'+tag]     = ROOT.TH1F('SVMass_'+tag,';m(SV) [GeV]',12,0,6)
 	for h in histos:
 		histos[h].Sumw2()
 		histos[h].SetDirectory(0)
@@ -51,7 +53,7 @@ def runSingleTopAnalysis(inDir,filename,isData,outDir):
 		jetCat="%dj" % (SVLInfo.NJets)
 
 		#require =1 btag
-		#if SVLInfo.NBtags != 1 : continue
+		if SVLInfo.NBtags != 1 : continue
 
 		#re-inforce the cut in MT
 		if SVLInfo.MT<50 : continue
@@ -65,11 +67,12 @@ def runSingleTopAnalysis(inDir,filename,isData,outDir):
 		histos['NPVtx_'+tag]  .Fill(SVLInfo.NPVtx-1, weight)
 		histos['MT_'+tag]     .Fill(SVLInfo.MT,      weight)
 		histos['MET_'+tag]    .Fill(SVLInfo.MET,     weight)
+		histos['FJPt_'+tag]   .Fill(SVLInfo.FJPt,    weight)
 		histos['FJEta_'+tag]  .Fill(fwdeta,          weight)
-		histos['SVLMass_'+tag].Fill(SVLInfo.SVLMass, weight)
 		histos['DeltaEtaJB_'+tag].Fill(ROOT.TMath.Abs(SVLInfo.FJEta-SVLInfo.JEta), weight)
 		histos['EtaJxEtaB_'+tag].Fill(SVLInfo.FJEta*SVLInfo.JEta, weight)
-
+		histos['SVLMass_'+tag].Fill(SVLInfo.SVLMass, weight)
+		histos['SVMass_'+tag] .Fill(SVLInfo.SVMass,  weight)
 
 	#close input file, after analysis
 	fIn.Close()

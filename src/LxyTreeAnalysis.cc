@@ -832,8 +832,20 @@ bool LxyTreeAnalysis::selectSVLEvent(bool &passBtagNom, bool &passBtagUp, bool &
 
     // For single lepton, at least 4 jets, and either 2 SV or 1 SV + 1 CSVM
     if (abs(evcat) == 11 || abs(evcat) == 13) {
-        if (nj < 4 && nfj==0) return false;
-
+      if (nj < 4)
+	  {
+	    TLorentzVector lp4;      lp4.SetPtEtaPhiM(lpt[0],leta[0],lphi[0],0.0);
+	    TLorentzVector metp4;    metp4.SetPtEtaPhiM(metpt,0,metphi,0.);
+	    TLorentzVector metp4Up;  metp4Up.SetPtEtaPhiM(metvar[4],0,metphi,0.);
+	    TLorentzVector metp4Dn;  metp4Dn.SetPtEtaPhiM(metvar[5],0,metphi,0.);
+	    float mT(utils::cmssw::getMT<TLorentzVector,TLorentzVector>( lp4, metp4) );
+	    float mTUp(utils::cmssw::getMT<TLorentzVector,TLorentzVector>( lp4, metp4Up) );
+	    float mTDn(utils::cmssw::getMT<TLorentzVector,TLorentzVector>( lp4, metp4Dn) );
+	    passMETNom  = (mT>50);
+	    passMETUp   = (mTUp>50);
+	    passMETDown = (mTDn>50);
+	    if(nfj==0)   return false;
+	  }
         if (nsvjets > 1)
         {
             passBtagNom=true;
@@ -853,7 +865,7 @@ bool LxyTreeAnalysis::selectSVLEvent(bool &passBtagNom, bool &passBtagUp, bool &
 
     // QCD control sample (non-isolated leptons)
     if (abs(evcat) == 11*100 || abs(evcat) == 13*100) {
-        if (nj < 4) return false;
+        if (nj < 4 && nfj==0) return false;
         if (nbjets > 1 || nsvjets > 1) return false; // suppress ttbar
         return true;
     }
@@ -1168,7 +1180,7 @@ void LxyTreeAnalysis::analyze() {
     }
 
     TLorentzVector metP4;
-    metP4.SetPtEtaPhiM(metpt*cos(metphi),metpt*sin(metphi),0,metpt);
+    metP4.SetPtEtaPhiM(metpt,0,metphi,0);
     float mT(utils::cmssw::getMT<TLorentzVector,TLorentzVector>( isoObjects[0], metP4) );
     float mjj( lightJetsP4.size()>=2 ? (lightJetsP4[0]+lightJetsP4[1]).M() : -99);
 
@@ -1178,12 +1190,12 @@ void LxyTreeAnalysis::analyze() {
     {
         // Fill some control histograms:
         if (abs(evcat) <= 13*13) { // Inclusive (exclude control samples)
-            fHNJets     ->Fill(nj,      w[0]*w[1]*w[4]);
-            fHNSVJets   ->Fill(nsvjets, w[0]*w[1]*w[4]);
-            fHNbJets    ->Fill(nbjets,  w[0]*w[1]*w[4]);
-            fHMET       ->Fill(metpt,   w[0]*w[1]*w[4]);
-            fHMT        ->Fill(mT,      w[0]*w[1]*w[4]);
-            if(mjj>=0.) fHMjj->Fill(mjj,     w[0]*w[1]*w[4]); // only fill if there are 2 light jets
+            fHNJets     ->Fill(nj,          w[0]*w[1]*w[4]);
+            fHNSVJets   ->Fill(nsvjets,     w[0]*w[1]*w[4]);
+            fHNbJets    ->Fill(nbjets,      w[0]*w[1]*w[4]);
+            fHMET       ->Fill(metpt,       w[0]*w[1]*w[4]);
+            fHMT        ->Fill(mT,          w[0]*w[1]*w[4]);
+            if(mjj>=0.) fHMjj->Fill(mjj,    w[0]*w[1]*w[4]); // only fill if there are 2 light jets
         }
 
         if (abs(evcat) == 11*13) {
@@ -1374,7 +1386,7 @@ void LxyTreeAnalysis::analyze() {
 	    TLorentzVector metp4;
 	    metp4.SetPtEtaPhiM(metpt,0,metphi,0.);
 
-	    fTMT           = utils::cmssw::getMT<TLorentzVector,TLorentzVector>( lp4, metp4);
+	    fTMT           = mT;
             fTLPt          = lpt  [svl.lepindex];
             fTSVPt         = svpt [svl.svindex];
             fTSVLxy        = svlxy[svl.svindex];

@@ -667,7 +667,7 @@ def addPlotterOptions(parser):
                       default='',
                       help='Only process plots matching this mask'
                            '[default: all plots]')
-    parser.add_option('-l', '--lumi', dest='lumi', default=17123,
+    parser.add_option('-l', '--lumi', dest='lumi', default=19701,
                       type='float',
                       help='Re-scale to integrated luminosity [pb]'
                            ' [default: %default]')

@@ -7,7 +7,7 @@ from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
 
 from makeSVLMassHistos import SELECTIONS, TREENAME, NBINS
 from makeSVLMassHistos import XMIN, XMAX, MASSXAXISTITLE
-from makeSVLMassHistos import COMMONWEIGHT
+from makeSVLMassHistos import COMMONWEIGHT, LUMI
 
 DATAMCPLOTS = [
 	('SVLDeltaR'   , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
@@ -169,6 +169,7 @@ if __name__ == "__main__":
 	addPlotterOptions(parser)
 	addDataMCPlotOptions(parser)
 	(opt, args) = parser.parse_args()
+	opt.lumi = LUMI
 
 	setTDRStyle()
 	gROOT.SetBatch(True)

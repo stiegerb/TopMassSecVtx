@@ -18,37 +18,38 @@
 #include "UserCode/TopMassSecVtx/interface/PDFInfo.h"
 #include "UserCode/TopMassSecVtx/interface/LxyTreeAnalysisBase.h"
 
- // Plot class defined here
+// Plot class defined here
 #include "UserCode/TopMassSecVtx/interface/SVLInfoTreeAnalysis.h"
 
 class LxyTreeAnalysis : public LxyTreeAnalysisBase {
 public:
- LxyTreeAnalysis(TTree *tree=0,TString weightsDir=""):LxyTreeAnalysisBase(tree) {
+    LxyTreeAnalysis(TTree *tree=0,TString weightsDir=""):LxyTreeAnalysisBase(tree) {
         fMaxevents = -1;
         fProcessNorm = 1.0;
 
-	//b-tag efficiencies read b-tag efficiency map
-	if(weightsDir!="")
-	  {
-	    TString btagEffCorrUrl(weightsDir); btagEffCorrUrl += "/btagEff.root";
-	    gSystem->ExpandPathName(btagEffCorrUrl);
-	    TFile *btagF=TFile::Open(btagEffCorrUrl);
-	    if(btagF!=0 && !btagF->IsZombie())
-	      {
-		TList *dirs=btagF->GetListOfKeys();
-		for(int itagger=0; itagger<dirs->GetEntries(); itagger++)
-		  {
-		    TString iDir(dirs->At(itagger)->GetName());
-		    btagEffCorr_[ std::pair<TString,TString>(iDir,"b") ]
-		      = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/beff"),(TGraphErrors *) btagF->Get(iDir+"/sfb") );
-		    btagEffCorr_[ std::pair<TString,TString>(iDir,"c") ]
-		      = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/ceff"),(TGraphErrors *) btagF->Get(iDir+"/sfc") );
-		    btagEffCorr_[ std::pair<TString,TString>(iDir,"udsg") ]
-		      = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/udsgeff"),(TGraphErrors *) btagF->Get(iDir+"/sfudsg") );
-		  }
-	      }
-	    std::cout << btagEffCorr_.size() << " b-tag correction factors have been read" << std::endl;
-	  }
+        //b-tag efficiencies read b-tag efficiency map
+        if(weightsDir!="")
+        {
+            TString btagEffCorrUrl(weightsDir);
+            btagEffCorrUrl += "/btagEff.root";
+            gSystem->ExpandPathName(btagEffCorrUrl);
+            TFile *btagF=TFile::Open(btagEffCorrUrl);
+            if(btagF!=0 && !btagF->IsZombie())
+            {
+                TList *dirs=btagF->GetListOfKeys();
+                for(int itagger=0; itagger<dirs->GetEntries(); itagger++)
+                {
+                    TString iDir(dirs->At(itagger)->GetName());
+                    btagEffCorr_[ std::pair<TString,TString>(iDir,"b") ]
+                        = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/beff"),(TGraphErrors *) btagF->Get(iDir+"/sfb") );
+                    btagEffCorr_[ std::pair<TString,TString>(iDir,"c") ]
+                        = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/ceff"),(TGraphErrors *) btagF->Get(iDir+"/sfc") );
+                    btagEffCorr_[ std::pair<TString,TString>(iDir,"udsg") ]
+                        = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/udsgeff"),(TGraphErrors *) btagF->Get(iDir+"/sfudsg") );
+                }
+            }
+            std::cout << btagEffCorr_.size() << " b-tag correction factors have been read" << std::endl;
+        }
     }
     virtual ~LxyTreeAnalysis() {}
     virtual void RunJob(TString);
@@ -85,15 +86,19 @@ public:
     virtual void analyze();
     virtual bool selectEvent();
     virtual bool selectSVLEvent(bool &passBtagNom, bool &passBtagUp, bool &passBtagDown,
-				bool &passMETNom, bool &passMETUp, bool &passMETDown);
+                                bool &passMETNom, bool &passMETUp, bool &passMETDown);
     virtual bool selectDYControlEvent();
     virtual int firstTrackIndex(int jetindex);
     void fillJPsiHists(int jetindex);
     void fillD0Hists(int jetindex);
     void fillDpmHists(int jetindex);
 
-    inline virtual void setMaxEvents(Long64_t max) { fMaxevents = max; }
-    inline virtual void setProcessNormalization(Float_t norm) { fProcessNorm = norm;}
+    inline virtual void setMaxEvents(Long64_t max) {
+        fMaxevents = max;
+    }
+    inline virtual void setProcessNormalization(Float_t norm) {
+        fProcessNorm = norm;
+    }
 
     virtual Bool_t Notify() {
         // Called when a new tree is loaded in the chain
@@ -107,34 +112,34 @@ public:
         return kTRUE;
     }
 
-   /////////////////////////////////////////////
-   // Plot class interface:
-   virtual void AddPlot(TString name, TString var, TString sel,
-                        Int_t nbins, Float_t minx, Float_t maxx,
-                        TString axistitle){
-      // Add a plot through the external interface
-      Plot *plot = new Plot(name, var, sel, nbins, minx, maxx, axistitle, fChain);
-      fPlotList.push_back(plot);
-   }
+    /////////////////////////////////////////////
+    // Plot class interface:
+    virtual void AddPlot(TString name, TString var, TString sel,
+                         Int_t nbins, Float_t minx, Float_t maxx,
+                         TString axistitle) {
+        // Add a plot through the external interface
+        Plot *plot = new Plot(name, var, sel, nbins, minx, maxx, axistitle, fChain);
+        fPlotList.push_back(plot);
+    }
 
-   virtual void ListPlots(){
-      for (size_t i = 0; i < fPlotList.size(); ++i){
-         fPlotList[i]->Print();
-      }
-   }
+    virtual void ListPlots() {
+        for (size_t i = 0; i < fPlotList.size(); ++i) {
+            fPlotList[i]->Print();
+        }
+    }
 
-   virtual void FillPlots(){
-      for (size_t i = 0; i < fPlotList.size(); ++i){
-         fPlotList[i]->Fill();
-      }
-   }
+    virtual void FillPlots() {
+        for (size_t i = 0; i < fPlotList.size(); ++i) {
+            fPlotList[i]->Fill();
+        }
+    }
 
-   virtual void WritePlots(){
-      for (size_t i = 0; i < fPlotList.size(); ++i){
-         fPlotList[i]->fHisto->Write(fPlotList[i]->fHisto->GetName());
-         delete fPlotList[i];
-      }
-   }
+    virtual void WritePlots() {
+        for (size_t i = 0; i < fPlotList.size(); ++i) {
+            fPlotList[i]->fHisto->Write(fPlotList[i]->fHisto->GetName());
+            delete fPlotList[i];
+        }
+    }
 
 
     /////////////////////////////////////////////

@@ -126,10 +126,10 @@ AnalysisBox assignBox(data::PhysicsObjectCollection_t &leptons,
         box.leptons.push_back( &(leptons[ ljCands[0] ]) );
         box.cat=box.leptons[0]->get("id");
     }
-    else if(antiIsoCands.size() > 0 && vetoCands.size() == 0){
+    else if(antiIsoCands.size() > 0 && vetoCands.size() == 0) {
         box.leptons.push_back( &(leptons[ antiIsoCands[0] ]) );
-    	box.cat=box.leptons[0]->get("id");
-    	box.lCat="qcd";
+        box.cat=box.leptons[0]->get("id");
+        box.lCat="qcd";
     }
 
     int njetsBin( box.jets.size()>6 ? 6  : box.jets.size() );
@@ -319,13 +319,13 @@ int main(int argc, char* argv[])
             TString weightsDir(weightsFile[0].c_str());
             weightsDir += "toppt";
             fTopPtWgt = new TopPtWeighter( proctag, weightsDir, shapesDir, evSummary.getTree() );
-    	}
+        }
     }
 
     if(isMC) {
-      TString burl(weightsFile[0].c_str());
-      burl += "/BfragWeights.root";
-      fBfragWgt = new BfragWeighter( burl );
+        TString burl(weightsFile[0].c_str());
+        burl += "/BfragWeights.root";
+        fBfragWgt = new BfragWeighter( burl );
     }
 
 
@@ -511,9 +511,9 @@ int main(int argc, char* argv[])
                     fTopPtWgt->computeWeight(pttop,ptantitop);
                     fTopPtWgt->getEventWeight(topPtWgt, topPtWgtUp, topPtWgtDown );
 
-		    //cf. https://twiki.cern.ch/twiki/bin/view/CMS/TopPtReweighting
-		    float a(0.156),b(-0.00137);
-		    topPtStdWgt=sqrt(exp(a+b*pttop)*exp(a+b*ptantitop));
+                    //cf. https://twiki.cern.ch/twiki/bin/view/CMS/TopPtReweighting
+                    float a(0.156),b(-0.00137);
+                    topPtStdWgt=sqrt(exp(a+b*pttop)*exp(a+b*ptantitop));
                 }
             }
         }
@@ -523,11 +523,11 @@ int main(int argc, char* argv[])
         //do s.th. here
         bool passLeptonSelection( box.lCat=="" );
         bool passJetSelection(false);
-        int jetBin(box.jets.size()>4 ? 4 : box.jets.size());	
-	if(abs(box.cat)==11 || abs(box.cat)==13)                              passJetSelection = (box.jets.size()>=1 && box.jets.size()+box.fjets.size()>=2);
-	if(abs(box.cat)==11*11 || abs(box.cat)==13*13 || abs(box.cat)==11*13) passJetSelection = (box.jets.size()>=2);
+        int jetBin(box.jets.size()>4 ? 4 : box.jets.size());
+        if(abs(box.cat)==11 || abs(box.cat)==13)                              passJetSelection = (box.jets.size()>=1 && box.jets.size()+box.fjets.size()>=2);
+        if(abs(box.cat)==11*11 || abs(box.cat)==13*13 || abs(box.cat)==11*13) passJetSelection = (box.jets.size()>=2);
         bool passMetSelection( box.metCat=="" );
-	float mt(utils::cmssw::getMT<LorentzVector>( *(box.leptons[0]), box.met)),thetall(0);
+        float mt(utils::cmssw::getMT<LorentzVector>( *(box.leptons[0]), box.met)),thetall(0);
         //used for background estimates in the dilepton channel
         LorentzVector ll(*(box.leptons[0]));
         if(box.leptons.size()>=2)
@@ -535,10 +535,10 @@ int main(int argc, char* argv[])
             thetall = utils::cmssw::getArcCos<LorentzVector>( *(box.leptons[0]), *(box.leptons[1]) );
             ll     += *(box.leptons[1]);
         }
-	if(abs(box.cat)==11 || abs(box.cat)==13)  
-	  {
-	    if( box.jets.size()<4) passMetSelection=(mt>50);
-	  }
+        if(abs(box.cat)==11 || abs(box.cat)==13)
+        {
+            if( box.jets.size()<4) passMetSelection=(mt>50);
+        }
 
         //leading lepton charge
         int lepid = box.leptons[0]->get("id");
@@ -550,7 +550,7 @@ int main(int argc, char* argv[])
 
         //control plots for the event selection
         bool passPreSelection( (passLeptonSelection || box.lCat=="z" || box.lCat=="qcd" ) &&
-        	                                      passJetSelection && passMetSelection);
+                               passJetSelection && passMetSelection);
         if(box.leptons.size()>=2) controlHistos.fillHisto("mll",       box.chCat+"inc",            ll.mass(),  evWeight);
         else                      controlHistos.fillHisto("mt",        box.chCat+"inc",            mt,         evWeight);
         if(passLeptonSelection)
@@ -656,14 +656,14 @@ int main(int argc, char* argv[])
         if(fBfragWgt) {
             for(Int_t ij=0; ij<bev.nj; ij++)
             {
-	      if(abs(bev.bid[ij])!=5 || bev.gjpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
-	      std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.gjpt[ij] );
-	      bev.bwgt[ij][0]=bfragWeights[0];
-	      bev.bwgt[ij][1]=bfragWeights[1];
-	      bev.bwgt[ij][2]=bfragWeights[2];
-	      bev.bwgt[ij][3]=bfragWeights[3];
-	      bev.bwgt[ij][4]=bfragWeights[4];
-	      bev.bwgt[ij][5]=bfragWeights[5];
+                if(abs(bev.bid[ij])!=5 || bev.gjpt[ij]<=0 || bev.bhadpt[ij]<=0) continue;
+                std::vector<float> bfragWeights=fBfragWgt->getEventWeights( bev.bhadpt[ij]/bev.gjpt[ij] );
+                bev.bwgt[ij][0]=bfragWeights[0];
+                bev.bwgt[ij][1]=bfragWeights[1];
+                bev.bwgt[ij][2]=bfragWeights[2];
+                bev.bwgt[ij][3]=bfragWeights[3];
+                bev.bwgt[ij][4]=bfragWeights[4];
+                bev.bwgt[ij][5]=bfragWeights[5];
             }
         }
 

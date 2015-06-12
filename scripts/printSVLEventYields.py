@@ -127,7 +127,6 @@ def main(args, opt):
 	ROOT.gROOT.SetBatch(1)
 
 	allkeys = getAllPlotsFrom(tfile, tagsToFilter=[opt.dist])
-
 	channels = ['e', 'ee', 'em', 'm', 'mm']
 
 	print 30*'-'
@@ -139,7 +138,9 @@ def main(args, opt):
 			if not key.endswith(histname): continue
 			hist = tfile.Get(key)
 			err = ROOT.Double(0.0)
-			integral = hist.IntegralAndError(1,hist.GetXaxis().GetNbins(), err)
+			firstBin=opt.firstBin
+			lastBin=hist.GetXaxis().GetNbins()  if opt.lastBin<opt.firstBin else opt.lastBin
+			integral = hist.IntegralAndError(firstBin,lastBin, err)
 			err = float(err)
 
 			proc = key.rsplit('/',1)[1]
@@ -170,6 +171,10 @@ if __name__ == "__main__":
 					  help='Verbose mode [default: %default (semi-quiet)]')
 	parser.add_option('-o', '--outDir', dest='outDir', default='genmlb',
 					  help='Output directory [default: %default]')
+	parser.add_option(      '--firstBin', dest='firstBin', default=1, type=int,
+					  help='first bin to use for the integral [default: %default]')
+	parser.add_option(      '--lastBin', dest='lastBin', default=-1, type=int,
+					  help='last bin to use for the integral [default: %default]')
 	parser.add_option('-d', '--dist', dest='dist', default='NJets',
 					  help='Which distribution to use [default: %default]')
 	(opt, args) = parser.parse_args()

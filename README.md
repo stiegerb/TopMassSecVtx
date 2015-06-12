@@ -13,7 +13,7 @@ scram b -j 9
 
 Note: the ntuplizer is running without pileup jet id and IVF-related b-tagging variables
 
-------------------------------------------------------
+------------------------------------------------------ 
 ### Producing the trees
 
 ```
@@ -21,16 +21,16 @@ sh test/topss2014/submitNtupleProduction.sh [sample=presel,syst,mass,control,pdf
 ```
 Will create the base ntuple summary
 ```
-./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json,test/topss2014/qcd_samples.json,test/topss2014/z_samples.json,test/topss2014/z_syst_samples.json,test/topss2014/photon_samples.json
+./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2015/bbbcb36/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json,test/topss2014/qcd_samples.json,test/topss2014/z_samples.json,test/topss2014/z_syst_samples.json,test/topss2014/photon_samples.json
 ```
 Will create a pickle file summarizing all the cross section-based normalization to be used
 ```
-./scripts/runLxyTreeAnalysis.py -o treedir -j 8 /store/cmst3/group/top/summer2014/a176401/
-./scripts/runLxyTreeAnalysis.py -o treedir/syst/ -j 8 /store/cmst3/group/top/summer2014/a176401/syst/
-./scripts/runLxyTreeAnalysis.py -o treedir/mass_scan/ -j 8 /store/cmst3/group/top/summer2014/a176401/mass_scan/
-./scripts/runLxyTreeAnalysis.py -o treedir/qcd_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/qcd_control/
-./scripts/runLxyTreeAnalysis.py -o treedir/z_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/z_control/
-./scripts/runLxyTreeAnalysis.py -o treedir/photon_control/ -j 8 /store/cmst3/group/top/summer2014/a176401/photon_control/
+./scripts/runLxyTreeAnalysis.py -o treedir -j 8 /store/cmst3/group/top/summer2015/bbbcb36/
+./scripts/runLxyTreeAnalysis.py -o treedir/syst/ -j 8 /store/cmst3/group/top/summer2015/bbbcb36/syst/
+./scripts/runLxyTreeAnalysis.py -o treedir/mass_scan/ -j 8 /store/cmst3/group/top/summer2015/bbbcb36/mass_scan/
+./scripts/runLxyTreeAnalysis.py -o treedir/qcd_control/ -j 8 /store/cmst3/group/top/summer2015/bbbcb36/qcd_control/
+./scripts/runLxyTreeAnalysis.py -o treedir/z_control/ -j 8 /store/cmst3/group/top/summer2015/bbbcb36/z_control/
+./scripts/runLxyTreeAnalysis.py -o treedir/photon_control/ -j 8 /store/cmst3/group/top/summer2015/bbbcb36/photon_control/
 ```
 
 Creates the SVLInfo/CharmInfo trees with the condensed summary info for the final analysis
@@ -71,7 +71,7 @@ Will run the plots and put them in svlplots/ by default. Also saves the histogra
 
 In order to have correct xsection weights and number of generated events, one needs to run on the eos/ directory first to produce a cache file with the weights, like so:
 ```
-./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2014/a176401/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json
+./scripts/runPlotter.py --rereadXsecWeights /store/cmst3/group/top/summer2015/bbbcb36/ -j test/topss2014/samples.json,test/topss2014/syst_samples.json,test/topss2014/mass_scan_samples.json
 ```
 Then use ```makeSVLDataMCPlots.py``` to produce data/MC comparison plots:
 ```

@@ -1219,25 +1219,25 @@ void LxyTreeAnalysis::analyze() {
             fHMET_mm    ->Fill(metpt,   w[0]*w[1]*w[4]);
             storeDileptonTree=true;
         }
-        else if (abs(evcat) == 11) {
-            fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
-            fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
-            fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
-            fHNbJets_e  ->Fill(nbjets,  w[0]*w[1]*w[4]);
-            fHMT_e      ->Fill(mT,      w[0]*w[1]*w[4]);
-            fHMET_e     ->Fill(metpt,   w[0]*w[1]*w[4]);
+        else if (abs(evcat) == 11 && nj>=4) {
+	  fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
+	  fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
+	  fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
+	  fHNbJets_e  ->Fill(nbjets,  w[0]*w[1]*w[4]);
+	  fHMT_e      ->Fill(mT,      w[0]*w[1]*w[4]);
+	  fHMET_e     ->Fill(metpt,   w[0]*w[1]*w[4]);
         }
-        else if (abs(evcat) == 13) {
-            fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
-            fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
-            fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
-            fHNbJets_m  ->Fill(nbjets,  w[0]*w[1]*w[4]);
-            fHMT_m      ->Fill(mT,      w[0]*w[1]*w[4]);
-            fHMET_m     ->Fill(metpt,   w[0]*w[1]*w[4]);
+        else if (abs(evcat) == 13 && nj>=4) {
+	  fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
+	  fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
+	  fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
+	  fHNbJets_m  ->Fill(nbjets,  w[0]*w[1]*w[4]);
+	  fHMT_m      ->Fill(mT,      w[0]*w[1]*w[4]);
+	  fHMET_m     ->Fill(metpt,   w[0]*w[1]*w[4]);
         }
-
+	
 	fTNBTags=nbjets;	
-
+	
         // First find all pairs and get their ranking in mass and deltar
         std::vector<SVLInfo> svl_pairs;
         for (int il = 0; il < nl; ++il) { // lepton loop

@@ -19,63 +19,47 @@ NTRKBINS = [(3,4), (4,5), (5,6)]
 COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*METWeight[0]*BtagWeight[0]*JESWeight[0]"
 LUMIWEIGHT = "XSWeight*%f"%LUMI  # x XS weight
 TREENAME = 'SVLInfo'
+MSEL   = '(abs(EvCat)==13 && NJets>=4)'
+ESEL   = '(abs(EvCat)==11 && NJets>=4)'
+EESEL  = '(EvCat==-121 && NJets>=2)'
+EMSEL  = '(EvCat==-143 && NJets>=2)'
+MMSEL  = '(EvCat==-169 && NJets>=2)'
+INCSEL = '(%s || %s || %s || %s || %s)' % (MSEL, ESEL, EESEL , EMSEL, MMSEL)
 SELECTIONS = [
-	('inclusive', 'abs(EvCat)<200', '#geq 1 lepton'),
-	('ee',        'EvCat==-121',    'ee'),
-	('em',        'EvCat==-143',    'e#mu'),
-	('mm',        'EvCat==-169',    '#mu#mu'),
-	('e',         'abs(EvCat)==11', 'e'),
-	('m',         'abs(EvCat)==13', '#mu'),
+	('inclusive', ''+INCSEL, '#geq 1 lepton'),
+	('ee',        ''+EESEL,    'ee'),
+	('em',        ''+EMSEL,    'e#mu'),
+	('mm',        ''+MMSEL,    '#mu#mu'),
+	('e',         ''+ESEL, 'e'),
+	('m',         ''+MSEL, '#mu'),
 
-	('inclusive_mrankinc', 'SVLMassRank==1&&abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_mrankinc',        'SVLMassRank==1&&EvCat==-121', 'ee'),
-	('em_mrankinc',        'SVLMassRank==1&&EvCat==-143', 'e#mu'),
-	('mm_mrankinc',        'SVLMassRank==1&&EvCat==-169', '#mu#mu'),
-	('e_mrankinc',         'SVLMassRank==1&&abs(EvCat)==11', 'e'),
-	('m_mrankinc',         'SVLMassRank==1&&abs(EvCat)==13', '#mu'),
+	('inclusive_mrank1', 'SVLMassRank==1&&CombCat%2!=0&&'+INCSEL, '#geq 1 lepton'),
+	('ee_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+EESEL, 'ee'),
+	('em_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+EMSEL, 'e#mu'),
+	('mm_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+MMSEL, '#mu#mu'),
+	('e_mrank1',         'SVLMassRank==1&&CombCat%2!=0&&'+ESEL, 'e'),
+	('m_mrank1',         'SVLMassRank==1&&CombCat%2!=0&&'+MSEL, '#mu'),
 
-	('inclusive_mrank', 'SVLMassRank==1&&SVLDeltaR<2.0&&abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_mrank',        'SVLMassRank==1&&SVLDeltaR<2.0&&EvCat==-121', 'ee'),
-	('em_mrank',        'SVLMassRank==1&&SVLDeltaR<2.0&&EvCat==-143', 'e#mu'),
-	('mm_mrank',        'SVLMassRank==1&&SVLDeltaR<2.0&&EvCat==-169', '#mu#mu'),
-	('e_mrank',         'SVLMassRank==1&&SVLDeltaR<2.0&&abs(EvCat)==11', 'e'),
-	('m_mrank',         'SVLMassRank==1&&SVLDeltaR<2.0&&abs(EvCat)==13', '#mu'),
+	('inclusive_mrank1dr', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+INCSEL, '#geq 1 lepton'),
+	('ee_mrank1dr',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EESEL, 'ee'),
+	('em_mrank1dr',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EMSEL, 'e#mu'),
+	('mm_mrank1dr',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MMSEL, '#mu#mu'),
+	('e_mrank1dr',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+ESEL, 'e'),
+	('m_mrank1dr',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MSEL, '#mu'),
 
-	('inclusive_mrank1', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
-	('em_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
-	('mm_mrank1',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
-	('e_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
-	('m_mrank1',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
+	('inclusive_drrank1dr', 'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+INCSEL, '#geq 1 lepton'),
+	('ee_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EESEL, 'ee'),
+	('em_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EMSEL, 'e#mu'),
+	('mm_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MMSEL, '#mu#mu'),
+	('e_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+ESEL, 'e'),
+	('m_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MSEL, '#mu'),
 	
-	('inclusive_drrankinc',  'SVLDeltaRRank==1&&abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_drrankinc',         'SVLDeltaRRank==1&&EvCat==-121', 'ee'),
-	('em_drrankinc',         'SVLDeltaRRank==1&&EvCat==-143', 'e#mu'),
-	('mm_drrankinc',         'SVLDeltaRRank==1&&EvCat==-169', '#mu#mu'),
-	('e_drrankinc',          'SVLDeltaRRank==1&&abs(EvCat)==11', 'e'),
-	('m_drrankinc',          'SVLDeltaRRank==1&&abs(EvCat)==13', '#mu'),
-
-	('inclusive_drrank',  'SVLDeltaRRank==1&&SVLDeltaR<2.0&&abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_drrank',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&EvCat==-121', 'ee'),
-	('em_drrank',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&EvCat==-143', 'e#mu'),
-	('mm_drrank',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&EvCat==-169', '#mu#mu'),
-	('e_drrank',          'SVLDeltaRRank==1&&SVLDeltaR<2.0&&abs(EvCat)==11', 'e'),
-	('m_drrank',          'SVLDeltaRRank==1&&SVLDeltaR<2.0&&abs(EvCat)==13', '#mu'),
-
-	('inclusive_drrank1', 'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_drrank1',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-121', 'ee'),
-	('em_drrank1',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-143', 'e#mu'),
-	('mm_drrank1',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&EvCat==-169', '#mu#mu'),
-	('e_drrank1',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==11', 'e'),
-	('m_drrank1',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==13', '#mu'),
-	
-
-	('inclusive_optmrank', 'SVLCombRank>0 && abs(EvCat)<200', '#geq 1 lepton'),
-	('ee_optmrank',        'SVLCombRank>0 && EvCat==-121',    'ee'),
-	('em_optmrank',        'SVLCombRank>0 && EvCat==-143',    'e#mu'),
-	('mm_optmrank',        'SVLCombRank>0 && EvCat==-169',    '#mu#mu'),
-	('e_optmrank',         'SVLCombRank>0 && abs(EvCat)==11', 'e'),
-	('m_optmrank',         'SVLCombRank>0 && abs(EvCat)==13', '#mu')
+	('inclusive_optmrank', 'SVLCombRank>0 && '+INCSEL, '#geq 1 lepton'),
+	('ee_optmrank',        'SVLCombRank>0 && '+EESEL,    'ee'),
+	('em_optmrank',        'SVLCombRank>0 && '+EMSEL,    'e#mu'),
+	('mm_optmrank',        'SVLCombRank>0 && '+MMSEL,    '#mu#mu'),
+	('e_optmrank',         'SVLCombRank>0 && '+ESEL, 'e'),
+	('m_optmrank',         'SVLCombRank>0 && '+MSEL, '#mu'),
 ]
 
 COMBINATIONS = {

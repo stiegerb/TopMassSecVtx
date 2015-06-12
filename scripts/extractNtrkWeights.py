@@ -6,7 +6,9 @@ from pprint import pprint
 from runPlotter import openTFile, getAllPlotsFrom
 
 SIGNAL = 'MC8TeV_DYJetsToLL_50toInf'
-HISTSTOPROCESS = ['SVNtrk_inclusive', 'SVNtrk_inclusive_optmrank'] #'SVNtrk_inclusive_mrank1']
+HISTSTOPROCESS = ['SVNtrk_inclusive', 'SVNtrk_inclusive_optmrank',
+		  'SVNtrk_inclusive_mrank1', 'SVNtrk_inclusive_mrank1dr',
+		  'SVNtrk_inclusive_drrank1dr']
 
 def extractNTrkWeights(inputFile=None, verbose=0):
 	try:

@@ -37,7 +37,7 @@ def getProcessNormalization(procname, xsecweights):
     except KeyError:
         print (">>> WARNING: Failed to extract normalization for %s "
                "(setting to 1.0)"%procname)
-        
+
     return 1.0
 
 def getEOSlslist(directory, mask='', prepend='root://eoscms//eos/cms'):
@@ -108,6 +108,8 @@ def getListOfTasks(directory, mask=''):
         if filename.endswith('_toppt.root'): continue
         ## Skip pdf weight files
         if filename.endswith('_pdf.root'): continue
+        ## Skip anything non-root
+        if not filename.endswith('.root'): continue
         task_list.append((getBareName(filename), filename))
 
     # task_list = []
@@ -269,6 +271,12 @@ if __name__ == "__main__":
             tasks = getListOfTasks(args[0], mask=opt.processOnly)
         else:
             tasks = [(getBareName(x), x) for x in args]
+
+        if len(tasks)>1:
+            print 'Will process the following %d files:'%len(tasks)
+            for n,t in tasks:
+                print '    %-35s %s' %(n,t)
+            # raw_input("Press any key to continue...")
 
         if opt.jobs == 0:
             for name, task in tasks:

@@ -5,11 +5,12 @@ from copy import deepcopy
 from makeSVLDataMCPlots import resolveFilename
 from makeSVLMassHistos import LUMI
 from runPlotter import addPlotterOptions
+from UserCode.TopMassSecVtx.storeTools_cff import fillFromStore
 
 """
 single top selection
 """
-def runSingleTopAnalysis(inDir,filename,isData,outDir):
+def runSingleTopAnalysis(filename,isData,outDir):
 
 	#prepare histograms to store
 	histos={}
@@ -32,7 +33,7 @@ def runSingleTopAnalysis(inDir,filename,isData,outDir):
 
 	#open input file and get tree for analysis
 	print ' ... processing',filename
-	fIn=ROOT.TFile.Open(os.path.join(inDir,filename))
+	fIn=ROOT.TFile.Open(filename)
 	SVLInfo=fIn.Get('SVLInfo')
 
 	#loop over events in tree
@@ -78,7 +79,7 @@ def runSingleTopAnalysis(inDir,filename,isData,outDir):
 	fIn.Close()
 
 	#dump histograms to ROOT file
-	fOut=ROOT.TFile.Open(os.path.join(outDir,filename),'RECREATE')
+	fOut=ROOT.TFile.Open(os.path.join(outDir,os.path.basename(filename)),'RECREATE')
 	for h in histos: histos[h].Write()
 	print '   output stored in %s' % fOut.GetName()
 	fOut.Close()
@@ -88,9 +89,9 @@ def runSingleTopAnalysis(inDir,filename,isData,outDir):
 Wrapper for when the analysis is run in parallel
 """
 def runSingleTopAnalysisPacked(args):
-	inDir,filename,isData,outDir = args
+	filename,isData,outDir = args
 	try:
-		return runSingleTopAnalysis(inDir=inDir,filename=filename,isData=isData,outDir=outDir)
+		return runSingleTopAnalysis(filename=filename,isData=isData,outDir=outDir)
 	except ReferenceError:
 		print 50*'<'
 		print "  Problem with", name, "continuing without"
@@ -112,11 +113,18 @@ def main(args, options):
 	try:
 		
 		treefiles = {} # procname -> [filename1, filename2, ...]
-		for filename in os.listdir(args[0]):
-			if not os.path.splitext(filename)[1] == '.root': continue	
-			isData, pname, splitno = resolveFilename(filename)
-			if not pname in treefiles: treefiles[pname] = []
-			taskList.append((args[0],filename, isData,options.outDir))
+		if args[0].find('/store')>=0:
+			for filename in fillFromStore(args[0]):
+				if not os.path.splitext(filename)[1] == '.root': continue	
+				isData, pname, splitno = resolveFilename(os.path.basename(filename))
+				if not pname in treefiles: treefiles[pname] = []
+				taskList.append((filename, isData,options.outDir))
+		else:
+			for filename in os.listdir(args[0]):
+				if not os.path.splitext(filename)[1] == '.root': continue	
+				isData, pname, splitno = resolveFilename(filename)
+				if not pname in treefiles: treefiles[pname] = []
+				taskList.append((filename, isData,options.outDir))
 	except IndexError:
 		print "Please provide a valid input directory"
 		return -1
@@ -128,8 +136,8 @@ def main(args, options):
 		pool = MP.Pool(opt.jobs)
 		pool.map(runSingleTopAnalysisPacked,taskList)
 	else:
-		for inDir,filename,isData,outDir in taskList:
-			runSingleTopAnalysis(inDir=inDir,filename=filename,isData=isData,outDir=outDir)
+		for filename,isData,outDir in taskList:
+			runSingleTopAnalysis(filename=filename,isData=isData,outDir=outDir)
 			
 	return 0
 

@@ -1193,54 +1193,55 @@ void LxyTreeAnalysis::analyze() {
     if(selectSVLEvent(passBtag, passBtagup, passBtagdown,passMET,passMETup,passMETdown))
     {
         // Fill some control histograms:
-        if (abs(evcat) <= 13*13) { // Inclusive (exclude control samples)
-            fHNJets     ->Fill(nj,          w[0]*w[1]*w[4]);
-            fHNSVJets   ->Fill(nsvjets,     w[0]*w[1]*w[4]);
-            fHNbJets    ->Fill(nbjets,      w[0]*w[1]*w[4]);
-            fHMET       ->Fill(metpt,       w[0]*w[1]*w[4]);
-            fHMT        ->Fill(mT,          w[0]*w[1]*w[4]);
-            if(mjj>=0.) fHMjj->Fill(mjj,    w[0]*w[1]*w[4]); // only fill if there are 2 light jets
-        }
+        if(passBtag && passMET){
+            if (abs(evcat) <= 13*13) { // Inclusive (exclude control samples)
+                fHNJets     ->Fill(nj,       w[0]*w[1]*w[4]);
+                fHNSVJets   ->Fill(nsvjets,  w[0]*w[1]*w[4]);
+                fHNbJets    ->Fill(nbjets,   w[0]*w[1]*w[4]);
+                fHMET       ->Fill(metpt,    w[0]*w[1]*w[4]);
+                fHMT        ->Fill(mT,       w[0]*w[1]*w[4]);
+                if(mjj>=0.) fHMjj->Fill(mjj, w[0]*w[1]*w[4]); // only fill if there are 2 light jets
+            }
 
-        if (abs(evcat) == 11*13) {
-            fHNJets_em  ->Fill(nj,      w[0]*w[1]*w[4]);
-            fHNSVJets_em->Fill(nsvjets, w[0]*w[1]*w[4]);
-            fHNbJets_em ->Fill(nbjets,  w[0]*w[1]*w[4]);
-            fHMET_em    ->Fill(metpt,   w[0]*w[1]*w[4]);
-            storeDileptonTree=true;
+            if (abs(evcat) == 11*13) {
+                fHNJets_em  ->Fill(nj,      w[0]*w[1]*w[4]);
+                fHNSVJets_em->Fill(nsvjets, w[0]*w[1]*w[4]);
+                fHNbJets_em ->Fill(nbjets,  w[0]*w[1]*w[4]);
+                fHMET_em    ->Fill(metpt,   w[0]*w[1]*w[4]);
+                storeDileptonTree=true;
+            }
+            else if (abs(evcat) == 11*11) {
+                fHNJets_ee  ->Fill(nj,      w[0]*w[1]*w[4]);
+                fHNSVJets_ee->Fill(nsvjets, w[0]*w[1]*w[4]);
+                fHNbJets_ee ->Fill(nbjets,  w[0]*w[1]*w[4]);
+                fHMET_ee    ->Fill(metpt,   w[0]*w[1]*w[4]);
+                storeDileptonTree=true;
+            }
+            else if (abs(evcat) == 13*13) {
+                fHNJets_mm  ->Fill(nj,      w[0]*w[1]*w[4]);
+                fHNSVJets_mm->Fill(nsvjets, w[0]*w[1]*w[4]);
+                fHNbJets_mm ->Fill(nbjets,  w[0]*w[1]*w[4]);
+                fHMET_mm    ->Fill(metpt,   w[0]*w[1]*w[4]);
+                storeDileptonTree=true;
+            }
+            else if (abs(evcat) == 11 && nj>=4) {
+                fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
+                fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
+                fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
+                fHNbJets_e  ->Fill(nbjets,  w[0]*w[1]*w[4]);
+                fHMT_e      ->Fill(mT,      w[0]*w[1]*w[4]);
+                fHMET_e     ->Fill(metpt,   w[0]*w[1]*w[4]);
+            }
+            else if (abs(evcat) == 13 && nj>=4) {
+                fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
+                fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
+                fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
+                fHNbJets_m  ->Fill(nbjets,  w[0]*w[1]*w[4]);
+                fHMT_m      ->Fill(mT,      w[0]*w[1]*w[4]);
+                fHMET_m     ->Fill(metpt,   w[0]*w[1]*w[4]);
+            }
+            fTNBTags=nbjets;
         }
-        else if (abs(evcat) == 11*11) {
-            fHNJets_ee  ->Fill(nj,      w[0]*w[1]*w[4]);
-            fHNSVJets_ee->Fill(nsvjets, w[0]*w[1]*w[4]);
-            fHNbJets_ee ->Fill(nbjets,  w[0]*w[1]*w[4]);
-            fHMET_ee    ->Fill(metpt,   w[0]*w[1]*w[4]);
-            storeDileptonTree=true;
-        }
-        else if (abs(evcat) == 13*13) {
-            fHNJets_mm  ->Fill(nj,      w[0]*w[1]*w[4]);
-            fHNSVJets_mm->Fill(nsvjets, w[0]*w[1]*w[4]);
-            fHNbJets_mm ->Fill(nbjets,  w[0]*w[1]*w[4]);
-            fHMET_mm    ->Fill(metpt,   w[0]*w[1]*w[4]);
-            storeDileptonTree=true;
-        }
-        else if (abs(evcat) == 11 && nj>=4) {
-            fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
-            fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
-            fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
-            fHNbJets_e  ->Fill(nbjets,  w[0]*w[1]*w[4]);
-            fHMT_e      ->Fill(mT,      w[0]*w[1]*w[4]);
-            fHMET_e     ->Fill(metpt,   w[0]*w[1]*w[4]);
-        }
-        else if (abs(evcat) == 13 && nj>=4) {
-            fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
-            fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
-            fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
-            fHNbJets_m  ->Fill(nbjets,  w[0]*w[1]*w[4]);
-            fHMT_m      ->Fill(mT,      w[0]*w[1]*w[4]);
-            fHMET_m     ->Fill(metpt,   w[0]*w[1]*w[4]);
-        }
-
-        fTNBTags=nbjets;
 
         // First find all pairs and get their ranking in mass and deltar
         std::vector<SVLInfo> svl_pairs;

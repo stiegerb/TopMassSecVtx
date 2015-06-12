@@ -8,8 +8,10 @@ import pickle
 from UserCode.TopMassSecVtx.rounding import toLatexRounded
 from UserCode.TopMassSecVtx.PlotUtils import bcolors,getContours
 from makeSVLMassHistos import NTRKBINS
-COLORS=[ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9, ROOT.kViolet+2,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kYellow-3]
 from pprint import pprint
+
+COLORS = [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
+          ROOT.kViolet+2, ROOT.kAzure+7, ROOT.kBlue-7, ROOT.kYellow-3]
 
 CATTOLABEL = {
 	'comb_0'   : 'Combined',
@@ -21,6 +23,18 @@ CATTOLABEL = {
 	'combem_0' : 'emu',
 	'combm_0'  : 'mu+jets',
 	'combmm_0' : 'mumu',
+}
+
+CATTOFLABEL = {
+	'comb_0'   : 'Comb.',
+	'comb_3'   : '3 trk.',
+	'comb_4'   : '4 trk.',
+	'comb_5'   : '5 trk.',
+	'combe_0'  : 'e+jets',
+	'combee_0' : 'ee',
+	'combem_0' : 'e#mu',
+	'combm_0'  : '#mu+jets',
+	'combmm_0' : '#mu#mu',
 }
 
 """
@@ -468,7 +482,7 @@ def showSystematicsTable(results,filterCats):
 		print 140*'-'
 	return 0
 
-def writeSystematicsTable(results,filterCats,ofile):
+def writeSystematicsTable(results,filterCats,ofile,printout=False):
 	selections = list(set([s for _,s in results.keys()]))
 	categories = list(set([k for k,_ in results.keys()]))
 
@@ -485,26 +499,27 @@ def writeSystematicsTable(results,filterCats,ofile):
 	theosysts = [
 	##   systname   ,variations [up, down],          title,       variation to compare with, included in sum?
 		('powpyth'   , ['powpyth'],                    'Signal model',         '172.5', True ),
+		('powherw'   , ['powherw'],                    'POWHEG+Pythia vs POWHEG+Herwig',         'powpyth', False ),
 		('scale'     , ['scaleup', 'scaledown'],       '$\\mu_R/\\mu_F$ scales \\ttbar',         '172.5', True ),
-		('tchscale'  , ['tchscaleup', 'tchscaledown'], '~~~~~~t-channel',       '172.5', True ),
-		('twchscale' , ['twchscaleup','twchscaledown'],'~~~~~~tW-channel',      '172.5', True ),
-		('matching'  , ['matchingup', 'matchingdown'], 'ME-PS scale',          '172.5', True ),		
+		('tchscale'  , ['tchscaleup', 'tchscaledown'], '\\qquad\\qquad t-channel',       '172.5', True ),
+		('twchscale' , ['twchscaleup','twchscaledown'],'\\qquad\\qquad tW-channel',      '172.5', True ),
+		('matching'  , ['matchingup', 'matchingdown'], 'ME-PS scale',          '172.5', True ),
 		('width'     , ['width'],                      'Width',                '172.5', True ),
 		#('hadmod'   , ['hadmod'],                     'Hadronization model',  '172.5', True ),
 		('bfnu'      , ['bfnuup', 'bfnudn'],           'Semi-lep. B decays',   '172.5', True ),
-		#('bfragdn'   , ['bfragdn'],                    'Z2$^{*}$ rb LEP soft', '172.5', False ),
-		('bfrag'     , ['bfrag'],                      'Fragmentation Z2$^{*}$ rb LEP',      '172.5', True ),
-		#('bfragup'   , ['bfragup'],                    'Z2$^{*}$ rb LEP hard', '172.5', False ),
+		#('bfragdn'   , ['bfragdn'],                    '\ztwostar\ rb LEP soft', '172.5', False ),
+		('bfrag'     , ['bfrag'],                      'Fragmentation \ztwostar\ rb LEP',      '172.5', True ),
+		#('bfragup'   , ['bfragup'],                    '\ztwostar\ rb LEP hard', '172.5', False ),
 		#('bfragp11'  , ['bfragp11'],                   'P11',                  '172.5', False ),
-		('bfragpete' , ['bfragpete'],                  '~~~Z2$^{*}$ Peterson',    '172.5', False ),
-		('bfraglund' , ['bfraglund'],                  '~~~Z2$^{*}$ Lund',        '172.5', False ),
+		# ('bfragpete' , ['bfragpete'],                  '\ztwostar\ Peterson',    '172.5', False ),
+		# ('bfraglund' , ['bfraglund'],                  '\ztwostar\ Lund',        '172.5', False ),
 		('toppt'     , ['toppt'],                      'Top quark \\pt',       '172.5', True ),
 		('p11mpihi'  , ['p11mpihi','p11tev'],          'Underlying event',     'p11',   True ),
 		('p11nocr'   , ['p11nocr'],                    'Color reconnection',   'p11',   True ),
 	]
 
-	for i in xrange(1,52,2):		
-		theosysts.append( ('pdf',['pdf%d'%i,'pdf%d'%(i+1)],'PDF %d' % ((i+1)/2), '172.5', True) )
+	# for i in xrange(1,52,2):
+	# 	theosysts.append( ('pdf',['pdf%d'%i,'pdf%d'%(i+1)],'PDF %d' % ((i+1)/2), '172.5', True) )
 
 	expsysts = [
 		('jesup'     , ['jesup',    'jesdn'],    'Jet energy scale',           '172.5', True) ,
@@ -538,13 +553,13 @@ def writeSystematicsTable(results,filterCats,ofile):
 						diff =               results[(cat,sel)][var][0]  - results[(cat,sel)][difftag][0]
 						diffErr = math.sqrt( results[(cat,sel)][var][1]**2+results[(cat,sel)][difftag][1]**2 )
 
-						if 'pdf' in syst: 
+						if 'pdf' in syst:
 							diff    *= 1.64485
 							diffErr *= 1.64485
 						if 'width' in syst:
 							diff    *= 0.1/5.0
 							diffErr *= 0.1/5.0
-							
+
 						if diff > 0:
 							diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (diff, diffErr)
 							if insum: ups.append((diff,diffErr))
@@ -590,6 +605,9 @@ def writeSystematicsTable(results,filterCats,ofile):
 		of.write('\\hline\n')
 		return totup,totupE,totdn,totdnE
 
+
+
+	totup, totupE, totdn, totdnE, = {}, {}, {}, {}
 	for sel in selections:
 		with open(ofile,'w') as of:
 			of.write('\\hline\n')
@@ -624,17 +642,17 @@ def writeSystematicsTable(results,filterCats,ofile):
 
 			## Compute the total uncertainty
 			assert(totup_th.keys() == totup_ex.keys())
-			totup, totupE, totdn, totdnE, = {}, {}, {}, {}
+			totup[sel], totupE[sel], totdn[sel], totdnE[sel] = {}, {}, {}, {}
 			for cat in totup_th:
-				totup[cat]  = math.sqrt(totup_th[cat]**2 + totup_ex[cat]**2)
-				totdn[cat]  = math.sqrt(totdn_th[cat]**2 + totdn_ex[cat]**2) #*-1.
-				totupE[cat] = math.sqrt(totupE_th[cat]**2 + totupE_ex[cat]**2)
-				totdnE[cat] = math.sqrt(totdnE_th[cat]**2 + totdnE_ex[cat]**2)
-	
+				totup[sel][cat]  = math.sqrt(totup_th[cat]**2 + totup_ex[cat]**2)
+				totdn[sel][cat]  = math.sqrt(totdn_th[cat]**2 + totdn_ex[cat]**2) #*-1.
+				totupE[sel][cat] = math.sqrt(totupE_th[cat]**2 + totupE_ex[cat]**2)
+				totdnE[sel][cat] = math.sqrt(totdnE_th[cat]**2 + totdnE_ex[cat]**2)
+
 			icat=0
 			of.write('Total uncertainty  FIXME       & ')
 			for cat in filterCats:
-				diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (totup[cat], totupE[cat])
+				diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (totup[sel][cat], totupE[sel][cat])
 				if cat == filterCats[-1]: diffstr = diffstr[:-2]
 				of.write(diffstr)
 				icat+=1
@@ -646,7 +664,7 @@ def writeSystematicsTable(results,filterCats,ofile):
 			of.write('\n')
 			of.write('                               & ')
 			for cat in filterCats:
-				diffstr = '$ %5.2f \\pm %4.2f $ & ' % (totdn[cat], totdnE[cat])
+				diffstr = '$ %5.2f \\pm %4.2f $ & ' % (totdn[sel][cat], totdnE[sel][cat])
 				if cat == filterCats[-1]: diffstr = diffstr[:-2]
 				of.write(diffstr)
 			of.write('\\\\')
@@ -658,8 +676,9 @@ def writeSystematicsTable(results,filterCats,ofile):
 
 		print 50*'#'
 		print 'Wrote systematics to file: %s' % ofile
-		with open(ofile,'r') as of:
-			for line in of: sys.stdout.write(line)
+		if printout:
+			with open(ofile,'r') as of:
+				for line in of: sys.stdout.write(line)
 
 
 	rootfile=ofile.replace('.tex','.root')
@@ -669,7 +688,212 @@ def writeSystematicsTable(results,filterCats,ofile):
 	thUnc.Write()
 	outF.Close()
 
-	return 0
+	return totup, totdn
+
+def makeSystPlot(results, totup, totdn):
+	assert(totup.keys() == totdn.keys())
+	for sel in totup.keys():
+		assert(totup[sel].keys() == totdn[sel].keys())
+		assert(sorted(totup[sel].keys()) == sorted(['comb_0',
+			                         'combe_0','combee_0',
+			                         'combem_0','combm_0',
+		                             'combmm_0', 'comb_3','comb_4',
+		                             'comb_5']))
+
+	cats = ['comb_0', 'combem_0', 'combee_0', 'combmm_0', 'combe_0', 'combm_0', 'comb_3', 'comb_4', 'comb_5']
+
+	## Print it
+	for sel in totup.keys():
+		print 80*'-'
+		print 'selection:', sel
+
+		print 'category  ',
+		for cat in cats: print '%10s' %CATTOLABEL[cat],
+		print ''
+
+		print 'mass [GeV]  ',
+		for cat in cats: print ('  %6.2f  ' % results[(cat,sel)]['172.5'][0]),
+		print ''
+
+		print ' err up    ',
+		for cat in cats: print ('    +%4.2f ' % totup[sel][cat]),
+		print ''
+
+		print ' err down  ',
+		for cat in cats: print ('    -%4.2f ' % totdn[sel][cat]),
+		print ''
+	print 80*'-'
+
+
+	## Make the plot
+	mtmin = 167.0
+	mtmax = 176.0
+	for sel in totup.keys():
+		haxis = ROOT.TH2D("axes","axes", 1, 0., 9., 1, mtmin, mtmax)
+
+		############################
+		graph_comb = ROOT.TGraphAsymmErrors(1)
+		graph_comb.SetName("systs_comb_%s"%sel)
+		graph_comb_stat = ROOT.TGraphAsymmErrors(1)
+		graph_comb_stat.SetName("systs_comb_stat_%s"%sel)
+		mt_comb = results[('comb_0',sel)]['172.5'][0]
+		staterr = 0.200
+		toterrup = math.sqrt(staterr**2 + totup[sel]['comb_0']**2)
+		toterrdn = math.sqrt(staterr**2 + totdn[sel]['comb_0']**2)
+		graph_comb.SetPoint(0, 0.5, mt_comb)
+		graph_comb.SetPointError(0, 0., 0., toterrdn, toterrup)
+		graph_comb_stat.SetPoint(0, 0.5, mt_comb)
+		graph_comb_stat.SetPointError(0, 0., 0., staterr, staterr)
+
+		gband = ROOT.TGraphErrors(2)
+		gband.SetName("band_graph_%s"%sel)
+
+		errrange = (toterrup+toterrdn)/2.0
+		midmass = (mt_comb-toterrdn)+errrange
+		gband.SetPoint(0,0.0,midmass)
+		gband.SetPoint(1,9.0,midmass)
+		for n in range(2):
+			gband.SetPointError(n,0.0,errrange)
+
+		gband.SetLineWidth(1)
+		gband.SetLineColor(ROOT.kAzure-8)
+		gband.SetFillColor(gband.GetLineColor())
+		gband.SetFillStyle(3005)
+		bandline0 = ROOT.TLine(0.0,mt_comb, 9.0, mt_comb)
+		bandline1 = ROOT.TLine(0.0,midmass+errrange, 9.0, midmass+errrange)
+		bandline2 = ROOT.TLine(0.0,midmass-errrange, 9.0, midmass-errrange)
+		for l in [bandline0, bandline1, bandline2]:
+			l.SetLineColor(gband.GetLineColor())
+		divline1 = ROOT.TLine(1.0,mtmin, 1.0, mtmax)
+		divline2 = ROOT.TLine(6.0,mtmin, 6.0, mtmax)
+		for l in [divline1, divline2]:
+			l.SetLineColor(ROOT.kGray+2)
+		bandline0.SetLineStyle(3)
+		divline1.SetLineStyle(2)
+		divline2.SetLineStyle(2)
+
+
+		graph_comb.SetLineWidth(2)
+		graph_comb.SetLineColor(ROOT.kAzure+2)
+		graph_comb.SetMarkerStyle(20)
+		graph_comb.SetMarkerSize(1.2)
+		graph_comb.SetMarkerColor(graph_comb.GetLineColor())
+
+		graph_comb_stat.SetLineWidth(3)
+		graph_comb_stat.SetLineColor(graph_comb.GetLineColor())
+
+		############################
+		chancats = ['combem_0','combee_0','combmm_0','combe_0','combm_0']
+		chanxpos = [1.5,2.5,3.5,4.5,5.5]
+		staterrs = [0.4,0.4,0.4,0.3,0.3]
+		graph_chan = ROOT.TGraphAsymmErrors(len(chancats))
+		graph_chan.SetName("systs_chan_%s"%sel)
+		graph_chan_stat = ROOT.TGraphAsymmErrors(len(chancats))
+		graph_chan_stat.SetName("systs_chan_stat_%s"%sel)
+		for n,(xpos,cat,staterr) in enumerate(zip(chanxpos, chancats,staterrs)):
+			toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2)
+			toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
+ 			graph_chan.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+			graph_chan.SetPointError(n, 0., 0., toterrdn, toterrup)
+ 			graph_chan_stat.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+			graph_chan_stat.SetPointError(n, 0., 0., staterr, staterr)
+
+		graph_chan.SetLineWidth(1)
+		graph_chan.SetLineColor(ROOT.kGray+2)
+		graph_chan.SetMarkerStyle(20)
+		graph_chan.SetMarkerSize(1.0)
+		graph_chan.SetMarkerColor(graph_chan.GetLineColor())
+
+		graph_chan_stat.SetLineWidth(2)
+		graph_chan_stat.SetLineColor(graph_chan.GetLineColor())
+
+		############################
+		ntrkcats = ['comb_3','comb_3','comb_5']
+		ntrkxpos = [6.5,7.5,8.5]
+		staterrs = [0.3,0.3,0.3]
+		graph_ntrk = ROOT.TGraphAsymmErrors(len(ntrkcats))
+		graph_ntrk.SetName("systs_ntrk_%s"%sel)
+		graph_ntrk_stat = ROOT.TGraphAsymmErrors(len(ntrkcats))
+		graph_ntrk_stat.SetName("systs_ntrk_stat_%s"%sel)
+		for n,(xpos,cat,staterr) in enumerate(zip(ntrkxpos, ntrkcats,staterrs)):
+			toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2)
+			toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
+ 			graph_ntrk.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+			graph_ntrk.SetPointError(n, 0., 0., toterrdn, toterrup)
+ 			graph_ntrk_stat.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+			graph_ntrk_stat.SetPointError(n, 0., 0., staterr, staterr)
+
+		graph_ntrk.SetLineWidth(1)
+		graph_ntrk.SetLineColor(ROOT.kGray+2)
+		graph_ntrk.SetMarkerStyle(20)
+		graph_ntrk.SetMarkerSize(1.0)
+		graph_ntrk.SetMarkerColor(graph_ntrk.GetLineColor())
+
+		graph_ntrk_stat.SetLineWidth(2)
+		graph_ntrk_stat.SetLineColor(ROOT.kGray+2)
+
+		############################
+		canv = ROOT.TCanvas('c','c',800,300)
+		canv.SetLeftMargin(0.35)
+		canv.SetFrameLineColor(ROOT.kGray+2)
+		haxis.GetYaxis().SetAxisColor(ROOT.kGray+2)
+		haxis.GetXaxis().SetAxisColor(ROOT.kGray+2)
+		haxis.Draw('axis')
+		ROOT.gPad.SetTicks(0,3)
+		haxis.GetYaxis().SetTickLength(0.01)
+		# haxis.GetYaxis().SetLabelOffset(0.01)
+		haxis.GetYaxis().SetLabelFont(43)
+		haxis.GetYaxis().SetLabelSize(12)
+		haxis.GetYaxis().SetLabelColor(ROOT.kGray+2)
+		haxis.GetYaxis().SetTitle('m_{top} [GeV]')
+		haxis.GetYaxis().SetTitleOffset(0.5)
+		haxis.GetYaxis().SetTitleColor(ROOT.kGray+2)
+		haxis.GetYaxis().SetTitleFont(43)
+		haxis.GetYaxis().SetTitleSize(16)
+		haxis.GetXaxis().SetTickLength(0)
+		haxis.GetXaxis().SetLabelSize(0)
+
+		gband.Draw('3')
+		for l in [bandline0, bandline1, bandline2, divline1, divline2]:
+			l.Draw()
+		graph_comb.Draw("PE")
+		graph_comb_stat.Draw("E")
+		graph_chan.Draw("PE")
+		graph_chan_stat.Draw("E")
+		graph_ntrk.Draw("PE")
+		graph_ntrk_stat.Draw("E")
+
+		## Labels
+		label=ROOT.TLatex()
+		label.SetNDC(0)
+		label.SetTextFont(43)
+		label.SetTextSize(16)
+		label.SetTextAlign(22)
+		label.SetTextColor(graph_comb.GetLineColor())
+		# label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
+		# label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
+		label.DrawLatex(-3,mt_comb,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} #pm %4.2f GeV" %
+			                       (mt_comb, totup[sel]['comb_0'], totdn[sel]['comb_0'], 0.20))
+
+		label.SetTextColor(ROOT.kGray+2)
+		label.SetTextSize(14)
+		label.DrawLatex(0.55,168.0+0.1,CATTOFLABEL['comb_0'])
+		label.DrawLatex(1.5,168.0,CATTOFLABEL['combem_0'])
+		label.DrawLatex(2.5,168.0,CATTOFLABEL['combee_0'])
+		label.DrawLatex(3.5,168.0,CATTOFLABEL['combmm_0'])
+		label.DrawLatex(4.5,168.0,CATTOFLABEL['combe_0'])
+		label.DrawLatex(5.5,168.0,CATTOFLABEL['combm_0'])
+
+		label.DrawLatex(6.5,168.0+0.05,CATTOFLABEL['comb_3'])
+		label.DrawLatex(7.5,168.0+0.05,CATTOFLABEL['comb_4'])
+		label.DrawLatex(8.5,168.0+0.05,CATTOFLABEL['comb_5'])
+
+
+		ROOT.gPad.RedrawAxis()
+		canv.SaveAs("syst_by_channel_%s.pdf"%sel)
+
+	return
+
 
 """
 """
@@ -700,7 +924,7 @@ def compareResults(files):
 			allH[i].SetDirectory(0)
 			allH[i].SetLineColor(COLORS[i])
 			allH[i].SetDirectory(0)
-			allH[i].GetYaxis().SetRangeUser(0,3)			
+			allH[i].GetYaxis().SetRangeUser(0,3)
 			leg.AddEntry(allH[i],allH[i].GetTitle(),'l')
 		leg.Draw()
 
@@ -710,7 +934,7 @@ def compareResults(files):
 		txt.SetTextSize(0.04)
 		txt.DrawLatex(0.12,0.92,'#bf{CMS} #it{simulation}')
 		for ext in ['png','pdf']: c.SaveAs('%s_comp.%s'%(unc,ext))
-			
+
 
 """
 steer
@@ -732,7 +956,7 @@ def main():
 	ROOT.gStyle.SetOptStat(0)
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gROOT.SetBatch(True)
-	
+
 	#compare final results from ROOT files
 	if opt.compare:
 		compareResults(files=opt.compare.split(','))
@@ -775,14 +999,18 @@ def main():
 		cachefile.close()
 		catsByChan =   ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0']
 		catsByTracks = ['comb_0','comb_3','comb_4','comb_5']
+		allCats = ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0', 'comb_3','comb_4','comb_5']
 		# showSystematicsTable(results=results, filterCats=catsByChan)
 		# showSystematicsTable(results=results, filterCats=catsByTracks)
 
 		systfile = os.path.join(os.path.dirname(opt.syst),'systematics_%s.tex')
 		writeSystematicsTable(results=results, filterCats=catsByChan,
-							 ofile=systfile%'bychan')
+							 ofile=systfile%'bychan',printout=True)
 		writeSystematicsTable(results=results, filterCats=catsByTracks,
 							 ofile=systfile%'bytracks')
+		totup, totdn = writeSystematicsTable(results=results, filterCats=allCats,
+							 ofile=systfile%'all')
+		makeSystPlot(results, totup, totdn)
 
 	#compare inputs for pseudo-experiments
 	if opt.peInput:

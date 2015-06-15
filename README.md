@@ -63,7 +63,7 @@ runPlotter.py -l 19701  -j test/topss2014/samples.json -o treedir/plots treedir
 ./scripts/makeSVLSystPlots.py treedir/ -j 8 -o outDir/
 ```
 Will run the plots and put them in svlplots/ by default. Also saves the histograms in a cachefile. To rerun only the plotting part, run with -c option.
-(makeSVLMassHistos takes about 10 min to run with -j 8, makeSVLSystPlots takes about 50 min. Run both with -c to just produce the plots from pre-cached files.)
+(makeSVLMassHistos takes about 25 min to run with -j 8, makeSVLSystPlots takes about 50 min. Run both with -c to just produce the plots from pre-cached files.)
 
 
 ------------------------------------------------------

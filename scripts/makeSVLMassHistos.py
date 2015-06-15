@@ -53,7 +53,7 @@ SELECTIONS = [
 	('mm_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MMSEL, '#mu#mu'),
 	('e_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+ESEL, 'e'),
 	('m_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MSEL, '#mu'),
-	
+
 	('inclusive_optmrank', 'SVLCombRank>0 && '+INCSEL, '#geq 1 lepton'),
 	('ee_optmrank',        'SVLCombRank>0 && '+EESEL,    'ee'),
 	('em_optmrank',        'SVLCombRank>0 && '+EMSEL,    'e#mu'),
@@ -137,10 +137,10 @@ def addTopMassTreesFromDir(dirname, trees, files):
 		trees[(mass,chan)].Add(treefile)
 		files[(mass,chan)].append(treefile)
 
-"""
-build a map with available trees and files
-"""
 def getMassTrees(inputdir, verbose=True):
+	"""
+	build a map with available trees and files
+	"""
 	alltrees = {} # (mass,chan) -> chain
 	allfiles = {} # (mass,chan) -> [locations]
 
@@ -526,9 +526,10 @@ def main(args, opt):
 			fcor[mass] = 100.*(ncount['cor']/float(ncount['tot']))
 	 		fwro[mass] = 100.*(ncount['wro']/float(ncount['tot']))
 	 		funm[mass] = 100.*(ncount['unm']/float(ncount['tot']))
-	 		print ('  %5.1f GeV: %7d entries \t'
+	 		print ('  %-6s %5.1f GeV: %7d entries \t'
 	 			   '(%4.1f%% corr, %4.1f%% wrong, %4.1f%% unmatched)' %
-	 			   (mass, ncount['tot'], fcor[mass], fwro[mass], funm[mass]))
+	 			   (proc, mass, ncount['tot'],
+	 			   	fcor[mass], fwro[mass], funm[mass]))
 		oname = os.path.join(opt.outDir, 'fracvsmt_%s'%tag)
 		plotFracVsTopMass(fcor, fwro, funm, tag, seltag, oname)
 

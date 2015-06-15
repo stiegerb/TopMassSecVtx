@@ -99,7 +99,7 @@ void LxyTreeAnalysis::RunJob(TString filename) {
     //add PDF information, if relevant
     fPDFInfo=0;
     TString curFile=fChain->GetCurrentFile()->GetName();
-    if(curFile.Contains("/MC")) {
+    if(curFile.Contains("/MC") && !curFile.Contains("syst/") && !curFile.Contains("mass_scan/")) {
         TString pdfFileName=curFile;
         pdfFileName=pdfFileName.ReplaceAll("/MC","/pdf/MC");
         pdfFileName=pdfFileName.ReplaceAll(".root","_pdf.root");

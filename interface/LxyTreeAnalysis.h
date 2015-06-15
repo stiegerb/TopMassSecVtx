@@ -26,7 +26,6 @@ public:
     LxyTreeAnalysis(TTree *tree=0,TString weightsDir=""):LxyTreeAnalysisBase(tree) {
         fMaxevents = -1;
         fProcessNorm = 1.0;
-
         //b-tag efficiencies read b-tag efficiency map
         if(weightsDir!="")
         {
@@ -48,7 +47,7 @@ public:
                         = std::pair<TGraphErrors *,TGraphErrors *>( (TGraphErrors *) btagF->Get(iDir+"/udsgeff"),(TGraphErrors *) btagF->Get(iDir+"/sfudsg") );
                 }
             }
-            std::cout << btagEffCorr_.size() << " b-tag correction factors have been read" << std::endl;
+            // std::cout << btagEffCorr_.size() << " b-tag correction factors have been read" << std::endl;
         }
     }
     virtual ~LxyTreeAnalysis() {}

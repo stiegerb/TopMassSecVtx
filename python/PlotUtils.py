@@ -168,7 +168,8 @@ class RatioPlot(object):
         if hist.GetEntries() == 0:
             print "Skipping empty histogram", hist.GetName()
             return
-        self.histos.append(hist)
+        self.histos.append(hist.Clone(hist.GetName()))
+        self._garbageList.append(self.histos[-1])
         self.legentries.append(tag)
 
     def getChiSquares(self, rangex=None):

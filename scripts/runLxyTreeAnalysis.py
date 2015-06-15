@@ -224,6 +224,9 @@ def runLxyTreeAnalysis(name, location, treeloc, xsecweights, maxevents=-1):
 
     copyObject('constVals', location, output_file)
 
+    print '  ... %s DONE' % name
+    return True
+
 if __name__ == "__main__":
     from optparse import OptionParser
     usage = """
@@ -254,6 +257,10 @@ if __name__ == "__main__":
                       action="store", type="string", dest="processOnly",
                       help=("Process only input files matching this"
                             "[default: %default]"))
+    parser.add_option("--processOnlyNonExistent", action="store_true",
+                      dest="processOnlyNonExistent",
+                      help=("Process only input files that are not already"
+                            "in the output directory"))
     parser.add_option("-j", "--jobs", default=0,
                       action="store", type="int", dest="jobs",
                       help=("Run N jobs in parallel."
@@ -272,11 +279,29 @@ if __name__ == "__main__":
         else:
             tasks = [(getBareName(x), x) for x in args]
 
+        ## Check for existing output files:
+        if opt.processOnlyNonExistent:
+            existing = [os.path.splitext(os.path.basename(f))[0] for f in
+                                      os.listdir(opt.outDir) if
+                                          os.path.splitext(f)[1] == '.root']
+            if existing:
+                print "Found %d existing files." % len(existing)
+                # for fname in existing: print '    %-35s'%fname
+            reducedtasks = [(n,t) for n,t in tasks if not n in existing]
+            tasks = reducedtasks
+
         if len(tasks)>1:
             print 'Will process the following %d files:'%len(tasks)
             for n,t in tasks:
                 print '    %-35s %s' %(n,t)
-            # raw_input("Press any key to continue...")
+            if opt.processOnlyNonExistent:
+                print (">>> Processing only files that are not found already in "
+                       "output directory.")
+                print ("     Note that this does not check if those files are "
+                       "actually valid.")
+                print ("     Make sure you check yourself! "
+                       "E.g. with runPlotter.py -c")
+            raw_input("Press any key to run on %d files..."%len(tasks))
 
         if opt.jobs == 0:
             for name, task in tasks:
@@ -292,6 +317,8 @@ if __name__ == "__main__":
             tasklist = [(name, task, opt.treeLoc, xsecweights, opt.maxEvents)
                                for name,task in tasks]
             pool.map(runLxyTreeAnalysisPacked, tasklist)
+            pool.close()
+            pool.join()
 
         exit(0)
 

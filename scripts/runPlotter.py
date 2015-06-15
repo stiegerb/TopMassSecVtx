@@ -206,9 +206,12 @@ def checkMissingFiles(inDir, jsonUrl):
                         suspicious_files.append(filename)
                     else:
                         tfile = openTFile(rootFileUrl)
-                        if tfile.TestBit(ROOT.TFile.kRecovered):
-                            recovered_files.append(filename)
-                        tfile.Close()
+                        try:
+                            if tfile.TestBit(ROOT.TFile.kRecovered):
+                                recovered_files.append(filename)
+                            tfile.Close()
+                        except AttributeError:
+                            suspicious_files.append(filename)
                     continue
 
     print 20*'-'
@@ -221,7 +224,7 @@ def checkMissingFiles(inDir, jsonUrl):
         print "NO MISSING FILES!"
     print 20*'-'
     if len(suspicious_files):
-        print "The following files are suspicious (< 1kB size):"
+        print "The following files are suspicious (< 1kB size or zombie):"
         print "(%d out of %d expected)"% (len(suspicious_files), total_expected)
         for filename in suspicious_files:
             print filename

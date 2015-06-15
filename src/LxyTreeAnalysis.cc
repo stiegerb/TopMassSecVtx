@@ -100,6 +100,8 @@ void LxyTreeAnalysis::RunJob(TString filename) {
     fPDFInfo=0;
     TString curFile=fChain->GetCurrentFile()->GetName();
     if(curFile.Contains("/MC") && !curFile.Contains("syst/") && !curFile.Contains("mass_scan/")) {
+        // FIXME: this is a potential bug. If the path contains "syst" or "mass_scan" for some reason
+        //        no pdf weights will be produced.
         TString pdfFileName=curFile;
         pdfFileName=pdfFileName.ReplaceAll("/MC","/pdf/MC");
         pdfFileName=pdfFileName.ReplaceAll(".root","_pdf.root");

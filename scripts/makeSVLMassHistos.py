@@ -27,39 +27,39 @@ MMSEL  = '(EvCat==-169 && NJets>=2)'
 INCSEL = '(%s || %s || %s || %s || %s)' % (MSEL, ESEL, EESEL , EMSEL, MMSEL)
 SELECTIONS = [
 	('inclusive', ''+INCSEL, '#geq 1 lepton'),
-	('ee',        ''+EESEL,    'ee'),
-	('em',        ''+EMSEL,    'e#mu'),
-	('mm',        ''+MMSEL,    '#mu#mu'),
-	('e',         ''+ESEL, 'e'),
-	('m',         ''+MSEL, '#mu'),
+	('ee',        ''+EESEL,  'ee'),
+	('em',        ''+EMSEL,  'e#mu'),
+	('mm',        ''+MMSEL,  '#mu#mu'),
+	('e',         ''+ESEL,   'e'),
+	('m',         ''+MSEL,   '#mu'),
 
 	('inclusive_mrank1', 'SVLMassRank==1&&CombCat%2!=0&&'+INCSEL, '#geq 1 lepton'),
-	('ee_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+EESEL, 'ee'),
-	('em_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+EMSEL, 'e#mu'),
-	('mm_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+MMSEL, '#mu#mu'),
-	('e_mrank1',         'SVLMassRank==1&&CombCat%2!=0&&'+ESEL, 'e'),
-	('m_mrank1',         'SVLMassRank==1&&CombCat%2!=0&&'+MSEL, '#mu'),
+	('ee_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+EESEL,  'ee'),
+	('em_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+EMSEL,  'e#mu'),
+	('mm_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+MMSEL,  '#mu#mu'),
+	('e_mrank1',         'SVLMassRank==1&&CombCat%2!=0&&'+ESEL,   'e'),
+	('m_mrank1',         'SVLMassRank==1&&CombCat%2!=0&&'+MSEL,   '#mu'),
 
 	('inclusive_mrank1dr', 'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+INCSEL, '#geq 1 lepton'),
-	('ee_mrank1dr',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EESEL, 'ee'),
-	('em_mrank1dr',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EMSEL, 'e#mu'),
-	('mm_mrank1dr',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MMSEL, '#mu#mu'),
-	('e_mrank1dr',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+ESEL, 'e'),
-	('m_mrank1dr',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MSEL, '#mu'),
+	('ee_mrank1dr',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EESEL,  'ee'),
+	('em_mrank1dr',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EMSEL,  'e#mu'),
+	('mm_mrank1dr',        'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MMSEL,  '#mu#mu'),
+	('e_mrank1dr',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+ESEL,   'e'),
+	('m_mrank1dr',         'SVLMassRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MSEL,   '#mu'),
 
 	('inclusive_drrank1dr', 'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+INCSEL, '#geq 1 lepton'),
-	('ee_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EESEL, 'ee'),
-	('em_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EMSEL, 'e#mu'),
-	('mm_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MMSEL, '#mu#mu'),
-	('e_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+ESEL, 'e'),
-	('m_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MSEL, '#mu'),
+	('ee_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EESEL,  'ee'),
+	('em_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+EMSEL,  'e#mu'),
+	('mm_drrank1dr',        'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MMSEL,  '#mu#mu'),
+	('e_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+ESEL,   'e'),
+	('m_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MSEL,   '#mu'),
 
 	('inclusive_optmrank', 'SVLCombRank>0 && '+INCSEL, '#geq 1 lepton'),
-	('ee_optmrank',        'SVLCombRank>0 && '+EESEL,    'ee'),
-	('em_optmrank',        'SVLCombRank>0 && '+EMSEL,    'e#mu'),
-	('mm_optmrank',        'SVLCombRank>0 && '+MMSEL,    '#mu#mu'),
-	('e_optmrank',         'SVLCombRank>0 && '+ESEL, 'e'),
-	('m_optmrank',         'SVLCombRank>0 && '+MSEL, '#mu'),
+	('ee_optmrank',        'SVLCombRank>0 && '+EESEL,  'ee'),
+	('em_optmrank',        'SVLCombRank>0 && '+EMSEL,  'e#mu'),
+	('mm_optmrank',        'SVLCombRank>0 && '+MMSEL,  '#mu#mu'),
+	('e_optmrank',         'SVLCombRank>0 && '+ESEL,   'e'),
+	('m_optmrank',         'SVLCombRank>0 && '+MSEL,   '#mu'),
 ]
 
 COMBINATIONS = {
@@ -199,14 +199,24 @@ def runTasks(inputfiles, tasklist, opt, subdir):
 			if len(opt.filter)>0:
 				if not key in opt.filter.split(','): continue
 
-		# #### DEBUG: run only central mass point for tt
-		# ####        to speed things up
+		#### DEBUG: run only central mass point for tt
+		####        to speed things up
 		# if not key == (172.5, 'tt'): continue
+		# if not key == 'nominal': continue
 
 		for ifilep in inputfiles[key]:
 			ofilen = os.path.basename(ifilep)
 			ofilep = os.path.join(opt.outDir, subdir, ofilen)
+			#### DEBUG: run only single split files
+			# if not (ifilep.endswith('_0.root') or ifilep.endswith('_13.root')):
+			# 	continue
+
 			tasks.append(([ifilep], task, ofilep))
+
+
+	print ">>> runTasks: Will process these files:"
+	for t in tasks: print t[0]
+	raw_input("press key to continue...")
 
 	if opt.jobs > 1:
 		import multiprocessing as MP

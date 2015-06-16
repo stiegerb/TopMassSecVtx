@@ -319,7 +319,7 @@ if __name__ == "__main__":
             pool.map(runLxyTreeAnalysisPacked, tasklist)
             pool.close()
             pool.join()
-
+            print "ALL DONE"
         exit(0)
 
     else:

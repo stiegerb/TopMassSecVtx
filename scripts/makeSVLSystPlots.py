@@ -143,7 +143,7 @@ SYSTPLOTS = [
 	 ['p11', 'p11tev', 'p11mpihi', 'p11nocr', 'nominal'],
 	 [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
 	  ROOT.kViolet+2, ROOT.kBlack],'tot'),
-	
+
 	('bfrag', 'b fragmentation',
 	 ['nominal', 'bfrag', 'bfragup', 'bfragdn', 'bfragp11',
 	  'bfraglund', 'bfragpete'],
@@ -186,7 +186,7 @@ SYSTPLOTS = [
 
 #fun...
 PDFPLOTDESC=('pdf', 'PDF variations',	 ['nominal'], [ROOT.kBlack], 'tot')
-for i in xrange(1,53): 
+for i in xrange(1,53):
 	PDFPLOTDESC[2].append('pdf%d'%i)
 	PDFPLOTDESC[3].append(ROOT.kGray)
 SYSTPLOTS.append(PDFPLOTDESC)
@@ -333,7 +333,7 @@ def gatherHistosFromFiles(tasklist, files, dirname, hname_to_keys):
 	for ifilen in os.listdir(dirname):
 		if not os.path.splitext(ifilen)[1] == '.root': continue
 		ifile = ROOT.TFile.Open(os.path.join(dirname,ifilen), 'READ')
-	
+
 		for hname in hnames:
 			keys = hname_to_keys[hname]
 			syst = keys[1]
@@ -347,7 +347,7 @@ def gatherHistosFromFiles(tasklist, files, dirname, hname_to_keys):
 				tfilens = [os.path.basename(x) for x in files['nominal']]
 				if not ifilen in tfilens: continue
 
-			if 'scale' in syst: print syst,ifilen
+			# if 'scale' in syst: print syst,ifilen
 
 			try:
 				histo = ifile.Get(hname)
@@ -374,7 +374,7 @@ def main(args, opt):
 			for syst,_,systfile,_ in SYSTSFROMFILES:
 				if fname in systfile:
 					systfiles[syst] = [os.path.join(args[0], 'syst', fname)]
-					
+
 		# Get the split nominal files
 		systfiles['nominal'] = []
 		for fname in os.listdir(os.path.join(args[0],'Chunks')):
@@ -451,13 +451,14 @@ def main(args, opt):
 		pickle.dump(systhistos, cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 
+
+		# print "Wrote syst histos to cache file"
+		# raw_input("press key")
+
 	cachefile = open(".svlsysthistos.pck", 'r')
 	systhistos = pickle.load(cachefile)
 	print '>>> Read syst histos from cache (.svlsysthistos.pck)'
 	cachefile.close()
-
-	pprint(sorted(set(systhistos.keys())))
-	raw_input()
 
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gStyle.SetOptStat(0)
@@ -468,26 +469,13 @@ def main(args, opt):
 		makeControlPlot(systhistos, var,
 			            'inclusive', 'Fully Inclusive', opt)
 		makeControlPlot(systhistos, var,
-				'inclusive_mrankinc', 'Mass ranked', opt)
+				'inclusive_mrank1', 'Mass ranked, leading p_{T}', opt)
 		makeControlPlot(systhistos, var,
-				'inclusive_mrank', 'Mass ranked, #DeltaR<2', opt)
+				'inclusive_mrank1dr', 'Mass ranked, #DeltaR<2, leading p_{T}', opt)
 		makeControlPlot(systhistos, var,
-				'inclusive_mrank1', 'Mass ranked, #DeltaR<2, leading p_{T}', opt)
-		makeControlPlot(systhistos, var,
-				'inclusive_drrankinc', '#DeltaR ranked', opt)
-		makeControlPlot(systhistos, var,
-				'inclusive_drrank', '#DeltaR ranked, #DeltaR<2', opt)
-		makeControlPlot(systhistos, var,
-				'inclusive_drrank1', '#DeltaR ranked, #DeltaR<2, leading p_{T}', opt)
+				'inclusive_drrank1dr', '#DeltaR ranked, #DeltaR<2, leading p_{T}', opt)
 		makeControlPlot(systhistos, var,
 			            'inclusive_optmrank', 'Optimized mass rank', opt)
-
-	# makeControlPlot(systhistos, 'nominal',
-	# 	            'inclusive', 'Fully Inclusive', opt)
-	# makeControlPlot(systhistos, 'nominal',
-	# 	            'inclusive_mrank1', 'Mass ranked', opt)
-	# makeControlPlot(systhistos, 'nominal',
-	# 	            'inclusive_optmrank', 'Optimized mass rank', opt)
 
 	for tag,_,_ in SELECTIONS:
 		if not 'inclusive' in tag : continue
@@ -517,7 +505,7 @@ def main(args, opt):
 					plot.add(systhistos[(tag,syst,comb)], SYSTNAMES[syst])
 				except:
 					print 'failed to add',(tag,syst,comb),syst
-				
+
 			plot.tag = title
 			subtag = SELNAMES[tag] + COMBNAMES[comb]
 			plot.subtag = subtag

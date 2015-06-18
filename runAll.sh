@@ -6,23 +6,25 @@ treedir=/afs/cern.ch/work/s/stiegerb/TopSecVtx/SVLInfo/${TAG}/
 
 mkdir -p ${treedir}
 
-hash="a176401"
-#hash="e1fa735"
+hash="bbbcb36"
+# hash="a176401"
+# hash="e1fa735"
+epoch="summer2015"
 
 echo "Running on "${treedir}
 
 case $WHAT in
 	TREES )
-		./scripts/runLxyTreeAnalysis.py -o ${treedir} -p MC8TeV   -j 8 /store/cmst3/group/top/summer2014/${hash}/
-		./scripts/runLxyTreeAnalysis.py -o ${treedir} -p Data8TeV -j 8 /store/cmst3/group/top/summer2014/${hash}/
+		./scripts/runLxyTreeAnalysis.py -o ${treedir} -p MC8TeV   -j 8 /store/cmst3/group/top/${epoch}/${hash}/
+		./scripts/runLxyTreeAnalysis.py -o ${treedir} -p Data8TeV -j 8 /store/cmst3/group/top/${epoch}/${hash}/
 		;;
 	DATATREES )
-		./scripts/runLxyTreeAnalysis.py -o ${treedir} -p Data8TeV -j 8 /store/cmst3/group/top/summer2014/${hash}/
+		./scripts/runLxyTreeAnalysis.py -o ${treedir} -p Data8TeV -j 8 /store/cmst3/group/top/${epoch}/${hash}/
 		;;
 	ALLTREES )
-		./scripts/runLxyTreeAnalysis.py -o ${treedir}            -j 8 /store/cmst3/group/top/summer2014/${hash}/
-		./scripts/runLxyTreeAnalysis.py -o ${treedir}/mass_scan/ -j 8 /store/cmst3/group/top/summer2014/${hash}/mass_scan/
-		./scripts/runLxyTreeAnalysis.py -o ${treedir}/syst/      -j 8 /store/cmst3/group/top/summer2014/${hash}/syst/
+		./scripts/runLxyTreeAnalysis.py -o ${treedir}            -j 8 /store/cmst3/group/top/${epoch}/${hash}/
+		./scripts/runLxyTreeAnalysis.py -o ${treedir}/mass_scan/ -j 8 /store/cmst3/group/top/${epoch}/${hash}/mass_scan/
+		./scripts/runLxyTreeAnalysis.py -o ${treedir}/syst/      -j 8 /store/cmst3/group/top/${epoch}/${hash}/syst/
 		;;
 	MERGE )
 		# ./scripts/mergeSVLInfoFiles.py ${treedir}

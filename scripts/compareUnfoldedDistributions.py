@@ -252,9 +252,9 @@ def main():
       pads.append( ROOT.TPad('pad1', 'pad1', 0.0, 0.40, 1.0, 0.00) )
    else:
       pads.append( ROOT.TPad('pad0', 'pad0', 0.0, 0.60, 1.0, 1.00) )
-      pads.append( ROOT.TPad('pad1', 'pad1', 0.0, 0.60, 1.0, 0.42) )
-      pads.append( ROOT.TPad('pad2', 'pad2', 0.0, 0.42, 1.0, 0.24) )
-      pads.append( ROOT.TPad('pad3', 'pad3', 0.0, 0.24, 1.0, 0.00) )
+      # pads.append( ROOT.TPad('pad1', 'pad1', 0.0, 0.60, 1.0, 0.42) )
+      # pads.append( ROOT.TPad('pad2', 'pad2', 0.0, 0.42, 1.0, 0.24) )
+      # pads.append( ROOT.TPad('pad3', 'pad3', 0.0, 0.24, 1.0, 0.00) )
 
    for i in xrange(0,len(pads)):
       pads[i].SetTopMargin(0.0)
@@ -269,11 +269,20 @@ def main():
    drawngraphs = []
    try:
       allGr['z2s'].Draw('A3')
+      allGr['p11'].Draw('3')
+      allGr['powpyth'].Draw('3')
+      allGr['powherw'].Draw('3')
       allGr['data'].Draw('p')
+
       # allGr['z2s'].GetYaxis().SetRangeUser(0,opt.MaxY)
       # allGr['data'].GetYaxis().SetRangeUser(0,opt.MaxY)
+
       drawngraphs.append(allGr['data'])
       drawngraphs.append(allGr['z2s'])
+
+      for g in drawngraphs:
+         g.GetYaxis().SetRangeUser(0,opt.MaxY)
+
    except KeyError:
       print "WARNING: No data or Z2* to plot"
       pass

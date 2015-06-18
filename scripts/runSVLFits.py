@@ -31,19 +31,21 @@ def fitSignalPermutation((ws, ch, ntrk, permName, massList, singleTop, bkg, SVLm
 			   "mtop,"
 			   "offset_%s_p0[0.4,0.0,1.0]})"% (tag,tag,tag))
 			   # "offset_%s_p0[0.4,0.1,0.9]})"% (tag,tag,tag))
+
 	ws.factory("RooFormulaVar::%s_p1('@0*(@1-172.5)+@2',{" ## mean of gaussian
-			   "slope_%s_p1[0.01,0,5],"
+			   "slope_%s_p1[0.01,0,1],"
 			   "mtop,"
 			   "offset_%s_p1[40,5,80]})"% (tag,tag,tag))
 			   # "offset_%s_p1[40,5,150]})"% (tag,tag,tag))
 	ws.factory("RooFormulaVar::%s_p2('@0*(@1-172.5)+@2',{" ## sigma_left of gaussian
-			   "slope_%s_p2[0.01,0.001,5],"
+			   "slope_%s_p2[0.01,0.001,1],"
 			   "mtop,"
 			   "offset_%s_p2[15,5,100]})"% (tag,tag,tag))
 	ws.factory("RooFormulaVar::%s_p3('@0*(@1-172.5)+@2',{" ## sigma_right of gaussian
-			   "slope_%s_p3[0.01,0.001,5],"
+			   "slope_%s_p3[0.01,0.001,1],"
 			   "mtop,"
 			   "offset_%s_p3[25,5,100]})"% (tag,tag,tag))
+
 	ws.factory("RooFormulaVar::%s_p4('@0*(@1-172.5)+@2',{" ## gamma (shape)
 			   "slope_%s_p4[0],"  # INDEPENDENT OF MTOP
 			   "mtop,"
@@ -746,8 +748,7 @@ def showFitResult(tag,var,pdf,data,cat,catNames,outDir):
 		c.Update()
 		plotdir = os.path.join(outDir, 'plots')
 		os.system('mkdir -p %s' % plotdir)
-		# for ext in ['png', 'pdf']:
-		for ext in ['pdf']:
+		for ext in ['png', 'pdf']:
 			c.SaveAs(os.path.join(plotdir, "%s_%s.%s"%(tag,catName,ext)))
 
 	c.Clear()

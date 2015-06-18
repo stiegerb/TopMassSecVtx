@@ -61,7 +61,6 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 		#event weights to fill histograms appropriately
 		weight = 1 if isData else SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]
-		lumiweight = 1 if isData else SVLInfo.XSWeight*LUMI
 
 		#fill histograms with variables of interest
 		tag=chCat+jetCat

@@ -453,9 +453,7 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     baseJobsDir='svlPEJobs'
     if options.calib : baseJobsDir+='_calib'
     jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/%s/%s'%(baseJobsDir,sel),time.strftime('%b%d'))
-    if os.path.exists(jobsDir):
-        os.system('rm -r %s/*.sh'%jobsDir)
-    else:
+    if not os.path.exists(jobsDir):
         os.system('mkdir -p %s'%jobsDir)
 
     print 'Single job scripts stored in %s' % jobsDir
@@ -468,7 +466,10 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
         os.system('mkdir -p %s'%odirpath)
 
     ## Feedback before submitting the jobs
-    raw_input('This will submit %d jobs to batch. %s Did you remember to run scram b?%s \n Continue?'%(len(experimentTags), bcolors.RED, bcolors.ENDC))
+    if not options.noninteractive:
+        raw_input('This will submit %d jobs to batch. %s '
+                  'Did you remember to run scram b?%s \n '
+                  'Continue?'%(len(experimentTags), bcolors.RED, bcolors.ENDC))
 
     for n,tag in enumerate(experimentTags):
         sys.stdout.write(' ... processing job %2d - %-22s' % (n+1, tag))
@@ -511,6 +512,9 @@ def main():
                        help='if true, pseudo-experiments are thrown thrown from the PDF')
     parser.add_option('--spy', dest='spy', default=False, action='store_true',
                        help='if true,shows fit results on the screen')
+    parser.add_option('--noninteractive', dest='noninteractive', default=False,
+                       action='store_true',
+                       help='do not ask for confirmation before submitting jobs')
     parser.add_option('-v', '--verbose', dest='verbose', default=0, type=int,
                        help='Verbose mode')
     parser.add_option('-s', '--selection', dest='selection', default='',
@@ -543,7 +547,13 @@ def main():
 
     # launch pseudo-experiments
     if not opt.isData:
-        peInputFile = ROOT.TFile.Open(args[1], 'READ')
+        try:
+            peInputFile = ROOT.TFile.Open(args[1], 'READ')
+        except TypeError: ## this sometimes fails (too many accesses to this file?)
+            import time
+            time.sleep(5)
+            peInputFile = ROOT.TFile.Open(args[1], 'READ')
+
         allTags = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()]
         peInputFile.Close()
         print 'Running pseudo-experiments using PDFs and signal expectations'

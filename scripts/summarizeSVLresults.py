@@ -133,7 +133,6 @@ def parsePEInputs(url,selection='',rebin=4):
 Analyze final results for a given category
 """
 def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
-
 	PEsummary={}
 
 	#show results
@@ -213,7 +212,7 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 """
 Loops over the results in a directory and builds a map of PE results
 """
-def parsePEResultsFromFile(url,verbose=False):
+def parsePEResultsFromFile(url,verbose=False, doPlots=False):
 	results, calibGrMap, resCalibGrMap = {}, {}, {}
 	fileNames=[f for f in os.listdir(url) if f.endswith('results.root')]
 	for f in fileNames:
@@ -245,7 +244,7 @@ def parsePEResultsFromFile(url,verbose=False):
 				print '  %-18s  ' % key.GetName(),
 
 			keyName=key.GetName()
-			PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=True,syst=syst)
+			PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=doPlots,syst=syst)
 			if not 'bias' in PEsummary : continue
 
 			bias, biasErr = PEsummary['bias']
@@ -264,8 +263,7 @@ def parsePEResultsFromFile(url,verbose=False):
 			# add point for systematics
 			# if not useForCalib or mass==172.5:
 			results[(keyName,selection)][syst] = (mass+bias,biasErr)
-			if not useForCalib:
-				continue
+			if not useForCalib: continue
 
 			# otherwise use it for calibration
 			np=0
@@ -285,8 +283,8 @@ def parsePEResultsFromFile(url,verbose=False):
 
 			#require less than 1 GeV in unc.
 			if biasErr<1:
-				calibGrMap[keyName][selection].SetPoint     (np, mass, mass+bias)
-				calibGrMap[keyName][selection].SetPointError(np, 0, biasErr)
+				calibGrMap[keyName][selection].SetPoint        (np, mass, mass+bias)
+				calibGrMap[keyName][selection].SetPointError   (np, 0, biasErr)
 				resCalibGrMap[keyName][selection].SetPoint     (np, mass, bias)
 				resCalibGrMap[keyName][selection].SetPointError(np, 0, biasErr)
 
@@ -356,7 +354,8 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
 
 		#draw graphs on pads
 		igrctr=0
-		color=[ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9,ROOT.kViolet+2,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kYellow-3]
+		color=[ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2,ROOT.kMagenta-9,
+		       ROOT.kViolet+2,ROOT.kAzure+7, ROOT.kBlue-7,ROOT.kYellow-3]
 		for tag,gr in sorted(grColl.items()):
 			gr.Sort()
 			gr.SetMarkerStyle(20+igrctr)
@@ -429,7 +428,7 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
 		canvas.Modified()
 		canvas.Update()
 		for ext in ['png','pdf']:
-				canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
+			canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
 	except UnboundLocalError:
 		print 'WARNING: Missing some variations!'
 	return fitParamsMap
@@ -946,11 +945,16 @@ def main():
 	"""
 
 	parser = optparse.OptionParser(usage)
-	parser.add_option('--pe',    dest='peInput', default=None, help='compare ensembles for pseudo-experiments')
-	parser.add_option('--calib', dest='calib',   default=None, help='show calibration')
-	parser.add_option('--syst',  dest='syst',    default=None, help='show systematics table')
-	parser.add_option('--rebin', dest='rebin',   default=2,    type=int, help='rebin pe plots by this factor')
-	parser.add_option('--compare', dest='compare',   default='',    type='string', help='compare uncertainties from ROOT summaries (CSV list)')
+	parser.add_option('--pe', dest='peInput', default=None,
+		              help='compare ensembles for pseudo-experiments')
+	parser.add_option('--calib', dest='calib', default=None,
+		              help='show calibration')
+	parser.add_option('--syst', dest='syst', default=None,
+		              help='show systematics table')
+	parser.add_option('--rebin', dest='rebin', default=2, type=int,
+		              help='rebin pe plots by this factor')
+	parser.add_option('--compare', dest='compare', default='', type='string',
+		              help='compare uncertainties from ROOT summaries (CSV list)')
 	(opt, args) = parser.parse_args()
 
 	ROOT.gStyle.SetOptStat(0)
@@ -960,11 +964,12 @@ def main():
 	#compare final results from ROOT files
 	if opt.compare:
 		compareResults(files=opt.compare.split(','))
-		return
+		return 0
 
 	#parse calibration results from directory
 	if opt.calib:
-		results,calibGrMap, resCalibGrMap = parsePEResultsFromFile(url=opt.calib)
+		results,calibGrMap,resCalibGrMap = parsePEResultsFromFile(url=opt.calib, verbose=False, doPlots=False)
+
 		calibMap = show(grCollMap=calibGrMap,
 						outDir=opt.calib+'/plots',
 						outName='svlcalib',
@@ -990,6 +995,7 @@ def main():
 		pickle.dump(results,  cachefile, pickle.HIGHEST_PROTOCOL)
 		cachefile.close()
 		print 'Wrote %s with calibration constants and results'%calibFile
+		return 0
 
 	#show systematics table
 	if opt.syst:
@@ -1011,26 +1017,30 @@ def main():
 		totup, totdn = writeSystematicsTable(results=results, filterCats=allCats,
 							 ofile=systfile%'all')
 		makeSystPlot(results, totup, totdn)
+		return 0
 
 	#compare inputs for pseudo-experiments
 	if opt.peInput:
-		 outDir=os.path.dirname(opt.peInput)+'/pe_plots'
-		 for sel in ['','optmrank']:
-			  ensemblesMap=parsePEInputs(url=opt.peInput,
-										 selection=sel,
-										 rebin=opt.rebin)
-			  for tag,grMap in ensemblesMap.items():
-				   outName = tag if sel == '' else '%s_%s'%(tag,sel)
-				   show(grCollMap=ensemblesMap[tag],
-						outDir=outDir,
-						outName=outName,
-						yaxisTitle='Ratio to reference',
-						xaxisTitle='m(SV,lepton) [GeV]',
-						y_range=(0.75,1.25),
-						x_range=(0,200),
-						baseDrawOpt='lx',
-						doFit=False)
-	return
+		outDir=os.path.dirname(opt.peInput)+'/pe_plots'
+		for sel in ['','optmrank']:
+			ensemblesMap=parsePEInputs(url=opt.peInput,
+									   selection=sel,
+									   rebin=opt.rebin)
+			for tag,grMap in ensemblesMap.items():
+				outName = tag if sel == '' else '%s_%s'%(tag,sel)
+				show(grCollMap=ensemblesMap[tag],
+					 outDir=outDir,
+					 outName=outName,
+					 yaxisTitle='Ratio to reference',
+					 xaxisTitle='m(SV,lepton) [GeV]',
+					 y_range=(0.75,1.25),
+					 x_range=(0,200),
+					 baseDrawOpt='lx',
+					 doFit=False)
+		return 0
+
+	parser.print_help()
+	return 1
 
 if __name__ == "__main__":
 	sys.exit(main())

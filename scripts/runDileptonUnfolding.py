@@ -2,6 +2,7 @@ import ROOT
 from array import array
 import optparse
 import os,sys
+from UserCode.TopMassSecVtx.storeTools_cff import fillFromStore
 
 """
 useful to list what's in a directory
@@ -186,68 +187,105 @@ def getAnalysisHistograms() :
 
     return histos
 
+
+"""
+Loop over a tree and create histograms
+"""
+def createSummary(filename,isData,outDir):
+    
+    #define histograms
+    histos=getAnalysisHistograms()
+    
+    #open file
+    fIn=ROOT.TFile.Open(filename)
+    
+    #loop over events in the tree and fill histos
+    tree=fIn.Get('DileptonInfo')
+    for i in xrange(0,tree.GetEntriesFast()):
+        tree.GetEntry(i)
+
+        #select only emu events
+        if tree.EvCat != -11*13 : continue
+            
+        #base weight: BR fix for ttbar x pileup x lepton selection x xsec weight
+        baseWeight = tree.Weight[0]*tree.Weight[1]*tree.Weight[4] #*tree.XSWeight
+                        
+        #event weight
+        weight = 1 if isData else baseWeight
+            
+        #positive lepton
+        lp=ROOT.TLorentzVector()
+        lp.SetPtEtaPhiM(tree.LpPt,tree.LpEta,tree.LpPhi,0.)
+        glp=ROOT.TLorentzVector()
+        glp.SetPtEtaPhiM(tree.GenLpPt,tree.GenLpEta,tree.GenLpPhi,0.)
+
+        #negative lepton
+        lm=ROOT.TLorentzVector()
+        lm.SetPtEtaPhiM(tree.LmPt,tree.LmEta,tree.LmPhi,0.)
+        glm=ROOT.TLorentzVector()
+        glm.SetPtEtaPhiM(tree.GenLmPt,tree.GenLmEta,tree.GenLmPhi,0.)
+
+        #fill the histograms
+        histos['ptpos_rec'].Fill(lp.Pt(),weight)
+        binWidth=histos['ptpos_rec_wgt'].GetXaxis().GetBinWidth( histos['ptpos_rec_wgt'].GetXaxis().FindBin(lp.Pt() ) )
+        histos['ptpos_rec_wgt'].Fill(lp.Pt(),weight/binWidth)
+        if not isData:
+            histos['ptpos_gen'].Fill(glp.Pt(),weight)
+            histos['ptpos_migration'].Fill(glp.Pt(),lp.Pt(),weight)
+
+    #close file
+    fIn.Close()
+    
+    #dump histograms to file
+    fOut=ROOT.TFile.Open(os.path.join(outDir,os.path.basename(filename)),'RECREATE')
+    for h in histos: histos[h].Write()
+    print 'Histograms saved in %s' % fOut.GetName()
+    fOut.Close()
+
+
+"""
+Wrapper for when the analysis is run in parallel
+"""
+def createSummaryPacked(args):
+    filename,isData,outDir = args
+    try:
+        return createSummary(filename=filename,isData=isData,outDir=outDir)
+    except ReferenceError:
+        print 50*'<'
+        print "  Problem with", name, "continuing without"
+        print 50*'<'
+        return False
+    
 """
 Create summary distributions to unfold
 """
-def createSummary(opt):
+def createSummaryTasks(opt):
 
-    #loop over files in the directory
-    for fname in os.listdir(opt.input):
+    #get files from directory
+    tasklist=[]
+    if opt.input.find('/store')>=0:
+        for filename in fillFromStore(opt.input):
+            if not os.path.splitext(filename)[1] == '.root': continue	
+            isData = True if 'Data' in filename else False
+            tasklist.append((filename,isData,opt.output))
+    else:
+        for filename in os.listdir(args[0]):
+            if not os.path.splitext(filename)[1] == '.root': continue	
+            isData = True if 'Data' in filename else False
+            tasklist.append((filename,isData,opt.output))
 
-        #filter out non-ROOT files
-        if not os.path.splitext(fname)[1] == '.root' : continue
+    #loop over tasks
+    if opt.jobs>0:
+        print ' Submitting jobs in %d threads' % opt.jobs
+        import multiprocessing as MP
+        pool = MP.Pool(opt.jobs)
+        pool.map(createSummaryPacked,tasklist)
+    else:
+        for filename,isData,outDir in tasklist:
+            createSummary(filename=filename,isData=isData,outDir=outDir)
+			
+	return 0
 
-        #check if it's data or MC (signal or bkg)
-        isData = True if 'Data' in fname else False
-
-        histos=getAnalysisHistograms()
-
-        #open file
-        fIn=ROOT.TFile.Open(os.path.join(opt.input,fname))
-
-        #loop over events in the tree and fill histos
-        tree=fIn.Get('DileptonInfo')
-        for i in xrange(0,tree.GetEntriesFast()):
-            tree.GetEntry(i)
-
-            #select only emu events
-            if tree.EvCat != -11*13 : continue
-            
-            #base weight: BR fix for ttbar x pileup x lepton selection x xsec weight
-            baseWeight = tree.Weight[0]*tree.Weight[1]*tree.Weight[4]*tree.XSWeight
-                        
-            #event weight
-            weight = 1 if isData else baseWeight
-            
-            #positive lepton
-            lp=ROOT.TLorentzVector()
-            lp.SetPtEtaPhiM(tree.LpPt,tree.LpEta,tree.LpPhi,0.)
-            glp=ROOT.TLorentzVector()
-            glp.SetPtEtaPhiM(tree.GenLpPt,tree.GenLpEta,tree.GenLpPhi,0.)
-
-            #negative lepton
-            lm=ROOT.TLorentzVector()
-            lm.SetPtEtaPhiM(tree.LmPt,tree.LmEta,tree.LmPhi,0.)
-            glm=ROOT.TLorentzVector()
-            glm.SetPtEtaPhiM(tree.GenLmPt,tree.GenLmEta,tree.GenLmPhi,0.)
-
-            #fill the histograms
-            histos['ptpos_rec'].Fill(lp.Pt(),weight)
-            binWidth=histos['ptpos_rec_wgt'].GetXaxis().GetBinWidth( histos['ptpos_rec_wgt'].GetXaxis().FindBin(lp.Pt() ) )
-            histos['ptpos_rec_wgt'].Fill(lp.Pt(),weight/binWidth)
-            if not isData:
-                histos['ptpos_gen'].Fill(glp.Pt(),weight)
-                histos['ptpos_migration'].Fill(glp.Pt(),lp.Pt(),weight)
-
-        #close file
-        fIn.Close()
-
-        #dump histograms to file
-        fOut=ROOT.TFile.Open(os.path.join(opt.output,fname),'RECREATE')
-        for h in histos: histos[h].Write()
-        fOut.Close()
-        
-        print 'Histograms saved for %s' % fname
     
 
 """
@@ -268,6 +306,11 @@ def main():
                           dest='var', 
                           default='ptpos',
                           help='Variable to unfold (note requires var_rec,var_gen,var_migration plots stored in the ROOT file [default: %default]')
+	parser.add_option('--jobs',
+                          dest='jobs', 
+                          default=1,
+                          type=int,
+                          help='# of jobs to process in parallel the trees [default: %default]')
 	parser.add_option('-o', '--output',
                           dest='output', 
                           default='unfoldResults',                                                                       
@@ -286,7 +329,7 @@ def main():
 	if opt.root is None :
             print 80*'-'
             print 'Creating ROOT file with migration matrices, data and background distributions from %s'%opt.input
-            createSummary(opt)
+            createSummaryTasks(opt)
             print 80*'-'
         else:
             print 80*'-'

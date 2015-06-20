@@ -22,7 +22,7 @@ baseHistos={
 histos={}
 fragH={}
 fragWgt={}
-for model in ['Z2starLEP','Z2star','Z2starLEP_lund','Z2starLEP_peterson','Cluster','Lund']:
+for model in ['Z2starLEP','Z2star'] : #,'Z2starLEP_lund','Z2starLEP_peterson','Cluster','Lund']:
     fIn=ROOT.TFile.Open('FragmentationDist_%s.root'%model)
     tree=fIn.Get('fragAnalyzer/FragTree')
 
@@ -33,7 +33,7 @@ for model in ['Z2starLEP','Z2star','Z2starLEP_lund','Z2starLEP_peterson','Cluste
 
         cond=''
         if bid=='Bpm'    : cond='abs(Bid)==521'
-        if bid=='B0'     : cond='abs(Bid)==511'
+        if bid=='B0'     : cond='abs(Bid)==511 || abs(Bid)==513'
         if bid=='Bs'     : cond='abs(Bid)==531'
         if bid=='Others' : cond='abs(Bid)!=521 && abs(Bid)!=511 && abs(Bid)!=531'
 

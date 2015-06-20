@@ -1411,6 +1411,7 @@ void LxyTreeAnalysis::analyze() {
             fTFJEta        = fjeta[0];
             fTSVNtrk       = svntk[svl.svindex];
             fTSVMass       = svmass[svl.svindex];
+	    fTBHadId       = bhadid[svl.svindex];
             fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1
             if(fTBHadNeutrino < 0) fTBHadNeutrino = -1; // set -999 to -1
 

@@ -53,17 +53,28 @@ def writeDataMCHistos(tree, processName, outputFile):
 			                  nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
 			hist.Write(hist.GetName())
 
-			#MC truth
-			if 'SVNtrk' in var:
-				for b,addSel in [('Bpm',   'abs(BHadId)==521'),
-						 ('B0',    'abs(BHadId)==511'),
-						 ('Bs',    'abs(BHadId)==531'),
-						 ('Others','abs(BHadId)!=521 && abs(BHadId)!=511 && abs(BHadId)!=531 && BHadId!=0'),
-						 ('Fakes', 'BHadId==0')]:
-					hist=getHistoFromTree(tree, sel=sel, var=var,
-							      hname="%s_%s_%s_%s"%(var,tag,processName,b),
+			if 'SVNtrk' in var :
+
+			        #regions
+				for reg,addSel in [('regA','TMath::Abs(JEta)<1.1'),
+						   ('regB','TMath::Abs(JEta)<1.5 && TMath::Abs(JEta)>=1.1'),
+						   ('regC','TMath::Abs(JEta)>=1.5')]:
+					hist=getHistoFromTree(tree, sel=sel+'&&'+addSel, var=var,
+							      hname="%s_%s_%s_%s"%(var,tag,processName,reg),
 							      nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
 					hist.Write(hist.GetName())
+
+			        #MC truth
+				#if not ('2012' in processName):
+				#	for b,addSel in [('Bpm',   '(abs(BHadId)>=520 && abs(BHadId)<530)'),
+				#			 ('B0',    '(abs(BHadId)>=510 && abs(BHadId)<520)'),
+				#			 ('Bs',    '(abs(BHadId)>=530 && abs(BHadId)<540)'),
+				#			 ('Others','abs(BHadId)>=540'),
+				#			 ('Fakes', 'BHadId==0')]:
+				#		hist=getHistoFromTree(tree, sel=sel+'&&'+addSel, var=var,
+				#				      hname="%s_%s_%s_%s"%(var,tag,processName,b),
+				#				      nbins=nbins,xmin=xmin,xmax=xmax,titlex=titlex)
+				#		hist.Write(hist.GetName())
 
 def resolveFilename(fname):
 	if not os.path.splitext(fname)[1] == '.root': return None

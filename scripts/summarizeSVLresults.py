@@ -263,6 +263,10 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
 			# add point for systematics
 			# if not useForCalib or mass==172.5:
 			results[(keyName,selection)][syst] = (mass+bias,biasErr)
+
+			# add statistical error for nominal 172.5:
+			if syst == '172.5':
+				results[(keyName,selection)]['stat'] = PEsummary['stat']
 			if not useForCalib: continue
 
 			# otherwise use it for calibration
@@ -589,14 +593,14 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 		of.write('\\hline\n')
 		ofile.write('%-30s & ' % ('Total %s uncertainty'%name))
 		for cat in filterCats:
-			diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (totup[cat], totupE[cat])
+			diffstr = '$ +%4.2f          $ & ' % (totup[cat])
 			if cat == filterCats[-1]: diffstr = diffstr[:-2]
 			ofile.write(diffstr)
 		ofile.write('\\\\')
 		ofile.write('\n')
 		ofile.write('                               & ')
 		for cat in filterCats:
-			diffstr = '$ %5.2f \\pm %4.2f $ & ' % (totdn[cat], totdnE[cat])
+			diffstr = '$ %5.2f          $ & ' % (totdn[cat])
 			if cat == filterCats[-1]: diffstr = diffstr[:-2]
 			ofile.write(diffstr)
 		ofile.write('\\\\')
@@ -651,7 +655,7 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 			icat=0
 			of.write('Total uncertainty  FIXME       & ')
 			for cat in filterCats:
-				diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (totup[sel][cat], totupE[sel][cat])
+				diffstr = '$ +%4.2f          $ & ' % (totup[sel][cat])
 				if cat == filterCats[-1]: diffstr = diffstr[:-2]
 				of.write(diffstr)
 				icat+=1
@@ -663,9 +667,20 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 			of.write('\n')
 			of.write('                               & ')
 			for cat in filterCats:
-				diffstr = '$ %5.2f \\pm %4.2f $ & ' % (totdn[sel][cat], totdnE[sel][cat])
+				diffstr = '$ %5.2f          $ & ' % (totdn[sel][cat])
 				if cat == filterCats[-1]: diffstr = diffstr[:-2]
 				of.write(diffstr)
+			of.write('\\\\')
+			of.write('\n')
+			of.write('\\hline\n')
+
+			of.write('Statistical uncertainty        & ')
+			for cat in filterCats:
+				diffstr = '$ \\pm%4.2f        $ & ' % results[(cat, sel)]['stat'][0]
+				if cat == filterCats[-1]: diffstr = diffstr[:-2]
+				of.write(diffstr)
+
+
 			of.write('\\\\')
 			of.write('\n')
 			of.write('\\hline\n')
@@ -721,6 +736,10 @@ def makeSystPlot(results, totup, totdn):
 		print ' err down  ',
 		for cat in cats: print ('    -%4.2f ' % totdn[sel][cat]),
 		print ''
+
+		print ' stat err  ',
+		for cat in cats: print ('   +-%4.2f ' % results[(cat,sel)]['stat'][0]),
+		print ''
 	print 80*'-'
 
 
@@ -736,13 +755,13 @@ def makeSystPlot(results, totup, totdn):
 		graph_comb_stat = ROOT.TGraphAsymmErrors(1)
 		graph_comb_stat.SetName("systs_comb_stat_%s"%sel)
 		mt_comb = results[('comb_0',sel)]['172.5'][0]
-		staterr = 0.200
-		toterrup = math.sqrt(staterr**2 + totup[sel]['comb_0']**2)
-		toterrdn = math.sqrt(staterr**2 + totdn[sel]['comb_0']**2)
+		staterr_comb = results[('comb_0',sel)]['stat'][0]
+		toterrup = math.sqrt(staterr_comb**2 + totup[sel]['comb_0']**2)
+		toterrdn = math.sqrt(staterr_comb**2 + totdn[sel]['comb_0']**2)
 		graph_comb.SetPoint(0, 0.5, mt_comb)
 		graph_comb.SetPointError(0, 0., 0., toterrdn, toterrup)
 		graph_comb_stat.SetPoint(0, 0.5, mt_comb)
-		graph_comb_stat.SetPointError(0, 0., 0., staterr, staterr)
+		graph_comb_stat.SetPointError(0, 0., 0., staterr_comb, staterr_comb)
 
 		gband = ROOT.TGraphErrors(2)
 		gband.SetName("band_graph_%s"%sel)
@@ -784,13 +803,13 @@ def makeSystPlot(results, totup, totdn):
 		############################
 		chancats = ['combem_0','combee_0','combmm_0','combe_0','combm_0']
 		chanxpos = [1.5,2.5,3.5,4.5,5.5]
-		staterrs = [0.4,0.4,0.4,0.3,0.3]
 		graph_chan = ROOT.TGraphAsymmErrors(len(chancats))
 		graph_chan.SetName("systs_chan_%s"%sel)
 		graph_chan_stat = ROOT.TGraphAsymmErrors(len(chancats))
 		graph_chan_stat.SetName("systs_chan_stat_%s"%sel)
-		for n,(xpos,cat,staterr) in enumerate(zip(chanxpos, chancats,staterrs)):
-			toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2)
+		for n,(xpos,cat) in enumerate(zip(chanxpos, chancats)):
+			staterr = results[(cat,sel)]['stat'][0]
+			toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2) ## FIXME: Full stat error up or half?
 			toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
  			graph_chan.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
 			graph_chan.SetPointError(n, 0., 0., toterrdn, toterrup)
@@ -809,12 +828,12 @@ def makeSystPlot(results, totup, totdn):
 		############################
 		ntrkcats = ['comb_3','comb_3','comb_5']
 		ntrkxpos = [6.5,7.5,8.5]
-		staterrs = [0.3,0.3,0.3]
 		graph_ntrk = ROOT.TGraphAsymmErrors(len(ntrkcats))
 		graph_ntrk.SetName("systs_ntrk_%s"%sel)
 		graph_ntrk_stat = ROOT.TGraphAsymmErrors(len(ntrkcats))
 		graph_ntrk_stat.SetName("systs_ntrk_stat_%s"%sel)
-		for n,(xpos,cat,staterr) in enumerate(zip(ntrkxpos, ntrkcats,staterrs)):
+		for n,(xpos,cat) in enumerate(zip(ntrkxpos, ntrkcats)):
+			staterr = results[(cat,sel)]['stat'][0]
 			toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2)
 			toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
  			graph_ntrk.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
@@ -872,7 +891,7 @@ def makeSystPlot(results, totup, totdn):
 		# label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
 		# label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
 		label.DrawLatex(-3,mt_comb,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} #pm %4.2f GeV" %
-			                       (mt_comb, totup[sel]['comb_0'], totdn[sel]['comb_0'], 0.20))
+			                       (mt_comb, totup[sel]['comb_0'], totdn[sel]['comb_0'], staterr_comb))
 
 		label.SetTextColor(ROOT.kGray+2)
 		label.SetTextSize(14)
@@ -889,6 +908,7 @@ def makeSystPlot(results, totup, totdn):
 
 
 		ROOT.gPad.RedrawAxis()
+		if sel == '': sel = 'inclusive'
 		canv.SaveAs("syst_by_channel_%s.pdf"%sel)
 
 	return

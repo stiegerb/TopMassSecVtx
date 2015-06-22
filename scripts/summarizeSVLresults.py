@@ -501,8 +501,8 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 
 	theosysts = [
 	##   systname   ,variations [up, down],          title,       variation to compare with, included in sum?
-		('powpyth'   , ['powpyth'],                    'Signal model',         '172.5', True ),
-		('powherw'   , ['powherw'],                    'POWHEG+Pythia vs POWHEG+Herwig',         'powpyth', False ),
+		('powpyth'   , ['powpyth'],                    'Signal model',             '172.5', True ),
+		# ('powherw'   , ['powherw'],                    'POWHEG+(Pythia vs Herwig)','powpyth', False ),
 		('scale'     , ['scaleup', 'scaledown'],       '$\\mu_R/\\mu_F$ scales \\ttbar',         '172.5', True ),
 		('tchscale'  , ['tchscaleup', 'tchscaledown'], '\\qquad\\qquad t-channel',       '172.5', True ),
 		('twchscale' , ['twchscaleup','twchscaledown'],'\\qquad\\qquad tW-channel',      '172.5', True ),
@@ -632,7 +632,6 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 			totup_th,totupE_th,totdn_th,totdnE_th = writeSection(theosysts, sel, of, name='theo.')
 
 
-			of.write('\\hline\n')
 			if 'combe_0' in filterCats:
 				of.write('\multicolumn{7}{l}{\\bf Experimental uncertainties}\\\\\n')
 			else:
@@ -640,8 +639,6 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 			of.write('\\hline\n')
 
 			totup_ex,totupE_ex,totdn_ex,totdnE_ex = writeSection(expsysts, sel, of, name='exp.')
-
-			of.write('\\hline\n')
 
 			## Compute the total uncertainty
 			assert(totup_th.keys() == totup_ex.keys())
@@ -917,6 +914,14 @@ def makeSystPlot(results, totup, totdn):
 """
 """
 def compareResults(files):
+	labels = {
+		'inclusive': "inclusive",
+		'optmrank':  "optmrank",
+		'mrank1':    "mrank1",
+		'mrank1dr':  "mrank1dr",
+		'drrank1dr': "drrank1dr",
+	}
+
 	c=ROOT.TCanvas('c','c',700,500)
 	for unc in ['expunc','thunc']:
 
@@ -924,8 +929,9 @@ def compareResults(files):
 		allH=[]
 		for ifile in xrange(0,len(files)):
 			inF=ROOT.TFile.Open(files[ifile])
-			label='inclusive'
-			if 'optmrank' in files[ifile] : label='optmrank'
+			label=''
+			for key in labels.keys():
+				if key in files[ifile]: label=labels[key]
 			allH.append( inF.Get(unc).Clone(unc+'_'+label) )
 			allH[-1].SetTitle(label)
 			allH[-1].SetDirectory(0)
@@ -941,9 +947,10 @@ def compareResults(files):
 			drawOpt='hist' if i==0 else 'histsame'
 			allH[i].Draw(drawOpt)
 			allH[i].SetDirectory(0)
+			allH[i].SetLineWidth(2)
 			allH[i].SetLineColor(COLORS[i])
 			allH[i].SetDirectory(0)
-			allH[i].GetYaxis().SetRangeUser(0,3)
+			allH[i].GetYaxis().SetRangeUser(0,3.5)
 			leg.AddEntry(allH[i],allH[i].GetTitle(),'l')
 		leg.Draw()
 
@@ -952,7 +959,10 @@ def compareResults(files):
 		txt.SetTextFont(42)
 		txt.SetTextSize(0.04)
 		txt.DrawLatex(0.12,0.92,'#bf{CMS} #it{simulation}')
-		for ext in ['png','pdf']: c.SaveAs('%s_comp.%s'%(unc,ext))
+		appendix = ''
+		if files[0].endswith('bychan.root'): appendix = '_bychan'
+		if files[0].endswith('bytracks.root'): appendix = '_bytracks'
+		for ext in ['png','pdf']: c.SaveAs('%s_comp%s.%s'%(unc,appendix,ext))
 
 
 """

@@ -17,31 +17,66 @@ class PseudoExperimentResults:
         self.genMtop=genMtop
         self.outFileUrl=outFileUrl
         self.histos={}
+        self.trees={}
+
+        self.genmtop = numpy.zeros(1, dtype=float)
+        self.genmtop[0] = self.genMtop
+        self.mtopfit = numpy.zeros(1, dtype=float)
+        self.statunc = numpy.zeros(1, dtype=float)
+        self.pull    = numpy.zeros(1, dtype=float)
+        self.mu      = numpy.zeros(1, dtype=float)
 
     def addFitResult(self,key,ws):
 
         #init histogram if needed
-        if not (key in self.histos): self.initHistos(key)
+        if not (key in self.histos):
+            self.initHistos(key)
 
         #fill the histograms
         if ws.var('mtop').getError()>0:
-            self.histos[key]['mtopfit'].Fill(ws.var('mtop').getVal()-self.genMtop)
-            self.histos[key]['mtopfit_statunc'].Fill(ws.var('mtop').getError())
-            self.histos[key]['mtopfit_pull'].Fill((ws.var('mtop').getVal()-self.genMtop)/ws.var('mtop').getError())
-            self.histos[key]['muvsmtop'].Fill(ws.var('mtop').getVal()-self.genMtop,ws.var('mu').getVal())
+            mtopfit = ws.var('mtop').getVal()
+            bias = mtopfit-self.genMtop
+            error = ws.var('mtop').getError()
+            self.mtopfit[0] = mtopfit
+            self.statunc[0] = error
+            self.pull   [0] = bias/error
+            self.mu     [0] = ws.var('mu').getVal()
+
+            self.histos[key]['mtopfit']        .Fill(bias)
+            self.histos[key]['mtopfit_statunc'].Fill(error)
+            self.histos[key]['mtopfit_pull']   .Fill(bias/error)
+            self.histos[key]['muvsmtop']       .Fill(bias, ws.var('mu').getVal())
+            self.trees[key].Fill()
 
     def initHistos(self,key):
         self.histos[key]={}
         pfix=''
         for tk in key: pfix += str(tk)+'_'
         pfix=pfix[:-1]
-        self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,';#Deltam_{t} [GeV];Pseudo-experiments',200,-5,5)
-        self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)
-        self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-3.03,2.97)
-        self.histos[key]['muvsmtop']        = ROOT.TH2F('muvsmtop_%s'%pfix,';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',100,-5,5,100,0.95,1.05)
+        self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,
+                                                        ';#Deltam_{t} [GeV];Pseudo-experiments',
+                                                        200,-5,5)
+        self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,
+                                                        ';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',
+                                                        200,0,1.5)
+        self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,
+                                                        ';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',
+                                                        100,-3.03,2.97)
+        self.histos[key]['muvsmtop']        = ROOT.TH2F('muvsmtop_%s'%pfix,
+                                                        ';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',
+                                                        100,-5,5,100,0.85,1.15)
         for var in self.histos[key]:
             self.histos[key][var].SetDirectory(0)
             self.histos[key][var].Sumw2()
+
+        self.trees[key] = ROOT.TTree('peinfo_%s'%pfix,'SVL Pseudoexperiment info')
+        self.trees[key].Branch('genmtop', self.genmtop, 'genmtop/D')
+        self.trees[key].Branch('mtopfit', self.mtopfit, 'mtopfit/D')
+        self.trees[key].Branch('statunc', self.statunc, 'statunc/D')
+        self.trees[key].Branch('pull',    self.pull,    'pull/D')
+        self.trees[key].Branch('mu',      self.mu,      'mu/D')
+
+
 
     def saveResults(self):
         peFile=ROOT.TFile(self.outFileUrl,'RECREATE')
@@ -54,6 +89,7 @@ class PseudoExperimentResults:
             outDir.cd()
             for var in self.histos[key]:
                 self.histos[key][var].Write()
+            self.trees[key].Write()
 
             mtopRes=ROOT.TVectorD(6)
             mtopRes[0]=self.histos[key]['mtopfit'].GetMean()

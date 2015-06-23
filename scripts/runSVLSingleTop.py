@@ -21,11 +21,13 @@ def runSingleTopAnalysis(filename,isData,outDir):
 			histos['MT_'+tag]         = ROOT.TH1F('MT_'+tag,';Transverse mass [GeV];Events',50,50,250)
 			histos['MET_'+tag]        = ROOT.TH1F('MET_'+tag,';Missing transverse energy [GeV];Events',50,0,200)
 			histos['FJPt_'+tag]       = ROOT.TH1F('FJPt_'+tag,';Transverse momentum [GeV];Events',10,30,230)
-			histos['FJEta_'+tag]      = ROOT.TH1F('FJEta_'+tag,';Pseudo-rapidity;Events',12,2.5,4.9)
+			histos['FJEta_'+tag]      = ROOT.TH1F('FJEta_'+tag,';Pseudo-rapidity;Events',25,2.5,5)
 			histos['DeltaEtaJB_'+tag] = ROOT.TH1F('DeltaEtaJB_'+tag,';|#eta_{j}-#eta_{b}|;Events',25,0,8)
 			histos['EtaJxEtaB_'+tag]  = ROOT.TH1F('EtaJxEtaB_'+tag,';#eta_{j}.#eta_{b};Events',25,-10,10)
 			histos['SVLMass_'+tag]    = ROOT.TH1F('SVLMass_'+tag,';m(SV,lepton) [GeV]',50,0,200)
 			histos['SVMass_'+tag]     = ROOT.TH1F('SVMass_'+tag,';m(SV) [GeV]',12,0,6)
+			histos['CJEta_'+tag]      = ROOT.TH1F('CJEta_'+tag,';Pseudo-rapidity;Events',25,0,2.5)
+			histos['CJPt_'+tag]       = ROOT.TH1F('CJPt_'+tag,';Transverse momentum [GeV];Events',10,30,230)
 	for h in histos:
 		histos[h].Sumw2()
 		histos[h].SetDirectory(0)
@@ -36,32 +38,84 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	fIn=ROOT.TFile.Open(filename)
 	SVLInfo=fIn.Get('SVLInfo')
 
+	#EDIT: Counts for sig/bkg calculations.
+	cnt_ini_events = 0
+	cnt_e_or_mu = 0
+	cnt_1_fwd_jet = 0
+	cnt_central_jets = 0
+	cnt_1_sec_vtx = 0
+	cnt_MT_cut = 0
+	cnt_final_events = 0
+
 	#loop over events in tree
 	for i in xrange(0,SVLInfo.GetEntriesFast()):
 		
 		SVLInfo.GetEntry(i)
 
+		#EDIT: Moved this section up from down below.
+		weight = 1 if isData else SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]
+		lumiweight = 1 if isData else SVLInfo.XSWeight*LUMI
+
+		#EDIT
+		cnt_ini_events+=weight
+
+######################################
+
+		#EDIT: Definitely keep exactly the same
 		#require e or mu events
 		if SVLInfo.EvCat!=-11 and SVLInfo.EvCat!=-13 : continue
 		chCat = 'e' if SVLInfo.EvCat==-11 else 'mu'
 
+		#EDIT
+		cnt_e_or_mu+=weight
+
+####################################
+
+		#EDIT: Definitely keep this cut.  Check increase from 2.5 to 3.5
 		#require 1 forward jet
 		fwdeta=ROOT.TMath.Abs(SVLInfo.FJEta)
-		if fwdeta<2.5 or fwdeta>4.7: continue
-		
+		if fwdeta<2.5 or fwdeta>5: continue
+
+		#EDIT
+		cnt_1_fwd_jet+=weight
+
+####################################
+
+		#EDIT: Definitely keep this cut.  Vary 2,3,4
 		#require at least 1 and less than 4 central jets
 		if SVLInfo.NJets<1 or SVLInfo.NJets>3 : continue		
 		jetCat="%dj" % (SVLInfo.NJets)
 
+		#EDIT
+		cnt_central_jets+=weight
+
+###################################
+
+		#EDIT: Definitely keep this cut exactly the same.
 		#require 1 SecVtx
 		if SVLInfo.SVMass<=0 : continue
 
+		#EDIT
+		cnt_1_sec_vtx+=weight
+
+###################################
+
+		#EDIT: Definitely keep this cut exactly the same.
 		#re-inforce the cut in MT
 		if SVLInfo.MT<50 : continue
 
+		#EDIT
+		cnt_MT_cut+=weight
+
+###################################
+
+		#EDIT
+		cnt_final_events+=weight
+
+		#EDIT: Commented out weight and moved up
 		#event weights to fill histograms appropriately
-		weight = 1 if isData else SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]
-		lumiweight = 1 if isData else SVLInfo.XSWeight*LUMI
+		#weight = 1 if isData else SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]
+		#lumiweight = 1 if isData else SVLInfo.XSWeight*LUMI
 
 		#fill histograms with variables of interest
 		tag=chCat+jetCat
@@ -74,6 +128,8 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		histos['EtaJxEtaB_'+tag].Fill(SVLInfo.FJEta*SVLInfo.JEta, weight)
 		histos['SVLMass_'+tag].Fill(SVLInfo.SVLMass, weight)
 		histos['SVMass_'+tag] .Fill(SVLInfo.SVMass,  weight)
+		histos['CJEta_'+tag]  .Fill(SVLInfo.JEta,          weight)
+		histos['CJPt_'+tag]   .Fill(SVLInfo.JPt,    weight)
 
 	#close input file, after analysis
 	fIn.Close()
@@ -83,6 +139,18 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	for h in histos: histos[h].Write()
 	print '   output stored in %s' % fOut.GetName()
 	fOut.Close()
+
+	#EDIT: Make file with sig/bkg
+	sigbkg = open('sig_bkg.txt','a')
+	sigbkg.write('#####################'+filename+'\n')
+	sigbkg.write('Initial Events: '+str(cnt_ini_events)+'\n')
+	sigbkg.write('e or mu Events: '+str(cnt_e_or_mu)+'\n')
+	sigbkg.write('Forward Jet Ct: '+str(cnt_1_fwd_jet)+'\n')
+	sigbkg.write('Central Jet Ct: '+str(cnt_central_jets)+'\n')
+	sigbkg.write('Sec Vertex Cut: '+str(cnt_1_sec_vtx)+'\n')
+	sigbkg.write('MT Checked Cut: '+str(cnt_MT_cut)+'\n')
+	sigbkg.write('Num. Fnal Evts: '+str(cnt_final_events)+'\n'+'\n')
+	sigbkg.close()
 
 
 """
@@ -138,6 +206,16 @@ def main(args, options):
 	else:
 		for filename,isData,outDir in taskList:
 			runSingleTopAnalysis(filename=filename,isData=isData,outDir=outDir)
+
+	#EDIT: Write current cuts to sig/bkg file
+	sigbkg = open('sig_bkg.txt','a')
+	sigbkg.write('#####################The Cuts:\n')
+	sigbkg.write('Must be an e or mu Event\n')
+	sigbkg.write('Exactly 1 Forward Jet with eta<3.2 or eta>4.7\n')
+	sigbkg.write('1 < Num, Central Jets < 3\n')
+	sigbkg.write('Exactly 1 Sec Vertex\n')
+	sigbkg.write('MT > 50\n')
+	sigbkg.close()
 			
 	return 0
 

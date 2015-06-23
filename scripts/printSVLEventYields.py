@@ -81,10 +81,10 @@ def printYields(yields):
 	processes = list(set([p for _,p in totals.keys()]))
 	processes.sort(key=lambda p: PROCNAMETORANK[PROCTOPROCNAME[p]], reverse=True)
 
-	print 122*'-'
+	print 127*'-'
 	print 20*" "+' &',
 	for chan in channels:
-		print ("   %-14s &" % chan),
+		print ("   %-15s &" % chan),
 	print ''
 	for proc in processes:
 		procname = PROCTOPROCNAME[proc]
@@ -92,14 +92,14 @@ def printYields(yields):
 		for chan in channels:
 			try:
 				if totals[(chan, proc)][0]>0.5:
-					print " $%6.0f \pm %3.0f$ &" % (totals[(chan, proc)]),
+					print " $%6.0f \pm %4.0f$ &" % (totals[(chan, proc)]),
 				else:
-					print " $    <1        $ &",
+					print " $    <1         $ &",
 			except KeyError:
-				print " $    <1        $ &",
+				print " $    <1         $ &",
 
 		print ' '
-	print 122*'-'
+	print 127*'-'
 	return 0
 
 

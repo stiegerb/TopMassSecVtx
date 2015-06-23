@@ -135,6 +135,11 @@ def main(args, options):
 		                                 options=options)
 
 	print 80*'='
+	print ' Producing unscaled MET plots for comparison'
+	dyoptions.filter = 'MET_ee,MET_mm'
+	runPlotter(args[0], dyoptions)
+
+	print 80*'='
 	print ' Producing (DY-scaled) control plots from histograms'
 	options.filter = '!,JPsi,D0,Dpm,DMDs,DMDsmD0,Mjj' ## not the charm plots
 	runPlotter(args[0], options, scaleFactors=scaleFactors)

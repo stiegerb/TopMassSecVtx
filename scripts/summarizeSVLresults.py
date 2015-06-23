@@ -244,7 +244,7 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
 				print '  %-18s  ' % key.GetName(),
 
 			keyName=key.GetName()
-			PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=doPlots,syst=syst)
+			PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=useForCalib,syst=syst)
 			if not 'bias' in PEsummary : continue
 
 			bias, biasErr = PEsummary['bias']
@@ -492,10 +492,12 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 	#create summary histograms
 	expUnc=ROOT.TH1F('expunc',';Category;Uncertainty [GeV]',len(filterCats),0,len(filterCats))
 	thUnc=ROOT.TH1F('thunc',';Category;Uncertainty [GeV]',len(filterCats),0,len(filterCats))
+	statUnc=ROOT.TH1F('statunc',';Category;Uncertainty [GeV]',len(filterCats),0,len(filterCats))
 	icat=0
 	for cat in filterCats:
 		expUnc.GetXaxis().SetBinLabel(icat+1,CATTOLABEL[cat].replace('mu','#mu'))
 		thUnc.GetXaxis().SetBinLabel(icat+1,CATTOLABEL[cat].replace('mu','#mu'))
+		statUnc.GetXaxis().SetBinLabel(icat+1,CATTOLABEL[cat].replace('mu','#mu'))
 		icat+=1
 
 
@@ -649,13 +651,11 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 				totupE[sel][cat] = math.sqrt(totupE_th[cat]**2 + totupE_ex[cat]**2)
 				totdnE[sel][cat] = math.sqrt(totdnE_th[cat]**2 + totdnE_ex[cat]**2)
 
-			icat=0
 			of.write('Total uncertainty  FIXME       & ')
-			for cat in filterCats:
+			for icat,cat in enumerate(filterCats, 1):
 				diffstr = '$ +%4.2f          $ & ' % (totup[sel][cat])
 				if cat == filterCats[-1]: diffstr = diffstr[:-2]
 				of.write(diffstr)
-				icat+=1
 				expUnc.SetBinContent(icat,ROOT.TMath.Max(ROOT.TMath.Abs(totup_ex[cat]),ROOT.TMath.Abs(totdn_ex[cat])))
 				thUnc.SetBinContent(icat,ROOT.TMath.Max(ROOT.TMath.Abs(totup_th[cat]),ROOT.TMath.Abs(totdn_th[cat])))
 
@@ -672,10 +672,11 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 			of.write('\\hline\n')
 
 			of.write('Statistical uncertainty        & ')
-			for cat in filterCats:
+			for icat,cat in enumerate(filterCats,1):
 				diffstr = '$ \\pm%4.2f        $ & ' % results[(cat, sel)]['stat'][0]
 				if cat == filterCats[-1]: diffstr = diffstr[:-2]
 				of.write(diffstr)
+				statUnc.SetBinContent(icat,results[(cat, sel)]['stat'][0])
 
 
 			of.write('\\\\')
@@ -697,6 +698,7 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 	outF.cd()
 	expUnc.Write()
 	thUnc.Write()
+	statUnc.Write()
 	outF.Close()
 
 	return totup, totdn
@@ -921,9 +923,14 @@ def compareResults(files):
 		'mrank1dr':  "mrank1dr",
 		'drrank1dr': "drrank1dr",
 	}
+	axislabel = {
+		'expunc'  : 'Experimental Uncertainty [GeV]',
+		'thunc'   : 'Theory Uncertainty [GeV]',
+		'statunc' : 'Statistical Uncertainty [GeV]',
+	}
 
 	c=ROOT.TCanvas('c','c',700,500)
-	for unc in ['expunc','thunc']:
+	for unc in ['expunc','thunc','statunc']:
 
 		#get histos from files
 		allH=[]
@@ -950,7 +957,10 @@ def compareResults(files):
 			allH[i].SetLineWidth(2)
 			allH[i].SetLineColor(COLORS[i])
 			allH[i].SetDirectory(0)
+			allH[i].GetYaxis().SetTitle(axislabel[unc])
 			allH[i].GetYaxis().SetRangeUser(0,3.5)
+			if unc == 'statunc':
+				allH[i].GetYaxis().SetRangeUser(0,2)
 			leg.AddEntry(allH[i],allH[i].GetTitle(),'l')
 		leg.Draw()
 
@@ -998,7 +1008,7 @@ def main():
 
 	#parse calibration results from directory
 	if opt.calib:
-		results,calibGrMap,resCalibGrMap = parsePEResultsFromFile(url=opt.calib, verbose=False, doPlots=False)
+		results,calibGrMap,resCalibGrMap = parsePEResultsFromFile(url=opt.calib, verbose=False)
 
 		calibMap = show(grCollMap=calibGrMap,
 						outDir=opt.calib+'/plots',

@@ -1173,33 +1173,27 @@ void LxyTreeAnalysis::analyze() {
     if(svindices[1]<0) svindices.pop_back();
     if(svindices[0]<0) svindices.pop_back();
 
-    //Elizabeth
-    bool fjexists = false;
-    float fwd_jet_eta(0), fwd_jet_pt(0);
+    // Elizabeth
+    // Find most forward jet with no SV
+    float max_jet_eta(-1);
+    float fwd_jet_eta(-1), fwd_jet_pt(-1);
     for(int i=0; i<nfj; i++){
-      fjexists = true;
-      if(i==0){
-	fwd_jet_eta=fjeta[i];
-	fwd_jet_pt=fjpt[i];
-      }
-      if(fabs(fwd_jet_eta)<fjeta[i]){
-	fwd_jet_eta=fjeta[i];
-	fwd_jet_pt=fjpt[i];
-      }
+        if(fabs(fjeta[i]) > max_jet_eta){
+            max_jet_eta = fabs(fjeta[i]);
+            fwd_jet_eta = fjeta[i];
+        	fwd_jet_pt = fjpt[i];
+        }
     }
-    if(fjexists==false){
-      for(int i=0;i<nj; i++){
-	if(svpt[i]<0){
-	  if(fwd_jet_pt==0){
-	    fwd_jet_eta=jeta[i];
-	    fwd_jet_pt=jpt[i];
-	  }
-	  if(fwd_jet_eta<jeta[i]){
-	    fwd_jet_eta=jeta[i];
-	    fwd_jet_pt=jpt[i];
-	  }
-	}
-      }
+    if(max_jet_eta < 0){
+        for(int i=0; i<nj; i++){
+            // Only jets with no secondary vertices
+        	if(svpt[i] > 0) continue;
+            if(fabs(jeta[i]) > max_jet_eta){
+                max_jet_eta = fabs(jeta[i]);
+                fwd_jet_eta = jeta[i];
+                fwd_jet_pt = jpt[i];
+            }
+        }
     }
     //End Elizabeth
 

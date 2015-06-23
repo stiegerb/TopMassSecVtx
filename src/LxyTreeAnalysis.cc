@@ -1173,6 +1173,36 @@ void LxyTreeAnalysis::analyze() {
     if(svindices[1]<0) svindices.pop_back();
     if(svindices[0]<0) svindices.pop_back();
 
+    //Elizabeth
+    bool fjexists = false;
+    float fwd_jet_eta(0), fwd_jet_pt(0);
+    for(int i=0; i<nfj; i++){
+      fjexists = true;
+      if(i==0){
+	fwd_jet_eta=fjeta[i];
+	fwd_jet_pt=fjpt[i];
+      }
+      if(fabs(fwd_jet_eta)<fjeta[i]){
+	fwd_jet_eta=fjeta[i];
+	fwd_jet_pt=fjpt[i];
+      }
+    }
+    if(fjexists==false){
+      for(int i=0;i<nj; i++){
+	if(svpt[i]<0){
+	  if(fwd_jet_pt==0){
+	    fwd_jet_eta=jeta[i];
+	    fwd_jet_pt=jpt[i];
+	  }
+	  if(fwd_jet_eta<jeta[i]){
+	    fwd_jet_eta=jeta[i];
+	    fwd_jet_pt=jpt[i];
+	  }
+	}
+      }
+    }
+    //End Elizabeth
+
     std::vector<TLorentzVector> isoObjects;
     for (int il = 0; il < nl; ++il) {
         TLorentzVector p4;
@@ -1407,8 +1437,10 @@ void LxyTreeAnalysis::analyze() {
             fTJPt          = jpt  [svl.svindex];
             fTJFlav        = jflav[svl.svindex];
             fTJEta         = jeta [svl.svindex];
-            fTFJPt         = fjpt [0];
-            fTFJEta        = fjeta[0];
+	    //Elizabeth
+            fTFJPt         = fwd_jet_pt;//fjpt [0];
+            fTFJEta        = fwd_jet_eta;//fjeta[0];
+	    //End Elizabeth
             fTSVNtrk       = svntk[svl.svindex];
             fTSVMass       = svmass[svl.svindex];
             fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1

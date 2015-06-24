@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import ROOT
 import os,sys
+import os.path as osp
 import optparse
 import pickle
 import numpy
@@ -271,7 +272,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     selTag=''
     if len(options.selection)>0 : selTag='_%s'%options.selection
     summary=PseudoExperimentResults(genMtop=genMtop,
-                                    outFileUrl=os.path.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)))
+                                    outFileUrl=osp.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)))
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")
@@ -350,6 +351,15 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     if options.verbose>1:
         print prepend+'Running %d experiments' % options.nPexp
         print 80*'-'
+
+    if not 'nominal' in experimentTag:
+        cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../../'))
+        cfilepath = osp.join(cfilepath, ".svlsysthistos.pck")
+        cachefile = open(cfilepath, 'r')
+        systhistos = pickle.load(cachefile)
+        print prepend+'>>> Read systematics histograms from cache (.svlsysthistos.pck)'
+        cachefile.close()
+
     for i in xrange(0,options.nPexp):
 
         #iterate over available categories to build the set of likelihoods to combine
@@ -370,8 +380,24 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             ws.var('mu').setVal(1.0)
 
             #read histogram and generate random data
-            ihist       = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
-            nevtsToGen = ROOT.gRandom.Poisson(ihist.Integral())
+            ihist = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
+
+            # Get number of events to be generated either:
+            # - From properly scaled input files for nominal mass variations
+            #   to estimate the actual statistical error
+            # - From the number of generated MC events, to estimate statistical
+            #   uncertainty of variation
+            nevtsSeed = ihist.Integral()
+            if not 'nominal' in experimentTag:
+                try:
+                    nevtsSeed = systhistos[(chsel, experimentTag.replace('_172v5',''),
+                                            'tot' ,trk)].GetEntries() ## FIXME: GetEntries or Integral?
+                except KeyError:
+                    print prepend+"  >>> COULD NOT FIND SYSTHISTO FOR",chsel, experimentTag, trk
+
+            nevtsToGen = ROOT.gRandom.Poisson(nevtsSeed)
+
+
             pseudoDataH,pseudoData=None,None
             if options.genFromPDF:
                 obs = ROOT.RooArgSet(ws.var('SVLMass'))
@@ -488,17 +514,17 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     if len(sel)==0 : sel='inclusive'
     baseJobsDir='svlPEJobs'
     if options.calib : baseJobsDir+='_calib'
-    jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/%s/%s'%(baseJobsDir,sel),time.strftime('%b%d'))
-    if not os.path.exists(jobsDir):
+    jobsDir = osp.join(cmsswBase,'src/UserCode/TopMassSecVtx/%s/%s'%(baseJobsDir,sel),time.strftime('%b%d'))
+    if not osp.exists(jobsDir):
         os.system('mkdir -p %s'%jobsDir)
 
     print 'Single job scripts stored in %s' % jobsDir
 
-    wsfilepath = os.path.abspath(wsfile)
-    pefilepath = os.path.abspath(pefile)
-    odirpath = os.path.abspath(jobsDir)
+    wsfilepath = osp.abspath(wsfile)
+    pefilepath = osp.abspath(pefile)
+    odirpath = osp.abspath(jobsDir)
     if options.calib:
-        odirpath = os.path.abspath(os.path.join(jobsDir,'calibrated'))
+        odirpath = osp.abspath(osp.join(jobsDir,'calibrated'))
         os.system('mkdir -p %s'%odirpath)
 
     ## Feedback before submitting the jobs
@@ -521,7 +547,7 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
         if options.genFromPDF:
             command += ' --genFromPDF'
         if options.calib:
-            command += ' --calib %s' % os.path.abspath(options.calib)
+            command += ' --calib %s' % osp.abspath(options.calib)
         if len(options.selection):
             command += ' --selection %s'%options.selection
         scriptFile.write('%s\n'%command)
@@ -579,7 +605,7 @@ def main():
 
     print 'Storing output in %s' % opt.outDir
     os.system('mkdir -p %s' % opt.outDir)
-    os.system('mkdir -p %s' % os.path.join(opt.outDir, 'plots'))
+    os.system('mkdir -p %s' % osp.join(opt.outDir, 'plots'))
 
     # launch pseudo-experiments
     if not opt.isData:

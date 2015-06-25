@@ -836,14 +836,10 @@ bool LxyTreeAnalysis::selectSVLEvent(bool &passBtagNom, bool &passBtagUp, bool &
     if (abs(evcat) == 11 || abs(evcat) == 13) {
         if (nj < 4)
         {
-            TLorentzVector lp4;
-            lp4.SetPtEtaPhiM(lpt[0],leta[0],lphi[0],0.0);
-            TLorentzVector metp4;
-            metp4.SetPtEtaPhiM(metpt,0,metphi,0.);
-            TLorentzVector metp4Up;
-            metp4Up.SetPtEtaPhiM(metvar[4],0,metphi,0.);
-            TLorentzVector metp4Dn;
-            metp4Dn.SetPtEtaPhiM(metvar[5],0,metphi,0.);
+            TLorentzVector lp4;     lp4.SetPtEtaPhiM(lpt[0],leta[0],lphi[0],0.0);
+            TLorentzVector metp4;   metp4.SetPtEtaPhiM(metpt,0,metphi,0.);
+            TLorentzVector metp4Up; metp4Up.SetPtEtaPhiM(metvar[4],0,metphi,0.);
+            TLorentzVector metp4Dn; metp4Dn.SetPtEtaPhiM(metvar[5],0,metphi,0.);
             float mT(utils::cmssw::getMT<TLorentzVector,TLorentzVector>( lp4, metp4) );
             float mTUp(utils::cmssw::getMT<TLorentzVector,TLorentzVector>( lp4, metp4Up) );
             float mTDn(utils::cmssw::getMT<TLorentzVector,TLorentzVector>( lp4, metp4Dn) );
@@ -868,6 +864,81 @@ bool LxyTreeAnalysis::selectSVLEvent(bool &passBtagNom, bool &passBtagUp, bool &
         if(passBtagNom || passBtagUp || passBtagDown) return true;
         return false;
     }
+
+    // QCD control sample (non-isolated leptons)
+    if (abs(evcat) == 11*100 || abs(evcat) == 13*100) {
+        if (nj < 4 && nfj==0) return false;
+        if (nbjets > 1 || nsvjets > 1) return false; // suppress ttbar
+        return true;
+    }
+    return false;
+}
+
+//
+bool LxyTreeAnalysis::selectSVLSingleTopEvent(bool &passBtagNom, bool &passBtagUp, bool &passBtagDown,
+                                     bool &passMETNom, bool &passMETUp, bool &passMETDown) {
+    float btagWP = gCSVWPMedium;
+    TString btagger("csvM");
+    int nsvjets(0);
+    int nbjets(0), nbjetsUp(0), nbjetsDown(0);
+    for( int i=0; i < nj; i++)
+    {
+        bool btagStatus(jcsv[i] > btagWP); //original btag status
+        bool nomBtagStatus(btagStatus);
+        bool nomBtagStatusDown(btagStatus);
+        bool nomBtagStatusUp(btagStatus);
+
+        if(!btagEffCorr_.empty())
+        {
+            TString flavKey("udsg");
+            if(abs(jflav[i])==5) flavKey="b";
+            else if (abs(jflav[i])==4) flavKey="c";
+            std::pair<TString,TString> key(btagger,flavKey);
+
+            TGraphErrors *mceffGr = btagEffCorr_[key].first;
+            TGraphErrors *sfGr    = btagEffCorr_[key].second;
+            float eff             = mceffGr->Eval(jpt[i]);
+            float sf              = sfGr->Eval(jpt[i]);
+            //take uncertainty for sf from point #3 ~ pT=50 GeV
+            //(otherwise one needs to loop to find the closest pt)
+            float sfunc           = sfGr->GetErrorY(3);
+
+            //correct for sf (+/- unc)
+            btsfutil_.modifyBTagsWithSF(nomBtagStatus,sf,eff);
+            btsfutil_.modifyBTagsWithSF(nomBtagStatusUp,sf+sfunc,eff);
+            btsfutil_.modifyBTagsWithSF(nomBtagStatusDown,sf-sfunc,eff);
+        }
+
+        nbjets     += (svlxy[i] > 0 || nomBtagStatus);
+        nbjetsUp   += (svlxy[i] > 0 || nomBtagStatusUp);
+        nbjetsDown += (svlxy[i] > 0 || nomBtagStatusDown);
+
+        //count svtx separately
+        nsvjets += (svlxy[i] > 0);
+    }
+
+    // At least one SV in any channel
+    if (nsvjets < 1) return false;
+
+    // That's it for emu, Z,W photon and dijet qcd control regions
+    if (abs(evcat) == 11*13) return true;
+    if (abs(evcat) == 23) return true;
+    if (abs(evcat) == 24) return true;
+    if (abs(evcat) == 22) return true;
+    if (abs(evcat) == 1) return true;
+
+    // For dilepton also MET > 40 GeV
+    if (abs(evcat) == 11*11 || abs(evcat) == 13*13) {
+        passMETNom  = (metpt>40);
+        passMETUp   = (metvar[4]>40);
+        passMETDown = (metvar[5]>40);
+        if(!passMETNom && !passMETUp && !passMETDown) return false;
+        return true;
+    }
+
+    // For single lepton, ask at least two jets
+    if (abs(evcat) == 11 && nj > 1) return true;
+    if (abs(evcat) == 13 && nj > 1) return true;
 
     // QCD control sample (non-isolated leptons)
     if (abs(evcat) == 11*100 || abs(evcat) == 13*100) {
@@ -1216,7 +1287,7 @@ void LxyTreeAnalysis::analyze() {
 
     bool passBtag(true), passBtagup(true), passBtagdown(true);
     bool passMET(true), passMETup(true),passMETdown(true);
-    if(selectSVLEvent(passBtag, passBtagup, passBtagdown,passMET,passMETup,passMETdown))
+    if(selectSVLSingleTopEvent(passBtag, passBtagup, passBtagdown,passMET,passMETup,passMETdown))
     {
         // Fill some control histograms:
         if(passBtag && passMET){

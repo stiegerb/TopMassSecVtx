@@ -86,6 +86,8 @@ public:
     virtual bool selectEvent();
     virtual bool selectSVLEvent(bool &passBtagNom, bool &passBtagUp, bool &passBtagDown,
                                 bool &passMETNom, bool &passMETUp, bool &passMETDown);
+    virtual bool selectSVLSingleTopEvent(bool &passBtagNom, bool &passBtagUp, bool &passBtagDown,
+                                         bool &passMETNom, bool &passMETUp, bool &passMETDown);
     virtual bool selectDYControlEvent();
     virtual int firstTrackIndex(int jetindex);
     void fillJPsiHists(int jetindex);

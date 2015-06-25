@@ -375,14 +375,24 @@ def testSignalFit(options):
 	xsecweights = pickle.load(cachefile)
 	cachefile.close()
 	print '>>> Read xsec weights from cache (.xsecweights.pck)'
+
+	from extractNtrkWeights import extractNTrkWeights
+	ntkWeights = extractNTrkWeights()
+
 	for key, hist in masshistos.iteritems():
+		## Xsection scaling
 		hist.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(key[1], key[2])]])
+
+		## Ntrack bin reweighting to data
+		try: hist.Scale(ntkWeights['inclusive'][key[4]])
+		except IndexError: pass
 
 	bkgmasshistos=None
 	try:
 		cachefile = open(options.inputBkg,'r')
 		bkgmasshistos = pickle.load(cachefile)
 		## Note that these are already scaled to xs*lumi
+		## and weighted to data ntrack multiplicities
 		cachefile.close()
 		print '>>> Read background shapes from (%s)' % options.inputBkg
 	except IOError:
@@ -514,14 +524,24 @@ def createWorkspace(options):
 	xsecweights = pickle.load(cachefile)
 	cachefile.close()
 	print '>>> Read xsec weights from cache (.xsecweights.pck)'
+
+	from extractNtrkWeights import extractNTrkWeights
+	ntkWeights = extractNTrkWeights()
+
 	for key, hist in masshistos.iteritems():
+		## Xsection scaling
 		hist.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(key[1], key[2])]])
+
+		## Ntrack bin reweighting to data
+		try: hist.Scale(ntkWeights['inclusive'][key[4]])
+		except IndexError: pass
 
 	bkgmasshistos=None
 	try:
 		cachefile = open(options.inputBkg,'r')
 		bkgmasshistos = pickle.load(cachefile)
 		## Note that these are already scaled to xs*lumi
+		## and weighted to data ntrack multiplicities
 		cachefile.close()
 		print '>>> Read background shapes from (%s)' % options.inputBkg
 	except IOError:

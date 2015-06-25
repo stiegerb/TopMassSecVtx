@@ -322,7 +322,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
             #30% unc on background
             Nbkg = ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
-            print '[Expectation] %2s, %d: %8.2f' % (chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal())
+            print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
+                                  chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
 
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
             sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,

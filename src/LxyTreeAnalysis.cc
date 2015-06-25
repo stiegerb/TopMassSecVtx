@@ -1175,8 +1175,8 @@ void LxyTreeAnalysis::analyze() {
 
     // Elizabeth
     // Find most forward jet with no SV
-    float max_jet_eta(-1);
-    float fwd_jet_eta(-1), fwd_jet_pt(-1);
+    float max_jet_eta(-999.99);
+    float fwd_jet_eta(-99.99), fwd_jet_pt(-99.99);
     for(int i=0; i<nfj; i++){
         if(fabs(fjeta[i]) > max_jet_eta){
             max_jet_eta = fabs(fjeta[i]);
@@ -1431,10 +1431,10 @@ void LxyTreeAnalysis::analyze() {
             fTJPt          = jpt  [svl.svindex];
             fTJFlav        = jflav[svl.svindex];
             fTJEta         = jeta [svl.svindex];
-	    //Elizabeth
-            fTFJPt         = fwd_jet_pt;//fjpt [0];
-            fTFJEta        = fwd_jet_eta;//fjeta[0];
-	    //End Elizabeth
+            if(max_jet_eta > 0){
+                fTFJPt         = fwd_jet_pt;
+                fTFJEta        = fwd_jet_eta;
+            }
             fTSVNtrk       = svntk[svl.svindex];
             fTSVMass       = svmass[svl.svindex];
             fTBHadNeutrino = bhadneutrino[svl.svindex]; // either -999, 0, or 1

@@ -65,7 +65,7 @@ class PseudoExperimentResults:
                                                         100,-3.03,2.97)
         self.histos[key]['muvsmtop']        = ROOT.TH2F('muvsmtop_%s'%pfix,
                                                         ';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',
-                                                        100,-5,5,100,0.85,1.15)
+                                                        100,-5,5,100,0.80,1.20)
         for var in self.histos[key]:
             self.histos[key][var].SetDirectory(0)
             self.histos[key][var].Sumw2()
@@ -283,7 +283,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     while var :
         varName=var.GetName()
         if not varName in ['mtop', 'SVLMass', 'mu']:
-        #if not varName in ['mtop', 'SVLMass']:
+        # if not varName in ['mtop', 'SVLMass']:
             ws.var(varName).setConstant(True)
             varCtr+=1
         var = varIter.Next()
@@ -291,11 +291,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
     #build the relevant PDFs
     allPdfs = {}
-    finalStates=['em','mm','ee','m','e']
-    for ch in finalStates:
+    for ch in ['em','mm','ee','m','e']:
         chsel=ch
         if len(options.selection)>0 : chsel += '_' + options.selection
-        for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
+        for ntrk in [tklow for tklow,_ in NTRKBINS]: # [3,4,5]
             ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
             ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
             ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
@@ -322,8 +321,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             #ws.var('bg_nuis_%s_%d'%(chsel,ntrk)).setConstant(True)
 
             #30% unc on background
-            Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
-            # print '[Expectation] %2s, %d: %8.2f' % (chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal())
+            Nbkg = ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
+            print '[Expectation] %2s, %d: %8.2f' % (chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal())
 
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
             sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
@@ -387,16 +386,17 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             #   to estimate the actual statistical error
             # - From the number of generated MC events, to estimate statistical
             #   uncertainty of variation
+            # THIS SCREWS UP THE MASS EXTRACTION: WHY??
             nevtsSeed = ihist.Integral()
-            if not 'nominal' in experimentTag:
-                try:
-                    nevtsSeed = systhistos[(chsel, experimentTag.replace('_172v5',''),
-                                            'tot' ,trk)].GetEntries() ## FIXME: GetEntries or Integral?
-                except KeyError:
-                    print prepend+"  >>> COULD NOT FIND SYSTHISTO FOR",chsel, experimentTag, trk
+            # if not 'nominal' in experimentTag:
+            #     try:
+            #         nevtsSeed = systhistos[(chsel, experimentTag.replace('_172v5',''),
+            #                                 'tot' ,trk)].GetEntries() ## FIXME: GetEntries or Integral?
+            #     except KeyError:
+            #         print prepend+"  >>> COULD NOT FIND SYSTHISTO FOR",chsel, experimentTag, trk
 
+            print '[Generation] Will generate PEs with %6.1f events' % nevtsSeed
             nevtsToGen = ROOT.gRandom.Poisson(nevtsSeed)
-
 
             pseudoDataH,pseudoData=None,None
             if options.genFromPDF:

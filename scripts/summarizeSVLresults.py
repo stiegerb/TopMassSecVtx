@@ -142,62 +142,82 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 	line.SetLineColor(ROOT.kGray+1)
 	line.SetLineStyle(2)
 
-	#bias
-	canvas.cd(1)
-	mtopFitH=fIn.Get('%s/mtopfit_%s'%(key,key))
-	mtopFitH.Draw()
-	mtopFitH.Fit('gaus','LMQ+')
+	# read the tree
+	peinfo = fIn.Get('%s/peinfo_%s'%(key,key)) ## TTree
 
-	mtopFitStatH=fIn.Get('%s/mtopfit_statunc_%s'%(key,key))
+	# define the histograms
+	# careful with the binning: if something is outside the range it gives trouble
+	mtopbiasH    = ROOT.TH1D('mtopbias_%s'%key,
+	                         ';#Deltam_{t} [GeV];Pseudo-experiments',
+	                         200, -10, 10)
+	mtopFitStatH = ROOT.TH1D('statunc_%s'%key,
+	                         ';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',
+	                         100, 0, 2.5)
+	mtopFitPullH = ROOT.TH1D('pull_%s'%key,
+	                         (';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});'
+	                          'Pseudo-experiments'),
+	                         100, -4.0, 4.0)
+	fitCorrH     = ROOT.TH2D('muvsbias_%s'%key,
+	                         (';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);'
+	                          'Pseudo-experiments'),
+	                         100, -5, 5, 100, 0.80, 1.20)
+
+	# project the histograms from the tree
+	peinfo.Project("mtopbias_%s"%key, "(mtopfit-genmtop)","")
+	peinfo.Project("statunc_%s"%key, "statunc","")
+	peinfo.Project("pull_%s"%key, "pull","")
+	peinfo.Project("muvsbias_%s"%key, "mu:(mtopfit-genmtop)","")
+
+	# bias
+	canvas.cd(1)
+	mtopbiasH.Draw("PE")
+	mtopbiasH.Fit('gaus','LMQ+', 'PE')
+
 	try:
-		gaus=mtopFitH.GetFunction('gaus')
+		gaus=mtopbiasH.GetFunction('gaus')
 		PEsummary['bias']=(gaus.GetParameter(1),gaus.GetParError(1))
-	except: ## FIXME
-		pass
+	except: pass ## FIXME
 	label=ROOT.TLatex()
 	label.SetNDC()
 	label.SetTextFont(42)
 	label.SetTextSize(0.04)
 	label.DrawLatex(0.1,0.92,'#bf{CMS} #it{simulation}')
-	if 'bias' in PEsummary : label.DrawLatex(0.15,0.80,'<m_{t}>=%3.3f#pm%3.3f'%(PEsummary['bias'][0],PEsummary['bias'][1]))
+	if 'bias' in PEsummary:
+		label.DrawLatex(0.15,0.80,'<m_{t}>=%3.3f#pm%3.3f'%(
+			                   PEsummary['bias'][0],
+			                   PEsummary['bias'][1]))
 	channelTitle=key.replace('_',', ')
 	label.DrawLatex(0.15,0.84,channelTitle)
 	ROOT.gPad.RedrawAxis()
 
-	#stat unc
-	PEsummary['stat']=mtopFitStatH.GetMean()
+	# stat unc
+	PEsummary['stat'] = mtopFitStatH.GetMean()
 
-	#pull
+	# pull
 	canvas.cd(2)
-	mtopFitPullH=fIn.Get('%s/mtopfit_pull_%s'%(key,key))
-	mtopFitPullH.Rebin(4)
-	mtopFitPullH.Draw()
-	mtopFitPullH.Fit('gaus','LMQ+')
+	mtopFitPullH.Draw("PE")
+	mtopFitPullH.Fit('gaus','LMQ+', 'PE')
 	try:
 		gaus=mtopFitPullH.GetFunction('gaus')
 		PEsummary['pull']=(gaus.GetParameter(1),gaus.GetParameter(2))
-		label.DrawLatex(0.15,0.80,'<pull>=%3.3f  #sigma(pull)=%3.3f'%(gaus.GetParameter(1),gaus.GetParameter(2)))
-	except:
-		pass
+		label.DrawLatex(0.15,0.80,'<pull>=%3.3f  #sigma(pull)=%3.3f'%(
+			                    gaus.GetParameter(1),
+			                    gaus.GetParameter(2)))
+	except: pass ## FIXME
 	ROOT.gPad.RedrawAxis()
 
-	#correlation with signal strength
+	# correlation with signal strength
 	canvas.cd(3)
-	fitCorrH=fIn.Get('%s/muvsmtop_%s'%(key,key))
 	fitCorrH.Draw('contz')
-	line.DrawLine(fitCorrH.GetXaxis().GetXmin(), 1.0, fitCorrH.GetXaxis().GetXmax(), 1.0)
-	line.DrawLine(0.0, fitCorrH.GetYaxis().GetXmin(), 0.0, fitCorrH.GetYaxis().GetXmax())
-	#cont=getContours(fitCorrH)
-	#drawOpt='ac'
-	#for gr in cont:
-	#	gr.Draw(drawOpt)
-	#	drawOpt='c'
-	#	gr.GetXaxis().SetTitle(fitCorrH.GetXaxis().GetTitle())
-	#	gr.GetYaxis().SetTitle(fitCorrH.GetYaxis().GetTitle())
+	line.DrawLine(fitCorrH.GetXaxis().GetXmin(), 1.0,
+		          fitCorrH.GetXaxis().GetXmax(), 1.0)
+	line.DrawLine(0.0, fitCorrH.GetYaxis().GetXmin(),
+		          0.0, fitCorrH.GetYaxis().GetXmax())
+
 	label.DrawLatex(0.15,0.80,'#rho(m_{t},#mu)=%3.3f'%fitCorrH.GetCorrelationFactor())
 	ROOT.gPad.RedrawAxis()
 
-	#all done, save
+	# all done, save
 	canvas.cd()
 	canvas.Modified()
 	canvas.Update()
@@ -245,7 +265,7 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
 			if verbose: print '  %-18s  ' % key.GetName(),
 
 			keyName=key.GetName()
-			PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=useForCalib,syst=syst)
+			PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=(doPlots and useForCalib),syst=syst)
 			if not 'bias' in PEsummary : continue
 
 			bias, biasErr = PEsummary['bias']
@@ -908,6 +928,7 @@ def makeSystPlot(results, totup, totdn):
 		ROOT.gPad.RedrawAxis()
 		if sel == '': sel = 'inclusive'
 		canv.SaveAs("syst_by_channel_%s.pdf"%sel)
+		canv.SaveAs("syst_by_channel_%s.png"%sel)
 
 	return
 
@@ -1009,7 +1030,7 @@ def main():
 
 	#parse calibration results from directory
 	if opt.calib:
-		results,calibGrMap,resCalibGrMap = parsePEResultsFromFile(url=opt.calib, verbose=False)
+		results,calibGrMap,resCalibGrMap = parsePEResultsFromFile(url=opt.calib, verbose=False, doPlots=False)
 
 		calibMap = show(grCollMap=calibGrMap,
 						outDir=opt.calib+'/plots',

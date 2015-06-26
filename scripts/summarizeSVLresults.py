@@ -138,6 +138,9 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 	#show results
 	canvas = ROOT.TCanvas('c_%s_%s'%(key,syst),'c',1500,500)
 	canvas.Divide(3,1)
+	line = ROOT.TLine()
+	line.SetLineColor(ROOT.kGray+1)
+	line.SetLineStyle(2)
 
 	#bias
 	canvas.cd(1)
@@ -159,6 +162,7 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 	if 'bias' in PEsummary : label.DrawLatex(0.15,0.80,'<m_{t}>=%3.3f#pm%3.3f'%(PEsummary['bias'][0],PEsummary['bias'][1]))
 	channelTitle=key.replace('_',', ')
 	label.DrawLatex(0.15,0.84,channelTitle)
+	ROOT.gPad.RedrawAxis()
 
 	#stat unc
 	PEsummary['stat']=mtopFitStatH.GetMean()
@@ -175,11 +179,14 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 		label.DrawLatex(0.15,0.80,'<pull>=%3.3f  #sigma(pull)=%3.3f'%(gaus.GetParameter(1),gaus.GetParameter(2)))
 	except:
 		pass
+	ROOT.gPad.RedrawAxis()
 
 	#correlation with signal strength
 	canvas.cd(3)
 	fitCorrH=fIn.Get('%s/muvsmtop_%s'%(key,key))
 	fitCorrH.Draw('contz')
+	line.DrawLine(fitCorrH.GetXaxis().GetXmin(), 1.0, fitCorrH.GetXaxis().GetXmax(), 1.0)
+	line.DrawLine(0.0, fitCorrH.GetYaxis().GetXmin(), 0.0, fitCorrH.GetYaxis().GetXmax())
 	#cont=getContours(fitCorrH)
 	#drawOpt='ac'
 	#for gr in cont:
@@ -188,6 +195,7 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 	#	gr.GetXaxis().SetTitle(fitCorrH.GetXaxis().GetTitle())
 	#	gr.GetYaxis().SetTitle(fitCorrH.GetYaxis().GetTitle())
 	label.DrawLatex(0.15,0.80,'#rho(m_{t},#mu)=%3.3f'%fitCorrH.GetCorrelationFactor())
+	ROOT.gPad.RedrawAxis()
 
 	#all done, save
 	canvas.cd()
@@ -949,7 +957,9 @@ def compareResults(files):
 			allH[i].SetLineColor(COLORS[i])
 			allH[i].SetDirectory(0)
 			allH[i].GetYaxis().SetTitle(axislabel[unc])
-			allH[i].GetYaxis().SetRangeUser(0,3.5)
+			allH[i].GetYaxis().SetRangeUser(0,4.0)
+			if unc == 'expunc':
+				allH[i].GetYaxis().SetRangeUser(0,2)
 			if unc == 'statunc':
 				allH[i].GetYaxis().SetRangeUser(0,2)
 			leg.AddEntry(allH[i],allH[i].GetTitle(),'l')

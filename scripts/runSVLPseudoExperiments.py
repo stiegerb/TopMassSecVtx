@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import ROOT
 import os,sys
+import os.path as osp
 import optparse
 import pickle
 import numpy
@@ -17,31 +18,66 @@ class PseudoExperimentResults:
         self.genMtop=genMtop
         self.outFileUrl=outFileUrl
         self.histos={}
+        self.trees={}
+
+        self.genmtop = numpy.zeros(1, dtype=float)
+        self.genmtop[0] = self.genMtop
+        self.mtopfit = numpy.zeros(1, dtype=float)
+        self.statunc = numpy.zeros(1, dtype=float)
+        self.pull    = numpy.zeros(1, dtype=float)
+        self.mu      = numpy.zeros(1, dtype=float)
 
     def addFitResult(self,key,ws):
 
         #init histogram if needed
-        if not (key in self.histos): self.initHistos(key)
+        if not (key in self.histos):
+            self.initHistos(key)
 
         #fill the histograms
         if ws.var('mtop').getError()>0:
-            self.histos[key]['mtopfit'].Fill(ws.var('mtop').getVal()-self.genMtop)
-            self.histos[key]['mtopfit_statunc'].Fill(ws.var('mtop').getError())
-            self.histos[key]['mtopfit_pull'].Fill((ws.var('mtop').getVal()-self.genMtop)/ws.var('mtop').getError())
-            self.histos[key]['muvsmtop'].Fill(ws.var('mtop').getVal()-self.genMtop,ws.var('mu').getVal())
+            mtopfit = ws.var('mtop').getVal()
+            bias = mtopfit-self.genMtop
+            error = ws.var('mtop').getError()
+            self.mtopfit[0] = mtopfit
+            self.statunc[0] = error
+            self.pull   [0] = bias/error
+            self.mu     [0] = ws.var('mu').getVal()
+
+            self.histos[key]['mtopfit']        .Fill(bias)
+            self.histos[key]['mtopfit_statunc'].Fill(error)
+            self.histos[key]['mtopfit_pull']   .Fill(bias/error)
+            self.histos[key]['muvsmtop']       .Fill(bias, ws.var('mu').getVal())
+            self.trees[key].Fill()
 
     def initHistos(self,key):
         self.histos[key]={}
         pfix=''
         for tk in key: pfix += str(tk)+'_'
         pfix=pfix[:-1]
-        self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,';#Deltam_{t} [GeV];Pseudo-experiments',200,-5,5)
-        self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',200,0,1.5)
-        self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',100,-3.03,2.97)
-        self.histos[key]['muvsmtop']        = ROOT.TH2F('muvsmtop_%s'%pfix,';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',100,-5,5,100,0.95,1.05)
+        self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,
+                                                        ';#Deltam_{t} [GeV];Pseudo-experiments',
+                                                        200,-5,5)
+        self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,
+                                                        ';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',
+                                                        200,0,1.5)
+        self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,
+                                                        ';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',
+                                                        100,-3.03,2.97)
+        self.histos[key]['muvsmtop']        = ROOT.TH2F('muvsmtop_%s'%pfix,
+                                                        ';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',
+                                                        100,-5,5,100,0.80,1.20)
         for var in self.histos[key]:
             self.histos[key][var].SetDirectory(0)
             self.histos[key][var].Sumw2()
+
+        self.trees[key] = ROOT.TTree('peinfo_%s'%pfix,'SVL Pseudoexperiment info')
+        self.trees[key].Branch('genmtop', self.genmtop, 'genmtop/D')
+        self.trees[key].Branch('mtopfit', self.mtopfit, 'mtopfit/D')
+        self.trees[key].Branch('statunc', self.statunc, 'statunc/D')
+        self.trees[key].Branch('pull',    self.pull,    'pull/D')
+        self.trees[key].Branch('mu',      self.mu,      'mu/D')
+
+
 
     def saveResults(self):
         peFile=ROOT.TFile(self.outFileUrl,'RECREATE')
@@ -54,6 +90,7 @@ class PseudoExperimentResults:
             outDir.cd()
             for var in self.histos[key]:
                 self.histos[key][var].Write()
+            self.trees[key].Write()
 
             mtopRes=ROOT.TVectorD(6)
             mtopRes[0]=self.histos[key]['mtopfit'].GetMean()
@@ -235,7 +272,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     selTag=''
     if len(options.selection)>0 : selTag='_%s'%options.selection
     summary=PseudoExperimentResults(genMtop=genMtop,
-                                    outFileUrl=os.path.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)))
+                                    outFileUrl=osp.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)))
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")
@@ -246,7 +283,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     while var :
         varName=var.GetName()
         if not varName in ['mtop', 'SVLMass', 'mu']:
-        #if not varName in ['mtop', 'SVLMass']:
+        # if not varName in ['mtop', 'SVLMass']:
             ws.var(varName).setConstant(True)
             varCtr+=1
         var = varIter.Next()
@@ -254,11 +291,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
     #build the relevant PDFs
     allPdfs = {}
-    finalStates=['em','mm','ee','m','e']
-    for ch in finalStates:
+    for ch in ['em','mm','ee','m','e']:
         chsel=ch
         if len(options.selection)>0 : chsel += '_' + options.selection
-        for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
+        for ntrk in [tklow for tklow,_ in NTRKBINS]: # [3,4,5]
             ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
             ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
             ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
@@ -274,6 +310,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
             ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
             Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
+            # Ntt is fixed at the expected events for 172.5 GeV
 
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
             Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
@@ -285,8 +322,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             #ws.var('bg_nuis_%s_%d'%(chsel,ntrk)).setConstant(True)
 
             #30% unc on background
-            Nbkg        =  ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
-            # print '[Expectation] %2s, %d: %8.2f' % (chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal())
+            Nbkg = ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
+
+            # print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
+            #                       chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
+            # This is wrong, for some reason tfrac is evaluated at mtop = 100
+            # Nbkg will also be wrong then
 
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
             sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
@@ -314,6 +355,15 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     if options.verbose>1:
         print prepend+'Running %d experiments' % options.nPexp
         print 80*'-'
+
+    if not 'nominal' in experimentTag:
+        cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../../'))
+        cfilepath = osp.join(cfilepath, ".svlsysthistos.pck")
+        cachefile = open(cfilepath, 'r')
+        systhistos = pickle.load(cachefile)
+        print prepend+'>>> Read systematics histograms from cache (.svlsysthistos.pck)'
+        cachefile.close()
+
     for i in xrange(0,options.nPexp):
 
         #iterate over available categories to build the set of likelihoods to combine
@@ -334,8 +384,25 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             ws.var('mu').setVal(1.0)
 
             #read histogram and generate random data
-            ihist       = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
-            nevtsToGen = ROOT.gRandom.Poisson(ihist.Integral())
+            ihist = inputDistsF.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,trk))
+
+            # Get number of events to be generated either:
+            # - From properly scaled input files for nominal mass variations
+            #   to estimate the actual statistical error
+            # - From the number of generated MC events, to estimate statistical
+            #   uncertainty of variation
+            # THIS SCREWS UP THE MASS EXTRACTION: WHY??
+            nevtsSeed = ihist.Integral()
+            # if not 'nominal' in experimentTag:
+            #     try:
+            #         nevtsSeed = systhistos[(chsel, experimentTag.replace('_172v5',''),
+            #                                 'tot' ,trk)].GetEntries() ## FIXME: GetEntries or Integral?
+            #     except KeyError:
+            #         print prepend+"  >>> COULD NOT FIND SYSTHISTO FOR",chsel, experimentTag, trk
+
+            # print '[Generation] Will generate PEs with %6.1f events' % nevtsSeed
+            nevtsToGen = ROOT.gRandom.Poisson(nevtsSeed)
+
             pseudoDataH,pseudoData=None,None
             if options.genFromPDF:
                 obs = ROOT.RooArgSet(ws.var('SVLMass'))
@@ -452,18 +519,15 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     if len(sel)==0 : sel='inclusive'
     baseJobsDir='svlPEJobs'
     if options.calib : baseJobsDir+='_calib'
-    jobsDir = os.path.join(cmsswBase,'src/UserCode/TopMassSecVtx/%s/%s'%(baseJobsDir,sel),time.strftime('%b%d'))
-    if not os.path.exists(jobsDir):
+    jobsDir = osp.join(cmsswBase,'src/UserCode/TopMassSecVtx/%s/%s'%(baseJobsDir,sel),time.strftime('%b%d'))
+    if not osp.exists(jobsDir):
         os.system('mkdir -p %s'%jobsDir)
 
     print 'Single job scripts stored in %s' % jobsDir
 
-    wsfilepath = os.path.abspath(wsfile)
-    pefilepath = os.path.abspath(pefile)
-    odirpath = os.path.abspath(jobsDir)
-    if options.calib:
-        odirpath = os.path.abspath(os.path.join(jobsDir,'calibrated'))
-        os.system('mkdir -p %s'%odirpath)
+    wsfilepath = osp.abspath(wsfile)
+    pefilepath = osp.abspath(pefile)
+    odirpath = osp.abspath(jobsDir)
 
     ## Feedback before submitting the jobs
     if not options.noninteractive:
@@ -485,14 +549,14 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
         if options.genFromPDF:
             command += ' --genFromPDF'
         if options.calib:
-            command += ' --calib %s' % os.path.abspath(options.calib)
+            command += ' --calib %s' % osp.abspath(options.calib)
         if len(options.selection):
             command += ' --selection %s'%options.selection
         scriptFile.write('%s\n'%command)
         scriptFile.close()
         os.system('chmod u+rwx %s'%scriptFileN)
-        os.system("bsub -q %s -J SVLPE%d \'%s\'"% (queue, n+1, scriptFileN))
-        sys.stdout.write(bcolors.OKGREEN+' SUBMITTED' + bcolors.ENDC)
+        os.system("bsub -q %s -J SVLPE_%d_%s \'%s\'"% (queue, n+1, tag, scriptFileN))
+    sys.stdout.write(bcolors.OKGREEN+' ALL JOBS SUBMITTED\n' + bcolors.ENDC)
     return 0
 
 """
@@ -543,7 +607,7 @@ def main():
 
     print 'Storing output in %s' % opt.outDir
     os.system('mkdir -p %s' % opt.outDir)
-    os.system('mkdir -p %s' % os.path.join(opt.outDir, 'plots'))
+    os.system('mkdir -p %s' % osp.join(opt.outDir, 'plots'))
 
     # launch pseudo-experiments
     if not opt.isData:

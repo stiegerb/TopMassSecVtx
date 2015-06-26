@@ -140,8 +140,8 @@ def makeBackgroundHistos(treefiles, opt):
 	cachefile.close()
 	return bghistos
 
-def sumBGHistos(processes, bghistos, xsecweights, dySFs, qcdTemplates,
-	            opt, dyScale=None, qcdScale=None):
+def sumBGHistos(processes, bghistos, xsecweights, ntkWeights, dySFs,
+	            qcdTemplates, opt, dyScale=None, qcdScale=None):
 	bghistos_added = {}
  	# Save the total expected integral for the overall normalization:
  	bg_normalization = {}
@@ -211,6 +211,10 @@ def sumBGHistos(processes, bghistos, xsecweights, dySFs, qcdTemplates,
 						qcdhist.Scale(qcdScale)
 
 					bghistos_added[(tag, ntk)].Add(qcdhist)
+
+			## Scale by SV track multiplicity weights:
+			bghistos_added[(tag, ntk)].Scale(ntkWeights['inclusive'][ntk])
+
 	return bghistos_added
 
 
@@ -253,10 +257,16 @@ def main(args, opt):
 	cachefile.close()
 	print '>>> Read QCD templates from cache (.svlqcdtemplates.pck)'
 
+	## Read SV Track multiplicity weights:
+	from extractNtrkWeights import extractNTrkWeights
+	ntkWeights = extractNTrkWeights()
+
+
 	## Now add them up with proper scales
 	bghistos_added = sumBGHistos(processes=treefiles.keys(),
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
+		                         ntkWeights=ntkWeights,
 		                         dySFs=dySFs,
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt)
@@ -264,6 +274,7 @@ def main(args, opt):
 	bghistos_added_dyup = sumBGHistos(processes=treefiles.keys(),
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
+		                         ntkWeights=ntkWeights,
 		                         dySFs=dySFs,
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
@@ -271,6 +282,7 @@ def main(args, opt):
 	bghistos_added_dydn = sumBGHistos(processes=treefiles.keys(),
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
+		                         ntkWeights=ntkWeights,
 		                         dySFs=dySFs,
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
@@ -278,6 +290,7 @@ def main(args, opt):
 	bghistos_added_qcdup = sumBGHistos(processes=treefiles.keys(),
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
+		                         ntkWeights=ntkWeights,
 		                         dySFs=dySFs,
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
@@ -285,6 +298,7 @@ def main(args, opt):
 	bghistos_added_qcddn = sumBGHistos(processes=treefiles.keys(),
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
+		                         ntkWeights=ntkWeights,
 		                         dySFs=dySFs,
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
@@ -309,10 +323,6 @@ def main(args, opt):
 	# (tag, chan, mass, comb)      -> histo
 	# (tag, chan, mass, comb, ntk) -> histo
 	cachefile.close()
-
-	## Read SV Track multiplicity weights:
-	from extractNtrkWeights import extractNTrkWeights
-	ntkWeights = extractNTrkWeights()
 
 	ofi = ROOT.TFile.Open(osp.join(opt.outDir,'pe_inputs.root'),'RECREATE')
 	ofi.cd()

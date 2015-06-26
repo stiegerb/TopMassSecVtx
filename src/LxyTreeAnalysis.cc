@@ -1173,6 +1173,30 @@ void LxyTreeAnalysis::analyze() {
     if(svindices[1]<0) svindices.pop_back();
     if(svindices[0]<0) svindices.pop_back();
 
+    // Elizabeth
+    // Find most forward jet with no SV
+    float max_jet_eta(-999.99);
+    float fwd_jet_eta(-99.99), fwd_jet_pt(-99.99);
+    for(int i=0; i<nfj; i++){
+        if(fabs(fjeta[i]) > max_jet_eta){
+            max_jet_eta = fabs(fjeta[i]);
+            fwd_jet_eta = fjeta[i];
+        	fwd_jet_pt = fjpt[i];
+        }
+    }
+    if(max_jet_eta < 0){
+        for(int i=0; i<nj; i++){
+            // Only jets with no secondary vertices
+        	if(svpt[i] > 0) continue;
+            if(fabs(jeta[i]) > max_jet_eta){
+                max_jet_eta = fabs(jeta[i]);
+                fwd_jet_eta = jeta[i];
+                fwd_jet_pt = jpt[i];
+            }
+        }
+    }
+    //End Elizabeth
+
     std::vector<TLorentzVector> isoObjects;
     for (int il = 0; il < nl; ++il) {
         TLorentzVector p4;
@@ -1407,8 +1431,10 @@ void LxyTreeAnalysis::analyze() {
             fTJPt          = jpt  [svl.svindex];
             fTJFlav        = jflav[svl.svindex];
             fTJEta         = jeta [svl.svindex];
-            fTFJPt         = fjpt [0];
-            fTFJEta        = fjeta[0];
+            if(max_jet_eta > 0){
+                fTFJPt         = fwd_jet_pt;
+                fTFJEta        = fwd_jet_eta;
+            }
             fTSVNtrk       = svntk[svl.svindex];
             fTSVMass       = svmass[svl.svindex];
 	    fTBHadId       = bhadid[svl.svindex];

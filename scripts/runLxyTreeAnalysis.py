@@ -1,8 +1,10 @@
 #! /usr/bin/env python
-import os,re
+import sys,os,re
+import os.path as osp
 import pprint
 
 from runPlotter import readXSecWeights
+from UserCode.TopMassSecVtx.PlotUtils import bcolors
 
 PLOTS = [
 ##  ('name',  'branch', 'selection/weight', nbins, minx, maxx)
@@ -19,8 +21,8 @@ def makeDir(dirname):
     call(['mkdir', '-p', dirname])
 
 def getBareName(path):
-    _,filename = os.path.split(path)
-    barename, ext = os.path.splitext(filename)
+    _,filename = osp.split(path)
+    barename, ext = osp.splitext(filename)
     return barename
 
 def getProcessNormalization(procname, xsecweights):
@@ -88,10 +90,10 @@ def getListOfTasks(directory, mask=''):
     file_list = []
 
     ## Local directory
-    if os.path.isdir(directory):
+    if osp.isdir(directory):
         for file_path in os.listdir(directory):
             if file_path.endswith('.root'):
-                file_list.append(os.path.join(directory,file_path))
+                file_list.append(osp.join(directory,file_path))
 
     ## Directory on eos
     elif directory.startswith('/store/'):
@@ -146,7 +148,7 @@ def getListOfTasks(directory, mask=''):
 
     ## Apply mask:
     if len(mask) > 0:
-        task_list = [(name,task) for name,task in task_list if mask in name]
+        task_list = [(name,fname) for name,fname in task_list if mask in name]
 
     # pprint.pprint(task_list)
     return task_list
@@ -175,7 +177,7 @@ def runLxyTreeAnalysisPacked(args):
         print 50*'<'
         return False
 
-def runLxyTreeAnalysis(name, location, treeloc, xsecweights, maxevents=-1):
+def runLxyTreeAnalysis(name, location, treeloc, xsecweights=None, maxevents=-1):
     from ROOT import gSystem, TChain
 
     ## Load the previously compiled shared object library into ROOT
@@ -209,7 +211,9 @@ def runLxyTreeAnalysis(name, location, treeloc, xsecweights, maxevents=-1):
         ana.setMaxEvents(maxevents)
 
     ## Get the branching ratio from the json file(s):
-    ana.setProcessNormalization(getProcessNormalization(name, xsecweights))
+    if xsecweights:
+        ana.setProcessNormalization(
+            getProcessNormalization(name, xsecweights))
 
     ## Add the plots to LxyTreeAnalysis
     for varname, branch, selection, nbins, minx, maxx in PLOTS:
@@ -217,7 +221,7 @@ def runLxyTreeAnalysis(name, location, treeloc, xsecweights, maxevents=-1):
 
     ## Handle output file
     makeDir(opt.outDir)
-    output_file = os.path.join(opt.outDir, name+".root")
+    output_file = osp.join(opt.outDir, name+".root")
 
     ## Run the loop
     ana.RunJob(output_file)
@@ -226,6 +230,46 @@ def runLxyTreeAnalysis(name, location, treeloc, xsecweights, maxevents=-1):
 
     print '  ... %s DONE' % name
     return True
+
+def submitBatchJobs(tasks, options, queue='8nh'):
+    import time, subprocess, shlex
+    cmsswBase = os.environ['CMSSW_BASE']
+    baseJobsDir='svlBatchJobs'
+    jobsDir = osp.join(cmsswBase,'src/UserCode/TopMassSecVtx/%s'%(baseJobsDir),time.strftime('%b%d'))
+    if not osp.exists(jobsDir): os.makedirs(jobsDir)
+
+    print 'Single job scripts stored in %s' % jobsDir
+
+    odirpath = osp.abspath(options.outDir)
+
+    ## Feedback before submitting the jobs
+    raw_input('This will submit %d jobs to batch. %s '
+              'Did you remember to run scram b?%s \n '
+              'Continue?'%(len(tasks), bcolors.RED, bcolors.ENDC))
+
+    for n,task in enumerate(tasks):
+        name, url = task
+        sys.stdout.write(' ... processing job %2d - %-22s' % (n+1, name))
+        sys.stdout.flush()
+
+        scriptFileN = '%s/runLxyTreeAnalysis_%s.sh'%(jobsDir,name)
+        scriptFile = open(scriptFileN, 'w')
+        scriptFile.write('#!/bin/bash\n')
+        scriptFile.write('cd %s/src\n'%cmsswBase)
+        scriptFile.write('eval `scram r -sh`\n')
+        scriptFile.write('cd %s\n'%jobsDir)
+        command = ('runLxyTreeAnalysis.py %s -o %s -t %s -n %d' %
+                        (url, odirpath, options.treeLoc, options.maxEvents))
+        scriptFile.write('%s\n'%command)
+        scriptFile.close()
+        os.system('chmod u+rwx %s'%scriptFileN)
+        submitcmd = "bsub -q %s -J LxyTA_%s -oo %s \'%s\'"% (
+                     queue, name, osp.join(jobsDir,'out'), scriptFileN)
+        ## FIXME the -oo thing might fail, not tested yet
+        os.system(submitcmd)
+
+    sys.stdout.write('%sALL JOBS SUBMITTED %s\n' % (bcolors.OKGREEN, bcolors.ENDC))
+    return 0
 
 if __name__ == "__main__":
     from optparse import OptionParser
@@ -261,6 +305,8 @@ if __name__ == "__main__":
                       dest="processOnlyNonExistent",
                       help=("Process only input files that are not already"
                             "in the output directory"))
+    parser.add_option("-b", "--batch", action="store_true",
+                      dest="batch", help="Run jobs on lxbatch")
     parser.add_option("-j", "--jobs", default=0,
                       action="store", type="int", dest="jobs",
                       help=("Run N jobs in parallel."
@@ -272,7 +318,8 @@ if __name__ == "__main__":
     (opt, args) = parser.parse_args()
 
     if len(args)>0:
-        xsecweights = readXSecWeights(jsonfile=None)
+        try: xsecweights = readXSecWeights(jsonfile=None)
+        except RuntimeError: xsecweights = None
 
         if len(args) == 1:
             tasks = getListOfTasks(args[0], mask=opt.processOnly)
@@ -281,19 +328,22 @@ if __name__ == "__main__":
 
         ## Check for existing output files:
         if opt.processOnlyNonExistent:
-            existing = [os.path.splitext(os.path.basename(f))[0] for f in
+            existing = [osp.splitext(osp.basename(f))[0] for f in
                                       os.listdir(opt.outDir) if
-                                          os.path.splitext(f)[1] == '.root']
+                                          osp.splitext(f)[1] == '.root']
             if existing:
                 print "Found %d existing files." % len(existing)
                 # for fname in existing: print '    %-35s'%fname
-            reducedtasks = [(n,t) for n,t in tasks if not n in existing]
+            reducedtasks = [(n,f) for n,f in tasks if not n in existing]
             tasks = reducedtasks
+
+        if opt.batch:
+            exit(submitBatchJobs(tasks, options=opt))
 
         if len(tasks)>1:
             print 'Will process the following %d files:'%len(tasks)
-            for n,t in tasks:
-                print '    %-35s %s' %(n,t)
+            for n,f in tasks:
+                print '    %-35s %s' %(n,f)
             if opt.processOnlyNonExistent:
                 print (">>> Processing only files that are not found already in "
                        "output directory.")
@@ -304,18 +354,18 @@ if __name__ == "__main__":
             raw_input("Press any key to run on %d files..."%len(tasks))
 
         if opt.jobs == 0:
-            for name, task in tasks:
+            for name, url in tasks:
                 runLxyTreeAnalysis(name=name,
-                                   location=task,
+                                   location=url,
                                    treeloc=opt.treeLoc,
                                    xsecweights=xsecweights,
                                    maxevents=opt.maxEvents)
-        else:
+        elif opt.jobs > 0:
             from multiprocessing import Pool
             pool = Pool(opt.jobs)
 
-            tasklist = [(name, task, opt.treeLoc, xsecweights, opt.maxEvents)
-                               for name,task in tasks]
+            tasklist = [(name, url, opt.treeLoc, xsecweights, opt.maxEvents)
+                               for name,url in tasks]
             pool.map(runLxyTreeAnalysisPacked, tasklist)
             pool.close()
             pool.join()

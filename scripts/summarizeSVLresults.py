@@ -138,16 +138,21 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 	#show results
 	canvas = ROOT.TCanvas('c_%s_%s'%(key,syst),'c',1500,500)
 	canvas.Divide(3,1)
+	line = ROOT.TLine()
+	line.SetLineColor(ROOT.kGray+1)
+	line.SetLineStyle(2)
 
 	#bias
 	canvas.cd(1)
 	mtopFitH=fIn.Get('%s/mtopfit_%s'%(key,key))
 	mtopFitH.Draw()
 	mtopFitH.Fit('gaus','LMQ+')
+
+	mtopFitStatH=fIn.Get('%s/mtopfit_statunc_%s'%(key,key))
 	try:
 		gaus=mtopFitH.GetFunction('gaus')
 		PEsummary['bias']=(gaus.GetParameter(1),gaus.GetParError(1))
-	except:
+	except: ## FIXME
 		pass
 	label=ROOT.TLatex()
 	label.SetNDC()
@@ -157,17 +162,10 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 	if 'bias' in PEsummary : label.DrawLatex(0.15,0.80,'<m_{t}>=%3.3f#pm%3.3f'%(PEsummary['bias'][0],PEsummary['bias'][1]))
 	channelTitle=key.replace('_',', ')
 	label.DrawLatex(0.15,0.84,channelTitle)
+	ROOT.gPad.RedrawAxis()
 
 	#stat unc
-	#canvas.cd(2)
-	mtopFitStatH=fIn.Get('%s/mtopfit_statunc_%s'%(key,key))
-	#mtopFitStatH.Draw('hist')
-	#mtopFitStatH.SetFillStyle(1001)
-	#mtopFitStatH.SetFillColor(ROOT.kGray)
-	#label.DrawLatex(0.15,0.80,
-	#                '<#sigma_{stat}>=%3.3f #sigma(#sigma_{stat})=%3.3f'
-	#                %(mtopFitStatH.GetMean(),mtopFitStatH.GetRMS()))
-	PEsummary['stat']=(mtopFitStatH.GetMean(),mtopFitStatH.GetMeanError())
+	PEsummary['stat']=mtopFitStatH.GetMean()
 
 	#pull
 	canvas.cd(2)
@@ -181,11 +179,14 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 		label.DrawLatex(0.15,0.80,'<pull>=%3.3f  #sigma(pull)=%3.3f'%(gaus.GetParameter(1),gaus.GetParameter(2)))
 	except:
 		pass
+	ROOT.gPad.RedrawAxis()
 
 	#correlation with signal strength
 	canvas.cd(3)
 	fitCorrH=fIn.Get('%s/muvsmtop_%s'%(key,key))
 	fitCorrH.Draw('contz')
+	line.DrawLine(fitCorrH.GetXaxis().GetXmin(), 1.0, fitCorrH.GetXaxis().GetXmax(), 1.0)
+	line.DrawLine(0.0, fitCorrH.GetYaxis().GetXmin(), 0.0, fitCorrH.GetYaxis().GetXmax())
 	#cont=getContours(fitCorrH)
 	#drawOpt='ac'
 	#for gr in cont:
@@ -194,6 +195,7 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 	#	gr.GetXaxis().SetTitle(fitCorrH.GetXaxis().GetTitle())
 	#	gr.GetYaxis().SetTitle(fitCorrH.GetYaxis().GetTitle())
 	label.DrawLatex(0.15,0.80,'#rho(m_{t},#mu)=%3.3f'%fitCorrH.GetCorrelationFactor())
+	ROOT.gPad.RedrawAxis()
 
 	#all done, save
 	canvas.cd()
@@ -240,16 +242,14 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
 
 		useForCalib=True if 'nominal' in syst else False
 		for key in fIn.GetListOfKeys():
-			if verbose:
-				print '  %-18s  ' % key.GetName(),
+			if verbose: print '  %-18s  ' % key.GetName(),
 
 			keyName=key.GetName()
 			PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=useForCalib,syst=syst)
 			if not 'bias' in PEsummary : continue
 
 			bias, biasErr = PEsummary['bias']
-			if verbose:
-				print '%6.3f +- %5.3f' % (bias, biasErr)
+			if verbose: print '%6.3f +- %5.3f' % (bias, biasErr)
 
 
 			#save results
@@ -262,7 +262,7 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
 
 			# add point for systematics
 			# if not useForCalib or mass==172.5:
-			results[(keyName,selection)][syst] = (mass+bias,biasErr)
+			results[(keyName,selection)][syst] = (mass+bias,biasErr,PEsummary['stat'])
 
 			# add statistical error for nominal 172.5:
 			if syst == '172.5':
@@ -322,7 +322,6 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
 	line.SetLineStyle(2)
 	line.SetLineColor(ROOT.kGray)
 	for key,grColl in sorted(grCollMap.items()):
-
 		ip+=1
 		nleg=0
 		if ip==1:
@@ -673,10 +672,10 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 
 			of.write('Statistical uncertainty        & ')
 			for icat,cat in enumerate(filterCats,1):
-				diffstr = '$ \\pm%4.2f        $ & ' % results[(cat, sel)]['stat'][0]
+				diffstr = '$ \\pm%4.2f        $ & ' % results[(cat, sel)]['stat']
 				if cat == filterCats[-1]: diffstr = diffstr[:-2]
 				of.write(diffstr)
-				statUnc.SetBinContent(icat,results[(cat, sel)]['stat'][0])
+				statUnc.SetBinContent(icat,results[(cat, sel)]['stat'])
 
 
 			of.write('\\\\')
@@ -737,7 +736,7 @@ def makeSystPlot(results, totup, totdn):
 		print ''
 
 		print ' stat err  ',
-		for cat in cats: print ('   +-%4.2f ' % results[(cat,sel)]['stat'][0]),
+		for cat in cats: print ('   +-%4.2f ' % results[(cat,sel)]['stat']),
 		print ''
 	print 80*'-'
 
@@ -754,7 +753,7 @@ def makeSystPlot(results, totup, totdn):
 		graph_comb_stat = ROOT.TGraphAsymmErrors(1)
 		graph_comb_stat.SetName("systs_comb_stat_%s"%sel)
 		mt_comb = results[('comb_0',sel)]['172.5'][0]
-		staterr_comb = results[('comb_0',sel)]['stat'][0]
+		staterr_comb = results[('comb_0',sel)]['stat']
 		toterrup = math.sqrt(staterr_comb**2 + totup[sel]['comb_0']**2)
 		toterrdn = math.sqrt(staterr_comb**2 + totdn[sel]['comb_0']**2)
 		graph_comb.SetPoint(0, 0.5, mt_comb)
@@ -807,7 +806,7 @@ def makeSystPlot(results, totup, totdn):
 		graph_chan_stat = ROOT.TGraphAsymmErrors(len(chancats))
 		graph_chan_stat.SetName("systs_chan_stat_%s"%sel)
 		for n,(xpos,cat) in enumerate(zip(chanxpos, chancats)):
-			staterr = results[(cat,sel)]['stat'][0]
+			staterr = results[(cat,sel)]['stat']
 			toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2) ## FIXME: Full stat error up or half?
 			toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
  			graph_chan.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
@@ -832,7 +831,7 @@ def makeSystPlot(results, totup, totdn):
 		graph_ntrk_stat = ROOT.TGraphAsymmErrors(len(ntrkcats))
 		graph_ntrk_stat.SetName("systs_ntrk_stat_%s"%sel)
 		for n,(xpos,cat) in enumerate(zip(ntrkxpos, ntrkcats)):
-			staterr = results[(cat,sel)]['stat'][0]
+			staterr = results[(cat,sel)]['stat']
 			toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2)
 			toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
  			graph_ntrk.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
@@ -958,7 +957,9 @@ def compareResults(files):
 			allH[i].SetLineColor(COLORS[i])
 			allH[i].SetDirectory(0)
 			allH[i].GetYaxis().SetTitle(axislabel[unc])
-			allH[i].GetYaxis().SetRangeUser(0,3.5)
+			allH[i].GetYaxis().SetRangeUser(0,4.0)
+			if unc == 'expunc':
+				allH[i].GetYaxis().SetRangeUser(0,2)
 			if unc == 'statunc':
 				allH[i].GetYaxis().SetRangeUser(0,2)
 			leg.AddEntry(allH[i],allH[i].GetTitle(),'l')

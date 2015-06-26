@@ -310,6 +310,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
             ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
             Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
+            # Ntt is fixed at the expected events for 172.5 GeV
 
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
             Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
@@ -322,8 +323,11 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
             #30% unc on background
             Nbkg = ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
-            print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
-                                  chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
+
+            # print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
+            #                       chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
+            # This is wrong, for some reason tfrac is evaluated at mtop = 100
+            # Nbkg will also be wrong then
 
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
             sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
@@ -396,7 +400,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             #     except KeyError:
             #         print prepend+"  >>> COULD NOT FIND SYSTHISTO FOR",chsel, experimentTag, trk
 
-            print '[Generation] Will generate PEs with %6.1f events' % nevtsSeed
+            # print '[Generation] Will generate PEs with %6.1f events' % nevtsSeed
             nevtsToGen = ROOT.gRandom.Poisson(nevtsSeed)
 
             pseudoDataH,pseudoData=None,None
@@ -524,9 +528,6 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
     wsfilepath = osp.abspath(wsfile)
     pefilepath = osp.abspath(pefile)
     odirpath = osp.abspath(jobsDir)
-    if options.calib:
-        odirpath = osp.abspath(osp.join(jobsDir,'calibrated'))
-        os.system('mkdir -p %s'%odirpath)
 
     ## Feedback before submitting the jobs
     if not options.noninteractive:
@@ -554,8 +555,8 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
         scriptFile.write('%s\n'%command)
         scriptFile.close()
         os.system('chmod u+rwx %s'%scriptFileN)
-        os.system("bsub -q %s -J SVLPE%d \'%s\'"% (queue, n+1, scriptFileN))
-        sys.stdout.write(bcolors.OKGREEN+' SUBMITTED' + bcolors.ENDC)
+        os.system("bsub -q %s -J SVLPE_%d_%s \'%s\'"% (queue, n+1, tag, scriptFileN))
+    sys.stdout.write(bcolors.OKGREEN+' ALL JOBS SUBMITTED\n' + bcolors.ENDC)
     return 0
 
 """

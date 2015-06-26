@@ -263,7 +263,8 @@ def submitBatchJobs(tasks, options, queue='8nh'):
         scriptFile.write('%s\n'%command)
         scriptFile.close()
         os.system('chmod u+rwx %s'%scriptFileN)
-        submitcmd = "bsub -q %s -J LxyTA_%s \'%s\'"% (queue, name, scriptFileN)
+        submitcmd = "bsub -q %s -J LxyTA_%s -oo %s \'%s\'"% (
+                     queue, name, osp.join(jobsDir,'out'), scriptFileN)
         os.system(submitcmd)
 
     sys.stdout.write('%sALL JOBS SUBMITTED %s\n' % (bcolors.OKGREEN, bcolors.ENDC))

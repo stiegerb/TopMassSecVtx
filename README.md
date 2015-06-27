@@ -153,9 +153,10 @@ Will printout the "final" systematics table
 ---------------------------------------------------
 ### Control region analysis
 ```
-./scripts/fitSecVtxProperties.py -i treedir/qcd_control    -o treedir/qcd_control/plots/    --weightPt --onlyCentral --minLxySig 10
-./scripts/fitSecVtxProperties.py -i treedir/z_control      -o treedir/z_control/plots/      --weightPt --vetoCentral --rebin 3
-./scripts/fitSecVtxProperties.py -i treedir/photon_control -o treedir/photon_control/plots/ --weightPt --rebin 2
+./scripts/fitSecVtxProperties.py -i treedir/qcd_control    -o outDir/qcd_control/plots/    --weightPt --onlyCentral --minLxySig 10
+./scripts/fitSecVtxProperties.py -i treedir/z_control      -o outDir/z_control/plots/      --doScales --weightPt --vetoCentral --rebin 3
+./scripts/fitSecVtxProperties.py -i treedir/photon_control -o outDir/photon_control/plots/ --weightPt --rebin 2
+./scripts/fitSecVtxProperties.py -i treedir/               -o outDir/control/plots/        --filter -143
 `````
 After creating the workspace you can use it directly by using -w workspace.root instead of -i ntuple_dir
 

@@ -157,9 +157,10 @@ def buildWorkspace(opt):
                       
     #add files to the corresponding chain
     chains={'data'       : ROOT.TChain('SVLInfo'), 
-            'mc'         : ROOT.TChain('SVLInfo'),
-            'mcscaleup'  : ROOT.TChain('SVLInfo'),
-            'mcscaledown': ROOT.TChain('SVLInfo')}
+            'mc'         : ROOT.TChain('SVLInfo')}
+    if opt.doScales:
+       chains['mcscaleup']=ROOT.TChain('SVLInfo')
+       chains['mcscaledown']=ROOT.TChain('SVLInfo')
     for f in [ f for f in os.listdir(opt.inDir) if 'root' in f]:      
         pathToF=os.path.join(opt.inDir,f)
         if 'DY' in f and 'scale' in f : continue
@@ -169,8 +170,9 @@ def buildWorkspace(opt):
            if 'DY1' in f or 'DY2' in f or 'DY3' in f:
               pathToF_up=pathToF_up.replace('50toInf','50toInf_scaleup')
               pathToF_dn=pathToF_up.replace('scaleup','scaledown')
-           chains['mcscaleup'].Add(pathToF_up)
-           chains['mcscaledown'].Add(pathToF_dn)
+           if opt.doScales:   
+              chains['mcscaleup'].Add(pathToF_up)
+              chains['mcscaledown'].Add(pathToF_dn)
         else:
            chains['data'].Add(pathToF)
 
@@ -213,7 +215,10 @@ def buildWorkspace(opt):
             #read entry
             chains[key].GetEntry(i)
 
-            #check number of tracks
+            #filter event category if required
+            if opt.filter!=0 and opt.filter!= chains[key].EvCat : continue
+
+            #Check number of tracks
             ntk=chains[key].SVNtrk
             if ntk<NTKMIN : continue
             if ntk>NTKMAX : continue
@@ -271,6 +276,7 @@ def buildWorkspace(opt):
           if not ('_b_' in key): continue
           if '_fw0' in key : continue
           normKey=key[:-1]+'0'
+       if histos[key].Integral()==0 : continue
        print key,'->', normKey
        histos[key].Scale(histos[normKey].Integral()/histos[key].Integral())
     
@@ -482,9 +488,11 @@ def comparePostFitDistributions(opt):
          canvas.cd()
          pullsToDraw=[{0:('Z2*',ROOT.kBlack),          4:('P11',ROOT.kMagenta)},
                       {1:('Z2* r_{b}',ROOT.kBlack),    2:('Z2* r_{b} hard',ROOT.kMagenta), 3:('Z2* r_{b} soft',ROOT.kViolet+2)},
-                      {5:('Z2* peterson',ROOT.kBlack), 6:('Z2* Lund',ROOT.kMagenta)},
-                      {7:('#mu_{R}/#mu_{F} up',ROOT.kBlack), 8:('#mu_{R}/#mu_{F} down',ROOT.kMagenta)}
-                      ]
+                      {5:('Z2* peterson',ROOT.kBlack), 6:('Z2* Lund',ROOT.kMagenta)}]
+         if opt.doScales:
+            pullsToDraw.append(
+               {7:('#mu_{R}/#mu_{F} up',ROOT.kBlack), 8:('#mu_{R}/#mu_{F} down',ROOT.kMagenta)}
+               )
 
          for ip in xrange(0,len(pullsToDraw)):
             pads[ip+1].cd()
@@ -634,7 +642,9 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('-i', '--inDir',       dest='inDir'   ,    help='input directory',        default=None,  type='string')
     parser.add_option('-o', '--outDir',      dest='outDir'  ,    help='output directory',       default='./',  type='string')
+    parser.add_option(      '--filter',      dest='filter',      help='ev cat to filter',       default=0,     type=int)
     parser.add_option(      '--weightPt',    dest='weightPt',    help='weight pt',              default=False, action='store_true')
+    parser.add_option(      '--doScales',    dest='doScales',    help='show QCD scales',        default=False, action='store_true')
     parser.add_option(      '--rebin',       dest='rebin',       help='rebin',                  default=0,     type=int)
     parser.add_option(      '--onlyCentral', dest='onlyCentral', help='only central jets',      default=False, action='store_true')
     parser.add_option(      '--vetoCentral', dest='vetoCentral', help='veto very central jets', default=False, action='store_true')

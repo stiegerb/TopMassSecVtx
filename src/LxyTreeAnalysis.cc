@@ -999,6 +999,9 @@ void LxyTreeAnalysis::BookSVLTree() {
     fSVLInfoTree->Branch("BHadNeutrino", &fTBHadNeutrino, "BHadNeutrino/I");
     fSVLInfoTree->Branch("BHadId", &fTBHadId, "BHadId/I");
     fSVLInfoTree->Branch("LPt",       &fTLPt,       "LPt/F");
+    fSVLInfoTree->Branch("LEta",       &fTLEta,       "LEta/F");
+    fSVLInfoTree->Branch("LCharge",       &fTLCharge,       "LCharge/F");
+    fSVLInfoTree->Branch("LPhi",       &fTLPhi,       "LPhi/F");
     fSVLInfoTree->Branch("SVMass",    &fTSVMass,    "SVMass/F");
     fSVLInfoTree->Branch("SVNtrk",    &fTSVNtrk,    "SVNtrk/I");
     fSVLInfoTree->Branch("SVPt",      &fTSVPt,      "SVPt/F");
@@ -1010,10 +1013,12 @@ void LxyTreeAnalysis::BookSVLTree() {
     fSVLInfoTree->Branch("SVPtRel",   &fTSVPtRel,   "SVPtRel/F");
     fSVLInfoTree->Branch("JPt",       &fTJPt,       "JPt/F");
     fSVLInfoTree->Branch("JEta",      &fTJEta,      "JEta/F");
+    fSVLInfoTree->Branch("JPhi",      &fTJPhi,      "JPhi/F");
     fSVLInfoTree->Branch("JFlav",     &fTJFlav,     "JFlav/I");
     fSVLInfoTree->Branch("FJPt",       &fTFJPt,       "FJPt/F");
     fSVLInfoTree->Branch("MT",       &fTMT,       "MT/F");
     fSVLInfoTree->Branch("FJEta",      &fTFJEta,      "FJEta/F");
+    fSVLInfoTree->Branch("FJPhi",      &fTFJPhi,      "FJPhi/F");
     fSVLInfoTree->Branch("GenMlb",    &fTGenMlb,    "GenMlb/F");
     fSVLInfoTree->Branch("GenTopPt",  &fTGenTopPt,  "GenTopPt/F");
     // CombCat = 11, 12, 21, 22 for the four possible lepton/sv combinations
@@ -1057,6 +1062,9 @@ void LxyTreeAnalysis::ResetSVLTree()
     fTBHadNeutrino   = -99;
     fTBHadId         = 0;
     fTLPt            = -99.99;
+    fTLEta           = -99.99;
+    fTLCharge           = -99.99;
+    fTLPhi           = -99.99;
     fTSVPt           = -99.99;
     fTSVLxy          = -99.99;
     fTSVLxySig       = -99.99;
@@ -1065,7 +1073,9 @@ void LxyTreeAnalysis::ResetSVLTree()
     fTSVProjFrac     = -99.99;
     fTSVPtRel        = -99.99;
     fTJEta           = -99.99;
+    fTJPhi           = -99.99;
     fTJPt            = -99.99;
+    fTFJPhi          = -99.99;
     fTFJEta          = -99.99;
     fTFJPt           = -99.99;
     fTMT             = 0;
@@ -1247,12 +1257,13 @@ void LxyTreeAnalysis::analyze() {
     // Elizabeth
     // Find most forward jet with no SV
     float max_jet_eta(-999.99);
-    float fwd_jet_eta(-99.99), fwd_jet_pt(-99.99);
+    float fwd_jet_eta(-99.99), fwd_jet_pt(-99.99), fwd_jet_phi(-99.99);
     for(int i=0; i<nfj; i++){
         if(fabs(fjeta[i]) > max_jet_eta){
             max_jet_eta = fabs(fjeta[i]);
             fwd_jet_eta = fjeta[i];
         	fwd_jet_pt = fjpt[i];
+		fwd_jet_phi = fjphi[i];
         }
     }
     if(max_jet_eta < 0){
@@ -1263,6 +1274,7 @@ void LxyTreeAnalysis::analyze() {
                 max_jet_eta = fabs(jeta[i]);
                 fwd_jet_eta = jeta[i];
                 fwd_jet_pt = jpt[i];
+		fwd_jet_phi = fjphi[i];
             }
         }
     }
@@ -1490,6 +1502,9 @@ void LxyTreeAnalysis::analyze() {
 
             fTMT           = mT;
             fTLPt          = lpt  [svl.lepindex];
+            fTLEta         = leta [svl.lepindex];
+            fTLCharge         = lid [svl.lepindex]/abs(lid[svl.lepindex]);
+            fTLPhi         = lphi [svl.lepindex];
             fTSVPt         = svpt [svl.svindex];
             fTSVLxy        = svlxy[svl.svindex];
             if(svlxyerr[svl.svindex]) fTSVLxySig =  svlxy[svl.svindex]/svlxyerr[svl.svindex];
@@ -1500,11 +1515,13 @@ void LxyTreeAnalysis::analyze() {
             }
             fTSVProjFrac = 1.0+svp4.Vect().Dot(lp4.Vect())/lp4.Vect().Mag2();
             fTJPt          = jpt  [svl.svindex];
+            fTJPhi          = jphi  [svl.svindex];
             fTJFlav        = jflav[svl.svindex];
             fTJEta         = jeta [svl.svindex];
             if(max_jet_eta > 0){
                 fTFJPt         = fwd_jet_pt;
                 fTFJEta        = fwd_jet_eta;
+		fTFJPhi = fwd_jet_phi;
             }
             fTSVNtrk       = svntk[svl.svindex];
             fTSVMass       = svmass[svl.svindex];

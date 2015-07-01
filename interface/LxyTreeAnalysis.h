@@ -187,8 +187,8 @@ public:
     Float_t fTMET,fTMT;
     Float_t fTWeight[11], fTJESWeight[5], fTMETWeight[3], fTBtagWeight[3], fTXSWeight;
     Float_t fTSVLMass, fTSVLMass_sf[2], fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot;
-    Float_t fTLPt, fTSVMass, fTSVPt, fTSVLxy, fTSVLxySig, fTJPt, fTJEta, fMjj,fTSVPtChFrac, fTSVPzChFrac,fTSVProjFrac,fTSVPtRel;
-    Float_t fTFJPt, fTFJEta;
+    Float_t fTLPt, fTLEta, fTLCharge, fTLPhi, fTSVMass, fTSVPt, fTSVLxy, fTSVLxySig, fTJPt, fTJEta, fTJPhi, fMjj,fTSVPtChFrac, fTSVPzChFrac,fTSVProjFrac,fTSVPtRel;
+    Float_t fTFJPt, fTFJEta, fTFJPhi;
     Float_t fTSVBfragWeight[6];
     Float_t fPDFWeight[100];
     Int_t fTBHadNeutrino,fTBHadId;

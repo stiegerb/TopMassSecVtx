@@ -13,34 +13,36 @@ Attempt at implementing TMVA
 """
 def runTMVAAnalysis(filenames,myMethodList=''):
 	
+	print('\nEntered code.\n')
+
 	Use = {}
 
 	Use['Cuts']=1
-	Use['CutsD']=1
+	Use['CutsD']=0
 	Use['CutsPCA']=0
 	Use['CutsGA']=0
 	Use['CutsSA']=0
 
-	Use['Likelihood']=1
+	Use['Likelihood']=0
 	Use['LikelihoodD']=0
-	Use['LikelihoodPCA']=1
+	Use['LikelihoodPCA']=0
 	Use['LikelihoodKDE']=0
 	Use['LikelihoodMIX']=0
 	
-	Use["PDERS"]           = 1
+	Use["PDERS"]           = 0
 	Use["PDERSD"]          = 0
 	Use["PDERSPCA"]        = 0
-	Use["PDEFoam"]         = 1
+	Use["PDEFoam"]         = 0
 	Use["PDEFoamBoost"]    = 0 
-	Use["KNN"]             = 1 
+	Use["KNN"]             = 0 
 	
-	Use["LD"]              = 1 
+	Use["LD"]              = 0 
 	Use["Fisher"]          = 0
 	Use["FisherG"]         = 0
 	Use["BoostedFisher"]   = 0 
 	Use["HMatrix"]         = 0
 	
-	Use["FDA_GA"]          = 1 
+	Use["FDA_GA"]          = 0 
 	Use["FDA_SA"]          = 0
 	Use["FDA_MC"]          = 0
 	Use["FDA_MT"]          = 0
@@ -49,19 +51,21 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	
 	Use["MLP"]             = 0 
 	Use["MLPBFGS"]         = 0 
-	Use["MLPBNN"]          = 1 
+	Use["MLPBNN"]          = 0 
 	Use["CFMlpANN"]        = 0 
 	Use["TMlpANN"]         = 0 
 	
-	Use["SVM"]             = 1
+	Use["SVM"]             = 0
 	
-	Use["BDT"]             = 1 
+	Use["BDT"]             = 0 
 	Use["BDTG"]            = 0 
 	Use["BDTB"]            = 0 
 	Use["BDTD"]            = 0 
 	Use["BDTF"]            = 0  
 	
 	Use["RuleFit"]         = 1
+
+	print('\nDefined Use.\n')
 	
 	print('\n==> Start TMVA Classification\n')
 	
@@ -81,28 +85,38 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 					return 0
 			Use[regMethod] = 1
 
+	print('\nPassed method list stuff.\n')
+
 	outfileName = '/afs/cern.ch/user/e/edrueke/top_mass_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/Cut_Analysis/TMVA_test_output.root'
 	outputFile = ROOT.TFile.Open(outfileName,'RECREATE')
 
-	factory = TMVA.Factory('TMVAClassification',outputFile,'!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification')
+	#factory = TMVA.Factory('TMVAClassification',outputFile,'!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification')
+	factory = TMVA.Factory('TMVAClassification',outputFile,'!V:!Silent:Color:DrawProgressBar:AnalysisType=Classification')
+
+	print('\nCreated factory.\n')
 
 	#Need to AddVariables to the factory here.
 
-	factory.AddVariable('NPVtx','NPVtx','Units','I')
-	factory.AddVariable('NJets','NJets','Units','I')
-	factory.AddVariable('NBTags','NBTags','Units','I')
-	factory.AddVariable('MET','MET','GeV','F')
-	factory.AddVariable('SVLDeltaR','SVLDeltaR','Units','F')
-	factory.AddVariable('LPt','LPt','GeV','F')
-	factory.AddVariable('SVMass','SVMass','GeV','F')
-	factory.AddVariable('SVNtrk','SVNtrk','Units','I')
-	factory.AddVariable('SVPt','SVPt','GeV','F')
-	factory.AddVariable('SVLxy','SVLxy','GeV','F')
-	factory.AddVariable('JPt','JPt','GeV','F')
-	factory.AddVariable('JEta','JEta','Units','F')
-	factory.AddVariable('FJPt','FJPt','GeV','F')
+	#factory.AddVariable('NPVtx','NPVtx','Units','I')
+	#factory.AddVariable('NJets','NJets','Units','I')
+	#factory.AddVariable('NBTags','NBTags','Units','I')
+	#factory.AddVariable('MET','MET','GeV','F')
+	#factory.AddVariable('SVLDeltaR','SVLDeltaR','Units','F')
+	#factory.AddVariable('LPt','LPt','GeV','F')
+	#factory.AddVariable('SVMass','SVMass','GeV','F')
+	#factory.AddVariable('SVNtrk','SVNtrk','Units','I')
+	#factory.AddVariable('SVPt','SVPt','GeV','F')
+	#factory.AddVariable('SVLxy','SVLxy','GeV','F')
+	#factory.AddVariable('JPt','JPt','GeV','F')
+	#factory.AddVariable('JEta','JEta','Units','F')
+	#factory.AddVariable('FJPt','FJPt','GeV','F')
 	factory.AddVariable('FJEta','FJEta','Units','F')
-	factory.AddVariable('MT','MT','GeV','F')
+	#factory.AddVariable('MT','MT','GeV','F')
+	#Difference and multiplication of these variables. Lepton charge.  bjet (jeta) eta and lepton eta
+#Add lepton eta and phis for everything.
+
+
+	print('\nAdded variables.\n')
 
 	sigNames = []
 	bkgNames = []
@@ -123,19 +137,29 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 		myTree = inFile.Get('SVLInfo')
 		bkgTrees.append(myTree)
 
+	print('\nAdded Trees.\n')
+
 	#Need to figure out how to access the weights
 	weights = 1.0
-
+	#Weights should be the cross sections
 	for tree in sigTrees:
 		factory.AddSignalTree(tree,weights)
 	for tree in bkgTrees:
 		factory.AddBackgroundTree(tree,weights)
 
-	factory.SetBackgroundWeightExpression('1.0')
+	#Use electron or muon, exactly 2 jets, exactly 1 btag
+	#weight multiplication
+#do in the header file and 
+	factory.SetWeightExpression('PDFWeight')
+#	factory.SetWeightExpression('1.0')
+
+	print('\nAdded signal and bkg trees and set weight expression.\n')
 
 	cutS = ROOT.TCut()
 	cutB = ROOT.TCut()
 	factory.PrepareTrainingAndTestTree(cutS,cutB,"nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V" )
+
+	print('\nPrepared training and test trees.\n')
 
 	if Use['Cuts']:
 		factory.BookMethod(TMVA.Types.kCuts,'Cuts','!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart')
@@ -207,8 +231,8 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	if Use['BDTG']:
 		factory.BookMethod(TMVA.Types.kBDT,'BDTG','!H:!V:NTrees=1000:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=20:MaxDepth=2')
 	if Use['BDT']:
-		factory.BookMethod(TMVA.Types.kBDT,'BDT','!H:!V:NTrees=850:SeparationType=GiniIndex:nCuts=20')
-		#factory.BookMethod(TMVA.Types.kBDT,'BDT','!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20')
+		#factory.BookMethod(TMVA.Types.kBDT,'BDT','!H:!V:NTrees=850:SeparationType=GiniIndex:nCuts=20')
+		factory.BookMethod(TMVA.Types.kBDT,'BDT','!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20')
 	if Use['BDTB']:
 		factory.BookMethod(TMVA.Types.kBDT,'BDTB','!H:!V:NTrees=400:BoostType=Bagging:SeparationType=GiniIndex:nCuts=20')
 	if Use['BDTD']:
@@ -218,9 +242,14 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	if Use['RuleFit']:
 		factory.BookMethod(TMVA.Types.kRuleFit,'RuleFit','H:!V:RuleFitModule=RFTMVA:Model=ModRuleLinear:MinImp=0.001:RuleMinDist=0.001:NTrees=20:fEventsMin=0.01:fEventsMax=0.5:GDTau=-1.0:GDTauPrec=0.01:GDStep=0.01:GDNSteps=10000:GDErrScale=1.02')
 
+	print('\nPassed all of the if statements.\n')
+
 	factory.TrainAllMethods()
+	print('\nTrained all methods.\n')
 	factory.TestAllMethods()
+	print('\nTested all methods.\n')
 	factory.EvaluateAllMethods()
+	print('\nEvaluated all methods.\n')
 
 	outputFile.Close()
 
@@ -420,6 +449,9 @@ def main(args, options):
 	
 	#prepare one task per file to process
 	taskList=[]
+	#EDIT
+	filenames = []
+
 	try:
 		
 		treefiles = {} # procname -> [filename1, filename2, ...]
@@ -429,19 +461,18 @@ def main(args, options):
 				isData, pname, splitno = resolveFilename(os.path.basename(filename))
 				if not pname in treefiles: treefiles[pname] = []
 				taskList.append((filename, isData,options.outDir))
+				filenames.append(filename)
 		else:
 			for filename in os.listdir(args[0]):
 				if not os.path.splitext(filename)[1] == '.root': continue	
 				isData, pname, splitno = resolveFilename(filename)
 				if not pname in treefiles: treefiles[pname] = []
 				taskList.append((filename, isData,options.outDir))
+				filenames.append(filename)
 	except IndexError:
 		print "Please provide a valid input directory"
 		return -1
 	
-	#EDIT
-	filenames = []
-
 	#submit tasks in parallel, if required, or run sequentially
 #	if opt.jobs>0:
 #		print ' Submitting jobs in %d threads' % opt.jobs
@@ -452,8 +483,10 @@ def main(args, options):
 #		for filename,isData,outDir in taskList:
 #			runSingleTopAnalysis(filename=filename,isData=isData,outDir=outDir)
 	#EDIT
-	for filename,isData,outDir in taskList:
-		filenames.append(filename)
+	for filename in filenames:
+#		filenames.append(filename)
+		print(filename)
+	print('\nEntering code.\n')
 	runTMVAAnalysis(filenames)
 
 	#EDIT: Write current cuts to sig/bkg file

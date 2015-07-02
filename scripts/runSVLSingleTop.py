@@ -9,6 +9,44 @@ from runPlotter import addPlotterOptions
 from UserCode.TopMassSecVtx.storeTools_cff import fillFromStore
 
 """
+Get cross sections for use with weight.
+"""
+def getCrossSections():
+	sample_file = open('samples.txt','r')
+	xsecs = {}
+	lines = sample_file.readlines()
+	sample_file.close()
+	
+	for line in lines:
+		if 'dtag' in line:
+			i=0
+			dtag = ''
+			found_dtag = False
+			found_xsec = False
+			xsec =''
+			while i < len(line):
+				if line[i] == 'd' and i!=len(line)-1 and line[i+1]=='t':
+					found_dtag = True
+					i+=7
+				if found_dtag:
+					if line[i]=='"':
+						found_dtag = False
+					else:
+						dtag+=line[i]
+				if line[i] == 'x' and i!=len(line)-1 and line[i+1]=='s':
+					found_xsec = True
+					i+=6
+				if found_xsec:
+					if line[i]==',':
+						found_xsec = False
+					else:
+						xsec+=line[i]
+				i+=1
+			print(dtag)
+			xsecs['root://eoscms//eos/cms/store/cmst3/group/top/summer2015/treedir_bbbcb36/singlet/'+dtag+'root']=float(xsec)
+	return xsecs
+	
+"""
 Attempt at implementing TMVA
 """
 def runTMVAAnalysis(filenames,myMethodList=''):
@@ -37,7 +75,7 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	Use["KNN"]             = 0 
 	
 	Use["LD"]              = 0 
-	Use["Fisher"]          = 0
+	Use["Fisher"]          = 1
 	Use["FisherG"]         = 0
 	Use["BoostedFisher"]   = 0 
 	Use["HMatrix"]         = 0
@@ -63,7 +101,7 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	Use["BDTD"]            = 0 
 	Use["BDTF"]            = 0  
 	
-	Use["RuleFit"]         = 1
+	Use["RuleFit"]         = 0
 
 	print('\nDefined Use.\n')
 	
@@ -97,24 +135,23 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	#Need to AddVariables to the factory here.
 
-	#factory.AddVariable('NPVtx','NPVtx','Units','I')
-	#factory.AddVariable('NJets','NJets','Units','I')
-	#factory.AddVariable('NBTags','NBTags','Units','I')
-	#factory.AddVariable('MET','MET','GeV','F')
-	#factory.AddVariable('SVLDeltaR','SVLDeltaR','Units','F')
-	#factory.AddVariable('LPt','LPt','GeV','F')
-	#factory.AddVariable('SVMass','SVMass','GeV','F')
-	#factory.AddVariable('SVNtrk','SVNtrk','Units','I')
-	#factory.AddVariable('SVPt','SVPt','GeV','F')
-	#factory.AddVariable('SVLxy','SVLxy','GeV','F')
-	#factory.AddVariable('JPt','JPt','GeV','F')
-	#factory.AddVariable('JEta','JEta','Units','F')
-	#factory.AddVariable('FJPt','FJPt','GeV','F')
-	factory.AddVariable('FJEta','FJEta','Units','F')
-	#factory.AddVariable('MT','MT','GeV','F')
-	#Difference and multiplication of these variables. Lepton charge.  bjet (jeta) eta and lepton eta
-#Add lepton eta and phis for everything.
+	factory.AddVariable('JEta','F')
+	factory.AddVariable('FJEta','F')
+	factory.AddVariable('FJPhi','F')
+	factory.AddVariable('JPhi','F')
+	factory.AddVariable('LEta','F')
+	factory.AddVariable('LPhi','F')
+	factory.AddVariable('LCharge','F')
+	factory.AddVariable('DeltaEtaJetFJet:=FJEta - JEta','F')
+	factory.AddVariable('DeltaEtaJetLepton:=JEta - LEta','F')
+	factory.AddVariable('DeltaEtaFJetLepton:=FJEta - LEta','F')
+	factory.AddVariable('DeltaPhiJetFJet:=FJPhi - JPhi','F')
+	factory.AddVariable('DeltaPhiJetLepton:=JPhi - LPhi','F')
+	factory.AddVariable('DeltaPhiFJetLepton:=FJPhi - LPhi','F')
 
+	factory.AddSpectator('NJets','I')
+	factory.AddSpectator('evCat','I')
+	factory.AddSpectator('NBTags','I')
 
 	print('\nAdded variables.\n')
 
@@ -128,35 +165,46 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	sigTrees = []
 	bkgTrees = []
+	sigWeights = []
+	bkgWeights = []
+	weights = getCrossSections()
+
 	for name in sigNames:
 		inFile = ROOT.TFile.Open(name)
 		myTree = inFile.Get('SVLInfo')
 		sigTrees.append(myTree)
+		sigWeights.append(weights[name])
 	for name in bkgNames:
 		inFile = ROOT.TFile.Open(name)
 		myTree = inFile.Get('SVLInfo')
 		bkgTrees.append(myTree)
+		bkgWeights.append(weights[name])
 
 	print('\nAdded Trees.\n')
 
 	#Need to figure out how to access the weights
-	weights = 1.0
 	#Weights should be the cross sections
-	for tree in sigTrees:
-		factory.AddSignalTree(tree,weights)
-	for tree in bkgTrees:
-		factory.AddBackgroundTree(tree,weights)
+	for key in weights.keys():
+		print(key)
+
+	i = 0
+	while i < len(sigTrees):
+		factory.AddSignalTree(sigTrees[i],sigWeights[i])
+		i+=1
+	i=0
+	while i < len(bkgTrees):
+		factory.AddBackgroundTree(bkgTrees[i],bkgWeights[i])
+		i+=1
 
 	#Use electron or muon, exactly 2 jets, exactly 1 btag
 	#weight multiplication
-#do in the header file and 
-	factory.SetWeightExpression('PDFWeight')
+	factory.SetWeightExpression('Weight[0]*Weight[1]*Weight[4]*METWeight[0]*BtagWeight[0]*JESWeight[0]')
 #	factory.SetWeightExpression('1.0')
 
 	print('\nAdded signal and bkg trees and set weight expression.\n')
 
-	cutS = ROOT.TCut()
-	cutB = ROOT.TCut()
+	cutS = ROOT.TCut('(evCat==-11 || evcat==-13) && NJets == 2 && NBTags == 1')
+	cutB = ROOT.TCut('(evCat==-11 || evcat==-13) && NJets == 2 && NBTags == 1')
 	factory.PrepareTrainingAndTestTree(cutS,cutB,"nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V" )
 
 	print('\nPrepared training and test trees.\n')

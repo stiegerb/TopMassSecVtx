@@ -7,43 +7,48 @@ from makeSVLDataMCPlots import resolveFilename
 from makeSVLMassHistos import LUMI
 from runPlotter import addPlotterOptions
 from UserCode.TopMassSecVtx.storeTools_cff import fillFromStore
+import pickle
 
 """
 Get cross sections for use with weight.
 """
 def getCrossSections():
-	sample_file = open('samples.txt','r')
-	xsecs = {}
-	lines = sample_file.readlines()
-	sample_file.close()
-	
-	for line in lines:
-		if 'dtag' in line:
-			i=0
-			dtag = ''
-			found_dtag = False
-			found_xsec = False
-			xsec =''
-			while i < len(line):
-				if line[i] == 'd' and i!=len(line)-1 and line[i+1]=='t':
-					found_dtag = True
-					i+=7
-				if found_dtag:
-					if line[i]=='"':
-						found_dtag = False
-					else:
-						dtag+=line[i]
-				if line[i] == 'x' and i!=len(line)-1 and line[i+1]=='s':
-					found_xsec = True
-					i+=6
-				if found_xsec:
-					if line[i]==',':
-						found_xsec = False
-					else:
-						xsec+=line[i]
-				i+=1
-			print(dtag)
-			xsecs['root://eoscms//eos/cms/store/cmst3/group/top/summer2015/treedir_bbbcb36/singlet/'+dtag+'root']=float(xsec)
+
+	cachefile = open('.xsecweights.pck','r')
+	xsecs = pickle.load(cachefile)
+	cachefile.close()
+#	sample_file = open('samples.txt','r')
+#	xsecs = {}
+#	lines = sample_file.readlines()
+#	sample_file.close()
+#	
+#	for line in lines:
+#		if 'dtag' in line:
+#			i=0
+#			dtag = ''
+#			found_dtag = False
+#			found_xsec = False
+#			xsec =''
+#			while i < len(line):
+#				if line[i] == 'd' and i!=len(line)-1 and line[i+1]=='t':
+#					found_dtag = True
+#					i+=7
+#				if found_dtag:
+#					if line[i]=='"':
+#						found_dtag = False
+#					else:
+#						dtag+=line[i]
+#				if line[i] == 'x' and i!=len(line)-1 and line[i+1]=='s':
+#					found_xsec = True
+#					i+=6
+#				if found_xsec:
+#					if line[i]==',':
+#						found_xsec = False
+#					else:
+#						xsec+=line[i]
+#				i+=1
+#			#xsecs['root://eoscms//eos/cms/store/cmst3/group/top/summer2015/treedir_bbbcb36/singlet/'+dtag+'.root']=float(xsec)
+#			xsecs['treedir_bbbcb36/singlet/'+dtag+'.root']=float(xsec)
 	return xsecs
 	
 """
@@ -95,7 +100,7 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	
 	Use["SVM"]             = 0
 	
-	Use["BDT"]             = 0 
+	Use["BDT"]             = 1 
 	Use["BDTG"]            = 0 
 	Use["BDTB"]            = 0 
 	Use["BDTD"]            = 0 
@@ -125,7 +130,7 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	print('\nPassed method list stuff.\n')
 
-	outfileName = '/afs/cern.ch/user/e/edrueke/top_mass_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/Cut_Analysis/TMVA_test_output.root'
+	outfileName = 'TMVA/TMVA_test.root'
 	outputFile = ROOT.TFile.Open(outfileName,'RECREATE')
 
 	#factory = TMVA.Factory('TMVAClassification',outputFile,'!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification')
@@ -135,58 +140,83 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	#Need to AddVariables to the factory here.
 
-	factory.AddVariable('JEta','F')
-	factory.AddVariable('FJEta','F')
-	factory.AddVariable('FJPhi','F')
-	factory.AddVariable('JPhi','F')
-	factory.AddVariable('LEta','F')
-	factory.AddVariable('LPhi','F')
+	factory.AddVariable('abs(JEta)','F')
+	factory.AddVariable('abs(FJEta)','F')
+	factory.AddVariable('abs(FJPhi)','F')
+	factory.AddVariable('abs(JPhi)','F')
+	factory.AddVariable('abs(LEta)','F')
+	factory.AddVariable('abs(LPhi)','F')
 	factory.AddVariable('LCharge','F')
-	factory.AddVariable('DeltaEtaJetFJet:=FJEta - JEta','F')
-	factory.AddVariable('DeltaEtaJetLepton:=JEta - LEta','F')
-	factory.AddVariable('DeltaEtaFJetLepton:=FJEta - LEta','F')
-	factory.AddVariable('DeltaPhiJetFJet:=FJPhi - JPhi','F')
-	factory.AddVariable('DeltaPhiJetLepton:=JPhi - LPhi','F')
-	factory.AddVariable('DeltaPhiFJetLepton:=FJPhi - LPhi','F')
+	factory.AddVariable('DeltaEtaJetFJet:=abs(FJEta - JEta)','F')
+	factory.AddVariable('DeltaEtaJetLepton:=abs(JEta - LEta)','F')
+	factory.AddVariable('DeltaEtaFJetLepton:=abs(FJEta - LEta)','F')
+	factory.AddVariable('DeltaPhiJetFJet:=abs(FJPhi - JPhi)','F')
+	factory.AddVariable('DeltaPhiJetLepton:=abs(JPhi - LPhi)','F')
+	factory.AddVariable('DeltaPhiFJetLepton:=abs(FJPhi - LPhi)','F')
 
 	factory.AddSpectator('NJets','I')
-	factory.AddSpectator('evCat','I')
+	factory.AddSpectator('EvCat','I')
 	factory.AddSpectator('NBTags','I')
 
 	print('\nAdded variables.\n')
 
 	sigNames = []
 	bkgNames = []
+	#print('Filenames:\n')
 	for item in filenames:
-		if 'SingleT' in item:
-			sigNames.append(item)
-		else:
-			bkgNames.append(item)
+		#print(item)
+		if 'Data' not in item:
+			if 'SingleT' in item:
+				sigNames.append('treedir_bbbcb36/singlet/'+item)
+			else:
+				bkgNames.append('treedir_bbbcb36/singlet/'+item)
+	#print('\n\n')
 
 	sigTrees = []
 	bkgTrees = []
 	sigWeights = []
 	bkgWeights = []
-	weights = getCrossSections()
+	weights1 = getCrossSections()
+
+	weights = {}
+#	print('Printing filenames: \n')
+#	for name in filenames:
+#		print(name)
+#	print('\n\nPrinting sigNames:\n')
+#	for name in sigNames:
+#		print(name)
+#	print('\n\nPrinting bkgNames:\n')
+#	for name in bkgNames:
+#		print(name)
+#	print('\n\nPrinting weights:\n')
+	for name in weights1.keys():
+		weights['treedir_bbbcb36/singlet/'+name+'.root']=weights1[name]
+#	for name in weights.keys():
+#		print(name)
+#	print('\n\n')
 
 	for name in sigNames:
-		inFile = ROOT.TFile.Open(name)
-		myTree = inFile.Get('SVLInfo')
-		sigTrees.append(myTree)
-		sigWeights.append(weights[name])
+		if name in weights.keys():
+#			print('Entered sig\n')
+			inFile = ROOT.TFile.Open(name)
+		#		print(name)
+			myTree = inFile.Get('SVLInfo')
+			sigTrees.append(myTree)
+			sigWeights.append(weights[name])
 	for name in bkgNames:
-		inFile = ROOT.TFile.Open(name)
-		myTree = inFile.Get('SVLInfo')
-		bkgTrees.append(myTree)
-		bkgWeights.append(weights[name])
+		if name in weights.keys():
+			if 'TT' in name:
+	#			print('Entered bkg\n')
+				inFile = ROOT.TFile.Open(name)
+			#		print(name)
+				myTree = inFile.Get('SVLInfo')
+				bkgTrees.append(myTree)
+				bkgWeights.append(weights[name])
 
 	print('\nAdded Trees.\n')
 
 	#Need to figure out how to access the weights
 	#Weights should be the cross sections
-	for key in weights.keys():
-		print(key)
-
 	i = 0
 	while i < len(sigTrees):
 		factory.AddSignalTree(sigTrees[i],sigWeights[i])
@@ -203,8 +233,8 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	print('\nAdded signal and bkg trees and set weight expression.\n')
 
-	cutS = ROOT.TCut('(evCat==-11 || evcat==-13) && NJets == 2 && NBTags == 1')
-	cutB = ROOT.TCut('(evCat==-11 || evcat==-13) && NJets == 2 && NBTags == 1')
+	cutS = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && NJets == 2 && NBTags == 1 && abs(FJEta)<=10 && abs(FJPhi)<=10')
+	cutB = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && NJets == 2 && NBTags == 1 && abs(FJEta)<=10 && abs(FJPhi)<=10')
 	factory.PrepareTrainingAndTestTree(cutS,cutB,"nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V" )
 
 	print('\nPrepared training and test trees.\n')
@@ -279,8 +309,9 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	if Use['BDTG']:
 		factory.BookMethod(TMVA.Types.kBDT,'BDTG','!H:!V:NTrees=1000:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=20:MaxDepth=2')
 	if Use['BDT']:
-		#factory.BookMethod(TMVA.Types.kBDT,'BDT','!H:!V:NTrees=850:SeparationType=GiniIndex:nCuts=20')
-		factory.BookMethod(TMVA.Types.kBDT,'BDT','!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20')
+		factory.BookMethod(TMVA.Types.kBDT,'BDT','!H:!V:NTrees=850:SeparationType=GiniIndex:nCuts=20')
+		#factory.BookMethod(TMVA.Types.kBDT,'BDT','!H:!V:NTrees=850:SeparationType=GiniIndex:nCuts=20:CreateMVAPdfs')
+		#factory.BookMethod(TMVA.Types.kBDT,'BDT','!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20')
 	if Use['BDTB']:
 		factory.BookMethod(TMVA.Types.kBDT,'BDTB','!H:!V:NTrees=400:BoostType=Bagging:SeparationType=GiniIndex:nCuts=20')
 	if Use['BDTD']:
@@ -366,7 +397,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 ######################################
 
 		#require e or mu events
-		if SVLInfo.EvCat!=-11 and SVLInfo.EvCat!=-13 : continue
+		if ROOT.TMath.Abs(SVLInfo.EvCat)!=11 and ROOT.TMath.Abs(SVLInfo.EvCat)!=13 : continue
 		chCat = 'e' if SVLInfo.EvCat==-11 else 'mu'
 
 		cnt_e_or_mu+=weight
@@ -531,9 +562,9 @@ def main(args, options):
 #		for filename,isData,outDir in taskList:
 #			runSingleTopAnalysis(filename=filename,isData=isData,outDir=outDir)
 	#EDIT
-	for filename in filenames:
+#	for filename in filenames:
 #		filenames.append(filename)
-		print(filename)
+#		print(filename)
 	print('\nEntering code.\n')
 	runTMVAAnalysis(filenames)
 

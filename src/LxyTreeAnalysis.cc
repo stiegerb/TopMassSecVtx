@@ -1262,8 +1262,8 @@ void LxyTreeAnalysis::analyze() {
         if(fabs(fjeta[i]) > max_jet_eta){
             max_jet_eta = fabs(fjeta[i]);
             fwd_jet_eta = fjeta[i];
-        	fwd_jet_pt = fjpt[i];
-		fwd_jet_phi = fjphi[i];
+	    fwd_jet_pt = fjpt[i];
+	    fwd_jet_phi = fjphi[i];
         }
     }
     if(max_jet_eta < 0){
@@ -1274,7 +1274,7 @@ void LxyTreeAnalysis::analyze() {
                 max_jet_eta = fabs(jeta[i]);
                 fwd_jet_eta = jeta[i];
                 fwd_jet_pt = jpt[i];
-		fwd_jet_phi = fjphi[i];
+		fwd_jet_phi = jphi[i];
             }
         }
     }

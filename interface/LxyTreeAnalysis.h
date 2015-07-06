@@ -174,6 +174,7 @@ public:
     TH1D *fHMET, *fHMET_e, *fHMET_m, *fHMET_ee, *fHMET_mm, *fHMET_em;
 
     TH1D *fHMjj, *fHMjj_e, *fHMjj_m;
+    TH1D *fHMjj_ch, *fHMjj_e_ch, *fHMjj_m_ch;
     TH1D *fHMT, *fHMT_e, *fHMT_m;
 
     // Drell-Yan control region

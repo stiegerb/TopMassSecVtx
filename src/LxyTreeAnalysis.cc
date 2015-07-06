@@ -310,12 +310,19 @@ void LxyTreeAnalysis::BookSVLHistos() {
     fHMjj_m  = new TH1D("Mjj_m",    "Mjj (single mu);M_{jj} [GeV]",100,0,250);
     fHistos.push_back(fHMjj_m);
 
-    fHMjj_ch  = new TH1D("Mjj_ch",    "Mjj charged (inclusive);M_{jj} [GeV]",100,0,250);
+    fHMjj_ch  = new TH1D("Mjj_ch",    "Mjj charged (inclusive);M_{jj, charged} [GeV]",100,0,250);
     fHistos.push_back(fHMjj_ch);
-    fHMjj_e_ch  = new TH1D("Mjj_e_ch",    "Mjj charged (single e);M_{jj} [GeV]",100,0,250);
+    fHMjj_e_ch  = new TH1D("Mjj_e_ch",    "Mjj charged (single e);M_{jj, charged} [GeV]",100,0,250);
     fHistos.push_back(fHMjj_e_ch);
-    fHMjj_m_ch  = new TH1D("Mjj_m_ch",    "Mjj charged (single mu);M_{jj} [GeV]",100,0,250);
+    fHMjj_m_ch  = new TH1D("Mjj_m_ch",    "Mjj charged (single mu);M_{jj, charged} [GeV]",100,0,250);
     fHistos.push_back(fHMjj_m_ch);
+
+    fHLJNtk  = new TH1D("LJNtk", "Jet track multiplicity (inclusive);N_{tracks}(light jet)",30,0,30);
+    fHistos.push_back(fHLJNtk);
+    fHLJNtk_e  = new TH1D("LJNtk_e", "Jet track multiplicity (single e);N_{tracks}(light jet)",30,0,30);
+    fHistos.push_back(fHLJNtk_e);
+    fHLJNtk_m  = new TH1D("LJNtk_m", "Jet track multiplicity (single mu);N_{tracks}(light jet)",30,0,30);
+    fHistos.push_back(fHLJNtk_m);
 
     fHMT  = new TH1D("Mt",    "MT (inclusive);M_{T} [GeV]",100,0,250);
     fHistos.push_back(fHMT);
@@ -1151,6 +1158,7 @@ void LxyTreeAnalysis::analyze() {
     int nsvjets(0), nbjets(0);
     float lxymax1(0), lxymax2(0);
     std::vector<TLorentzVector> lightJetsP4, lightJetsP4ch;
+    std::vector<int> ntracks;
     for( int i=0; i < nj; i++) {
         if(svlxy[i]>0) {
             nsvjets++;
@@ -1179,18 +1187,24 @@ void LxyTreeAnalysis::analyze() {
 
                 // Also for tracks only
                 p4ch.SetPtEtaPhiM(0., 0., 0., 0.);
+                int ntracks_counter = 0;
                 for (int jtk = 0; jtk < npf; ++jtk){
                     if (pfjetidx[jtk] != i) continue;
+                    ntracks_counter++;
                     TLorentzVector p_tk;
                     p_tk.SetPtEtaPhiM(pfpt[jtk], pfeta[jtk], pfphi[jtk], gMassPi);
                     p4ch = p4ch + p_tk;
                 }
                 lightJetsP4ch.push_back(p4ch);
+                ntracks.push_back(ntracks_counter);
             }
         }
     }
     if(svindices[1]<0) svindices.pop_back();
     if(svindices[0]<0) svindices.pop_back();
+
+    float avntracks = -1;
+    if (ntracks.size()>1) avntracks = float((ntracks[0]+ntracks[1]))/2.;
 
     // Elizabeth
     // Find most forward jet with no SV
@@ -1249,6 +1263,7 @@ void LxyTreeAnalysis::analyze() {
                 // only fill if there are 2 light jets
                 if(mjj>=0.)   fHMjj->Fill(mjj, w[0]*w[1]*w[4]);
                 if(mjj_ch>=0.) fHMjj_ch->Fill(mjj_ch, w[0]*w[1]*w[4]);
+                if(avntracks>=0.) fHLJNtk->Fill(avntracks, w[0]*w[1]*w[4]);
             }
 
             if (abs(evcat) == 11*13) {
@@ -1276,6 +1291,7 @@ void LxyTreeAnalysis::analyze() {
                 fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
                 fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
                 fHMjj_e_ch  ->Fill(mjj_ch,  w[0]*w[1]*w[4]);
+                fHLJNtk_e   ->Fill(avntracks, w[0]*w[1]*w[4]);
                 fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
                 fHNbJets_e  ->Fill(nbjets,  w[0]*w[1]*w[4]);
                 fHMT_e      ->Fill(mT,      w[0]*w[1]*w[4]);
@@ -1285,6 +1301,7 @@ void LxyTreeAnalysis::analyze() {
                 fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
                 fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
                 fHMjj_m_ch  ->Fill(mjj_ch,  w[0]*w[1]*w[4]);
+                fHLJNtk_m   ->Fill(avntracks, w[0]*w[1]*w[4]);
                 fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
                 fHNbJets_m  ->Fill(nbjets,  w[0]*w[1]*w[4]);
                 fHMT_m      ->Fill(mT,      w[0]*w[1]*w[4]);

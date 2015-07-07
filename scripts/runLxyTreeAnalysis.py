@@ -264,7 +264,7 @@ def submitBatchJobs(tasks, options, queue='8nh'):
         scriptFile.close()
         os.system('chmod u+rwx %s'%scriptFileN)
         submitcmd = "bsub -q %s -J LxyTA_%s -oo %s \'%s\'"% (
-                     queue, name, osp.join(jobsDir,'out'), scriptFileN)
+                     queue, name, osp.join(jobsDir,'%s.out'%name), scriptFileN)
         ## FIXME the -oo thing might fail, not tested yet
         os.system(submitcmd)
 

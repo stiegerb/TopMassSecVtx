@@ -98,6 +98,7 @@ void LxyTreeAnalysis::RunJob(TString filename) {
 
     //add PDF information, if relevant
     fPDFInfo=0;
+    fLJNtkWeights=0;
     TString curFile=fChain->GetCurrentFile()->GetName();
     if(curFile.Contains("/MC") && !curFile.Contains("syst/") && !curFile.Contains("mass_scan/")) {
         // FIXME: this is a potential bug. If the path contains "syst" or "mass_scan" for some reason
@@ -118,7 +119,15 @@ void LxyTreeAnalysis::RunJob(TString filename) {
             delete fPDFInfo;
             fPDFInfo=0;
         }
+
+        // Load light jet ntrk weights
+        TFile *ljweightsfile = TFile::Open("/afs/cern.ch/work/s/stiegerb/TopSecVtx/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/ljntkweights.root","READ");
+        fLJNtkWeights = (TH1D*)ljweightsfile->Get("LJNtk_weights");
+        fLJNtkWeights->SetDirectory(0);
+        ljweightsfile->Close();
     }
+
+
 
     //do the analysis
     Begin(file);
@@ -317,12 +326,21 @@ void LxyTreeAnalysis::BookSVLHistos() {
     fHMjj_m_ch  = new TH1D("Mjj_m_ch",    "Mjj charged (single mu);M_{jj, charged} [GeV]",100,0,250);
     fHistos.push_back(fHMjj_m_ch);
 
+    fHMjj_ch_reweighted = new TH1D("Mjj_ch_reweighted", "Mjj charged, reweighted (inclusive);M_{jj, charged} [GeV]",100,0,250);
+    fHistos.push_back(fHMjj_ch_reweighted);
+    fHMjj_e_ch_reweighted = new TH1D("Mjj_e_ch_reweighted", "Mjj charged, reweighted (single e);M_{jj, charged} [GeV]",100,0,250);
+    fHistos.push_back(fHMjj_e_ch_reweighted);
+    fHMjj_m_ch_reweighted = new TH1D("Mjj_m_ch_reweighted", "Mjj charged, reweighted (single mu);M_{jj, charged} [GeV]",100,0,250);
+    fHistos.push_back(fHMjj_m_ch_reweighted);
+
     fHLJNtk  = new TH1D("LJNtk", "Jet track multiplicity (inclusive);N_{tracks}(light jet)",30,0,30);
     fHistos.push_back(fHLJNtk);
     fHLJNtk_e  = new TH1D("LJNtk_e", "Jet track multiplicity (single e);N_{tracks}(light jet)",30,0,30);
     fHistos.push_back(fHLJNtk_e);
     fHLJNtk_m  = new TH1D("LJNtk_m", "Jet track multiplicity (single mu);N_{tracks}(light jet)",30,0,30);
     fHistos.push_back(fHLJNtk_m);
+    fHLJNtk_reweighted = new TH1D("LJNtk_reweighted", "Jet track multiplicity, reweighted (inclusive);N_{tracks}(light jet)",30,0,30);
+    fHistos.push_back(fHLJNtk_reweighted);
 
     fHMT  = new TH1D("Mt",    "MT (inclusive);M_{T} [GeV]",100,0,250);
     fHistos.push_back(fHMT);
@@ -1250,6 +1268,12 @@ void LxyTreeAnalysis::analyze() {
 
     bool passBtag(true), passBtagup(true), passBtagdown(true);
     bool passMET(true), passMETup(true),passMETdown(true);
+
+    float ljntkweight = 1.0;
+    if(fLJNtkWeights){
+        ljntkweight = fLJNtkWeights->GetBinContent(fLJNtkWeights->FindBin(avntracks));
+    }
+
     if(selectSVLEvent(passBtag, passBtagup, passBtagdown,passMET,passMETup,passMETdown))
     {
         // Fill some control histograms:
@@ -1263,7 +1287,9 @@ void LxyTreeAnalysis::analyze() {
                 // only fill if there are 2 light jets
                 if(mjj>=0.)   fHMjj->Fill(mjj, w[0]*w[1]*w[4]);
                 if(mjj_ch>=0.) fHMjj_ch->Fill(mjj_ch, w[0]*w[1]*w[4]);
+                if(mjj_ch>=0.) fHMjj_ch_reweighted->Fill(mjj_ch, w[0]*w[1]*w[4]*ljntkweight);
                 if(avntracks>=0.) fHLJNtk->Fill(avntracks, w[0]*w[1]*w[4]);
+                if(avntracks>=0.) fHLJNtk_reweighted->Fill(avntracks, w[0]*w[1]*w[4]*ljntkweight);
             }
 
             if (abs(evcat) == 11*13) {
@@ -1291,6 +1317,7 @@ void LxyTreeAnalysis::analyze() {
                 fHNJets_e   ->Fill(nj,      w[0]*w[1]*w[4]);
                 fHMjj_e     ->Fill(mjj,     w[0]*w[1]*w[4]);
                 fHMjj_e_ch  ->Fill(mjj_ch,  w[0]*w[1]*w[4]);
+                fHMjj_e_ch_reweighted->Fill(mjj_ch, w[0]*w[1]*w[4]*ljntkweight);
                 fHLJNtk_e   ->Fill(avntracks, w[0]*w[1]*w[4]);
                 fHNSVJets_e ->Fill(nsvjets, w[0]*w[1]*w[4]);
                 fHNbJets_e  ->Fill(nbjets,  w[0]*w[1]*w[4]);
@@ -1301,6 +1328,7 @@ void LxyTreeAnalysis::analyze() {
                 fHNJets_m   ->Fill(nj,      w[0]*w[1]*w[4]);
                 fHMjj_m     ->Fill(mjj,     w[0]*w[1]*w[4]);
                 fHMjj_m_ch  ->Fill(mjj_ch,  w[0]*w[1]*w[4]);
+                fHMjj_m_ch_reweighted->Fill(mjj_ch, w[0]*w[1]*w[4]*ljntkweight);
                 fHLJNtk_m   ->Fill(avntracks, w[0]*w[1]*w[4]);
                 fHNSVJets_m ->Fill(nsvjets, w[0]*w[1]*w[4]);
                 fHNbJets_m  ->Fill(nbjets,  w[0]*w[1]*w[4]);

@@ -937,8 +937,8 @@ bool LxyTreeAnalysis::selectSVLSingleTopEvent(bool &passBtagNom, bool &passBtagU
     }
 
     // For single lepton, ask at least two jets
-    if (abs(evcat) == 11 && nj > 1) return true;
-    if (abs(evcat) == 13 && nj > 1) return true;
+    if (abs(evcat) == 11 && (nj+nfj) > 1) return true;
+    if (abs(evcat) == 13 && (nj+nfj) > 1) return true;
 
     // QCD control sample (non-isolated leptons)
     if (abs(evcat) == 11*100 || abs(evcat) == 13*100) {
@@ -988,6 +988,7 @@ void LxyTreeAnalysis::BookSVLTree() {
     fSVLInfoTree->Branch("PDFWeight", fPDFWeight,   pdfWeightAlloc);
     fSVLInfoTree->Branch("NPVtx",     &fTNPVtx,     "NPVtx/I");
     fSVLInfoTree->Branch("NJets",     &fTNJets,     "NJets/I");
+    fSVLInfoTree->Branch("NFJets",     &fTNFJets,     "NFJets/I");
     fSVLInfoTree->Branch("NBTags",    &fTNBTags,    "NBTags/I");
     fSVLInfoTree->Branch("MET",       &fTMET,       "MET/F");
     fSVLInfoTree->Branch("NCombs",    &fTNCombs,    "NCombs/I");
@@ -1043,6 +1044,7 @@ void LxyTreeAnalysis::ResetSVLTree()
     fTEvCat     = evcat;
     fTMET       = metpt;
     fTNJets     = nj;
+    fTNFJets     = nfj;
     fTNBTags    = -1;
     fTNPVtx     = nvtx;
     for (int i = 0; i < 11; ++i) {

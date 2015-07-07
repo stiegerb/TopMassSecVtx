@@ -149,7 +149,8 @@ def main(args, options):
 	runPlotter(outputFileName, options, scaleFactors=scaleFactors)
 
 
-	options.filter = 'Mjj' ## not the charm plots
+	options.filter = 'Mjj,LJNtk' ## not the charm plots
+	options.excludeProcesses = 'QCD'
 	options.cutUnderOverFlow = True
 	runPlotter(args[0], options, scaleFactors=scaleFactors)
 

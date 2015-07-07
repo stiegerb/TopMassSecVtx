@@ -142,19 +142,20 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	factory.AddVariable('abs(JEta)','F')
 	factory.AddVariable('abs(FJEta)','F')
-	factory.AddVariable('abs(FJPhi)','F')
-	factory.AddVariable('abs(JPhi)','F')
+#	factory.AddVariable('abs(FJPhi)','F')
+#	factory.AddVariable('abs(JPhi)','F')
 	factory.AddVariable('abs(LEta)','F')
-	factory.AddVariable('abs(LPhi)','F')
+#	factory.AddVariable('abs(LPhi)','F')
 	factory.AddVariable('LCharge','F')
 	factory.AddVariable('DeltaEtaJetFJet:=abs(FJEta - JEta)','F')
 	factory.AddVariable('DeltaEtaJetLepton:=abs(JEta - LEta)','F')
 	factory.AddVariable('DeltaEtaFJetLepton:=abs(FJEta - LEta)','F')
-	factory.AddVariable('DeltaPhiJetFJet:=abs(FJPhi - JPhi)','F')
-	factory.AddVariable('DeltaPhiJetLepton:=abs(JPhi - LPhi)','F')
-	factory.AddVariable('DeltaPhiFJetLepton:=abs(FJPhi - LPhi)','F')
+#	factory.AddVariable('DeltaPhiJetFJet:=abs(FJPhi - JPhi)','F')
+#	factory.AddVariable('DeltaPhiJetLepton:=abs(JPhi - LPhi)','F')
+#	factory.AddVariable('DeltaPhiFJetLepton:=abs(FJPhi - LPhi)','F')
 
 	factory.AddSpectator('NJets','I')
+	factory.AddSpectator('NFJets','I')
 	factory.AddSpectator('EvCat','I')
 	factory.AddSpectator('NBTags','I')
 
@@ -166,9 +167,13 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	for item in filenames:
 		#print(item)
 		if 'Data' not in item:
-			if 'SingleT' in item:
+#			if 'SingleT_t' or 'SingleTbar_t' in item:
+			if item == 'MC8TeV_SingleT_t.root' or item == 'MC8TeV_SingleTbar_t.root':
+				print('Sig: '+item)
 				sigNames.append('treedir_bbbcb36/singlet/'+item)
-			else:
+			elif '172v5' in item:
+#			elif 'SingleT' not in item:
+				print('Bkg: '+item)
 				bkgNames.append('treedir_bbbcb36/singlet/'+item)
 	#print('\n\n')
 
@@ -199,19 +204,18 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 		if name in weights.keys():
 #			print('Entered sig\n')
 			inFile = ROOT.TFile.Open(name)
-		#		print(name)
+#			print(name)
 			myTree = inFile.Get('SVLInfo')
 			sigTrees.append(myTree)
 			sigWeights.append(weights[name])
 	for name in bkgNames:
 		if name in weights.keys():
-			if 'TT' in name:
-	#			print('Entered bkg\n')
-				inFile = ROOT.TFile.Open(name)
-			#		print(name)
-				myTree = inFile.Get('SVLInfo')
-				bkgTrees.append(myTree)
-				bkgWeights.append(weights[name])
+#			if 'TT' in name:
+#				print(name)
+			inFile = ROOT.TFile.Open(name)
+			myTree = inFile.Get('SVLInfo')
+			bkgTrees.append(myTree)
+			bkgWeights.append(weights[name])
 
 	print('\nAdded Trees.\n')
 
@@ -220,10 +224,17 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	i = 0
 	while i < len(sigTrees):
 		factory.AddSignalTree(sigTrees[i],sigWeights[i])
+#		print(sigWeights[i])
 		i+=1
 	i=0
+
+#	for tree, weight in zip(sigTrees, sigWeights):
+#		factory.AddSignalTree(tree, weight)
+
+
 	while i < len(bkgTrees):
 		factory.AddBackgroundTree(bkgTrees[i],bkgWeights[i])
+#		print(sigweights[i])
 		i+=1
 
 	#Use electron or muon, exactly 2 jets, exactly 1 btag
@@ -233,8 +244,8 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	print('\nAdded signal and bkg trees and set weight expression.\n')
 
-	cutS = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && NJets == 2 && NBTags == 1 && abs(FJEta)<=10 && abs(FJPhi)<=10')
-	cutB = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && NJets == 2 && NBTags == 1 && abs(FJEta)<=10 && abs(FJPhi)<=10')
+	cutS = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && NBTags == 1 && abs(FJEta)<=10 && abs(FJPhi)<=10')
+	cutB = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && NBTags == 1 && abs(FJEta)<=10 && abs(FJPhi)<=10')
 	factory.PrepareTrainingAndTestTree(cutS,cutB,"nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V" )
 
 	print('\nPrepared training and test trees.\n')

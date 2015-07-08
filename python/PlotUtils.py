@@ -699,7 +699,7 @@ class Plot(object):
             gr=ROOT.TGraphAsymmErrors()
             gr.SetName("data2bkg")
             gr.SetMarkerStyle(self.dataH.GetMarkerStyle())
-            gr.SetMarkerSize(self.dataH.GetMarkerSize())
+            gr.SetMarkerSize(0.7*self.dataH.GetMarkerSize())
             gr.SetMarkerColor(self.dataH.GetMarkerColor())
             gr.SetLineColor(self.dataH.GetLineColor())
             gr.SetLineWidth(self.dataH.GetLineWidth())

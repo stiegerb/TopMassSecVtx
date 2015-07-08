@@ -210,6 +210,33 @@ class RatioPlot(object):
 
         return chisquares
 
+    def saveRatios(self, outname, outdir, histnames=[]):
+        if not len(self.ratios):
+            print "RatioPlot::saveRatio only works after .show has been called!"
+            return
+
+        if len(histnames):
+            assert(len(histnames) == len(self.ratios))
+        else:
+            histnames = [h.GetName() for h in self.ratios]
+
+        if not len(set(histnames)) == len(histnames):
+            print "RatioPlot >> WARNING Non-unique names for ratio histograms!"
+
+        if not outname.endswith('.root'): outname += '.root'
+        ofile = ROOT.TFile.Open(os.path.join(outdir,outname), "RECREATE")
+        ofile.cd()
+        for rathist,hname in zip(self.ratios,histnames):
+            rathist.Write(hname)
+
+        ofile.Write()
+        ofile.Close()
+
+        print "RatioPlot >> wrote ratio histograms to %s"%os.path.join(outdir,outname)
+        return
+
+
+
     def show(self, outname, outdir):
         if not os.path.isdir(outdir):
             os.system('mkdir -p %s' % outdir)
@@ -370,32 +397,32 @@ class RatioPlot(object):
         ratioframe.Draw()
 
         ## Calculate Ratios
-        ratios = []
+        self.ratios = []
         for hist,ref in zip(self.histsforratios,self.reference):
             if self.normalized:
                 ref_norm = ref.Clone("%s_norm"%ref.GetName())
                 ref_norm.Scale(1./ref_norm.Integral())
-                ratios.append(getRatio(hist, ref_norm))
+                self.ratios.append(getRatio(hist, ref_norm))
                 self._garbageList.append(ref_norm)
             else:
-                ratios.append(getRatio(hist, ref))
+                self.ratios.append(getRatio(hist, ref))
         if self.ratiorange:
             ratmin, ratmax = self.ratiorange
-            for ratio in ratios:
+            for ratio in self.ratios:
                 ratio.SetMinimum(ratmin)
                 ratio.SetMaximum(ratmax)
                 ratioframe.GetYaxis().SetRangeUser(ratmin, ratmax)
 
         else:
-            setMaximums(ratios)
+            setMaximums(self.ratios)
 
-        line = ROOT.TLine(ratios[0].GetXaxis().GetXmin(), 1.0,
-                          ratios[0].GetXaxis().GetXmax(), 1.0)
+        line = ROOT.TLine(self.ratios[0].GetXaxis().GetXmin(), 1.0,
+                          self.ratios[0].GetXaxis().GetXmax(), 1.0)
         line.SetLineColor(ROOT.kGray)
         # line.SetLineStyle(2)
         line.Draw()
 
-        for ratio in ratios:
+        for ratio in self.ratios:
             ratio.Draw("hist same")
 
         redrawBorder(p2)

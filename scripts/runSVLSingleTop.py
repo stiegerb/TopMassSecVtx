@@ -12,54 +12,23 @@ from ROOT import TMVA
 import array
 
 """
-Get cross sections for use with weight.
+Get cross sections for use with weight using .pck file created with runPlotter.py
 """
 def getCrossSections():
 
 	cachefile = open('.xsecweights.pck','r')
 	xsecs = pickle.load(cachefile)
 	cachefile.close()
-#	sample_file = open('samples.txt','r')
-#	xsecs = {}
-#	lines = sample_file.readlines()
-#	sample_file.close()
-#	
-#	for line in lines:
-#		if 'dtag' in line:
-#			i=0
-#			dtag = ''
-#			found_dtag = False
-#			found_xsec = False
-#			xsec =''
-#			while i < len(line):
-#				if line[i] == 'd' and i!=len(line)-1 and line[i+1]=='t':
-#					found_dtag = True
-#					i+=7
-#				if found_dtag:
-#					if line[i]=='"':
-#						found_dtag = False
-#					else:
-#						dtag+=line[i]
-#				if line[i] == 'x' and i!=len(line)-1 and line[i+1]=='s':
-#					found_xsec = True
-#					i+=6
-#				if found_xsec:
-#					if line[i]==',':
-#						found_xsec = False
-#					else:
-#						xsec+=line[i]
-#				i+=1
-#			#xsecs['root://eoscms//eos/cms/store/cmst3/group/top/summer2015/treedir_bbbcb36/singlet/'+dtag+'.root']=float(xsec)
-#			xsecs['treedir_bbbcb36/singlet/'+dtag+'.root']=float(xsec)
 	return xsecs
 	
 """
-Attempt at implementing TMVA
+TMVA training -- must be completed before the analysis is run.
 """
 def runTMVAAnalysis(filenames,myMethodList=''):
 	
 	print('\nEntered code.\n')
 
+	#Define dictionary for possible optimization methods
 	Use = {}
 
 	Use['Cuts']=1
@@ -114,6 +83,7 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	
 	print('\n==> Start TMVA Classification\n')
 	
+	#Taken directly from example that comes with the TMVA package download
 	if myMethodList!='':
 		for key in Use.keys():
 			Use[key]=0
@@ -132,15 +102,17 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	print('\nPassed method list stuff.\n')
 
+	#Define the output root file
 	outfileName = 'TMVA/TMVA_test.root'
 	outputFile = ROOT.TFile.Open(outfileName,'RECREATE')
 
+	#Define the factory
 	#factory = TMVA.Factory('TMVAClassification',outputFile,'!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification')
 	factory = TMVA.Factory('TMVAClassification',outputFile,'!V:!Silent:Color:DrawProgressBar:AnalysisType=Classification')
 
 	print('\nCreated factory.\n')
 
-	#Need to AddVariables to the factory here.
+	#Add variables to the factory which will be used for the optimization
 
 	factory.AddVariable('abs(JEta)','F')
 	factory.AddVariable('abs(FJEta)','F')
@@ -152,6 +124,7 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	factory.AddVariable('NBTags','I')
 	factory.AddVariable('MT','F')
 	
+	#Add variables to the factory which will not be considered in the optimization
 	factory.AddSpectator('NJets','I')
 	factory.AddSpectator('NFJets','I')
 	factory.AddSpectator('EvCat','I')
@@ -159,22 +132,17 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	print('\nAdded variables.\n')
 
+	#Create lists of the files considered signal and background
 	sigNames = []
 	bkgNames = []
-#	print('Filenames:\n')
 	for item in filenames:
-#		print(item)
 		if 'Data' not in item:
-#			if 'SingleT_t' or 'SingleTbar_t' in item:
 			if item == 'MC8TeV_SingleT_t.root' or item == 'MC8TeV_SingleTbar_t.root':
-#				print('Sig: '+item)
 				sigNames.append('treedir_bbbcb36/singlet/'+item)
 			elif '172v5' in item:
-#			elif 'SingleT' not in item:
-#				print('Bkg: '+item)
 				bkgNames.append('treedir_bbbcb36/singlet/'+item)
-#	print('\n\n')
 
+	#Create lists of the signal and background weights and trees
 	sigTrees = []
 	bkgTrees = []
 	sigWeights = []
@@ -182,38 +150,19 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	weights1 = getCrossSections()
 
 	weights = {}
-#	print('Printing filenames: \n')
-#	for name in filenames:
-#		print(name)
-#	print('\n\nPrinting sigNames:\n')
-#	for name in sigNames:
-#		print(name)
-#	print('\n\nPrinting bkgNames:\n')
-#	for name in bkgNames:
-#		print(name)
-#	print('\n\nPrinting weights:\n')
 	for name in weights1.keys():
 		weights['treedir_bbbcb36/singlet/'+name+'.root']=weights1[name]
-#		print(name)
-#	for name in weights.keys():
-#		print(name)
-#	print('\n\n')
 
 	for name in sigNames:
 		if name in weights.keys():
-#			print('Entered sig\n')
 			inFile = ROOT.TFile.Open(name)
-#			print(name)
 			myTree = inFile.Get('SVLInfo')
 			sigTrees.append(myTree)
 			sigWeights.append(weights[name])
 		else:
 			print('ERROR: '+name+' not in weights dictionary.\n')
 	for name in bkgNames:
-#		print 'Before if: '+name
 		if name in weights.keys():
-#			if 'TT' in name:
-#			print(name)
 			inFile = ROOT.TFile.Open(name)
 			myTree = inFile.Get('SVLInfo')
 			bkgTrees.append(myTree)
@@ -223,37 +172,30 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	print('\nAdded Trees.\n')
 
-	#Need to figure out how to access the weights
-	#Weights should be the cross sections
+	#Add the weighted trees to the factory for processing
 	i = 0
 	while i < len(sigTrees):
 		factory.AddSignalTree(sigTrees[i],sigWeights[i])
-#		print(sigWeights[i])
 		i+=1
 	i=0
 
-#	for tree, weight in zip(sigTrees, sigWeights):
-#		factory.AddSignalTree(tree, weight)
-
-
 	while i < len(bkgTrees):
 		factory.AddBackgroundTree(bkgTrees[i],bkgWeights[i])
-#		print(sigweights[i])
 		i+=1
 
-	#Use electron or muon, exactly 2 jets, exactly 1 btag
-	#weight multiplication
+	#Create the event-by-event weight expression
 	factory.SetWeightExpression('Weight[0]*Weight[1]*Weight[4]*METWeight[0]*BtagWeight[0]*JESWeight[0]')
-#	factory.SetWeightExpression('1.0')
 
 	print('\nAdded signal and bkg trees and set weight expression.\n')
 
+	#Add the cuts to be performed before the optimization.  These must match those in the analysis.
 	cutS = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20')
 	cutB = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20')
 	factory.PrepareTrainingAndTestTree(cutS,cutB,"nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V" )
 
 	print('\nPrepared training and test trees.\n')
 
+	#Book the methods used
 	if Use['Cuts']:
 		factory.BookMethod(TMVA.Types.kCuts,'Cuts','!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart')
 	if Use['CutsD']:
@@ -338,6 +280,7 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 
 	print('\nPassed all of the if statements.\n')
 
+	#Run the optimization
 	factory.TrainAllMethods()
 	print('\nTrained all methods.\n')
 	factory.TestAllMethods()
@@ -436,17 +379,6 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 	tmva_reader.BookMVA('BDT','weights/TMVAClassification_BDT.weights.xml')
 
-#	fIn_tmva=ROOT.TFile.Open('TMVA/TMVA_test.root')
-#	tmva_tree=fIn_tmva.Get('TestTree')
-#
-#	tmva_tree.SetBranchAddress('abs_JEta_',abs_jeta)
-#	tmva_tree.SetBranchAddress('abs_FJEta_',abs_fjeta)
-#	tmva_tree.SetBranchAddress('abs_LEta_',abs_leta)
-#	tmva_tree.SetBranchAddress('LCharge',lcharge)
-#	tmva_tree.SetBranchAddress('DeltaEtaJetFJet',deltaetajetfjet)
-#	tmva_tree.SetBranchAddress('DeltaEtaJetLepton',deltaetajetlepton)
-#	tmva_tree.SetBranchAddress('DeltaEtaFJetLepton',deltaetafjetlepton)
-
 	#loop over events in tree
 	for i in xrange(0,SVLInfo.GetEntriesFast()):
 		
@@ -515,11 +447,6 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 ###################################
 
-		#require 1 or 2 btagged jets
-#		if SVLInfo.NBTags!=1 and SVLInfo.NBTags!=2: continue
-
-###################################
-
 		#require CJEta < 2
 		cjeta=ROOT.TMath.Abs(SVLInfo.JEta)
 #		if 0 > cjeta or cjeta > 2.0: continue
@@ -542,11 +469,6 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		#nTrack = '3t'
 
 		cnt_final_events+=weight
-
-		#EDIT: Commented out weight and moved up
-		#event weights to fill histograms appropriately
-		#weight = 1 if isData else SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]
-		#lumiweight = 1 if isData else SVLInfo.XSWeight*LUMI
 
 		#fill histograms with variables of interest
 		tag=chCat+jetCat#+'_'+nTrack
@@ -577,18 +499,6 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	for h in histos: histos[h].Write()
 	print '   output stored in %s' % fOut.GetName()
 	fOut.Close()
-
-	#EDIT: Make file with sig/bkg
-#	sigbkg = open('sig_bkg.txt','a')
-#	sigbkg.write('#####################'+filename+'\n')
-#	sigbkg.write('Initial Events: '+str(cnt_ini_events)+'\n')
-#	sigbkg.write('e or mu Events: '+str(cnt_e_or_mu)+'\n')
-#	sigbkg.write('Forward Jet Ct: '+str(cnt_1_fwd_jet)+'\n')
-#	sigbkg.write('Central Jet Ct: '+str(cnt_central_jets)+'\n')
-#	sigbkg.write('Sec Vertex Cut: '+str(cnt_1_sec_vtx)+'\n')
-#	sigbkg.write('MT Checked Cut: '+str(cnt_MT_cut)+'\n')
-#	sigbkg.write('Num. Fnal Evts: '+str(cnt_final_events)+'\n'+'\n')
-#	sigbkg.close()
 
 
 """
@@ -643,7 +553,7 @@ def main(args, options):
 		print "Please provide a valid input directory"
 		return -1
 	
-	#submit tasks in parallel, if required, or run sequentially
+	#submit tasks in parallel, if required, or run sequentially - comment out to run TMVA optimization
 	if opt.jobs>0:
 		print ' Submitting jobs in %d threads' % opt.jobs
 		import multiprocessing as MP
@@ -653,19 +563,10 @@ def main(args, options):
 		for filename,isData,outDir in taskList:
 			runSingleTopAnalysis(filename=filename,isData=isData,outDir=outDir)
 
+	#Run TMVA optimization - comment out to run analysis
 #	print('\nEntering code.\n')
 #	runTMVAAnalysis(filenames)
 
-	#EDIT: Write current cuts to sig/bkg file
-	sigbkg = open('sig_bkg.txt','a')
-	sigbkg.write('#####################The Cuts:\n')
-	sigbkg.write('Must be an e or mu Event\n')
-	sigbkg.write('Exactly 1 Forward Jet with eta<3.2 or eta>4.7\n')
-	sigbkg.write('1 < Num, Central Jets < 3\n')
-	sigbkg.write('Exactly 1 Sec Vertex\n')
-	sigbkg.write('MT > 50\n')
-	sigbkg.close()
-			
 	return 0
 
 """

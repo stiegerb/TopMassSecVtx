@@ -303,27 +303,27 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	histos={}
 	for chCat in ['e','mu']:
 		for jetCat in ['2j','3j']:
-			#for nTracks in ['1t','2t','3t']:
-			tag=chCat+jetCat
-			histos['NPVtx_'+tag]      = ROOT.TH1F('NPVtx_'+tag,';N_{PV}-N_{HP};Events',30,0,30)
-			histos['MT_'+tag]         = ROOT.TH1F('MT_'+tag,';Transverse mass [GeV];Events',50,0,250)
-			histos['MET_'+tag]        = ROOT.TH1F('MET_'+tag,';Missing transverse energy [GeV];Events',50,0,200)
-			histos['FJPt_'+tag]       = ROOT.TH1F('FJPt_'+tag,';Transverse momentum [GeV];Events',10,30,230)
-			histos['FJEta_'+tag]      = ROOT.TH1F('FJEta_'+tag,';Pseudo-rapidity;Events',50,0,5)
-			histos['DeltaEtaJB_'+tag] = ROOT.TH1F('DeltaEtaJB_'+tag,';|#eta_{j}-#eta_{b}|;Events',25,0,8)
-			histos['EtaJxEtaB_'+tag]  = ROOT.TH1F('EtaJxEtaB_'+tag,';#eta_{j}.#eta_{b};Events',20,-10,10)
-			histos['SVLMass_'+tag]    = ROOT.TH1F('SVLMass_'+tag,';m(SV,lepton) [GeV]',50,0,200)
-			histos['SVMass_'+tag]     = ROOT.TH1F('SVMass_'+tag,';m(SV) [GeV]',12,0,6)
-			histos['CJEta_'+tag]      = ROOT.TH1F('CJEta_'+tag,';Pseudo-rapidity;Events',25,0,2.5)
-			histos['CJPt_'+tag]       = ROOT.TH1F('CJPt_'+tag,';Transverse momentum [GeV];Events',10,30,230)
-			histos['NJets_'+tag]      = ROOT.TH1F('NJets_'+tag,';Number of Jets (forward and central);Events',10,0,10)
-			histos['NBTags_'+tag]     = ROOT.TH1F('NBTags_'+tag,';Number of Tags;Events',10,0,10)
-			histos['LPt_'+tag]        = ROOT.TH1F('LPt_'+tag,';Transverse momentum [GeV];Events',30,0,300)
-			histos['SVLDeltaR_'+tag]  = ROOT.TH1F('SVLDeltaR_'+tag,';#Delta_{R};Events',10,0,5)
-			histos['SVNtrk_'+tag]     = ROOT.TH1F('SVNtrk_'+tag,';Number of Tracks;Events',10,0,10)
-			histos['CombInfo_'+tag]   = ROOT.TH1F('CombInfo_'+tag,';Correct Combination?;Events',3,-1.5,1.5)
-			histos['BDToutput_'+tag]  = ROOT.TH1F('BDToutput_'+tag,';BDT Output;Events',25,-0.4,0.45)
-			histos['BDToutputoriginal_'+tag]  = ROOT.TH1F('BDToutputoriginal_'+tag,';BDT Output;Events',25,-0.4,0.45)
+			for nTrack in ['1t','2t','3t']:
+				tag=chCat+jetCat+nTrack
+				histos['NPVtx_'+tag]      = ROOT.TH1F('NPVtx_'+tag,';N_{PV}-N_{HP};Events',30,0,30)
+				histos['MT_'+tag]         = ROOT.TH1F('MT_'+tag,';Transverse mass [GeV];Events',50,0,250)
+				histos['MET_'+tag]        = ROOT.TH1F('MET_'+tag,';Missing transverse energy [GeV];Events',50,0,200)
+				histos['FJPt_'+tag]       = ROOT.TH1F('FJPt_'+tag,';Transverse momentum [GeV];Events',10,30,230)
+				histos['FJEta_'+tag]      = ROOT.TH1F('FJEta_'+tag,';Pseudo-rapidity;Events',50,0,5)
+				histos['DeltaEtaJB_'+tag] = ROOT.TH1F('DeltaEtaJB_'+tag,';|#eta_{j}-#eta_{b}|;Events',25,0,8)
+				histos['EtaJxEtaB_'+tag]  = ROOT.TH1F('EtaJxEtaB_'+tag,';#eta_{j}.#eta_{b};Events',20,-10,10)
+				histos['SVLMass_'+tag]    = ROOT.TH1F('SVLMass_'+tag,';m(SV,lepton) [GeV]',50,0,200)
+				histos['SVMass_'+tag]     = ROOT.TH1F('SVMass_'+tag,';m(SV) [GeV]',12,0,6)
+				histos['CJEta_'+tag]      = ROOT.TH1F('CJEta_'+tag,';Pseudo-rapidity;Events',25,0,2.5)
+				histos['CJPt_'+tag]       = ROOT.TH1F('CJPt_'+tag,';Transverse momentum [GeV];Events',10,30,230)
+				histos['NJets_'+tag]      = ROOT.TH1F('NJets_'+tag,';Number of Jets (forward and central);Events',10,0,10)
+				histos['NBTags_'+tag]     = ROOT.TH1F('NBTags_'+tag,';Number of Tags;Events',10,0,10)
+				histos['LPt_'+tag]        = ROOT.TH1F('LPt_'+tag,';Transverse momentum [GeV];Events',30,0,300)
+				histos['SVLDeltaR_'+tag]  = ROOT.TH1F('SVLDeltaR_'+tag,';#Delta_{R};Events',10,0,5)
+				histos['SVNtrk_'+tag]     = ROOT.TH1F('SVNtrk_'+tag,';Number of Tracks;Events',10,0,10)
+				histos['CombInfo_'+tag]   = ROOT.TH1F('CombInfo_'+tag,';Correct Combination?;Events',3,-1.5,1.5)
+				histos['BDToutput_'+tag]  = ROOT.TH1F('BDToutput_'+tag,';BDT Output;Events',25,-0.4,0.45)
+			#histos['BDToutputoriginal_'+tag]  = ROOT.TH1F('BDToutputoriginal_'+tag,';BDT Output;Events',25,-0.4,0.45)
 	for h in histos:
 		histos[h].Sumw2()
 		histos[h].SetDirectory(0)
@@ -408,7 +408,6 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 		#require e or mu events
 		if ROOT.TMath.Abs(SVLInfo.EvCat)!=11 and ROOT.TMath.Abs(SVLInfo.EvCat)!=13 : continue
-#		if SVLInfo.EvCat!=-11 and SVLInfo.EvCat!=-13: continue
 		chCat = 'e' if ROOT.TMath.Abs(SVLInfo.EvCat)==11 else 'mu'
 
 ####################################
@@ -423,9 +422,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 		#require at least 1 and less than 4 central jets
 		if (SVLInfo.NJets+SVLInfo.NFJets)<2 or (SVLInfo.NJets+SVLInfo.NFJets)>3 : continue	
-#		if SVLInfo.NJets < 2 or SVLInfo.NJets > 3: continue
 		jetCat="%dj" % (SVLInfo.NJets+SVLInfo.NFJets)
-#		jetCat="%dj" % (SVLInfo.NJets)
 
 ###################################
 
@@ -439,9 +436,8 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 ###################################
 
-		#require CJEta < 2
+		#Calculate central jet eta
 		cjeta=ROOT.TMath.Abs(SVLInfo.JEta)
-#		if 0 > cjeta or cjeta > 2.0: continue
 
 ##################################
 		#Require at least 1 btag
@@ -451,25 +447,22 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 		#TMVA Cuts
 		mvaBDT = tmva_reader.EvaluateMVA('BDT')
-#		if mvaBDT < 0: continue
-		histos['BDToutputoriginal_'+tag].Fill(mvaBDT,        weight)
+		#histos['BDToutputoriginal_'+tag].Fill(mvaBDT,    weight)
+		if mvaBDT < 0.11: continue
 
-###################################
-		#if fwdeta < 2.0: continue
-		#if ROOT.TMath.Abs(SVLInfo.FJEta - SVLInfo.JEta) < 3: continue
 ###################################
 
 		#separate into nTracks
-		#if SVLInfo.SVNtrk < 1 or SVLInfo.SVNtrk > 3: continue
-		#if SVLInfo.SVNtrk == 1:
-		#nTrack = '1t'
-		#elif SVLInfo.SVNtrk == 2:
-		#nTrack = '2t'
-		#else:
-		#nTrack = '3t'
+		if SVLInfo.SVNtrk < 1 or SVLInfo.SVNtrk > 3: continue
+		if SVLInfo.SVNtrk == 1:
+			nTrack = '1t'
+		elif SVLInfo.SVNtrk == 2:
+			nTrack = '2t'
+		else:
+			nTrack = '3t'
 
 		#fill histograms with variables of interest
-		tag=chCat+jetCat#+'_'+nTrack
+		tag=chCat+jetCat+nTrack
 		histos['NPVtx_'+tag]  .Fill(SVLInfo.NPVtx-1, weight)
 		histos['MT_'+tag]     .Fill(SVLInfo.MT,      weight)
 		histos['MET_'+tag]    .Fill(SVLInfo.MET,     weight)

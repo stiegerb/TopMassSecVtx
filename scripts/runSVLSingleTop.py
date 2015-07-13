@@ -122,9 +122,9 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	factory.AddVariable('DeltaEtaJetLepton:=abs(JEta - LEta)','F')
 	factory.AddVariable('DeltaEtaFJetLepton:=abs(FJEta - LEta)','F')
 	factory.AddVariable('NBTags','I')
-	factory.AddVariable('MT','F')
 	
 	#Add variables to the factory which will not be considered in the optimization
+	factory.AddSpectator('MT','F')
 	factory.AddSpectator('NJets','I')
 	factory.AddSpectator('NFJets','I')
 	factory.AddSpectator('EvCat','I')
@@ -189,8 +189,8 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	print('\nAdded signal and bkg trees and set weight expression.\n')
 
 	#Add the cuts to be performed before the optimization.  These must match those in the analysis.
-	cutS = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20')
-	cutB = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20')
+	cutS = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20 && NBTags > 0 && MT >= 50')
+	cutB = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20 && NBTags > 0 && MT >= 50')
 	factory.PrepareTrainingAndTestTree(cutS,cutB,"nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V" )
 
 	print('\nPrepared training and test trees.\n')
@@ -323,6 +323,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 			histos['SVNtrk_'+tag]     = ROOT.TH1F('SVNtrk_'+tag,';Number of Tracks;Events',10,0,10)
 			histos['CombInfo_'+tag]   = ROOT.TH1F('CombInfo_'+tag,';Correct Combination?;Events',3,-1.5,1.5)
 			histos['BDToutput_'+tag]  = ROOT.TH1F('BDToutput_'+tag,';BDT Output;Events',25,-0.4,0.45)
+			histos['BDToutputoriginal_'+tag]  = ROOT.TH1F('BDToutputoriginal_'+tag,';BDT Output;Events',25,-0.4,0.45)
 	for h in histos:
 		histos[h].Sumw2()
 		histos[h].SetDirectory(0)
@@ -370,8 +371,8 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	tmva_reader.AddVariable('DeltaEtaJetLepton:=abs(JEta - LEta)',deltaetajetlepton)
 	tmva_reader.AddVariable('DeltaEtaFJetLepton:=abs(FJEta - LEta)',deltaetafjetlepton)
 	tmva_reader.AddVariable('NBTags',nbtags_tmva)
-	tmva_reader.AddVariable('MT',mt_tmva)
 
+	tmva_reader.AddSpectator('MT',mt_tmva)
 	tmva_reader.AddSpectator('NJets',spec_njets)
 	tmva_reader.AddSpectator('NFJets',spec_nfjets)
 	tmva_reader.AddSpectator('EvCat',spec_evcat)
@@ -383,15 +384,11 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	for i in xrange(0,SVLInfo.GetEntriesFast()):
 		
 		SVLInfo.GetEntry(i)
-
-		#EDIT: Moved this section up from down below.
 		weight = 1 if isData else SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]
 		lumiweight = 1 if isData else SVLInfo.XSWeight*LUMI
 
-		cnt_ini_events+=weight
-
 ######################################
-		#TMVA Definitions
+		#TMVA Definitions - adjust mt and nbtags
 
 		abs_jeta[0] = ROOT.TMath.Abs(SVLInfo.JEta)
 		abs_fjeta[0] = ROOT.TMath.Abs(SVLInfo.FJEta)
@@ -411,39 +408,34 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 		#require e or mu events
 		if ROOT.TMath.Abs(SVLInfo.EvCat)!=11 and ROOT.TMath.Abs(SVLInfo.EvCat)!=13 : continue
+#		if SVLInfo.EvCat!=-11 and SVLInfo.EvCat!=-13: continue
 		chCat = 'e' if ROOT.TMath.Abs(SVLInfo.EvCat)==11 else 'mu'
-
-		cnt_e_or_mu+=weight
 
 ####################################
 
 		#require 1 forward jet
 		fwdeta=ROOT.TMath.Abs(SVLInfo.FJEta)
 #		if fwdeta<2.5 or fwdeta>5: continue
-
-		cnt_1_fwd_jet+=weight
+		
+		if fwdeta > 20: continue
 
 ####################################
 
 		#require at least 1 and less than 4 central jets
-		if (SVLInfo.NJets+SVLInfo.NFJets)<2 or (SVLInfo.NJets+SVLInfo.NFJets)>3 : continue		
+		if (SVLInfo.NJets+SVLInfo.NFJets)<2 or (SVLInfo.NJets+SVLInfo.NFJets)>3 : continue	
+#		if SVLInfo.NJets < 2 or SVLInfo.NJets > 3: continue
 		jetCat="%dj" % (SVLInfo.NJets+SVLInfo.NFJets)
-
-		cnt_central_jets+=weight
+#		jetCat="%dj" % (SVLInfo.NJets)
 
 ###################################
 
 		#require 1 SecVtx
 		if SVLInfo.SVMass<=0 : continue
 
-		cnt_1_sec_vtx+=weight
-
 ###################################
 
 		#re-inforce the cut in MT
-#		if SVLInfo.MT<50 : continue
-
-		cnt_MT_cut+=weight
+		if SVLInfo.MT<50 : continue
 
 ###################################
 
@@ -451,12 +443,20 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		cjeta=ROOT.TMath.Abs(SVLInfo.JEta)
 #		if 0 > cjeta or cjeta > 2.0: continue
 
+##################################
+		#Require at least 1 btag
+		if SVLInfo.NBTags <= 0: continue
+
 ###################################
 
 		#TMVA Cuts
 		mvaBDT = tmva_reader.EvaluateMVA('BDT')
 #		if mvaBDT < 0: continue
+		histos['BDToutputoriginal_'+tag].Fill(mvaBDT,        weight)
 
+###################################
+		#if fwdeta < 2.0: continue
+		#if ROOT.TMath.Abs(SVLInfo.FJEta - SVLInfo.JEta) < 3: continue
 ###################################
 
 		#separate into nTracks
@@ -467,8 +467,6 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		#nTrack = '2t'
 		#else:
 		#nTrack = '3t'
-
-		cnt_final_events+=weight
 
 		#fill histograms with variables of interest
 		tag=chCat+jetCat#+'_'+nTrack

@@ -71,6 +71,7 @@ def parsePEInputs(url,selection='',rebin=4):
 		tag='qcd'      if 'qcd'      in experimentTag else tag
 		tag='dy'       if 'dy'       in experimentTag else tag
 		tag='ntkmult'  if 'ntkmult'  in experimentTag else tag
+		tag='svmass'   if 'svmass'   in experimentTag else tag
 
 		if len(tag)==0 :
 			continue
@@ -557,6 +558,7 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 		('dyup'      , ['dyup',     'dydown'],   'Drell-Yan normalization',    '172.5', True) ,
 		('lepselup'  , ['lepselup', 'lepseldn'], 'Lepton selection',           '172.5', True) ,
 		('ntkmult'   , ['ntkmult'],              'Track multiplicity',         '172.5', True) ,
+		('svmass'    , ['svmass'],               'Sec. Vtx. Mass modeling',    '172.5', True) ,
 	]
 
 	def writeSection(systs,sel,ofile,name=''):
@@ -1084,7 +1086,7 @@ def main():
 	#compare inputs for pseudo-experiments
 	if opt.peInput:
 		outDir=os.path.dirname(opt.peInput)+'/pe_plots'
-		for sel in ['','optmrank']:
+		for sel in ['optmrank']:
 			ensemblesMap=parsePEInputs(url=opt.peInput,
 									   selection=sel,
 									   rebin=opt.rebin)

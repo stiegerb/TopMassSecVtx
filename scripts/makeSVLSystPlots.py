@@ -97,7 +97,8 @@ SYSTSFROMWEIGHTS = [
 	('bfnuup',      'B hadron semi-lep BF up',
 	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))', ['tot']),
 	('bfnudn',   'B hadron semi-lep BF down',
-	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))', ['tot'])
+	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))', ['tot']),
+	('svmass',      'SV mass reweighting',       'SVMassWeight',           ['tot']),
 	]
 
 #fun...
@@ -181,6 +182,10 @@ SYSTPLOTS = [
 	('bfnu', 'B-hadron branching fractions',
 	 ['nominal', 'bfnuup', 'bfnudn'],
 	 [ROOT.kBlack, ROOT.kYellow-3, ROOT.kYellow+3],'tot'),
+
+	('svmass', 'SV Mass reweighting',
+	 ['nominal', 'svmass'],
+	 [ROOT.kBlack, ROOT.kMagenta-9],'tot'),
 ]
 
 
@@ -466,16 +471,15 @@ def main(args, opt):
 
 
 	for var,_,_,_,_ in CONTROLVARS:
-		makeControlPlot(systhistos, var,
-			            'inclusive', 'Fully Inclusive', opt)
-		makeControlPlot(systhistos, var,
-				'inclusive_mrank1', 'Mass ranked, leading p_{T}', opt)
-		makeControlPlot(systhistos, var,
-				'inclusive_mrank1dr', 'Mass ranked, #DeltaR<2, leading p_{T}', opt)
-		makeControlPlot(systhistos, var,
-				'inclusive_drrank1dr', '#DeltaR ranked, #DeltaR<2, leading p_{T}', opt)
-		makeControlPlot(systhistos, var,
-			            'inclusive_optmrank', 'Optimized mass rank', opt)
+		for sel,tag in [
+			('inclusive', 'Fully Inclusive'),
+			('inclusive_mrank1', 'Mass ranked, leading p_{T}'),
+			('inclusive_mrank1dr', 'Mass ranked, #DeltaR<2, leading p_{T}'),
+			('inclusive_drrank1dr', '#DeltaR ranked, #DeltaR<2, leading p_{T}'),
+			('inclusive_optmrank', 'Optimized mass rank')]:
+			try: makeControlPlot(systhistos, var, sel, tag, opt)
+			except KeyError:
+				print 'control plots for %s selection not found' % sel
 
 	for tag,_,_ in SELECTIONS:
 		if not 'inclusive' in tag : continue

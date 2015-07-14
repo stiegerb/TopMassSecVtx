@@ -152,6 +152,8 @@ def main(args, options):
 	options.filter = 'Mjj,LJNtk' ## not the charm plots
 	options.excludeProcesses = 'QCD'
 	options.cutUnderOverFlow = True
+	options.normToData = True
+	options.ratioRange = '0.7,1.7'
 	runPlotter(args[0], options, scaleFactors=scaleFactors)
 
 	return 0

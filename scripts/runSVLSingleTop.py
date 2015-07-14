@@ -303,6 +303,11 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 	#prepare histograms to store
 	histos={}
+	histos['EventYields'] = ROOT.TH1F('EventYields',';Channel;Events',4,0,4)
+	histos['EventYields'].GetXaxis().SetBinLabel(1,'e,2j')
+	histos['EventYields'].GetXaxis().SetBinLabel(2,'#mu,2j')
+	histos['EventYields'].GetXaxis().SetBinLabel(3,'e,3j')
+	histos['EventYields'].GetXaxis().SetBinLabel(4,'#mu,3j')
 	for chCat in ['e','mu']:
 		for jetCat in ['2j','3j']:
 			#for nTrack in ['1t','2t','3t','4t','5t']:
@@ -346,45 +351,51 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	cnt_final_events = 0
 
 	#TMVA Addition
-	TMVA.Tools.Instance()
+	tmva_reader=None
+	try:
+		TMVA.Tools.Instance()
+		tmva_reader = TMVA.Reader()
 
-	tmva_reader = TMVA.Reader()
+		abs_jeta = array.array('f',[0])
+		abs_fjeta = array.array('f',[0])
+		abs_leta = array.array('f',[0])
+		lcharge = array.array('f',[0])
+		deltaetajetfjet = array.array('f',[0])
+		deltaetajetlepton = array.array('f',[0])
+		deltaetafjetlepton = array.array('f',[0])
+		nbtags_tmva = array.array('f',[0])
+		mt_tmva = array.array('f',[0])
+		
+		spec_njets = array.array('i',[0])
+		spec_nfjets = array.array('i',[0])
+		spec_evcat = array.array('i',[0])
+		spec_svmass = array.array('f',[0])
+		spec_fjpt = array.array('f',[0])
+		spec_jpt = array.array('f',[0])
 
-	abs_jeta = array.array('f',[0])
-	abs_fjeta = array.array('f',[0])
-	abs_leta = array.array('f',[0])
-	lcharge = array.array('f',[0])
-	deltaetajetfjet = array.array('f',[0])
-	deltaetajetlepton = array.array('f',[0])
-	deltaetafjetlepton = array.array('f',[0])
-	nbtags_tmva = array.array('f',[0])
-	mt_tmva = array.array('f',[0])
+		tmva_reader.AddVariable('abs(JEta)',abs_jeta)
+		tmva_reader.AddVariable('abs(FJEta)',abs_fjeta)
+		tmva_reader.AddVariable('abs(LEta)',abs_leta)
+		tmva_reader.AddVariable('LCharge',lcharge)
+		tmva_reader.AddVariable('DeltaEtaJetFJet:=abs(FJEta - JEta)',deltaetajetfjet)
+		tmva_reader.AddVariable('DeltaEtaJetLepton:=abs(JEta - LEta)',deltaetajetlepton)
+		tmva_reader.AddVariable('DeltaEtaFJetLepton:=abs(FJEta - LEta)',deltaetafjetlepton)
+		tmva_reader.AddVariable('NBTags',nbtags_tmva)
+		
+		tmva_reader.AddSpectator('MT',mt_tmva)
+		tmva_reader.AddSpectator('NJets',spec_njets)
+		tmva_reader.AddSpectator('NFJets',spec_nfjets)
+		tmva_reader.AddSpectator('EvCat',spec_evcat)
+		tmva_reader.AddSpectator('SVMass',spec_svmass)
+		tmva_reader.AddSpectator('FJPt',spec_fjpt)
+		tmva_reader.AddSpectator('JPt',spec_jpt)
 
-	spec_njets = array.array('i',[0])
-	spec_nfjets = array.array('i',[0])
-	spec_evcat = array.array('i',[0])
-	spec_svmass = array.array('f',[0])
-	spec_fjpt = array.array('f',[0])
-	spec_jpt = array.array('f',[0])
-
-	tmva_reader.AddVariable('abs(JEta)',abs_jeta)
-	tmva_reader.AddVariable('abs(FJEta)',abs_fjeta)
-	tmva_reader.AddVariable('abs(LEta)',abs_leta)
-	tmva_reader.AddVariable('LCharge',lcharge)
-	tmva_reader.AddVariable('DeltaEtaJetFJet:=abs(FJEta - JEta)',deltaetajetfjet)
-	tmva_reader.AddVariable('DeltaEtaJetLepton:=abs(JEta - LEta)',deltaetajetlepton)
-	tmva_reader.AddVariable('DeltaEtaFJetLepton:=abs(FJEta - LEta)',deltaetafjetlepton)
-	tmva_reader.AddVariable('NBTags',nbtags_tmva)
-
-	tmva_reader.AddSpectator('MT',mt_tmva)
-	tmva_reader.AddSpectator('NJets',spec_njets)
-	tmva_reader.AddSpectator('NFJets',spec_nfjets)
-	tmva_reader.AddSpectator('EvCat',spec_evcat)
-	tmva_reader.AddSpectator('SVMass',spec_svmass)
-	tmva_reader.AddSpectator('FJPt',spec_fjpt)
-	tmva_reader.AddSpectator('JPt',spec_jpt)
-
-	tmva_reader.BookMVA('BDT','weights/TMVAClassification_BDT.weights.xml')
+		bdtWeightsFile='weights/TMVAClassification_BDT.weights.xml'
+		if os.path.isfile(bdtWeightsFile): tmva_reader.BookMVA('BDT',bdtWeightsFile)
+		else : raise IOError
+	except:
+		tmva_reader = None
+		print 'Unable to book TMVA reader, BDT will be discarded'
 
 	#loop over events in tree
 	for i in xrange(0,SVLInfo.GetEntriesFast()):
@@ -415,6 +426,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 ######################################
 
 		#require e or mu events
+		chCat=''
 		if ROOT.TMath.Abs(SVLInfo.EvCat)!=11 and ROOT.TMath.Abs(SVLInfo.EvCat)!=13 : continue
 		chCat = 'e' if ROOT.TMath.Abs(SVLInfo.EvCat)==11 else 'mu'
 
@@ -422,39 +434,32 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 		#require 1 forward jet
 		fwdeta=ROOT.TMath.Abs(SVLInfo.FJEta)
-#		if fwdeta<2.5 or fwdeta>5: continue
-		
 		if fwdeta > 20: continue
+		if SVLInfo.FJPt < 40: continue
 
 ####################################
 
-		#require at least 1 and less than 4 central jets
-		if (SVLInfo.NJets+SVLInfo.NFJets)<2 or (SVLInfo.NJets+SVLInfo.NFJets)>3 : continue	
-		jetCat="%dj" % (SVLInfo.NJets+SVLInfo.NFJets)
+		#require at least one high pT central jet, but not more than 2 central jets
+		if SVLInfo.JPt < 40 :continue
+		if SVLInfo.NJets<1 or SVLInfo.NJets>2:continue
+		jetCat="%dj" % (SVLInfo.NJets+1)
 
 ###################################
 
-		#require 1 SecVtx
+		#require 1 SecVtx, and re-inforce b-tag requirement
 		if SVLInfo.SVMass<=0 : continue
+		if SVLInfo.NBTags<=0: continue
 
 ###################################
 
 		#re-inforce the cut in MT
 		if SVLInfo.MT<50 : continue
+		if chCat == 'e' and SVLInfo.MET<45 : continue
 
 ###################################
 
 		#Calculate central jet eta
 		cjeta=ROOT.TMath.Abs(SVLInfo.JEta)
-
-##################################
-		#Require at least 1 btag
-		if SVLInfo.NBTags <= 0: continue
-
-###################################
-
-		if SVLInfo.JPt < 40 :continue
-		if SVLInfo.FJPt < 30: continue
 
 		#separate into nTracks
 #		if SVLInfo.SVNtrk < 1 or SVLInfo.SVNtrk > 5: continue
@@ -471,14 +476,21 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 		tag=chCat+jetCat#+nTrack
 
-		#TMVA Cuts
-		mvaBDT = tmva_reader.EvaluateMVA('BDT')
-		histos['BDToutputoriginal_'+tag].Fill(mvaBDT,    weight)
-#		if mvaBDT < 0.11: continue
+		#TMVA Cuts (if available)
+		mvaBDT=-1
+		if tmva_reader:
+			mvaBDT = tmva_reader.EvaluateMVA('BDT')
+			histos['BDToutputoriginal_'+tag].Fill(mvaBDT,    weight)
+			# if mvaBDT < 0.11: continue
 
 ###################################
 
 		#fill histograms with variables of interest
+		if tag=='e2j'  : histos['EventYields'].Fill(0,weight)
+		if tag=='mu2j' : histos['EventYields'].Fill(1,weight)
+		if tag=='e3j'  : histos['EventYields'].Fill(2,weight)
+		if tag=='mu3j' : histos['EventYields'].Fill(3,weight)
+
 		histos['NPVtx_'+tag]  .Fill(SVLInfo.NPVtx-1, weight)
 		histos['MT_'+tag]     .Fill(SVLInfo.MT,      weight)
 		histos['MET_'+tag]    .Fill(SVLInfo.MET,     weight)

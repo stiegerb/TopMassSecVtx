@@ -153,10 +153,25 @@ Will printout the "final" systematics table
 ---------------------------------------------------
 ### Control region analysis
 ```
-./scripts/fitSecVtxProperties.py -i treedir/qcd_control    -o outDir/qcd_control/plots/    --weightPt --onlyCentral --minLxySig 10
-./scripts/fitSecVtxProperties.py -i treedir/z_control      -o outDir/z_control/plots/      --doScales --weightPt --vetoCentral --rebin 3
-./scripts/fitSecVtxProperties.py -i treedir/photon_control -o outDir/photon_control/plots/ --weightPt --rebin 2
-./scripts/fitSecVtxProperties.py -i treedir/               -o outDir/control/plots/        --filter -143
+./scripts/fitSecVtxProperties.py -i treedir/z_control      -o outDir/z_control/plots/      --doScales --weightPt --vetoCentral --filter 23 --showMean
+./scripts/fitSecVtxProperties.py -i treedir/               -o outDir/control/plots/        --filter -143,-121,-169 --showMean
 `````
 After creating the workspace you can use it directly by using -w workspace.root instead of -i ntuple_dir
+
+#deprecated (not sensitive enough)
+#./scripts/fitSecVtxProperties.py -i treedir/photon_control -o outDir/photon_control/plots/ --weightPt --rebin 2
+#./scripts/fitSecVtxProperties.py -i treedir/qcd_control    -o outDir/qcd_control/plots/    --weightPt --onlyCentral --minLxySig 10
+
+---------------------------------------------------
+### Charmed peaks analysis
+```
+ sh runCharmPeaks.sh TREES
+ sh runCharmPeaks.sh MERGE
+ sh runCharmPeaks.sh PLOT
+ sh runCharmPeaks.sh UNFOLD
+ sh runCharmPeaks.sh DIFF
+ sh runCharmPeaks.sh DIFFZ
+
+```
+Uses runCharmPeaks.sh to steer the steps of the analysis (from ntuple creation to unfolding and plotting)
 

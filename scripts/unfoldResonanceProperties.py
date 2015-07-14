@@ -224,7 +224,10 @@ def generateWorkspace(CandTypes,inputUrl,postfixForOutputs,options):
 	try:
 		cachefile = open(".charmpeakworkspaces.pck", 'r')
 		workspaces = pickle.load(cachefile)
-		ws = workspaces[(tuple(inputUrl),tuple(CandTypes))]
+		if not options.weight:
+			ws=workspaces[(tuple(inputUrl),tuple(CandTypes))]
+		else:
+			ws=workspaces[(tuple(inputUrl),tuple(CandTypes), options.weight)]
 		print workspaces.keys()
 		print ">>> Read workspace from .charmpeakworkspaces.pck"
 		cachefile.close()
@@ -279,7 +282,6 @@ def generateWorkspace(CandTypes,inputUrl,postfixForOutputs,options):
 			print "Will weight events using", wvarname,
 			if wind: print "index",wind
 			else: print ''
-
 
 		#fill the dataset
 		chain=ROOT.TChain("CharmInfo")

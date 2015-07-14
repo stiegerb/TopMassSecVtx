@@ -100,8 +100,8 @@ for tag in histos['Z2star']:
     if 'B0' in tag : cat='B^{0}'
     if 'Bs' in tag : cat='B_{s}'
     if 'Others' in tag : cat='Others'
-    #leg.SetHeader("#splitline{#bf{Pythia} #it{simulation} (8 TeV)}{#it{%s}}"%cat)
-    leg.SetHeader("#splitline{#bf{Sherpa} #it{simulation} (8 TeV)}{#it{%s}}"%cat)
+    leg.SetHeader("#splitline{#bf{Pythia} #it{simulation} (8 TeV)}{#it{%s}}"%cat)
+    #leg.SetHeader("#splitline{#bf{Sherpa} #it{simulation} (8 TeV)}{#it{%s}}"%cat)
     leg.Draw()
 
     p2.cd()

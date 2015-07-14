@@ -357,7 +357,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         print 80*'-'
 
     if not 'nominal' in experimentTag:
-        cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../../'))
+        #cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../../'))
+        cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../'))
         cfilepath = osp.join(cfilepath, ".svlsysthistos.pck")
         cachefile = open(cfilepath, 'r')
         systhistos = pickle.load(cachefile)
@@ -589,7 +590,7 @@ def main():
                        help='Run only on these variations (comma separated list)')
     parser.add_option('-n', '--nPexp', dest='nPexp', default=250, type=int,
                        help='Total # pseudo-experiments.')
-    parser.add_option('-o', '--outDir', dest='outDir', default='svlfits',
+    parser.add_option('-o', '--outDir', dest='outDir', default='svlfits/pexp',
                        help='Output directory [default: %default]')
 
     (opt, args) = parser.parse_args()
@@ -621,6 +622,9 @@ def main():
         allTags = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()]
         peInputFile.Close()
         print 'Running pseudo-experiments using PDFs and signal expectations'
+
+        if len(opt.calib) :
+            print 'Calibration will be taken from %s' % opt.calib
 
         ## Run a single experiment
         if len(args)>2:

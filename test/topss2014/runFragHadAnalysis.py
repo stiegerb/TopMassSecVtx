@@ -79,7 +79,7 @@ for model in ['Z2starLEP','Z2star'] : #,'Z2starLEP_lund','Z2starLEP_peterson','C
     histos[model]['Btype_wgt']=histos[model]['Btype'].Clone('Btype_wgt')
     histos[model]['Btype_wgt'].SetDirectory(0)
 
-    totalEntries=int(0.2*tree.GetEntriesFast())
+    totalEntries=tree.GetEntriesFast()
     for i in xrange(0,totalEntries):
         tree.GetEntry(i)
         printProgress(i,totalEntries)

@@ -56,6 +56,7 @@ def parsePEInputs(url,selection='',rebin=4):
 		tag='jes'      if 'jes'      in experimentTag else tag
 		tag='jer'      if 'jer'      in experimentTag else tag
 		tag='btag'     if 'btag'     in experimentTag else tag
+		tag='bhadcomp' if 'bhadcomp' in experimentTag else tag
 		tag='les'      if 'les'      in experimentTag else tag
 		tag='bfn'      if 'bfn'      in experimentTag else tag
 		tag='pdf'      if 'pdf'      in experimentTag else tag
@@ -66,6 +67,7 @@ def parsePEInputs(url,selection='',rebin=4):
 		tag='width'    if 'width'    in experimentTag else tag
 		tag='matching' if 'matching' in experimentTag else tag
 		tag='p11'      if 'p11'      in experimentTag else tag
+		tag='mcatnlo'  if 'mcatnlo'  in experimentTag else tag
 		tag='powheg'   if 'powpyth'  in experimentTag else tag
 		tag='powheg'   if 'powherw'  in experimentTag else tag
 		tag='qcd'      if 'qcd'      in experimentTag else tag
@@ -88,9 +90,11 @@ def parsePEInputs(url,selection='',rebin=4):
 		refTag='nominal_172v5' if 'toppt'    in tag else refTag
 		refTag='nominal_172v5' if 'jes'      in tag else refTag
 		refTag='nominal_172v5' if 'bfrag'    in tag else refTag
+		refTag='nominal_172v5' if 'bhadcomp' in tag else refTag
 		refTag='nominal_172v5' if 'bfn'      in tag else refTag
 		refTag='p11_172v5'     if 'p11'      in tag else refTag
 		refTag='nominal_172v5' if 'powheg'   in tag else refTag
+		refTag='nominal_172v5' if 'mcatnlo'   in tag else refTag
 		if len(refTag)==0 : continue
 
 		#parse mtop
@@ -468,6 +472,7 @@ def showSystematicsTable(results,filterCats):
 				if 'p11' in expTag:     expTag2diff='p11'
 				if expTag == 'p11':     expTag2diff='172.5'
 				if 'bfrag' in expTag:   expTag2diff='172.5' ## could compare with bfrag
+				if 'bhadcomp' in expTag: expTag2diff='172.5'
 				if expTag == 'bfrag':   expTag2diff='172.5'
 
 				diff = results[(cat,sel)][expTag][0]-results[(cat,sel)][expTag2diff][0]
@@ -503,7 +508,8 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 	theosysts = [
 	##   systname   ,variations [up, down],          title,       variation to compare with, included in sum?
 		('powpyth'   , ['powpyth'],                    'Signal model',             '172.5', True ),
-		# ('powherw'   , ['powherw'],                    'POWHEG+(Pythia vs Herwig)','powpyth', False ),
+		('powherw'   , ['powherw'],                    'POWHEG+(Pythia vs Herwig)','powpyth', False ),
+		('mcatnlohw' , ['mcatnlohw'],                  'MCatNLO vs POWHEG (Herwig)','powherw', False ),
 		('scale'     , ['scaleup', 'scaledown'],       '$\\mu_R/\\mu_F$ scales \\ttbar',         '172.5', True ),
 		('tchscale'  , ['tchscaleup', 'tchscaledown'], '\\qquad\\qquad t-channel',       '172.5', True ),
 		('twchscale' , ['twchscaleup','twchscaledown'],'\\qquad\\qquad tW-channel',      '172.5', True ),
@@ -511,12 +517,13 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 		('width'     , ['width'],                      'Width',                '172.5', True ),
 		#('hadmod'   , ['hadmod'],                     'Hadronization model',  '172.5', True ),
 		('bfnu'      , ['bfnuup', 'bfnudn'],           'Semi-lep. B decays',   '172.5', True ),
-		#('bfragdn'   , ['bfragdn'],                    '\ztwostar\ rb LEP soft', '172.5', False ),
+		('bhadcomp'  , ['bhadcomp'],                   'B-hadron composition \ztwostar\ LEP ', '172.5', True ),
+		('bfragdn'   , ['bfragdn'],                    '\ztwostar\ rb LEP soft', '172.5', False ),
 		('bfrag'     , ['bfrag'],                      'Fragmentation \ztwostar\ rb LEP',      '172.5', True ),
-		#('bfragup'   , ['bfragup'],                    '\ztwostar\ rb LEP hard', '172.5', False ),
-		#('bfragp11'  , ['bfragp11'],                   'P11',                  '172.5', False ),
-		# ('bfragpete' , ['bfragpete'],                  '\ztwostar\ Peterson',    '172.5', False ),
-		# ('bfraglund' , ['bfraglund'],                  '\ztwostar\ Lund',        '172.5', False ),
+		('bfragup'   , ['bfragup'],                    '\ztwostar\ rb LEP hard', '172.5', False ),
+		('bfragp11'  , ['bfragp11'],                   'P11',                  '172.5', False ),
+		('bfragpete' , ['bfragpete'],                  '\ztwostar\ Peterson',    '172.5', False ),
+		('bfraglund' , ['bfraglund'],                  '\ztwostar\ Lund',        '172.5', False ),
 		('toppt'     , ['toppt'],                      'Top quark \\pt',       '172.5', True ),
 		('p11mpihi'  , ['p11mpihi','p11tev'],          'Underlying event',     'p11',   True ),
 		('p11nocr'   , ['p11nocr'],                    'Color reconnection',   'p11',   True ),
@@ -528,8 +535,8 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 	expsysts = [
 		('jesup'     , ['jesup',    'jesdn'],    'Jet energy scale',           '172.5', True) ,
 		('jerup'     , ['jerup',    'jerdn'],    'Jet energy resolution',      '172.5', True) ,
-		#('umetup'    , ['umetup',   'umetdn'],   'Unclustered energy',         '172.5', True) ,
-		('umetup'    , ['umetup'],   'Unclustered energy',         '172.5', True) ,
+		('umetup'    , ['umetup',   'umetdn'],   'Unclustered energy',         '172.5', True) ,
+		#('umetup'    , ['umetup'],   'Unclustered energy',         '172.5', True) ,
 		('lesup'     , ['lesup',    'lesdn'],    'Lepton energy scale',        '172.5', True) ,
 		('puup'      , ['puup',     'pudn'],     'Pileup',                     '172.5', True) ,
 		('btagup'    , ['btagup',   'btagdn'],   '\\cPqb-tagging',             '172.5', True) ,

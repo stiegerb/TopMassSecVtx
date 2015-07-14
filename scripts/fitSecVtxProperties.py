@@ -165,15 +165,17 @@ def buildWorkspace(opt):
         pathToF=os.path.join(opt.inDir,f)
         if 'DY' in f and 'scale' in f : continue
         if f.find('MC')==0: 
+           print pathToF,'mc'
            chains['mc'].Add(pathToF)
            pathToF_up, pathToF_dn = pathToF, pathToF
-           if 'DY1' in f or 'DY2' in f or 'DY3' in f:
+           if ('DY1' in f or 'DY2' in f or 'DY3' in f) and opt.doScales :
               pathToF_up=pathToF_up.replace('50toInf','50toInf_scaleup')
               pathToF_dn=pathToF_up.replace('scaleup','scaledown')
            if opt.doScales:   
               chains['mcscaleup'].Add(pathToF_up)
               chains['mcscaledown'].Add(pathToF_dn)
         else:
+           print pathToF,'data'
            chains['data'].Add(pathToF)
 
                            
@@ -190,14 +192,19 @@ def buildWorkspace(opt):
             hmc=ROOT.TH1F('hptmc','',50,0,250)
             hmc.Sumw2()
             for key in ['mc','mcscaleup','mcscaledown']:
-               hmc.Reset('ICE')
-               chains[key].Draw('LPt>>hptmc','(SVNtrk==%d %s)*Weight[0]*XSWeight*%f'%(itk,extraCond,LUMI),'norm goff')
-               hmc.Divide(hdata)
-               if not (key in ptWeightGr): ptWeightGr[key]={}
-               ptWeightGr[key][itk]=ROOT.TGraphErrors(hmc)
+               try:
+                  hmc.Reset('ICE')
+                  chains[key].Draw('LPt>>hptmc','(SVNtrk==%d %s)*Weight[0]*XSWeight*%f'%(itk,extraCond,LUMI),'norm goff')
+                  hmc.Divide(hdata)
+                  if not (key in ptWeightGr): ptWeightGr[key]={}
+                  ptWeightGr[key][itk]=ROOT.TGraphErrors(hmc)
+               except:
+                  continue
             hdata.Delete()
             hmc.Delete()
             
+    EvCatToFilter = [int(x) for x in opt.filter.split(',')]
+
     #fill the histograms
     for key in chains:
        
@@ -216,7 +223,7 @@ def buildWorkspace(opt):
             chains[key].GetEntry(i)
 
             #filter event category if required
-            if opt.filter!=0 and opt.filter!= chains[key].EvCat : continue
+            if len(EvCatToFilter)>0 and not chains[key].EvCat in EvCatToFilter : continue
 
             #Check number of tracks
             ntk=chains[key].SVNtrk
@@ -228,6 +235,8 @@ def buildWorkspace(opt):
             lxysig=chains[key].SVLxySig
             if lxysig<opt.minLxySig : continue
                 
+            if chains[key].SVLMassRank!=1 or chains[key].CombCat%2==0 : continue
+
             #compute global event weight
             totalWeight=1.0
             if 'mc' in key:
@@ -278,7 +287,7 @@ def buildWorkspace(opt):
           normKey=key[:-1]+'0'
        if histos[key].Integral()==0 : continue
        print key,'->', normKey
-       histos[key].Scale(histos[normKey].Integral()/histos[key].Integral())
+       #histos[key].Scale(histos[normKey].Integral()/histos[key].Integral())
     
     #save histograms
     wsUrl=os.path.join(opt.outDir,"SecVtxWorkspace.root")
@@ -362,7 +371,16 @@ def doMassFit(opt):
 
 """
 """
-def comparePostFitDistributions(opt):
+def compareDistributions(opt):
+
+   #fragmentation variations to compare
+   fragToUse=[(1,'Z2*LEP r_{b}',ROOT.kBlack),
+              (2,'Z2*LEP r_{b}+',ROOT.kMagenta),
+              (3,'Z2*LEP r_{b}-',ROOT.kMagenta+2),
+              (0,'Z2*',ROOT.kRed+1),
+              (5,'Z2* peterson',ROOT.kViolet+2),
+              (6,'Z2* Lund',ROOT.kAzure+7)]
+   nominalFragWgt=fragToUse[0][0]
 
    #read flavour normalizations from cache
    cachefile=open(opt.flavorFitUrl,'r')
@@ -372,26 +390,15 @@ def comparePostFitDistributions(opt):
    #open file with templates
    fIn=ROOT.TFile(opt.wsUrl)
    
-   #fit and save results 
-   canvas=ROOT.TCanvas('c','c',500,1200)
-   canvas.SetRightMargin(0)
-   canvas.SetLeftMargin(0)
-   canvas.SetTopMargin(0)
-   canvas.SetBottomMargin(0)
-   allLegs=[]
-   pads=[]
-   pads.append( ROOT.TPad('pad0','pad0',0,0.6,1.0,1.0) )
-   pads[0].SetBottomMargin(0.01)
-   pads.append( ROOT.TPad('pad1','pad1',0.0,0.60,1.0,0.45) )
-   pads.append( ROOT.TPad('pad2','pad2',0.0,0.45,1.0,0.30) )
-   pads.append( ROOT.TPad('pad3','pad3',0.0,0.30,1.0,0.15) )
-   pads.append( ROOT.TPad('pad4','pad4',0.0,0.15,1.0,0.0) )
-   for i in xrange(1,5):
-      pads[i].SetTopMargin(0.01)
-      pads[i].SetBottomMargin(0.01)
-   pads[-1].SetBottomMargin(0.22)
-   for p in pads: p.Draw()
+   #prepare canvas
+   canvas=ROOT.TCanvas('c','c',600,600)
+   #canvas.SetRightMargin(0)
+   canvas.SetLeftMargin(0.12)
+   #canvas.SetTopMargin(0)
+   canvas.SetBottomMargin(0.12)
+   canvas.cd()
 
+   #loop over variables
    for var,title in [('svmass','SecVtx mass [GeV]'),
                      ('svpt','SecVtx transverse momentum [GeV]'),
                      ('svptrel','SecVtx ch. p_{T}^{rel} [GeV]'),
@@ -401,42 +408,46 @@ def comparePostFitDistributions(opt):
                      ('lxy', 'L_{xy} [cm]'),
                      ('lxysig', 'L_{xy} significance'),
                      ('tagpt',  'Tag transverse momentum [GeV]')]:
+
+      #loop over track multiplicity
       for itk in xrange(NTKMIN,NTKMAX+1):
+         
+         fIn.cd()
+
+         #data distribution
          data=fIn.Get('%s_data_%d'%(var,itk))
+         data.SetDirectory(0)
          data.SetMarkerStyle(20)
          data.SetLineColor(1)
          data.SetMarkerColor(1)
          data.SetTitle('data')
          if opt.rebin!=0 : data.Rebin(opt.rebin)
+         dataGr=convertToPoissonErrorGr(data)
 
-         dataResPull=[]
-         stack=ROOT.THStack('hs','total')
-         leg=ROOT.TLegend(0.8,0.5,0.95,0.25)
+         #legend
+         leg=ROOT.TLegend(0.55,0.75,0.95,0.9)
+         if 'svprojfrac' in var : leg=ROOT.TLegend(0.15,0.75,0.49,0.9)
          leg.SetFillStyle(0)
          leg.SetBorderSize(0)
          leg.SetTextFont(42)
          leg.SetTextSize(0.03)
-         nfragw=len(flavorFracs['exp']['b'][itk])
-         for iw in xrange(0,nfragw+2):
-            dataResPull.append( data.Clone('%s_data_%d_res_%d'%(var,itk,iw)) )
-            dataResPull[-1].SetDirectory(0)
-            hb=None
+         leg.AddEntry(dataGr,'data','p')
+         leg.SetNColumns(2)
 
-            #for scale up/down use nominal frag weight
-            ifw=iw if iw<nfragw else 0
+         #build the different total predictions
+         stacks={}
+         for iw,_,_ in fragToUse:
+            
+            stacks[iw]=ROOT.THStack('hs%d'%iw,'total%d'%iw)
             for flav in ['other','c','b']:
-               if flavorFracs['exp'][flav][itk][ifw][0]<=0 : continue
 
-               pfix=''
-               if iw==nfragw   : pfix='_scaleup'
-               if iw==nfragw+1 : pfix='_scaledown'
-               h=fIn.Get('%s_%s_%d_fw%d%s'%(var,flav,itk,ifw,pfix))
-
-               h.Scale(flavorFracs['obs'][flav][itk][ifw][0]/flavorFracs['exp'][flav][itk][ifw][0])
+               #format histogram
+               h=fIn.Get('%s_%s_%d_fw%d'%(var,flav,itk,iw))
+               if h.Integral()==0 : continue
+               data2mcScaleFactor=flavorFracs['obs'][flav][itk][iw][0]/flavorFracs['exp'][flav][itk][iw][0]
+               h.Scale(data2mcScaleFactor)
+               h.SetDirectory(0)
                if opt.rebin!=0 : h.Rebin(opt.rebin)
-               dataResPull[iw].Add(h,-1)
-
-               if iw>0 : continue
                color = ROOT.kGray
                if flav=='c' : color=ROOT.kAzure-3
                if flav=='b' : color=ROOT.kOrange
@@ -444,193 +455,153 @@ def comparePostFitDistributions(opt):
                h.SetFillStyle(1001)
                h.SetFillColor(color)
                h.SetLineColor(color)
-               stack.Add(h,'hist')
-               leg.AddEntry(h,flav,'f')
+               if iw==nominalFragWgt : leg.AddEntry(h,flav,'f')
 
-            #finalize computing pull
-            for xbin in xrange(1,dataResPull[iw].GetXaxis().GetNbins()):
-                mcunc=stack.GetStack().At( stack.GetStack().GetEntriesFast()-1 ).GetBinError(xbin)
-                if mcunc<=0: continue
-                pull=dataResPull[iw].GetBinContent(xbin)/mcunc
-                pullErr=dataResPull[iw].GetBinError(xbin)/mcunc
-                dataResPull[iw].SetBinContent(xbin,pull)
-                dataResPull[iw].SetBinError(xbin,pullErr)
+               #add to stack
+               stacks[iw].Add(h,'hist')
 
-
-
+         #show main prediction
          canvas.cd()
-         pads[0].cd()
-         pads[0].Clear()
-         if 'lxy' in var : pads[0].SetLogy(True)
-         else            : pads[0].SetLogy(False)
-         stack.Draw()
-         stack.GetYaxis().SetTitle('Events')
-         stack.GetYaxis().SetTitleOffset(1.5)
-         stack.GetXaxis().SetTitle('')
-         stack.GetYaxis().SetRangeUser(1,1.3*data.GetMaximum())
-         stack.GetXaxis().SetTitleOffset(1.2)
-         stack.GetYaxis().SetTitleSize(0.06)
-         stack.GetXaxis().SetTitleSize(0.0)
-         stack.GetYaxis().SetLabelSize(0.06)
-         stack.GetXaxis().SetLabelSize(0.0)
-         stack.GetXaxis().SetNdivisions(5)
-         dataGr=convertToPoissonErrorGr(data)
+         canvas.Clear()
+         stacks[nominalFragWgt].Draw()
+         stacks[nominalFragWgt].GetYaxis().SetTitle('Events')
+         stacks[nominalFragWgt].GetXaxis().SetTitle(title)
+         stacks[nominalFragWgt].GetYaxis().SetTitleOffset(1.2)
+         stacks[nominalFragWgt].GetYaxis().SetRangeUser(1,1.3*data.GetMaximum())
+         stacks[nominalFragWgt].GetXaxis().SetTitleOffset(0.9)
+         stacks[nominalFragWgt].GetYaxis().SetTitleSize(0.04)
+         stacks[nominalFragWgt].GetXaxis().SetTitleSize(0.04)
+         stacks[nominalFragWgt].GetYaxis().SetLabelSize(0.04)
+         stacks[nominalFragWgt].GetXaxis().SetLabelSize(0.04)
+         stacks[nominalFragWgt].GetXaxis().SetNdivisions(5)
+         stacks[nominalFragWgt].GetYaxis().SetNdivisions(5)
+         if 'lxy' in var : 
+            canvas.SetLogy(True)
+            stacks[nominalFragWgt].GetYaxis().SetRangeUser(0.5,stacks[nominalFragWgt].GetYaxis().GetXmax())
+         else            : canvas.SetLogy(False)
          dataGr.Draw('p')
-         leg.AddEntry(dataGr,'data','p')
+
          label=ROOT.TLatex()
          label.SetNDC()
          label.SetTextFont(42)
          label.SetTextSize(0.04)
-         label.DrawLatex(0.18,0.95,'#bf{CMS} #it{simulation}  #scale[0.8]{#it{N_{tracks}=%d}}'%itk)
+         label.DrawLatex(0.12,0.95,'#bf{CMS} #it{preliminary}  #scale[0.8]{#it{N_{tracks}=%d}}'%itk)
          label.DrawLatex(0.75,0.95,'#scale[0.8]{19.7 fb^{-1} (8 TeV)}')
          leg.Draw()
 
-         canvas.cd()
-         pullsToDraw=[{0:('Z2*',ROOT.kBlack),          4:('P11',ROOT.kMagenta)},
-                      {1:('Z2* r_{b}',ROOT.kBlack),    2:('Z2* r_{b} hard',ROOT.kMagenta), 3:('Z2* r_{b} soft',ROOT.kViolet+2)},
-                      {5:('Z2* peterson',ROOT.kBlack), 6:('Z2* Lund',ROOT.kMagenta)}]
-         if opt.doScales:
-            pullsToDraw.append(
-               {7:('#mu_{R}/#mu_{F} up',ROOT.kBlack), 8:('#mu_{R}/#mu_{F} down',ROOT.kMagenta)}
-               )
+         #compare
+         compGrs={}
+         for iw,wtitle,wcolor in fragToUse:
+            compGrs[iw]=ROOT.TGraphErrors()
+            compGrs[iw].SetName('compgr%d'%iw)
+            compGrs[iw].SetTitle(wtitle)
+            compGrs[iw].SetLineColor(wcolor)
+            compGrs[iw].SetFillColor(wcolor)
+            compGrs[iw].SetMarkerColor(wcolor)
+            compGrs[iw].SetFillStyle(3001)
+            compGrs[iw].SetMarkerStyle(20+iw)
 
-         for ip in xrange(0,len(pullsToDraw)):
-            pads[ip+1].cd()
-            pads[ip+1].Clear()
-            pads[ip+1].SetGridy(True)
-
-            drawOpt='hist'
-            allLegs.append( ROOT.TLegend(0.2,0.75,0.9,0.97) )
-            for pkey in pullsToDraw[ip]:
-               dataResPull[pkey].Draw(drawOpt)
-
-               pullTitle=pullsToDraw[ip][pkey][0]
-               dataResPull[pkey].SetTitle(pullTitle)
-               chi2=0
-               for xbin in xrange(1,dataResPull[pkey].GetXaxis().GetNbins()):
-                  pullVal=dataResPull[pkey].GetBinContent(xbin)
-                  chi2 += pullVal*pullVal
-                  dataResPull[pkey].SetBinError(xbin,0)
-               pullTitle += ' #chi^{2}/dof=%3.1f'%(chi2/dataResPull[pkey].GetXaxis().GetNbins())
-               dataResPull[pkey].SetTitle(pullTitle)
-               allLegs[-1].AddEntry( dataResPull[pkey], pullTitle, 'l' )
-               drawOpt='histsame'
-               color=pullsToDraw[ip][pkey][1]
+            totalH=stacks[iw].GetStack().At(stacks[iw].GetStack().GetEntriesFast()-1)
+            if opt.showMean:
+               avg,avgErr=totalH.GetMean(),totalH.GetMeanError()
+               compGrs[iw].SetPoint(0,avg,len(compGrs))
+               compGrs[iw].SetPointError(0,avgErr,0.5)
+            else:
                
-               dataResPull[pkey].SetLineColor(color)
-               dataResPull[pkey].SetMarkerColor(color)
-               dataResPull[pkey].SetMarkerStyle(1)
-               dataResPull[pkey].SetMarkerSize(0.)
-               dataResPull[pkey].GetYaxis().SetTitle('Pull')
-               dataResPull[pkey].GetXaxis().SetTitle('')
-               dataResPull[pkey].GetYaxis().SetNdivisions(5)
-               dataResPull[pkey].GetXaxis().SetNdivisions(5)
-               dataResPull[pkey].GetYaxis().SetRangeUser(-5.7,6)
-               if ip+1==4 :
-                  dataResPull[pkey].GetXaxis().SetTitleSize(0.1)
-                  dataResPull[pkey].GetXaxis().SetLabelSize(0.1)
-                  dataResPull[pkey].GetXaxis().SetTitle(title)
-                  dataResPull[pkey].GetYaxis().SetTitleOffset(0.7)
-                  dataResPull[pkey].GetXaxis().SetTitleOffset(0.8)
-                  dataResPull[pkey].GetYaxis().SetTitleSize(0.1)
-                  dataResPull[pkey].GetYaxis().SetLabelSize(0.1)
-               else:
-                  dataResPull[pkey].GetXaxis().SetTitleSize(0)
-                  dataResPull[pkey].GetXaxis().SetLabelSize(0)
-                  dataResPull[pkey].GetXaxis().SetTitle('')
-                  dataResPull[pkey].GetYaxis().SetTitleOffset(0.5)
-                  dataResPull[pkey].GetYaxis().SetTitleSize(0.13)
-                  dataResPull[pkey].GetYaxis().SetLabelSize(0.13)
-            allLegs[-1].SetFillStyle(3001)
-            allLegs[-1].SetFillColor(0)
-            allLegs[-1].SetBorderSize(0)
-            allLegs[-1].SetTextFont(42)
-            allLegs[-1].SetTextSize(0.08)
-            allLegs[-1].Draw()         
+               for xbin in xrange(1,totalH.GetXaxis().GetNbins()+1):
+                  xcen=totalH.GetXaxis().GetBinCenter(xbin)
+                  exp,expunc=totalH.GetBinContent(xbin),totalH.GetBinError(xbin)
+                  obs=data.GetBinContent(xbin)               
+                  if expunc==0 : continue
+                  np=compGrs[iw].GetN()
+                  compGrs[iw].SetPoint(np,xcen,(obs-exp)/expunc)
+
+         canvas.cd()
+         insetPad = ROOT.TPad('inset','inset',0.6,0.4,0.95,0.7)
+         if 'svprojfrac' in var : insetPad = ROOT.TPad('inset','inset',0.15,0.4,0.49,0.7)
+         insetPad.SetTopMargin(0.05)
+         insetPad.SetLeftMargin(0.1)
+         insetPad.SetRightMargin(0.4)
+         insetPad.SetBottomMargin(0.2)
+         insetPad.SetFillStyle(0)
+         insetPad.Draw()
+         insetPad.cd()
+         insetPad.Clear()
+         frame,dataRef=ROOT.TGraph(),None
+         if opt.showMean:
+            
+            avg,avgErr,rms=data.GetMean(),data.GetMeanError(),data.GetRMS()
+
+            frame.SetTitle('frame')
+            frame.SetMarkerStyle(1)
+            frame.SetLineColor(1)
+            frame.SetPoint(0,avg-rms*0.25,-0.5)
+            frame.SetPoint(1,avg-rms*0.25,len(compGrs)+0.5)            
+            frame.SetPoint(2,avg+rms*0.25,len(compGrs)+0.5)
+            frame.SetPoint(3,avg+rms*0.25,-0.5)
+            frame.SetPoint(4,avg-rms*0.25,-0.5)
+
+            dataRef=ROOT.TGraph()
+            dataRef.SetTitle('dataref')
+            
+            dataRef.SetPoint(0,avg-avgErr,-0.5)
+            dataRef.SetPoint(1,avg-avgErr,len(compGrs)+0.5)
+            dataRef.SetPoint(2,avg+avgErr,len(compGrs)+0.5)
+            dataRef.SetPoint(3,avg+avgErr,-0.5)
+            dataRef.SetPoint(4,avg-avgErr,-0.5)
+         else:
+            frame.SetTitle('frame')
+            frame.SetMarkerStyle(1)
+            frame.SetLineColor(1)
+            frame.SetPoint(0,data.GetXaxis().GetXmin(),-5.1)
+            frame.SetPoint(1,data.GetXaxis().GetXmin(),5.1)
+            frame.SetPoint(2,data.GetXaxis().GetXmax(),5.1)
+            frame.SetPoint(3,data.GetXaxis().GetXmax(),-5.1)
+            frame.SetPoint(4,data.GetXaxis().GetXmin(),-5.1)
+
+         frame.Draw('ap')
+         frameXtitle,frameYtitle='','Pull'
+         frame.GetYaxis().SetNdivisions(5)
+         frame.GetXaxis().SetNdivisions(5)
+         if opt.showMean :
+            frameXtitle,frameYtitle='Average',''
+            frame.GetYaxis().SetNdivisions(0)
+         frame.GetYaxis().SetTitle(frameYtitle)
+         frame.GetXaxis().SetTitle(frameXtitle)
+         frame.GetXaxis().SetTitleSize(0.08)
+         frame.GetXaxis().SetLabelSize(0.08)
+         frame.GetYaxis().SetTitleOffset(0.5)
+         frame.GetXaxis().SetTitleOffset(1.0)
+         frame.GetYaxis().SetTitleSize(0.08)
+         frame.GetYaxis().SetLabelSize(0.08)
+
+
+         #inset legend
+         inleg=ROOT.TLegend(0.62,0.3,0.95,0.9)
+         inleg.SetBorderSize(0)
+         inleg.SetFillColor(0)
+         inleg.SetTextFont(42)
+         inleg.SetTextSize(0.06)         
+         if dataRef : 
+            dataRef.Draw('l')
+            inleg.AddEntry(dataRef,'data','l')
+         for iw,_,_ in fragToUse:
+            if opt.showMean:
+               compGrs[iw].Draw('p')
+               inleg.AddEntry(compGrs[iw],compGrs[iw].GetTitle(),'p')
+            else:
+               compGrs[iw].Draw('l')
+               inleg.AddEntry(compGrs[iw],compGrs[iw].GetTitle(),'l')
+         inleg.Draw()
+
+         postfix=''
+         if opt.showMean : postfix='_mean'
          canvas.Modified()
          canvas.Update()
-         canvas.SaveAs('%s/%s_%d.png'%(opt.outDir,var,itk))
-         canvas.SaveAs('%s/%s_%d.pdf'%(opt.outDir,var,itk))
+         canvas.SaveAs('%s/%s_%d%s.C'%(opt.outDir,var,itk,postfix))
+         canvas.SaveAs('%s/%s_%d%s.png'%(opt.outDir,var,itk,postfix))
+         canvas.SaveAs('%s/%s_%d%s.pdf'%(opt.outDir,var,itk,postfix))
          #raw_input('...press key to continue')
-         
-
-#        #loop over variables
-#        scales={}
-#            h_data  = ROOT.RooAbsData.createHistogram(data,var+'_data',ws.var(var))
-#            h_data.SetMarkerStyle(20)
-#            h_data.SetLineColor(1)
-#            h_data.SetMarkerColor(1)
-#            if opt.rebin!=0 : h_data.Rebin(opt.rebin)
-#            h_b     = ROOT.RooAbsData.createHistogram(mc_b,var+'_mc_b',ws.var(var))
-#            try:        
-#                h_b.Scale(scales['b'])
-#            except:
-#                scales['b']=ws.var('n_b_%d'%itk).getVal()/h_b.Integral()
-#                h_b.Scale(scales['b'])
-#            h_b.SetFillStyle(1001)
-#            h_b.SetFillColor(ROOT.kOrange)
-#            if opt.rebin!=0 : h_b.Rebin(opt.rebin)
-#            h_c     = ROOT.RooAbsData.createHistogram(mc_c,var+'_mc_c',ws.var(var))
-#            try:
-#                h_c.Scale(scales['c'])
-#            except:
-#                scales['c']=ws.var('n_c_%d'%itk).getVal()/h_c.Integral()
-#                h_c.Scale(scales['c'])
-#            h_c.SetFillStyle(1001)
-#            h_c.SetFillColor(ROOT.kAzure-3)
-#            if opt.rebin!=0 : h_c.Rebin(opt.rebin)
-#            h_other = ROOT.RooAbsData.createHistogram(mc_other,var+'_mc_other',ws.var(var))
-#            try:
-#                h_other.Scale(scales['other'])
-#            except:
-#                scales['other']=ws.var('n_other_%d'%itk).getVal()/h_other.Integral()
-#                h_other.Scale(scales['other'])
-#            h_other.SetFillStyle(1001)
-#            h_other.SetFillColor(ROOT.kGray)
-#            if opt.rebin : h_other.Rebin(opt.rebin)
-#            
-#            
-#            h_data_sub=h_data.Clone(var+'_datasub')
-#            h_data_sub.Add(h_c,-1)
-#            h_data_sub.Add(h_other,-1)            
-#            h_data_sub.SetMarkerSize(1.0)
-#
-#            canvas.cd()
-#            pad = ROOT.TPad('pad','pad',0.45,0.73,0.95,0.91)
-#            pad.SetRightMargin(0.05)
-#            pad.SetLeftMargin(0.25)
-#            pad.SetTopMargin(0.008)
-#            pad.SetBottomMargin(0.03)
-#            pad.Clear()
-#            pad.Draw()
-#            pad.cd()
-#            if 'lxy' in var and itk<4 : pad.SetLogy(True)
-#            else : pad.SetLogy(False)
-#            h_b.Draw('hist')
-#            h_b.GetYaxis().SetRangeUser(1,h_b.GetMaximum()*1.3)
-#            h_b.GetYaxis().SetTitle('Events-#Sigmabkg')
-#            h_b.GetXaxis().SetTitle('')
-#            h_b.GetYaxis().SetTitleOffset(0.5)
-#            h_b.GetYaxis().SetNdivisions(5)
-#            h_b.GetYaxis().SetTitleSize(0.17)
-#            h_b.GetYaxis().SetLabelSize(0.17)
-#            h_data_sub.Draw('e1same')
-#            h_data_sub.SetMarkerSize(0.6)
-#
-#            canvas.cd()
-#            pad2 = ROOT.TPad('pad2','pad2',0.45,0.48,0.95,0.72)
-#            pad2.SetRightMargin(0.05)
-#            pad2.SetLeftMargin(0.25)
-#            pad2.SetTopMargin(0.008)
-#            pad2.SetBottomMargin(0.4)
-#            pad2.SetFillStyle(0)
-#            pad2.Clear()
-#            pad2.Draw()
-#            pad2.cd()
-#            pad2.SetGridy()
-#            canvas.cd()
-#            pad.Delete()
-#            pad2.Delete()
 
 """
 steer the script
@@ -642,14 +613,14 @@ def main():
     parser = optparse.OptionParser(usage)
     parser.add_option('-i', '--inDir',       dest='inDir'   ,    help='input directory',        default=None,  type='string')
     parser.add_option('-o', '--outDir',      dest='outDir'  ,    help='output directory',       default='./',  type='string')
-    parser.add_option(      '--filter',      dest='filter',      help='ev cat to filter',       default=0,     type=int)
+    parser.add_option(      '--filter',      dest='filter',      help='ev cat to filter',       default='',    type='string')
     parser.add_option(      '--weightPt',    dest='weightPt',    help='weight pt',              default=False, action='store_true')
     parser.add_option(      '--doScales',    dest='doScales',    help='show QCD scales',        default=False, action='store_true')
+    parser.add_option(      '--showMean',    dest='showMean',    help='show mean instead of pull',        default=False, action='store_true')
     parser.add_option(      '--rebin',       dest='rebin',       help='rebin',                  default=0,     type=int)
     parser.add_option(      '--onlyCentral', dest='onlyCentral', help='only central jets',      default=False, action='store_true')
     parser.add_option(      '--vetoCentral', dest='vetoCentral', help='veto very central jets', default=False, action='store_true')
-    parser.add_option(      '--minLxySig'  , dest='minLxySig',   help='min. lxy sig',           default=-1,    type=float)
-    parser.add_option(      '--applyLEPweight', dest='applyLEPweight', help='reweight Z2* to LEP weight', default=False, action='store_true')
+    parser.add_option(      '--minLxySig'  , dest='minLxySig',   help='min. lxy sig',           default=-1,    type=float)   
     parser.add_option('-w', '--ws',          dest='wsUrl'   ,    help='ws url',                 default=None,  type='string')
     parser.add_option('-s', '--show',        dest='flavorFitUrl', help='flavor fit url',        default=None,  type='string')
     parser.add_option('-m', '--max',        dest='maxTracks', help='max tracks',        default=None,  type=int)
@@ -668,6 +639,7 @@ def main():
     ROOT.gStyle.SetOptStat(0)
     ROOT.RooMsgService.instance().setSilentMode(True)
     ROOT.gROOT.SetBatch(True)    
+    ROOT.gROOT.SetBatch(False)    
 
     #create ROOT file with templates and data
     if opt.flavorFitUrl is None: 
@@ -675,7 +647,7 @@ def main():
        opt.flavorFitUrl = doMassFit(opt)
 
     #show results of the flavour fits
-    comparePostFitDistributions(opt)
+    compareDistributions(opt)
     showFlavorFracs(opt)
 
     return 0

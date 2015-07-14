@@ -129,6 +129,8 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	factory.AddSpectator('NFJets','I')
 	factory.AddSpectator('EvCat','I')
 	factory.AddSpectator('SVMass','F')
+	factory.AddSpectator('FJPt','F')
+	factory.AddSpectator('JPt','F')
 
 	print('\nAdded variables.\n')
 
@@ -189,8 +191,8 @@ def runTMVAAnalysis(filenames,myMethodList=''):
 	print('\nAdded signal and bkg trees and set weight expression.\n')
 
 	#Add the cuts to be performed before the optimization.  These must match those in the analysis.
-	cutS = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20 && NBTags > 0 && MT >= 50')
-	cutB = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20 && NBTags > 0 && MT >= 50')
+	cutS = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20 && NBTags > 0 && MT >= 50 && JPt > 40 && FJPt > 30')
+	cutB = ROOT.TCut('(abs(EvCat)==11 || abs(EvCat)==13) && (NJets+NFJets) == 2 && SVMass > 0 && abs(FJEta)<=20 && NBTags > 0 && MT >= 50 && JPt > 40 && FJPt > 30')
 	factory.PrepareTrainingAndTestTree(cutS,cutB,"nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V" )
 
 	print('\nPrepared training and test trees.\n')
@@ -303,8 +305,8 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	histos={}
 	for chCat in ['e','mu']:
 		for jetCat in ['2j','3j']:
-			for nTrack in ['1t','2t','3t']:
-				tag=chCat+jetCat+nTrack
+			#for nTrack in ['1t','2t','3t','4t','5t']:
+				tag=chCat+jetCat#+nTrack
 				histos['NPVtx_'+tag]      = ROOT.TH1F('NPVtx_'+tag,';N_{PV}-N_{HP};Events',30,0,30)
 				histos['MT_'+tag]         = ROOT.TH1F('MT_'+tag,';Transverse mass [GeV];Events',50,0,250)
 				histos['MET_'+tag]        = ROOT.TH1F('MET_'+tag,';Missing transverse energy [GeV];Events',50,0,200)
@@ -323,7 +325,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 				histos['SVNtrk_'+tag]     = ROOT.TH1F('SVNtrk_'+tag,';Number of Tracks;Events',10,0,10)
 				histos['CombInfo_'+tag]   = ROOT.TH1F('CombInfo_'+tag,';Correct Combination?;Events',3,-1.5,1.5)
 				histos['BDToutput_'+tag]  = ROOT.TH1F('BDToutput_'+tag,';BDT Output;Events',25,-0.4,0.45)
-			#histos['BDToutputoriginal_'+tag]  = ROOT.TH1F('BDToutputoriginal_'+tag,';BDT Output;Events',25,-0.4,0.45)
+				histos['BDToutputoriginal_'+tag]  = ROOT.TH1F('BDToutputoriginal_'+tag,';BDT Output;Events',25,-0.4,0.45)
 	for h in histos:
 		histos[h].Sumw2()
 		histos[h].SetDirectory(0)
@@ -362,6 +364,8 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	spec_nfjets = array.array('i',[0])
 	spec_evcat = array.array('i',[0])
 	spec_svmass = array.array('f',[0])
+	spec_fjpt = array.array('f',[0])
+	spec_jpt = array.array('f',[0])
 
 	tmva_reader.AddVariable('abs(JEta)',abs_jeta)
 	tmva_reader.AddVariable('abs(FJEta)',abs_fjeta)
@@ -377,6 +381,8 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	tmva_reader.AddSpectator('NFJets',spec_nfjets)
 	tmva_reader.AddSpectator('EvCat',spec_evcat)
 	tmva_reader.AddSpectator('SVMass',spec_svmass)
+	tmva_reader.AddSpectator('FJPt',spec_fjpt)
+	tmva_reader.AddSpectator('JPt',spec_jpt)
 
 	tmva_reader.BookMVA('BDT','weights/TMVAClassification_BDT.weights.xml')
 
@@ -403,6 +409,8 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		spec_nfjets[0] = SVLInfo.NFJets
 		spec_evcat[0] = SVLInfo.EvCat
 		spec_svmass[0] = SVLInfo.SVMass
+		spec_fjpt[0] = SVLInfo.FJPt
+		spec_jpt[0] = SVLInfo.JPt
 
 ######################################
 
@@ -445,24 +453,32 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 ###################################
 
+		if SVLInfo.JPt < 40 :continue
+		if SVLInfo.FJPt < 30: continue
+
+		#separate into nTracks
+#		if SVLInfo.SVNtrk < 1 or SVLInfo.SVNtrk > 5: continue
+#		if SVLInfo.SVNtrk == 1:
+#			nTrack = '1t'
+#		elif SVLInfo.SVNtrk == 2:
+#			nTrack = '2t'
+#		elif SVLInfo.SVNtrk == 3:
+#			nTrack = '3t'
+#		elif SVLInfo.SVNtrk == 4:
+#			nTrack = '4t'
+#		else:
+#			nTrack = '5t'
+
+		tag=chCat+jetCat#+nTrack
+
 		#TMVA Cuts
 		mvaBDT = tmva_reader.EvaluateMVA('BDT')
-		#histos['BDToutputoriginal_'+tag].Fill(mvaBDT,    weight)
-		if mvaBDT < 0.11: continue
+		histos['BDToutputoriginal_'+tag].Fill(mvaBDT,    weight)
+#		if mvaBDT < 0.11: continue
 
 ###################################
 
-		#separate into nTracks
-		if SVLInfo.SVNtrk < 1 or SVLInfo.SVNtrk > 3: continue
-		if SVLInfo.SVNtrk == 1:
-			nTrack = '1t'
-		elif SVLInfo.SVNtrk == 2:
-			nTrack = '2t'
-		else:
-			nTrack = '3t'
-
 		#fill histograms with variables of interest
-		tag=chCat+jetCat+nTrack
 		histos['NPVtx_'+tag]  .Fill(SVLInfo.NPVtx-1, weight)
 		histos['MT_'+tag]     .Fill(SVLInfo.MT,      weight)
 		histos['MET_'+tag]    .Fill(SVLInfo.MET,     weight)

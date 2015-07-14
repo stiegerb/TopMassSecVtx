@@ -13,7 +13,7 @@ scram b -j 9
 
 Note: the ntuplizer is running without pileup jet id and IVF-related b-tagging variables
 
------------------------------------------------------- 
+------------------------------------------------------
 ### Producing the trees
 
 ```
@@ -78,7 +78,7 @@ Then use ```makeSVLDataMCPlots.py``` to produce data/MC comparison plots:
 ./scripts/makeSVLDataMCPlots.py treedir/ -j test/topss2014/samples.json -o outDir/
 ```
 This produces a number of data/MC comparison plots (both from the SVLInfo trees, and from the histograms produced in the LxyTreeAnalysis). Default output directory is plots/. This is based on the runPlotter.py script.
-The script also produces the DY scale factors and applies them directly. It puts the control plots in a sub-directory called ```dy_control```. Note that they are read from the cachefile (.svldyscalefactors.pck) by default. To reproduced them from scratch, delete the cachfile first. To produce only the scale factors, use the ```extractDYScaleFactor.py``` script, e.g. 
+The script also produces the DY scale factors and applies them directly. It puts the control plots in a sub-directory called ```dy_control```. Note that they are read from the cachefile (.svldyscalefactors.pck) by default. To reproduced them from scratch, delete the cachfile first. To produce only the scale factors, use the ```extractDYScaleFactor.py``` script, e.g.
 ```
 ./scripts/extractDYScaleFactor.py outDir/plotter.root  --verbose 5
 ```
@@ -153,9 +153,28 @@ Will printout the "final" systematics table
 ---------------------------------------------------
 ### Control region analysis
 ```
-./scripts/fitSecVtxProperties.py -i treedir/qcd_control    -o treedir/qcd_control/plots/    --weightPt --onlyCentral --minLxySig 10
-./scripts/fitSecVtxProperties.py -i treedir/z_control      -o treedir/z_control/plots/      --weightPt --vetoCentral --rebin 3
-./scripts/fitSecVtxProperties.py -i treedir/photon_control -o treedir/photon_control/plots/ --weightPt --rebin 2
-`````
+./scripts/fitSecVtxProperties.py -i treedir/z_control      -o outDir/z_control/plots/      --doScales --weightPt --vetoCentral --filter 23 --showMean
+./scripts/fitSecVtxProperties.py -i treedir/               -o outDir/control/plots/        --filter -143,-121,-169 --showMean
+```
 After creating the workspace you can use it directly by using -w workspace.root instead of -i ntuple_dir
+
+deprecated (not sensitive enough)
+```
+./scripts/fitSecVtxProperties.py -i treedir/photon_control -o outDir/photon_control/plots/ --weightPt --rebin 2
+
+./scripts/fitSecVtxProperties.py -i treedir/qcd_control    -o outDir/qcd_control/plots/    --weightPt --onlyCentral --minLxySig 10
+```
+
+---------------------------------------------------
+### Charmed peaks analysis
+```
+ sh runCharmPeaks.sh TREES
+ sh runCharmPeaks.sh MERGE
+ sh runCharmPeaks.sh PLOT
+ sh runCharmPeaks.sh UNFOLD
+ sh runCharmPeaks.sh DIFF
+ sh runCharmPeaks.sh DIFFZ
+
+```
+Uses runCharmPeaks.sh to steer the steps of the analysis (from ntuple creation to unfolding and plotting)
 

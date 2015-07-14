@@ -239,14 +239,23 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
         bev_.lpt[bev_.nl]  = leptons[i]->pt();
         bev_.leta[bev_.nl] = leptons[i]->eta();
         bev_.lphi[bev_.nl] = leptons[i]->phi();
-	const data::PhysicsObject_t &genLepton=leptons[i]->getObject("gen");
-        bev_.glid[bev_.nl]  = genLepton.info.find("id")->second;
-        bev_.glpt[bev_.nl]  = genLepton.pt();
-        bev_.gleta[bev_.nl] = genLepton.eta();
-        bev_.glphi[bev_.nl] = genLepton.phi();
+	if( leptons[i]->objs.find("gen")!=leptons[i]->objs.end())
+	  {
+	    const data::PhysicsObject_t &genLepton=leptons[i]->getObject("gen");
+	    bev_.glid[bev_.nl]  = genLepton.info.find("id")->second;
+	    bev_.glpt[bev_.nl]  = genLepton.pt();
+	    bev_.gleta[bev_.nl] = genLepton.eta();
+	    bev_.glphi[bev_.nl] = genLepton.phi();
+	  }
+	else
+	  {
+	    bev_.glid[bev_.nl]=0;
+	    bev_.glpt[bev_.nl]=0;
+	    bev_.gleta[bev_.nl]=0;
+	    bev_.glphi[bev_.nl]=0;
+	  }
         bev_.nl++;
     }
-
 
     //look at the jets now
     bev_.nj=0;
@@ -344,7 +353,7 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
         }
         bev_.nj++;
     } // end jet loop
-
+    
     // match b-hadrons to jets
     for(size_t imc=0; imc<mctruth.size(); imc++)
     {

@@ -60,10 +60,13 @@ SYSTSFROMFILES = [
 	('p11mpihi', 'P11 high multi-parton interaction',
 	 ['MC8TeV_TTJets_TuneP11mpiHi.root'],
 	 ['tot']),
-	('powherw', 'Powhew/HERWIG AUET2',
+	('mcatnlohw', 'MCatNLO/HERWIG AUET2',
+	 ['MC8TeV_TT_mcatnlo.root'],
+	 ['tot']),
+	('powherw', 'Powheg/HERWIG AUET2',
 	 ['MC8TeV_TT_AUET2_powheg_herwig.root'],
 	 ['tot']),
-	('powpyth', 'Powhew/PYTHIA Z2*',
+	('powpyth', 'Powheg/PYTHIA Z2*',
 	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
 	 ['tot']),
 ]
@@ -94,6 +97,9 @@ SYSTSFROMWEIGHTS = [
 	('btagdn',      'b-tag eff down',            'BtagWeight[2]',          ['tot']),
 	('lesup',       'Lepton energy scale up',    '1',                      ['tot']),
 	('lesdn',       'Lepton energy scale down',  '1',                      ['tot']),
+	('bhadcomp',    'B hadron composition',
+	 '(1.05125*(abs(BHadId)>=510&&abs(BHadId)<520)+1.06429*(abs(BHadId)>=520&&abs(BHadId)<530)+0.753548*(abs(BHadId)>=530&&abs(BHadId)<540)+0.807828*(abs(BHadId)>=540)+(BHadId==0))',
+	 ['tot']),
 	('bfnuup',      'B hadron semi-lep BF up',
 	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))', ['tot']),
 	('bfnudn',   'B hadron semi-lep BF down',
@@ -287,7 +293,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			finalsel = finalsel.replace('Weight[4]*','')
 
 		## Remove the BR weight for the POWHEG samples
-		if syst in ['powherw', 'powpyth'] or 'p11' in syst:
+		if syst in ['powherw', 'powpyth','mcatnlohw'] or 'p11' in syst:
 			finalsel = finalsel[len('Weight[0]*'):]
 
 
@@ -316,7 +322,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 				finalsel = finalsel.replace('Weight[4]*','')
 
 			## Remove the BR weight for the POWHEG samples
-			if syst in ['powherw', 'powpyth'] or 'p11' in syst:
+			if syst in ['powherw', 'powpyth','mcatnlohw'] or 'p11' in syst:
 				finalsel = finalsel[len('Weight[0]*'):]
 
 			#add scale factor

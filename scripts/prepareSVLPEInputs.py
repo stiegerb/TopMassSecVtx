@@ -44,6 +44,7 @@ SYSTSTOBERENORMALIZED = [
 ## (to account for non-normalized event weights)
 	'toppt',
 	'topptup',
+	'bhadcomp',
 	'bfrag',
 	'bfragup',
 	'bfragdn',

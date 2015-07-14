@@ -24,7 +24,7 @@ c.cd()
 p2 = ROOT.TPad('p2','p2',0.0,0.85,1.0,1.0)
 p2.Draw()
 
-for tag in histos['Cluster']:
+for tag in histos['Z2star']:
     
     p1.cd()
     p1.Clear()
@@ -100,8 +100,8 @@ for tag in histos['Cluster']:
     if 'B0' in tag : cat='B^{0}'
     if 'Bs' in tag : cat='B_{s}'
     if 'Others' in tag : cat='Others'
-    #leg.SetHeader("#splitline{#bf{Pythia} #it{simulation} (8 TeV)}{#it{%s}}"%cat)
-    leg.SetHeader("#splitline{#bf{Sherpa} #it{simulation} (8 TeV)}{#it{%s}}"%cat)
+    leg.SetHeader("#splitline{#bf{Pythia} #it{simulation} (8 TeV)}{#it{%s}}"%cat)
+    #leg.SetHeader("#splitline{#bf{Sherpa} #it{simulation} (8 TeV)}{#it{%s}}"%cat)
     leg.Draw()
 
     p2.cd()
@@ -134,6 +134,10 @@ for tag in histos['Cluster']:
     c.Update()
     c.SaveAs('%s.png'%tag)
     c.SaveAs('%s.pdf'%tag)
+    if tag=='Btype':
+        fOut=ROOT.TFile.Open('BtypeWeights.root','RECREATE')
+        for p in pulls: p.Write()
+        fOut.Close()
 
 p1.Delete()
 p2.Delete()

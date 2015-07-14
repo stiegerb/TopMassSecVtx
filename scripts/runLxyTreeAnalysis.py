@@ -204,7 +204,8 @@ def runLxyTreeAnalysis(name, location, treeloc, xsecweights=None, maxevents=-1):
         print 50*'<'
         return False
 
-    weightsDir='data/weights'
+    weightsDir=os.path.abspath(os.path.join(os.environ['CMSSW_BASE'],
+                              'src/UserCode/TopMassSecVtx/data/weights'))
     if 'Data' in name: weightsDir=''
     ana = LxyTreeAnalysis(ch,weightsDir)
     if maxevents > 0:
@@ -249,7 +250,7 @@ def submitBatchJobs(tasks, options, queue='8nh'):
 
     for n,task in enumerate(tasks):
         name, url = task
-        sys.stdout.write(' ... processing job %2d - %-22s' % (n+1, name))
+        sys.stdout.write(' ... processing job %3d - %-35s' % (n+1, name))
         sys.stdout.flush()
 
         scriptFileN = '%s/runLxyTreeAnalysis_%s.sh'%(jobsDir,name)

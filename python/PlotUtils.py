@@ -104,10 +104,14 @@ class RatioPlot(object):
         super(RatioPlot, self).__init__()
         self.name = name
         self.histos = []
+        self.histsforratios = []
         self.legentries = []
+        self.drawoptions = None
+        self.markerstyles = []
+        self.markersizes = []
         self.titlex = None
         self.titley = None
-        self.reference = None
+        self.reference = []
         self.normalized = True
         self.ratiotitle = None
         self._garbageList = []
@@ -164,17 +168,18 @@ class RatioPlot(object):
         self.histos = []
         self.legentries = []
 
-    def add(self, hist, tag):
+    def add(self, hist, tag, includeInRatio=True):
         if hist.GetEntries() == 0:
             print "Skipping empty histogram", hist.GetName()
             return
         self.histos.append(hist.Clone(hist.GetName()))
+        if includeInRatio: self.histsforratios.append(self.histos[-1])
         self._garbageList.append(self.histos[-1])
         self.legentries.append(tag)
 
     def getChiSquares(self, rangex=None):
-        if self.reference is not None:
-            reference = self.reference
+        if len(self.reference):
+            reference = self.reference[0]
         else:
             reference = self.histos[0]
         chisquares = {}
@@ -205,6 +210,33 @@ class RatioPlot(object):
 
         return chisquares
 
+    def saveRatios(self, outname, outdir, histnames=[]):
+        if not len(self.ratios):
+            print "RatioPlot::saveRatio only works after .show has been called!"
+            return
+
+        if len(histnames):
+            assert(len(histnames) == len(self.ratios))
+        else:
+            histnames = [h.GetName() for h in self.ratios]
+
+        if not len(set(histnames)) == len(histnames):
+            print "RatioPlot >> WARNING Non-unique names for ratio histograms!"
+
+        if not outname.endswith('.root'): outname += '.root'
+        ofile = ROOT.TFile.Open(os.path.join(outdir,outname), "RECREATE")
+        ofile.cd()
+        for rathist,hname in zip(self.ratios,histnames):
+            rathist.Write(hname)
+
+        ofile.Write()
+        ofile.Close()
+
+        print "RatioPlot >> wrote ratio histograms to %s"%os.path.join(outdir,outname)
+        return
+
+
+
     def show(self, outname, outdir):
         if not os.path.isdir(outdir):
             os.system('mkdir -p %s' % outdir)
@@ -219,7 +251,18 @@ class RatioPlot(object):
 
         for hist,color in zip(self.histos, colors):
             hist.SetLineColor(color)
+            hist.SetMarkerColor(color)
             hist.SetLineWidth(2)
+
+        # Marker styles
+        for hist,mstyle,msize in zip(self.histos, self.markerstyles, self.markersizes):
+            hist.SetMarkerStyle(mstyle)
+            hist.SetMarkerSize(msize)
+
+        # Draw options
+        if not self.drawoptions:
+            self.drawoptions = len(self.histos)*['hist']
+        assert(len(self.drawoptions) == len(self.histos))
 
         if self.normalized:
             for hist in self.histos:
@@ -248,7 +291,7 @@ class RatioPlot(object):
         # tl = ROOT.TLegend(0.66, 0.15, .89, .30+0.040*max(len(self.histos)-3,0))
         tl = ROOT.TLegend(self.legpos[0], self.legpos[1],
                           min(self.legpos[0]+0.30,0.89),
-                          self.legpos[1]+0.15+0.040*max(len(self.histos)-3,0))
+                          self.legpos[1]+0.15+0.042*max(len(self.histos)-3,0))
         self._garbageList.append(tl)
         tl.SetBorderSize(0)
         tl.SetFillColor(0)
@@ -288,10 +331,12 @@ class RatioPlot(object):
 
         # self.histos[0].GetYaxis().SetTitle('a.u.')
         # self.histos[0].Draw("axis")
-
-        for hist,legentry in zip(self.histos,self.legentries):
-            tl.AddEntry(hist, legentry, 'l')
-            hist.Draw("hist same")
+        for hist,legentry,dopt in zip(self.histos,self.legentries,self.drawoptions):
+            if dopt=='hist':
+                tl.AddEntry(hist, legentry, 'l')
+            else:
+                tl.AddEntry(hist, legentry, 'p')
+            hist.Draw("%s same"%dopt)
 
         tl.Draw()
 
@@ -320,8 +365,16 @@ class RatioPlot(object):
         redrawBorder(p1)
         p2.cd()
 
-        if not self.reference:
-            self.reference = self.histos[0]
+        try:
+            if not len(self.reference): # no reference given
+                self.reference = [self.histos[0]]
+            if len(self.reference) == 1: # only one reference given
+                self.reference = len(self.histsforratios)*[self.reference[0]]
+        except TypeError:
+            # Backwards compatibility
+            self.reference = len(self.histsforratios)*[self.reference]
+
+        assert(len(self.reference) == len(self.histsforratios))
 
         ratioframe = mainframe.Clone('ratioframe')
         self._garbageList.append(ratioframe)
@@ -343,20 +396,33 @@ class RatioPlot(object):
         ratioframe.GetXaxis().SetTitleOffset(3.0)
         ratioframe.Draw()
 
-        ratios = []
-        for hist in self.histos:
-            ratios.append(getRatio(hist, self.reference))
+        ## Calculate Ratios
+        self.ratios = []
+        for hist,ref in zip(self.histsforratios,self.reference):
+            if self.normalized:
+                ref_norm = ref.Clone("%s_norm"%ref.GetName())
+                ref_norm.Scale(1./ref_norm.Integral())
+                self.ratios.append(getRatio(hist, ref_norm))
+                self._garbageList.append(ref_norm)
+            else:
+                self.ratios.append(getRatio(hist, ref))
         if self.ratiorange:
             ratmin, ratmax = self.ratiorange
-            for ratio in ratios:
+            for ratio in self.ratios:
                 ratio.SetMinimum(ratmin)
                 ratio.SetMaximum(ratmax)
                 ratioframe.GetYaxis().SetRangeUser(ratmin, ratmax)
 
         else:
-            setMaximums(ratios)
+            setMaximums(self.ratios)
 
-        for ratio in ratios:
+        line = ROOT.TLine(self.ratios[0].GetXaxis().GetXmin(), 1.0,
+                          self.ratios[0].GetXaxis().GetXmax(), 1.0)
+        line.SetLineColor(ROOT.kGray)
+        # line.SetLineStyle(2)
+        line.Draw()
+
+        for ratio in self.ratios:
             ratio.Draw("hist same")
 
         redrawBorder(p2)
@@ -660,7 +726,7 @@ class Plot(object):
             gr=ROOT.TGraphAsymmErrors()
             gr.SetName("data2bkg")
             gr.SetMarkerStyle(self.dataH.GetMarkerStyle())
-            gr.SetMarkerSize(self.dataH.GetMarkerSize())
+            gr.SetMarkerSize(0.7*self.dataH.GetMarkerSize())
             gr.SetMarkerColor(self.dataH.GetMarkerColor())
             gr.SetLineColor(self.dataH.GetLineColor())
             gr.SetLineWidth(self.dataH.GetLineWidth())

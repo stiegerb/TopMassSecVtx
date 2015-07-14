@@ -243,6 +243,10 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     newPlot = Plot(pName)
     newPlot.plotformats = ['pdf', 'png']
     newPlot.ratiorange = (0.4,2.3)
+    try:
+        ratiolo,ratiohi = tuple([float(x) for x in options.ratioRange.split(',')])
+        newPlot.ratiorange =  (ratiolo, ratiohi)
+    except ValueError: pass
     baseRootFile = None
 
     procsToExclude = options.excludeProcesses.split(',')
@@ -660,6 +664,8 @@ def addPlotterOptions(parser):
                       help='Force normalization to data')
     parser.add_option('-f', '--filter', dest='filter', default="",
                       help='csv list of plots to produce')
+    parser.add_option('-r', '--ratioRange', dest='ratioRange', default="",
+                      help='Range of ratio pad to plot')
     parser.add_option('-x', '--excludeProcesses', dest='excludeProcesses',
                       default="",
                       help='csv list of processes to exclude')

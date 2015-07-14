@@ -41,7 +41,6 @@ def makeHistos((url, name)):
 			                                  titlex=titlex)
 	return name,histos
 
-
 def makeSVMassPlots(histodict):
 	ratplot = RatioPlot('SVMass')
 	ratplot.normalized = True
@@ -70,10 +69,8 @@ def makeSVMassPlots(histodict):
 	ratplot.drawoptions =  ['hist', 'PE', 'hist', 'PE', 'hist', 'PE']
 	ratplot.markerstyles = [24, 24, 25, 25, 26, 26]
 	ratplot.markersizes = len(ratplot.histos)*[1.4]
-
-
 	ratplot.show('svmassplot',opt.outDir)
-
+	ratplot.saveRatios('svmass_weights',opt.outDir,['SVMass_weight_3','SVMass_weight_4','SVMass_weight_5'])
 
 def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)

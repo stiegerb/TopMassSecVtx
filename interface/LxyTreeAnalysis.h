@@ -27,6 +27,11 @@ public:
         fMaxevents = -1;
         fProcessNorm = 1.0;
         //b-tag efficiencies read b-tag efficiency map
+        fLJNtkWeights = 0;
+        fSVMassWeights3 = 0;
+        fSVMassWeights4 = 0;
+        fSVMassWeights5 = 0;
+
         if(weightsDir!="")
         {
             TString btagEffCorrUrl(weightsDir);
@@ -48,6 +53,19 @@ public:
                 }
             }
             // std::cout << btagEffCorr_.size() << " b-tag correction factors have been read" << std::endl;
+
+            // Load light jet ntrk weights
+            TFile *ljweightsfile = TFile::Open(weightsDir+"/ljntkweights.root","READ");
+            fLJNtkWeights = (TH1D*)ljweightsfile->Get("LJNtk_weights");
+            fLJNtkWeights->SetDirectory(0);
+            ljweightsfile->Close();
+
+            // Load sv mass weights
+            TFile *svmweightsfile = TFile::Open(weightsDir+"/svmass_weights.root","READ");
+            fSVMassWeights3 = (TH1D*)svmweightsfile->Get("SVMass_weight_3"); fSVMassWeights3->SetDirectory(0);
+            fSVMassWeights4 = (TH1D*)svmweightsfile->Get("SVMass_weight_4"); fSVMassWeights4->SetDirectory(0);
+            fSVMassWeights5 = (TH1D*)svmweightsfile->Get("SVMass_weight_5"); fSVMassWeights5->SetDirectory(0);
+            svmweightsfile->Close();
         }
     }
     virtual ~LxyTreeAnalysis() {}
@@ -148,7 +166,7 @@ public:
     Long64_t fMaxevents;
     Float_t fProcessNorm;
 
-    TH1D *fLJNtkWeights;
+    TH1D *fLJNtkWeights, *fSVMassWeights3, *fSVMassWeights4, *fSVMassWeights5;
 
     std::vector<TH1*> fHistos;
 
@@ -188,7 +206,7 @@ public:
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
     Int_t fTNJets, fTNBTags;
     Float_t fTMET,fTMT;
-    Float_t fTWeight[11], fTJESWeight[5], fTMETWeight[3], fTBtagWeight[3], fTXSWeight;
+    Float_t fTWeight[11], fTJESWeight[5], fTMETWeight[3], fTBtagWeight[3], fTXSWeight, fTSVMassWeight;
     Float_t fTSVLMass, fTSVLMass_sf[2], fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot;
     Float_t fTLPt, fTSVMass, fTSVPt, fTSVLxy, fTSVLxySig, fTJPt, fTJEta, fMjj,fTSVPtChFrac, fTSVPzChFrac,fTSVProjFrac,fTSVPtRel;
     Float_t fTFJPt, fTFJEta;

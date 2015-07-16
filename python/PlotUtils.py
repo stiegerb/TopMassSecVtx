@@ -104,6 +104,7 @@ class RatioPlot(object):
         super(RatioPlot, self).__init__()
         self.name = name
         self.histos = []
+        self.rebin = 1
         self.histsforratios = []
         self.legentries = []
         self.drawoptions = None
@@ -173,9 +174,13 @@ class RatioPlot(object):
         if hist.GetEntries() == 0:
             print "Skipping empty histogram", hist.GetName()
             return
-        self.histos.append(hist.Clone(hist.GetName()))
-        if includeInRatio: self.histsforratios.append(self.histos[-1])
-        self._garbageList.append(self.histos[-1])
+
+        histtoadd = hist.Clone(hist.GetName())
+        if self.rebin>1:
+            histtoadd.Rebin(self.rebin)
+        self.histos.append(histtoadd)
+        if includeInRatio: self.histsforratios.append(histtoadd)
+        self._garbageList.append(histtoadd)
         self.legentries.append(tag)
 
     def getChiSquares(self, rangex=None):
@@ -371,12 +376,15 @@ class RatioPlot(object):
             if not len(self.reference): # no reference given
                 self.reference = [self.histos[0]]
             if len(self.reference) == 1: # only one reference given
-                self.reference = len(self.histsforratios)*[self.reference[0]]
+                self.reference = len(self.histsforratios)*[self.reference[0].Rebin(self.rebin)]
+            else:
+                self.reference = [h.Rebin(self.rebin) for h in self.reference[:]]
         except TypeError:
             # Backwards compatibility
-            self.reference = len(self.histsforratios)*[self.reference]
+            self.reference = len(self.histsforratios)*[self.reference.Rebin(self.rebin)]
 
         assert(len(self.reference) == len(self.histsforratios))
+
 
         ratioframe = mainframe.Clone('ratioframe')
         self._garbageList.append(ratioframe)

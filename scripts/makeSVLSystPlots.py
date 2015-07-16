@@ -527,6 +527,23 @@ def main(args, opt):
 			plot.show(filename, os.path.join(opt.outDir,'syst_plots'))
 			plot.reset()
 
+		# Make top pt plot with both correct and wrong
+		plot = RatioPlot('toppt_paper_cor_wro')
+		plot.tag = 'Top p_{T} mis-modeling'
+		plot.subtag = 'Inclusive channels'
+		plot.ratiotitle = 'Ratio wrt Nominal'
+		plot.ratiorange = (0.85, 1.15)
+		plot.legpos = (0.55, 0.15)
+		plot.colors = [ROOT.kGreen+2, ROOT.kGreen-6, ROOT.kRed+2, ROOT.kRed-6]
+		plot.add(systhistos[(tag,'nominal','cor')], 'Nominal (correct)',      includeInRatio=False)
+		plot.add(systhistos[(tag,'toppt','cor')], 'p_{T} weighted (correct)', includeInRatio=True)
+		plot.add(systhistos[(tag,'nominal','wro')], 'Nominal (wrong)',        includeInRatio=False)
+		plot.add(systhistos[(tag,'toppt','wro')], 'p_{T} weighted (wrong)',   includeInRatio=True)
+		plot.reference = [systhistos[(tag,'nominal','cor')], systhistos[(tag,'nominal','wro')]]
+
+		plot.show('toppt_cor_wro_forpaper_%s'%tag, os.path.join(opt.outDir,'syst_plots'))
+		plot.reset()
+
 
 
 	# for tag,sel,seltag in SELECTIONS:

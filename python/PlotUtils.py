@@ -166,6 +166,7 @@ class RatioPlot(object):
                 print e
                 raise e
         self.histos = []
+        self.histsforratios = []
         self.legentries = []
 
     def add(self, hist, tag, includeInRatio=True):
@@ -336,6 +337,7 @@ class RatioPlot(object):
                 tl.AddEntry(hist, legentry, 'l')
             else:
                 tl.AddEntry(hist, legentry, 'p')
+        for hist,dopt in reversed(zip(self.histos,self.drawoptions)):
             hist.Draw("%s same"%dopt)
 
         tl.Draw()

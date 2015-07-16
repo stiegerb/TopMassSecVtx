@@ -530,6 +530,7 @@ def main(args, opt):
 		# Make top pt plot with both correct and wrong
 		plot = RatioPlot('toppt_paper_cor_wro')
 		plot.tag = 'Top p_{T} mis-modeling'
+		plot.rebin = 2
 		plot.subtag = 'Inclusive channels'
 		plot.ratiotitle = 'Ratio wrt Nominal'
 		plot.ratiorange = (0.85, 1.15)
@@ -544,6 +545,22 @@ def main(args, opt):
 		plot.show('toppt_cor_wro_forpaper_%s'%tag, os.path.join(opt.outDir,'syst_plots'))
 		plot.reset()
 
+		# Make b fragmentation plot for paper
+		plot = RatioPlot('bfrag_paper')
+		plot.tag = 'b fragmentation'
+		plot.rebin = 2
+		plot.subtag = 'Inclusive channels'
+		plot.ratiotitle = 'Ratio wrt Z2* rb LEP'
+		plot.ratiorange = (0.85, 1.15)
+		plot.legpos = (0.55, 0.15)
+		plot.colors = [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9, ROOT.kAzure+7]
+		plot.add(systhistos[(tag,'bfrag',  'tot')], 'Z2* rb LEP', includeInRatio=False)
+		plot.add(systhistos[(tag,'bfragdn','tot')], 'Z2* rb LEP soft')
+		plot.add(systhistos[(tag,'bfragup','tot')], 'Z2* rb LEP hard')
+		plot.add(systhistos[(tag,'nominal','tot')], 'Z2* nominal')
+		plot.reference = [systhistos[(tag,'bfrag','tot')]]
+		plot.show('bfrag_paper_%s'%tag, os.path.join(opt.outDir,'syst_plots'))
+		plot.reset()
 
 
 	# for tag,sel,seltag in SELECTIONS:

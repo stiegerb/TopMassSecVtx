@@ -187,7 +187,7 @@ def runSVLInfoTreeAnalysis((treefiles, histos, outputfile)):
 	ana.RunJob(outputfile)
 	print '         %s done' % taskname
 
-def runTasks(inputfiles, tasklist, opt, subdir):
+def runTasks(inputfiles, tasklist, opt, subdir, interactive=True):
 	assert set(inputfiles.keys()) == set(tasklist.keys())
 	tasks = []
 
@@ -216,7 +216,7 @@ def runTasks(inputfiles, tasklist, opt, subdir):
 
 	print ">>> runTasks: Will process these files:"
 	for t in tasks: print t[0]
-	raw_input("press key to continue...")
+	if interactive: raw_input("press key to continue...")
 
 	if opt.jobs > 1:
 		import multiprocessing as MP

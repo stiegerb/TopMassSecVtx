@@ -59,11 +59,18 @@ def getRatio(hist, reference):
     ratio.SetLineColor(hist.GetLineColor())
     for xbin in xrange(1,reference.GetNbinsX()+1):
         ref = reference.GetBinContent(xbin)
-        val = hist.GetBinContent(xbin);
-        if ref==0:
+        val = hist.GetBinContent(xbin)
+
+        refE = reference.GetBinError(xbin)
+        valE = hist.GetBinError(xbin)
+
+        try:
+            ratio.SetBinContent(xbin, val/ref)
+            ratio.SetBinError(xbin, math.sqrt( (val*refE/(ref**2))**2 + (valE/ref)**2 ))
+        except ZeroDivisionError:
             ratio.SetBinContent(xbin, 1.0)
-            continue
-        ratio.SetBinContent(xbin, val/ref)
+            ratio.SetBinError(xbin, 0.0)
+
     return ratio
 
 def setMaximums(histos, margin=1.1, setminimum=None):
@@ -279,17 +286,20 @@ class RatioPlot(object):
         tc = ROOT.TCanvas(outname, "ratioplots", 800, 800)
         # self._garbageList.append(tc)
         tc.cd()
-
-        tc.SetWindowSize(800 + (800 - tc.GetWw()), (800 + (800 - tc.GetWh())));
+        tc.SetCanvasSize(800, 800)
         p2 = ROOT.TPad("pad2","pad2",0,0,1,0.31);
         self._garbageList.append(p2)
         p2.SetTopMargin(0);
         p2.SetBottomMargin(0.3);
+        p2.SetLeftMargin(0.15)
+        p2.SetRightMargin(0.03)
         p2.SetFillStyle(0);
         p2.Draw();
         p1 = ROOT.TPad("pad1","pad1",0,0.31,1,1);
         self._garbageList.append(p1)
         p1.SetBottomMargin(0);
+        p1.SetLeftMargin(p2.GetLeftMargin())
+        p1.SetRightMargin(p2.GetRightMargin())
         p1.Draw();
         p1.cd();
 
@@ -320,13 +330,22 @@ class RatioPlot(object):
         if not self.titley:
             if self.normalized:
                 mainframe.GetYaxis().SetTitle('a.u.')
-            else :
-                mainframe.GetYaxis().SetTitle('Events')
+            else:
+                if "GeV" in mainframe.GetXaxis().GetTitle():
+                    if mainframe.GetBinWidth(1) > 0.1:
+                        ytit = "Events / %3.1f GeV" %mainframe.GetBinWidth(1)
+                    elif mainframe.GetBinWidth(1) > 0.001:
+                        ytit = "Events / %.0f MeV" % (mainframe.GetBinWidth(1)*1000)
+                    else:
+                        ytit = "Events / %.0f keV" % (mainframe.GetBinWidth(1)*1000000)
+                else:
+                    ytit = "Events / %3.1f" % h.GetBinWidth(1)
+                mainframe.GetYaxis().SetTitle(ytit)
         else:
             mainframe.GetXaxis().SetTitle(self.titley)
         mainframe.GetYaxis().SetLabelSize(22)
         mainframe.GetYaxis().SetTitleSize(26)
-        mainframe.GetYaxis().SetTitleOffset(1.2)
+        mainframe.GetYaxis().SetTitleOffset(2.0)
 
         mainframe.GetXaxis().SetTitle('')
         mainframe.GetXaxis().SetLabelSize(0)
@@ -402,7 +421,7 @@ class RatioPlot(object):
         ratioframe.GetXaxis().SetTitleSize(26)
         ratioframe.GetYaxis().SetNdivisions(5)
         ratioframe.GetYaxis().SetNoExponent()
-        ratioframe.GetYaxis().SetTitleOffset(1.2)
+        ratioframe.GetYaxis().SetTitleOffset(mainframe.GetYaxis().GetTitleOffset())
         ratioframe.GetXaxis().SetTitleOffset(3.0)
         ratioframe.Draw()
 
@@ -432,8 +451,8 @@ class RatioPlot(object):
         # line.SetLineStyle(2)
         line.Draw()
 
-        for ratio in self.ratios:
-            ratio.Draw("hist same")
+        for ratio,dopt in reversed(zip(self.ratios,self.drawoptions)):
+            ratio.Draw("%s same"%dopt)
 
         redrawBorder(p2)
 

@@ -129,7 +129,7 @@ def makeBackgroundHistos(treefiles, opt):
 			tasklist[pname] += tasks
 
 	if not opt.cache:
-		runTasks(treefiles, tasklist, opt, 'bg_histos')
+		runTasks(treefiles, tasklist, opt, 'bg_histos', interactive=False)
 
 	bghistos = {} # (tag, pname, comb) -> histo
 	bghistos = gatherHistosFromFiles(tasklist, treefiles,
@@ -140,6 +140,61 @@ def makeBackgroundHistos(treefiles, opt):
 	pickle.dump(bghistos, cachefile, pickle.HIGHEST_PROTOCOL)
 	cachefile.close()
 	return bghistos
+
+def makeDataHistos(treefiles, opt):
+	hname_to_keys = {} # hname -> (tag, syst, comb)
+	tasklist = {} # treefile -> tasklist
+
+	for pname in treefiles.keys():
+		if not pname in tasklist: tasklist[pname] = []
+		for tag,sel,_ in SELECTIONS:
+			tasks = []
+			hname = "SVLMass_tot_%s_%s" % (tag, pname)
+			finalsel = "(%s)"%(sel)
+
+			tasks.append((hname, 'SVLMass', finalsel,
+						  NBINS, XMIN, XMAX, MASSXAXISTITLE))
+			hname_to_keys[hname] = (tag, pname, 'tot') ## add the 'tot'
+
+			for ntk1,ntk2 in NTRKBINS:
+				tksel = "(SVNtrk>=%d&&SVNtrk<%d)"%(ntk1,ntk2)
+				finalsel = "(%s&&%s)"%(sel, tksel)
+				hname = "SVLMass_tot_%s_%s_%d" % (tag, pname, ntk1)
+				tasks.append((hname, 'SVLMass', finalsel,
+							  NBINS, XMIN, XMAX, MASSXAXISTITLE))
+				hname_to_keys[hname] = (tag, pname, 'tot', ntk1)
+
+			tasklist[pname] += tasks
+
+	if not opt.cache:
+		runTasks(treefiles, tasklist, opt, 'data_histos', interactive=False)
+
+	datahistos = {} # (tag, pname, comb) -> histo
+	datahistos = gatherHistosFromFiles(tasklist, treefiles,
+								   osp.join(opt.outDir, 'data_histos'),
+								   hname_to_keys)
+
+	cachefile = open(".svldatahistos.pck", 'w')
+	pickle.dump(datahistos, cachefile, pickle.HIGHEST_PROTOCOL)
+	cachefile.close()
+	return datahistos
+
+def sumDataHistos(processes, datahistos):
+	datahistos_added = {}
+	for tag,_,_ in SELECTIONS:
+		for ntk,_ in NTRKBINS:
+			for pname in processes:
+				hname = "SVLMass_tot_%s_data_%d"%(tag,ntk)
+				hist = datahistos[tag, pname, 'tot', ntk].Clone("%s_%s" % (
+															  hname, pname))
+				## Save in dictionary
+				if not (tag, ntk) in datahistos_added:
+					datahistos_added[(tag, ntk)] = hist
+					datahistos_added[(tag, ntk)].SetName(hname)
+				else:
+					datahistos_added[(tag, ntk)].Add(hist)
+	return datahistos_added
+
 
 def sumBGHistos(processes, bghistos, xsecweights, ntkWeights, dySFs,
 	            qcdTemplates, opt, dyScale=None, qcdScale=None):
@@ -221,19 +276,24 @@ def sumBGHistos(processes, bghistos, xsecweights, ntkWeights, dySFs,
 
 def main(args, opt):
 	os.system('mkdir -p %s'%opt.outDir)
-	treefiles = {} # procname -> filename
+	mcfiles = {}   # procname -> filename
+	datafiles = {} # procname -> filename
 	try:
 		for fname in os.listdir(args[0]):
 			if not osp.splitext(fname)[1] == '.root': continue
 			isdata,procname,splitno = resolveFilename(fname)
-			if isdata: continue
-			if 'QCD' in procname:                   continue ## exclude QCD
-			if procname == 'TTJets_MSDecays_172v5': continue ## have those already
-			if 'SingleT' in procname:               continue ## have those already
+			if isdata:
+				if not procname in datafiles:
+					datafiles[procname] = []
+				datafiles[procname].append(osp.join(args[0],fname))
+			else:
+				if 'QCD' in procname:                   continue ## exclude QCD
+				if procname == 'TTJets_MSDecays_172v5': continue ## have those already
+				if 'SingleT' in procname:               continue ## have those already
 
-			if not procname in treefiles:
-				treefiles[procname] = []
-			treefiles[procname].append(osp.join(args[0],fname))
+				if not procname in mcfiles:
+					mcfiles[procname] = []
+				mcfiles[procname].append(osp.join(args[0],fname))
 
 	except IndexError:
 		print "Please provide a valid input directory"
@@ -241,7 +301,7 @@ def main(args, opt):
 
 
 	## Produce (or read) the histogram data
-	bghistos = makeBackgroundHistos(treefiles, opt)
+	bghistos = makeBackgroundHistos(mcfiles, opt)
 
 	cachefile = open(".xsecweights.pck", 'r')
 	xsecweights = pickle.load(cachefile)
@@ -262,9 +322,9 @@ def main(args, opt):
 	from extractNtrkWeights import extractNTrkWeights
 	ntkWeights = extractNTrkWeights()
 
-
 	## Now add them up with proper scales
-	bghistos_added = sumBGHistos(processes=treefiles.keys(),
+	mcprocesses = [k for k in mcfiles.keys() if not 'Data8TeV' in k]
+	bghistos_added = sumBGHistos(processes=mcprocesses,
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
 		                         ntkWeights=ntkWeights,
@@ -272,7 +332,7 @@ def main(args, opt):
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt)
 
-	bghistos_added_dyup = sumBGHistos(processes=treefiles.keys(),
+	bghistos_added_dyup = sumBGHistos(processes=mcprocesses,
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
 		                         ntkWeights=ntkWeights,
@@ -280,7 +340,7 @@ def main(args, opt):
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
 		                         dyScale=1.3)
-	bghistos_added_dydn = sumBGHistos(processes=treefiles.keys(),
+	bghistos_added_dydn = sumBGHistos(processes=mcprocesses,
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
 		                         ntkWeights=ntkWeights,
@@ -288,7 +348,7 @@ def main(args, opt):
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
 		                         dyScale=0.7)
-	bghistos_added_qcdup = sumBGHistos(processes=treefiles.keys(),
+	bghistos_added_qcdup = sumBGHistos(processes=mcprocesses,
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
 		                         ntkWeights=ntkWeights,
@@ -296,7 +356,7 @@ def main(args, opt):
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
 		                         qcdScale=1.1)
-	bghistos_added_qcddn = sumBGHistos(processes=treefiles.keys(),
+	bghistos_added_qcddn = sumBGHistos(processes=mcprocesses,
 		                         bghistos=bghistos,
 		                         xsecweights=xsecweights,
 		                         ntkWeights=ntkWeights,
@@ -304,6 +364,14 @@ def main(args, opt):
 		                         qcdTemplates=qcdTemplates,
 		                         opt=opt,
 		                         qcdScale=0.9)
+
+	## Produce data histograms
+	datahistos = makeDataHistos(datafiles, opt)
+	datahistos_added = sumDataHistos(datafiles.keys(), datahistos)
+	# Rebin also data, if required:
+	if opt.rebin>0:
+		for hist in datahistos_added.values():
+			hist.Rebin(opt.rebin)
 
 	## Save the background only shapes separately as templates for the fit
 	cachefile = open(".svlbgtemplates.pck", 'w')
@@ -401,7 +469,6 @@ def main(args, opt):
 				## Write out to file
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
-
 	#####################################################
 	## Non-central mass points
 	ROOT.gSystem.Load('libUserCodeTopMassSecVtx.so')
@@ -458,6 +525,16 @@ def main(args, opt):
 
 				## Write out to file
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
+
+	## Write also data histos
+	ofi.cd()
+	odir = ofi.mkdir('data')
+	odir.cd()
+	for tag,_,_ in SELECTIONS:
+		for ntk,_ in NTRKBINS:
+			hname = "SVLMass_%s_data_%s" % (tag,ntk)
+			datahistos_added[(tag,ntk)].Write(hname, ROOT.TObject.kOverwrite)
+
 
 	print ('>>> Wrote pseudo experiment inputs to file (%s)' %
 		                      osp.join(opt.outDir,'pe_inputs.root'))

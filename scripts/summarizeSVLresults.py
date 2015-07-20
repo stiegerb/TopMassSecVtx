@@ -8,6 +8,7 @@ import pickle
 from UserCode.TopMassSecVtx.rounding import toLatexRounded
 from UserCode.TopMassSecVtx.PlotUtils import bcolors,getContours
 from makeSVLMassHistos import NTRKBINS
+from plotFragmentationVersusMtop import *
 from pprint import pprint
 
 COLORS = [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
@@ -541,18 +542,15 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 		('bhadcomp'  , ['bhadcomp']                     , 'B-hadron composition \ztwostar\ LEP ' , '172.5' , True )  ,
 		('bfragrbLEP', ['bfragdn','bfragup']            , '\ztwostar\ rb LEP (soft/hard)'        , 'bfrag' , True ) ,
 		# ('bfragdn'   , ['bfragdn']                      , '\ztwostar\ rb LEP soft'               , '172.5' , False ) ,
-		('bfrag'     , ['bfrag']                        , 'Fragmentation \ztwostar\\'            , '172.5' , False )  ,
+		('bfrag'     , ['172.5']                        , 'Fragmentation \ztwostar\\'            , 'bfrag' , False )  ,
 		# ('bfragup'   , ['bfragup']                      , '\ztwostar\ rb LEP hard'               , '172.5' , False ) ,
-		('bfragp11'  , ['bfragp11']                     , 'P11'                                  , '172.5' , False ) ,
-		('bfragpete' , ['bfragpete']                    , '\ztwostar\ Peterson'                  , '172.5' , False ) ,
-		('bfraglund' , ['bfraglund']                    , '\ztwostar\ Lund'                      , '172.5' , False ) ,
+		('bfragp11'  , ['bfragp11']                     , 'P11'                                  , 'bfrag' , False ) ,
+		('bfragpete' , ['bfragpete']                    , '\ztwostar\ Peterson'                  , 'bfrag' , False ) ,
+		('bfraglund' , ['bfraglund']                    , '\ztwostar\ Lund'                      , 'bfrag' , False ) ,
 		('toppt'     , ['toppt']                        , 'Top quark \\pt'                       , '172.5' , True )  ,
 		('p11mpihi'  , ['p11mpihi', 'p11tev']           , 'Underlying event'                     , 'p11'   , True ) ,
 		('p11nocr'   , ['p11nocr']                      , 'Color reconnection'                   , 'p11'   , True )  ,
 	]
-
-	# for i in xrange(1,52,2):
-	# 	theosysts.append( ('pdf',['pdf%d'%i,'pdf%d'%(i+1)],'PDF %d' % ((i+1)/2), '172.5', True) )
 
 	expsysts = [
 		('jesup'     , ['jesup',    'jesdn'],    'Jet energy scale',           '172.5', True) ,
@@ -643,6 +641,7 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 
 	totup, totupE, totdn, totdnE, = {}, {}, {}, {}
 	for sel in selections:
+
 		with open(ofile,'w') as of:
 			of.write('\\hline\n')
 			if 'combe_0' in filterCats:
@@ -661,7 +660,7 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 				of.write('\multicolumn{5}{l}{\\bf Theory uncertainties}\\\\\n')
 			of.write('\\hline\n')
 			totup_th,totupE_th,totdn_th,totdnE_th = writeSection(theosysts, sel, of, name='theo.')
-
+			plotFragmentationVersusMtop(fitResults=results[(cat,sel)],outName=cat+sel,ref='bfrag')
 
 			if 'combe_0' in filterCats:
 				of.write('\multicolumn{7}{l}{\\bf Experimental uncertainties}\\\\\n')

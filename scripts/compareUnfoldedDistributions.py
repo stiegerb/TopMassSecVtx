@@ -178,14 +178,14 @@ def main():
    if opt.z:
       print 'Using Z control region inputs'
       INPUTS = [
-         ('data'       , 'Data'          , 'Data8TeV_DoubleLepton_merged_filt23' , ROOT.kBlack),
-         ('z2s'        , 'Z2*' ,           'MC8TeV_DY_merged_filt23'             , ROOT.kBlue+3),
-         ('z2srblep'   , 'Z2*LEP rb'     , 'MC8TeV_DY_merged_filt23_bfrag'       , ROOT.kMagenta),
-         ('z2srblepup' , 'Z2*LEP rb+' ,    'MC8TeV_DY_merged_filt23_bfragup'     , ROOT.kMagenta+2),
-         ('z2srblepdn' , 'Z2*LEP rb-' ,    'MC8TeV_DY_merged_filt23_bfragdn'     , ROOT.kMagenta-9),
-         ('p11frag'    , 'P11'    ,        'MC8TeV_DY_merged_filt23_bfragp11'    , ROOT.kRed-9),
-         ('z2spete'    , 'Z2* Peterson'  , 'MC8TeV_DY_merged_filt23_bfragpete'   , ROOT.kAzure+7),
-         ('z2slund'    , 'Z2* Lund'      , 'MC8TeV_DY_merged_filt23_bfraglund'   , ROOT.kBlue-7)
+         ('data'       , 'Data'          ,    'Data8TeV_DoubleLepton_merged_filt23' , ROOT.kBlack),
+         ('z2srblep'   , 'Z2*LEP r_{b}'     , 'MC8TeV_DY_merged_filt23_bfrag'       , ROOT.kBlack),
+         ('z2srblepup' , 'Z2*LEP r_{b}+' ,    'MC8TeV_DY_merged_filt23_bfragup'     , ROOT.kMagenta),
+         ('z2srblepdn' , 'Z2*LEP r_{b}-' ,    'MC8TeV_DY_merged_filt23_bfragdn'     , ROOT.kMagenta+2),
+         ('z2s'        , 'Z2*' ,              'MC8TeV_DY_merged_filt23'             , ROOT.kRed+1),
+         ('z2spete'    , 'Z2* Peterson'  ,    'MC8TeV_DY_merged_filt23_bfragpete'   , ROOT.kAzure+7),
+         ('z2slund'    , 'Z2* Lund'      ,    'MC8TeV_DY_merged_filt23_bfraglund'   , ROOT.kBlue-7),
+         #('p11frag'    , 'P11'    ,        'MC8TeV_DY_merged_filt23_bfragp11'    , ROOT.kRed-9),
          ]
       TAGS = {
          'D0':   'Z/#gamma^{*}(ll) #mu D^{0} (K^{-}#pi^{+}) + X',
@@ -310,11 +310,11 @@ def main():
       frame.SetTitle('frame')
       frame.SetMarkerStyle(1)
       frame.SetLineColor(1)
-      frame.SetPoint(0,avg-rms*0.3,-0.5)
-      frame.SetPoint(1,avg-rms*0.3,len(INPUTS)+0.5)            
-      frame.SetPoint(2,avg+rms*0.3,len(INPUTS)+0.5)
-      frame.SetPoint(3,avg+rms*0.3,-0.5)
-      frame.SetPoint(4,avg-rms*0.3,-0.5)
+      frame.SetPoint(0,avg-rms,-0.5)
+      frame.SetPoint(1,avg-rms,len(INPUTS)+0.5)            
+      frame.SetPoint(2,avg+rms,len(INPUTS)+0.5)
+      frame.SetPoint(3,avg+rms,-0.5)
+      frame.SetPoint(4,avg-rms,-0.5)
 
       dataRef=ROOT.TGraph()
       dataRef.SetTitle('dataref')

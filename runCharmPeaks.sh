@@ -113,7 +113,7 @@ case $WHAT in
 	done
 	;;
     DIFFZ )
-	plotdir=${outdir}z_control/plots
+	plotdir=${outdir}z_control/plots/
 	mkdir -p ${plotdir}
 	a=("D0" "JPsi" "Dpm" "Dsm")
 	
@@ -131,13 +131,16 @@ case $WHAT in
 	    ctag=${ctag/","/"_"}
 	    
 	    #differential measurements
-	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5  --tag ${a} --pullrange -5.8,5.8 -z;
-	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS  -m 0.75 --tag ${a} --pullrange -5.8,5.8 -z;
+	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5  --tag ${a} -z;
+	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS  -m 0.75 --tag ${a} -z;
+	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5  --tag ${a} -z --showMean;
+	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS  -m 0.75 --tag ${a} -z --showMean;
 	    
 	    #unfolded
 	    unfvars=("norm_ptrel_signal" "norm_pfrac_signal" "norm_ptfrac_signal" "norm_pzfrac_signal" "norm_ptchfrac_signal" "norm_pzchfrac_signal" "norm_dr_signal")
 	    for var in ${unfvars[@]}; do
-		python scripts/compareUnfoldedDistributions.py -d ${var} -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b UnfoldedDistributions --tag ${a} --pullrange -5.8,5.8 -z;
+		python scripts/compareUnfoldedDistributions.py -d ${var} -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b UnfoldedDistributions --tag ${a} -z;
+		python scripts/compareUnfoldedDistributions.py -d ${var} -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b UnfoldedDistributions --tag ${a} -z --showMean;
 	    done
 	done
 	;;

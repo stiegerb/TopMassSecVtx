@@ -8,7 +8,6 @@ import pickle
 from UserCode.TopMassSecVtx.rounding import toLatexRounded
 from UserCode.TopMassSecVtx.PlotUtils import bcolors,getContours
 from makeSVLMassHistos import NTRKBINS
-from plotFragmentationVersusMtop import *
 from pprint import pprint
 
 COLORS = [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
@@ -660,7 +659,6 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 				of.write('\multicolumn{5}{l}{\\bf Theory uncertainties}\\\\\n')
 			of.write('\\hline\n')
 			totup_th,totupE_th,totdn_th,totdnE_th = writeSection(theosysts, sel, of, name='theo.')
-			plotFragmentationVersusMtop(fitResults=results[(cat,sel)],outName=cat+sel,ref='bfrag')
 
 			if 'combe_0' in filterCats:
 				of.write('\multicolumn{7}{l}{\\bf Experimental uncertainties}\\\\\n')
@@ -728,6 +726,11 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 	thUnc.Write()
 	statUnc.Write()
 	outF.Close()
+
+	for sel in selections:
+		for cat in filterCats:
+			plotFragmentationVersusMtop(fitResults=results[(cat,sel)],
+				                        outName=cat+sel,ref='bfrag')
 
 	return totup, totdn
 
@@ -941,6 +944,108 @@ def makeSystPlot(results, totup, totdn):
 
 	return
 
+def plotFragmentationVersusMtop(fitResults,outName,ref='bfrag'):
+    #hardcoded values, from simulation
+    fragModels={'bfrag'    :("Z2*LEP r_{b}",      ROOT.kBlack,     20, 1.2, 0.7616, 0.0002),
+                'bfragdn'  :("Z2*LEP r_{b} soft", ROOT.kMagenta,   24, 1.2, 0.7481, 0.0003),
+                'bfragup'  :("Z2*LEP r_{b} hard", ROOT.kMagenta+2, 24, 1.2, 0.7729, 0.0003),
+                'bfragpete':("Z2*LEP Peterson",   ROOT.kRed+1,     32, 1.2, 0.7189, 0.0007),
+                'bfraglund':("Z2*LEP Lund",       ROOT.kAzure+7,   26, 1.2, 0.7670, 0.0007),
+                '172.5'    :('Z2*',               ROOT.kMagenta-9, 25, 1.2, 0.73278, 0.00009),
+    }
+
+    #get the fitted values
+    fitVals={}
+    for key in fragModels:
+        if key in fitResults:
+            fitVals[key]=(fitResults[key][0],fitResults[key][1])
+
+    #put all into a graph
+    mg=ROOT.TMultiGraph()
+    graphs = {}
+    for key in fitVals:
+        gr=ROOT.TGraphErrors()
+        gr.SetLineColor(fragModels[key][1])
+        gr.SetMarkerColor(fragModels[key][1])
+        gr.SetMarkerStyle(fragModels[key][2])
+        gr.SetMarkerSize(fragModels[key][3])
+        gr.SetFillStyle(0)
+        gr.SetFillColor(0)
+        gr.SetTitle(fragModels[key][0])
+        gr.SetName(key+'_'+outName)
+        gr.SetPoint(0,     fragModels[key][4],fitVals[key][0]-fitVals[ref][0])
+        gr.SetPointError(0,fragModels[key][5],fitVals[key][1])
+        mg.Add(gr)
+        graphs[key] = gr
+
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetTopMargin(0.05)
+    c.SetRightMargin(0.05)
+
+    haxis = ROOT.TH2D("axes","axes", 1, 0.71, 0.78, 1, -2.95, 0.85)
+    haxis.Draw('axis')
+    # haxis.GetXaxis().SetTitle('x_{b} = #LTp_{T}(B)/p_{T}(b)#GT')
+    haxis.GetXaxis().SetTitle('#LTp_{T}(B)/p_{T}(b)#GT')
+    haxis.GetYaxis().SetTitle('#Deltam_{t} [GeV]')
+    haxis.GetXaxis().SetTitleOffset(1.2)
+    haxis.GetYaxis().SetTitleOffset(1.2)
+
+    mg.Draw('p')
+    leg = ROOT.TLegend(0.12,0.5,0.4,0.75)
+    leg.SetFillStyle(1001)
+    leg.SetBorderSize(0)
+    leg.SetFillColor(ROOT.kWhite)
+    leg.SetTextFont(43)
+    leg.SetTextSize(14)
+    for key in ['bfrag', 'bfragdn', 'bfragup', '172.5', 'bfraglund', 'bfragpete']:
+        leg.AddEntry(graphs[key], fragModels[key][0], 'P')
+
+
+    line=ROOT.TLine()
+    line.SetLineColor(ROOT.kGray)
+    line.SetLineStyle(2)
+    line.DrawLine(haxis.GetXaxis().GetXmin(),0,haxis.GetXaxis().GetXmax(),0)
+    line.DrawLine(fragModels[ref][4],haxis.GetYaxis().GetXmin(),fragModels[ref][4],haxis.GetYaxis().GetXmax())
+
+    leg.Draw()
+
+    mg.Fit('pol1','R')
+    pol1 = mg.GetFunction('pol1')
+    pol1.SetLineWidth(2)
+    pol1.SetLineStyle(1)
+    pol1.SetLineColor(ROOT.kGray)
+    pol1.Draw("same")
+    pol1.Print('v')
+
+    pt=ROOT.TPaveText(0.12,0.85,0.6,0.94,'brNDC')
+    pt.SetBorderSize(0)
+    pt.SetTextFont(43)
+    pt.SetFillStyle(0)
+    pt.SetTextAlign(12)
+    pt.SetTextSize(24)
+    pt.AddText('#bf{CMS} #it{preliminary}')
+    pt.Draw()
+
+    tmt = ROOT.TLatex()
+    tmt.SetTextFont(43)
+    tmt.SetNDC(1)
+    tmt.SetTextSize(14)
+    tmt.DrawLatex(0.15, 0.83, '#Deltam_{t} = %0.1f GeV #times '
+                              '#Delta#LTp_{T}(B)/p_{T}(b)#GT '
+                              '#lower[0.1]{#void8} #scale[0.7]{'
+                              '#lower[0.7]{Z2*LEP rb}}'%(pol1.GetParameter(1)))
+    # tmt.DrawLatex(0.15, 0.83, '#Deltam_{t} = %0.1f + %0.1f #times '
+    #                           '#Delta#LTp_{T}(B)/p_{T}(b)#GT '
+    #                           '#lower[0.1]{#void8} #scale[0.7]{'
+    #                           '#lower[0.7]{Z2*LEP rb}} GeV'%(pol1.GetParameter(0),
+    #                                                          pol1.GetParameter(1)))
+
+    # Redraw points
+    for graph in graphs.values(): graph.Draw("p")
+    ROOT.gPad.RedrawAxis()
+    c.Modified()
+    c.Update()
+    for ext in ['.png','.pdf']: c.SaveAs('fragvsmtop_%s%s' % (outName,ext))
 
 """
 """

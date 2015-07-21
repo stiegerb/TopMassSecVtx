@@ -311,8 +311,8 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	histos['EventYields'].GetXaxis().SetBinLabel(4,'#mu,3j')
 	for chCat in ['e','mu']:
 		for jetCat in ['2j','3j']:
-			for nTrack in ['1t','2t','3t','4t','5t']:
-				tag=chCat+jetCat+nTrack
+			#for nTrack in ['1t','2t','3t','4t','5t']:
+				tag=chCat+jetCat#+nTrack
 				histos['NPVtx_'+tag]      = ROOT.TH1F('NPVtx_'+tag,';N_{PV}-N_{HP};Events',30,0,30)
 				histos['MT_'+tag]         = ROOT.TH1F('MT_'+tag,';Transverse mass [GeV];Events',50,0,250)
 				histos['MET_'+tag]        = ROOT.TH1F('MET_'+tag,';Missing transverse energy [GeV];Events',50,0,200)
@@ -332,11 +332,36 @@ def runSingleTopAnalysis(filename,isData,outDir):
 				histos['CombInfo_'+tag]   = ROOT.TH1F('CombInfo_'+tag,';Correct Combination?;Events',3,-1.5,1.5)
 				histos['BDToutput_'+tag]  = ROOT.TH1F('BDToutput_'+tag,';BDT Output;Events',25,-0.4,0.45)
 				histos['BDToutputoriginal_'+tag]  = ROOT.TH1F('BDToutputoriginal_'+tag,';BDT Output;Events',25,-0.4,0.45)
+
+	mass = '172'
+	if '166' in filename:
+		mass = '166'
+	elif '169' in filename:
+		mass = '169'
+	elif '171' in filename:
+		mass = '171'
+	elif '173' in filename:
+		mass = '173'
+	elif '175' in filename:
+		mass = '175'
+	elif '178' in filename:
+		mass = '178'
+	elif '181' in filename:
+		mass = '181'
+	elif '163' in filename:
+		mass = '163'
+
+	for tag in ['t','tt','bg']:
+		for ch in ['e','m']:
+			for comb in ['cor','wro','inc','unm']:
+				for n in ['2j','3j']:
+					name = tag+'_'+ch+n+'_'+mass+'_'+comb
+					histos[name] = ROOT.TH1F(name,';m(SV,lepton) [GeV]',50,0,200)
 	for h in histos:
 		histos[h].Sumw2()
 		histos[h].SetDirectory(0)
 
-
+		
 	#open input file and get tree for analysis
 	print ' ... processing',filename
 	fIn=ROOT.TFile.Open(filename)
@@ -466,19 +491,19 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		cjeta=ROOT.TMath.Abs(SVLInfo.JEta)
 
 		#separate into nTracks
-		if SVLInfo.SVNtrk < 1 or SVLInfo.SVNtrk > 5: continue
-		if SVLInfo.SVNtrk == 1:
-			nTrack = '1t'
-		elif SVLInfo.SVNtrk == 2:
-			nTrack = '2t'
-		elif SVLInfo.SVNtrk == 3:
-			nTrack = '3t'
-		elif SVLInfo.SVNtrk == 4:
-			nTrack = '4t'
-		else:
-			nTrack = '5t'
+#		if SVLInfo.SVNtrk < 1 or SVLInfo.SVNtrk > 5: continue
+#		if SVLInfo.SVNtrk == 1:
+#			nTrack = '1t'
+#		elif SVLInfo.SVNtrk == 2:
+#			nTrack = '2t'
+#		elif SVLInfo.SVNtrk == 3:
+#			nTrack = '3t'
+#		elif SVLInfo.SVNtrk == 4:
+#			nTrack = '4t'
+#		else:
+#			nTrack = '5t'
 
-		tag=chCat+jetCat+nTrack
+		tag=chCat+jetCat#+nTrack
 
 		#TMVA Cuts (if available)
 		mvaBDT=-1
@@ -494,6 +519,32 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		if tag=='mu2j' : histos['EventYields'].Fill(1,weight)
 		if tag=='e3j'  : histos['EventYields'].Fill(2,weight)
 		if tag=='mu3j' : histos['EventYields'].Fill(3,weight)
+
+		tag1 = ''
+		if 'SingleT' in filename:
+			tag1+='t_'
+		elif 'TT' in filename:
+			tag1+='tt_'
+		else:
+			tag1+='bg_'
+		if 'e2j' in tag:
+			tag1+='e2j_'
+		elif 'e3j' in tag:
+			tag1+='e3j_'
+		elif 'mu2j' in tag:
+			tag1+='m2j_'
+		else:
+			tag1+='m3j_'
+		tag1+=(mass+'_')
+		if 'tt' in tag1:
+			tag1+='inc'
+		elif 't_' in tag1:
+			if SVLInfo.CombInfo==1:
+				tag1+='cor'
+			else:
+				tag1+='wro'
+		else:
+			tag1+='unm'
 
 		histos['NPVtx_'+tag]  .Fill(SVLInfo.NPVtx-1, weight)
 		histos['MT_'+tag]     .Fill(SVLInfo.MT,      weight)
@@ -513,6 +564,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		histos['SVNtrk_'+tag] .Fill(SVLInfo.SVNtrk,  weight)
 		histos['CombInfo_'+tag].Fill(SVLInfo.CombInfo,  weight)
 		histos['BDToutput_'+tag].Fill(mvaBDT,        weight)
+		histos[tag1].Fill(SVLInfo.SVLMass,weight)
 
 	#close input file, after analysis
 	fIn.Close()

@@ -1030,10 +1030,10 @@ def plotFragmentationVersusMtop(fitResults,outName,ref='bfrag'):
     tmt.SetTextFont(43)
     tmt.SetNDC(1)
     tmt.SetTextSize(14)
-    tmt.DrawLatex(0.15, 0.83, '#Deltam_{t} = %0.1f GeV #times '
+    tmt.DrawLatex(0.15, 0.83, '#Deltam_{t} = (%0.2f GeV / 1%%) #times '
                               '#Delta#LTp_{T}(B)/p_{T}(b)#GT '
                               '#lower[0.1]{#void8} #scale[0.7]{'
-                              '#lower[0.7]{Z2*LEP rb}}'%(pol1.GetParameter(1)))
+                              '#lower[0.7]{Z2*LEP rb}}'%(pol1.GetParameter(1)/100.))
     # tmt.DrawLatex(0.15, 0.83, '#Deltam_{t} = %0.1f + %0.1f #times '
     #                           '#Delta#LTp_{T}(B)/p_{T}(b)#GT '
     #                           '#lower[0.1]{#void8} #scale[0.7]{'

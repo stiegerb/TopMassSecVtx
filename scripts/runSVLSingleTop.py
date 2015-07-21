@@ -332,6 +332,8 @@ def runSingleTopAnalysis(filename,isData,outDir):
 				histos['CombInfo_'+tag]   = ROOT.TH1F('CombInfo_'+tag,';Correct Combination?;Events',3,-1.5,1.5)
 				histos['BDToutput_'+tag]  = ROOT.TH1F('BDToutput_'+tag,';BDT Output;Events',25,-0.4,0.45)
 				histos['BDToutputoriginal_'+tag]  = ROOT.TH1F('BDToutputoriginal_'+tag,';BDT Output;Events',25,-0.4,0.45)
+				histos['SVLMassWJets_'+tag]       = ROOT.TH1F('SVLMassWJets_'+tag,';m(SV,lepton) [GeV]',50,0,200)
+				histos['SVLMassQCD_' +tag]        = ROOT.TH1F('SVLMassQCD_'+tag,';m(SV,lepton) [GeV]',50,0,200)
 
 	mass = '172'
 	if '166' in filename:
@@ -456,6 +458,19 @@ def runSingleTopAnalysis(filename,isData,outDir):
 
 		#require e or mu events
 		chCat=''
+		if ROOT.TMath.Abs(SVLInfo.EvCat)==1100 or ROOT.TMath.Abs(SVLInfo.EvCat)==1300:
+			if ROOT.TMath.Abs(SVLInfo.FJEta) <= 20 and SVLInfo.FJPt >= 40 and SVLInfo.JPt >= 40 and ((SVLInfo.NJets+SVLInfo.NFJets) == 2 or (SVLInfo.NJets+SVLInfo.NFJets) == 3) and SVLInfo.SVMass > 0 and SVLInfo.NBTags > 0 and SVLInfo.MT >= 50 and tmva_reader.EvaluateMVA('BDT') >= 0.11:
+				if ROOT.TMath.Abs(SVLInfo.EvCat)==1100 and SVLInfo.MET >= 45:
+					if (SVLInfo.NJets+SVLInfo.NFJets) == 2:
+						histos['SVLMassQCD_e2j'].Fill(SVLInfo.SVLMass, weight)
+					elif (SVLInfo.NJets+SVLInfo.NFJets) == 3:
+						histos['SVLMassQCD_e3j'].Fill(SVLInfo.SVLMass, weight)
+				elif ROOT.TMath.Abs(SVLInfo.EvCat)==1300:
+					if (SVLInfo.NJets+SVLInfo.NFJets) == 2:
+						histos['SVLMassQCD_mu2j'].Fill(SVLInfo.SVLMass, weight)
+					elif (SVLInfo.NJets+SVLInfo.NFJets) == 3:
+						histos['SVLMassQCD_mu3j'].Fill(SVLInfo.SVLMass, weight)
+				
 		if ROOT.TMath.Abs(SVLInfo.EvCat)!=11 and ROOT.TMath.Abs(SVLInfo.EvCat)!=13 : continue
 		chCat = 'e' if ROOT.TMath.Abs(SVLInfo.EvCat)==11 else 'mu'
 
@@ -510,6 +525,9 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		if tmva_reader:
 			mvaBDT = tmva_reader.EvaluateMVA('BDT')
 			histos['BDToutputoriginal_'+tag].Fill(mvaBDT,    weight)
+		
+		if -0.05 <= mvaBDT < 0.11:
+			histos['SVLMassWJets_'+tag].Fill(SVLInfo.SVLMass,weight)
 		if mvaBDT < 0.11: continue
 
 ###################################

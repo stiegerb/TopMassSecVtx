@@ -4,9 +4,11 @@ import os,sys
 import pickle
 import ROOT
 
-CATEGORIES = ['e','m','etoppt','mtoppt']
+CATEGORIES = ['e_optmrank','m_optmrank','etoppt_optmrank','mtoppt_optmrank']
+# CATEGORIES = ['e','m','etoppt','mtoppt']
 OUTDIR = 'qcdfits'
-
+SELECTIONS = ['_optmrank']
+# SELECTIONS = ['_mrank1','_mrank1dr','_drrank1dr','','_optmrank']
 
 """
 Displays the results of the fit
@@ -23,13 +25,13 @@ def showFitResults(w,cat,options) :
 	c.cd()
 	p2 = ROOT.TPad('p2','p2',0.0,0.85,1.0,1.0)
 	p2.Draw()
-	
+
 	frame=w.var('x').frame()
 	data=w.data('roohist_data_'+cat)
 	data.plotOn(frame, ROOT.RooFit.Name('data'))
 	pdf=w.pdf('model_'+cat)
 	pdf.plotOn(frame,ROOT.RooFit.MoveToBack(), ROOT.RooFit.FillColor(592), ROOT.RooFit.LineColor(1), ROOT.RooFit.LineWidth(1), ROOT.RooFit.DrawOption('lf'), ROOT.RooFit.Name('other') )
-	
+
 	# the pull
 	p2.cd()
 	p2.Clear()
@@ -307,7 +309,7 @@ def main(args, options) :
 		totalIncSideBand = inc.Integral()
 		totalInc = w.function('N_bkg_%s'%cat).getVal()
 		for ntk in [tk1 for tk1,_ in NTRKBINS]:
-			for sel in ['_mrank1','_mrank1dr','_drrank1dr','','_optmrank']:
+			for sel in SELECTIONS:
 				h_ntk = fQCD.Get('%s%s_qcd_template_%d'%(cat,sel,ntk))
 				iniNorm=1
 				try:
@@ -346,7 +348,7 @@ if __name__ == "__main__":
 	"""
 	parser = OptionParser(usage=usage)
 	parser.add_option('-s', '--useSideBand', dest='useSideBand', action="store_true",
-					  help='Use sidebands')	
+					  help='Use sidebands')
 	(opt, args) = parser.parse_args()
 
 	ROOT.gStyle.SetOptStat(0)

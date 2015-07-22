@@ -16,7 +16,7 @@ LUMI = 19701.0
 # NTRKBINS = [(2,3), (3,4), (4,1000)]
 NTRKBINS = [(3,4), (4,5), (5,6)]
 # BR fix x PU x Lep Sel x JES
-COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*METWeight[0]*BtagWeight[0]*JESWeight[0]"
+COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*METWeight[0]*BtagWeight[0]*JESWeight[0]*SVBfragWeight[0]"
 LUMIWEIGHT = "XSWeight*%f"%LUMI  # x XS weight
 TREENAME = 'SVLInfo'
 MSEL   = '(abs(EvCat)==13 && NJets>=4)'
@@ -441,6 +441,7 @@ def main(args, opt):
 			ratplot.normalized = False
 			ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
 			ratplot.ratiorange = (0.5, 1.5)
+			ratplot.rebin = 2
 
 			reference = masshistos[(tag,chan,172.5,'tot')]
 			ratplot.reference = reference
@@ -503,7 +504,9 @@ def main(args, opt):
 		## ntkscan plot
 		if 'inclusive' in tag:
 			ntkmassplot = RatioPlot('ntkmassplot_%s'%tag)
-			ntkmassplot.add(masshistos[(tag, 'tt', 172.5, 'tot')], 'Sum')
+			ntkmassplot.rebin = 2
+			ntkmassplot.reference = [masshistos[(tag, 'tt', 172.5, 'tot')]]
+			ntkmassplot.add(masshistos[(tag, 'tt', 172.5, 'tot')], 'Sum', includeInRatio=False)
 			for ntk1,ntk2 in NTRKBINS:
 				title = "%d #leq N_{trk.} < %d" %(ntk1, ntk2)
 				if ntk2 > 100:

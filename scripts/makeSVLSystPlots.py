@@ -83,12 +83,13 @@ SYSTSFROMWEIGHTS = [
 	('umetdn',      'Uncl. MET down',            'METWeight[2]',           ['tot']),
 	('toppt',       'Top p_{T} weight applied',  'Weight[10]',             ['tot','cor','wro']),
 	('topptup',     'Top p_{T} weight up',       'Weight[7]',              ['tot','cor','wro']),
-	('bfrag',       'Z2* rb LEP',                'SVBfragWeight[0]',       ['tot']),
-	('bfragup',     'Z2* rb LEP hard',           'SVBfragWeight[1]',       ['tot']),
-	('bfragdn',     'Z2* rb LEP soft',           'SVBfragWeight[2]',       ['tot']),
-	('bfragp11',    'P11 fragmentation',         'SVBfragWeight[3]',       ['tot']),
-	('bfragpete',   'Z2* Peterson',              'SVBfragWeight[4]',       ['tot']),
-	('bfraglund',   'Z2* Lund',                  'SVBfragWeight[5]',       ['tot']),
+	('bfrag',       'Z2* rb LEP',                '1',                      ['tot']), ## bfrag is nominal now
+	('bfragz2s',    'Z2*',                       '1./SVBfragWeight[0]',    ['tot']), ## Z2s is without weight
+	('bfragup',     'Z2* rb LEP hard',           'SVBfragWeight[1]/SVBfragWeight[0]', ['tot']),
+	('bfragdn',     'Z2* rb LEP soft',           'SVBfragWeight[2]/SVBfragWeight[0]', ['tot']),
+	('bfragp11',    'P11 fragmentation',         'SVBfragWeight[3]/SVBfragWeight[0]', ['tot']),
+	('bfragpete',   'Z2* Peterson',              'SVBfragWeight[4]/SVBfragWeight[0]', ['tot']),
+	('bfraglund',   'Z2* Lund',                  'SVBfragWeight[5]/SVBfragWeight[0]', ['tot']),
 	('jesup',       'Jet energy scale up',       'JESWeight[1]',           ['tot']),
 	('jesdn',       'Jet energy scale down',     'JESWeight[2]',           ['tot']),
 	('jerup',       'Jet energy resolution up',  'JESWeight[3]',           ['tot']),
@@ -152,7 +153,7 @@ SYSTPLOTS = [
 	  ROOT.kViolet+2, ROOT.kBlack],'tot'),
 
 	('bfrag', 'b fragmentation',
-	 ['nominal', 'bfrag', 'bfragup', 'bfragdn', 'bfragp11',
+	 ['nominal', 'bfragz2s', 'bfragup', 'bfragdn', 'bfragp11',
 	  'bfraglund', 'bfragpete'],
 	 [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
 	  ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
@@ -494,6 +495,7 @@ def main(args, opt):
 		# Make plot of mass with and without neutrino:
 		# for comb in COMBINATIONS.keys():
 		plot = RatioPlot('neutrino_%s'%tag)
+		plot.rebin = 2
 		plot.add(systhistos[(tag,'nonu', 'tot')], 'Without neutrino')
 		plot.add(systhistos[(tag,'nu',   'tot')], 'With neutrino')
 		plot.add(systhistos[(tag,'nuunm','tot')], 'Unmatched')
@@ -509,6 +511,7 @@ def main(args, opt):
 
 		for name, title, systs, colors, comb in SYSTPLOTS:
 			plot = RatioPlot('%s_%s'%(name,comb))
+			plot.rebin = 2
 
 			for syst in systs:
 				try:
@@ -554,11 +557,11 @@ def main(args, opt):
 		plot.ratiorange = (0.85, 1.15)
 		plot.legpos = (0.55, 0.15)
 		plot.colors = [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9, ROOT.kAzure+7]
-		plot.add(systhistos[(tag,'bfrag',  'tot')], 'Z2* rb LEP', includeInRatio=False)
-		plot.add(systhistos[(tag,'bfragdn','tot')], 'Z2* rb LEP soft')
-		plot.add(systhistos[(tag,'bfragup','tot')], 'Z2* rb LEP hard')
-		plot.add(systhistos[(tag,'nominal','tot')], 'Z2* nominal')
-		plot.reference = [systhistos[(tag,'bfrag','tot')]]
+		plot.add(systhistos[(tag,'nominal', 'tot')], 'Z2* rb LEP', includeInRatio=False)
+		plot.add(systhistos[(tag,'bfragdn', 'tot')], 'Z2* rb LEP soft')
+		plot.add(systhistos[(tag,'bfragup', 'tot')], 'Z2* rb LEP hard')
+		plot.add(systhistos[(tag,'bfragz2s','tot')], 'Z2* nominal')
+		plot.reference = [systhistos[(tag,'nominal','tot')]]
 		plot.show('bfrag_paper_%s'%tag, os.path.join(opt.outDir,'syst_plots'))
 		plot.reset()
 

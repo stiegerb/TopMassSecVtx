@@ -357,8 +357,8 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         print 80*'-'
 
     if not 'nominal' in experimentTag:
-        #cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../../'))
-        cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../'))
+        cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../../'))
+        # cfilepath = osp.abspath(osp.join(osp.dirname(__file__),'../'))
         cfilepath = osp.join(cfilepath, ".svlsysthistos.pck")
         cachefile = open(cfilepath, 'r')
         systhistos = pickle.load(cachefile)
@@ -619,7 +619,8 @@ def main():
             time.sleep(5)
             peInputFile = ROOT.TFile.Open(args[1], 'READ')
 
-        allTags = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()]
+        allTags = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()
+                                              if not tkey.GetName() == 'data']
         peInputFile.Close()
         print 'Running pseudo-experiments using PDFs and signal expectations'
 

@@ -56,10 +56,15 @@ void SVLInfoTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("Weight", Weight, &b_Weight);
    fChain->SetBranchAddress("JESWeight", JESWeight, &b_JESWeight);
    fChain->SetBranchAddress("METWeight", METWeight, &b_METWeight);
+   fChain->SetBranchAddress("BtagWeight", BtagWeight, &b_BtagWeight);
+   fChain->SetBranchAddress("XSWeight", &XSWeight, &b_XSWeight);
    fChain->SetBranchAddress("SVBfragWeight", SVBfragWeight, &b_SVBfragWeight);
-   fChain->SetBranchAddress("NJets", &NJets, &b_NJets);
-   fChain->SetBranchAddress("MET", &MET, &b_MET);
+   fChain->SetBranchAddress("SVMassWeight", &SVMassWeight, &b_SVMassWeight);
+   fChain->SetBranchAddress("PDFWeight", PDFWeight, &b_PDFWeight);
    fChain->SetBranchAddress("NPVtx", &NPVtx, &b_NPVtx);
+   fChain->SetBranchAddress("NJets", &NJets, &b_NJets);
+   fChain->SetBranchAddress("NBTags", &NBTags, &b_NBTags);
+   fChain->SetBranchAddress("MET", &MET, &b_MET);
    fChain->SetBranchAddress("NCombs", &NCombs, &b_NCombs);
    fChain->SetBranchAddress("SVLMass", &SVLMass, &b_SVLMass);
    fChain->SetBranchAddress("SVLMass_sf", SVLMass_sf, &b_SVLMass_sf);
@@ -67,18 +72,33 @@ void SVLInfoTreeAnalysisBase::Init(TTree *tree)
    fChain->SetBranchAddress("SVLMass_rot", &SVLMass_rot, &b_SVLMass_rot);
    fChain->SetBranchAddress("SVLDeltaR_rot", &SVLDeltaR_rot, &b_SVLDeltaR_rot);
    fChain->SetBranchAddress("BHadNeutrino", &BHadNeutrino, &b_BHadNeutrino);
+   fChain->SetBranchAddress("BHadId", &BHadId, &b_BHadId);
    fChain->SetBranchAddress("LPt", &LPt, &b_LPt);
+   fChain->SetBranchAddress("SVMass", &SVMass, &b_SVMass);
+   fChain->SetBranchAddress("SVNtrk", &SVNtrk, &b_SVNtrk);
    fChain->SetBranchAddress("SVPt", &SVPt, &b_SVPt);
    fChain->SetBranchAddress("SVLxy", &SVLxy, &b_SVLxy);
+   fChain->SetBranchAddress("SVLxySig", &SVLxySig, &b_SVLxySig);
+   fChain->SetBranchAddress("SVPtChFrac", &SVPtChFrac, &b_SVPtChFrac);
+   fChain->SetBranchAddress("SVPzChFrac", &SVPzChFrac, &b_SVPzChFrac);
+   fChain->SetBranchAddress("SVProjFrac", &SVProjFrac, &b_SVProjFrac);
+   fChain->SetBranchAddress("SVPtRel", &SVPtRel, &b_SVPtRel);
    fChain->SetBranchAddress("JPt", &JPt, &b_JPt);
    fChain->SetBranchAddress("JEta", &JEta, &b_JEta);
-   fChain->SetBranchAddress("SVNtrk", &SVNtrk, &b_SVNtrk);
+   fChain->SetBranchAddress("JFlav", &JFlav, &b_JFlav);
+   fChain->SetBranchAddress("FJPt", &FJPt, &b_FJPt);
+   fChain->SetBranchAddress("MT", &MT, &b_MT);
+   fChain->SetBranchAddress("FJEta", &FJEta, &b_FJEta);
+   fChain->SetBranchAddress("GenMlb", &GenMlb, &b_GenMlb);
+   fChain->SetBranchAddress("GenTopPt", &GenTopPt, &b_GenTopPt);
    fChain->SetBranchAddress("CombCat", &CombCat, &b_CombCat);
    fChain->SetBranchAddress("CombInfo", &CombInfo, &b_CombInfo);
    fChain->SetBranchAddress("SVLMassRank", &SVLMassRank, &b_SVLMassRank);
+   fChain->SetBranchAddress("SVLCombRank", &SVLCombRank, &b_SVLCombRank);
    fChain->SetBranchAddress("SVLDeltaRRank", &SVLDeltaRRank, &b_SVLDeltaRRank);
    fChain->SetBranchAddress("SVLMassRank_rot", &SVLMassRank_rot, &b_SVLMassRank_rot);
    fChain->SetBranchAddress("SVLDeltaRRank_rot", &SVLDeltaRRank_rot, &b_SVLDeltaRRank_rot);
+
    Notify();
 }
 

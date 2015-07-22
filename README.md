@@ -101,7 +101,7 @@ python scripts/extractNtrkWeights.py outDir/plotter.root -v 5
 It takes as input a runPlotter output file produced by ```makeSVLQCDTemplates.py``` called ```scaled_met_inputs.root``` with properly scaled MET distributions in the signal region, and a file with the final qcd templates, also produced by ```makeSVLQCDTemplates.py``` called ```qcd_templates.root```.
 ```
 ./scripts/makeSVLQCDTemplates.py treedir/ -o svlplots/qcd/
-./test/topss2014/qcdFitter.py svlplots/qcd/scaled_met_inputs.root svlplots/qcd/qcd_templates.root -s
+./scripts/qcdFitter.py svlplots/qcd/scaled_met_inputs.root svlplots/qcd/qcd_templates.root -s
 ```
 
 

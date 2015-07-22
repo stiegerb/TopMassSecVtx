@@ -4,10 +4,9 @@ import os,sys
 import pickle
 import ROOT
 
-CATEGORIES = ['e_optmrank','m_optmrank','etoppt_optmrank','mtoppt_optmrank']
-# CATEGORIES = ['e','m','etoppt','mtoppt']
-OUTDIR = 'qcdfits'
-SELECTIONS = ['_optmrank']
+# CATEGORIES = ['e_optmrank','m_optmrank','etoppt_optmrank','mtoppt_optmrank']
+CATEGORIES = ['e','m','etoppt','mtoppt']
+SELECTION = '_optmrank'
 # SELECTIONS = ['_mrank1','_mrank1dr','_drrank1dr','','_optmrank']
 
 """
@@ -132,10 +131,10 @@ def showFitResults(w,cat,options) :
 	c.cd()
 	c.Modified()
 	c.Update()
-	outname = 'qcd_met_fit_%s'%cat
+	outname = 'qcd_met_fit_%s%s' % (cat,SELECTION)
 	if options.useSideBand: outname += '_sidebands'
-	c.SaveAs(os.path.join(OUTDIR, '%s.pdf'% outname))
-	c.SaveAs(os.path.join(OUTDIR, '%s.png'% outname))
+	c.SaveAs(os.path.join(options.outDir, '%s.pdf'% outname))
+	c.SaveAs(os.path.join(options.outDir, '%s.png'% outname))
 	p1.Delete()
 	p2.Delete()
 	c.Delete()
@@ -143,7 +142,7 @@ def showFitResults(w,cat,options) :
 """
 Auxiliary function: fill the histograms which contain data and MC in the different regions from file
 """
-def importPdfsAndNormalizationsFrom(histo,bkg,url,qcdUrl,w,options):
+def importPdfsAndNormalizationsFrom(histo,url,qcdUrl,w,options):
 
 	#container for the histos
 	histos={'data':None,'bkg_mc':None,'other':None}
@@ -155,7 +154,7 @@ def importPdfsAndNormalizationsFrom(histo,bkg,url,qcdUrl,w,options):
 	fIn=ROOT.TFile.Open(url)
 	print ' ... processing %s' % url
 	for cat in CATEGORIES:
-		dirName='%s_%s'%(histo,cat) ## 'MET_e', 'MET_m'
+		dirName='%s_%s%s'%(histo,cat,SELECTION) ## 'MET_e_optmrank', 'MET_m_optmrank'
 		try:
 			keys_in_dir = [key.GetName() for key in fIn.Get(dirName).GetListOfKeys()]
 		except AttributeError:
@@ -163,7 +162,7 @@ def importPdfsAndNormalizationsFrom(histo,bkg,url,qcdUrl,w,options):
 			exit(-1)
 		for key in keys_in_dir:
 				proc='other'
-				if bkg in key     : proc='bkg_mc' ## TODO Why do we need QCD MC here??
+				if 'QCD' in key   : proc='bkg_mc' ## TODO Why do we need QCD MC here??
 				if 'Data' in key  : proc='data'
 				if 'Graph' in key : continue
 				hname = '%s/%s' % (dirName,key)
@@ -183,7 +182,7 @@ def importPdfsAndNormalizationsFrom(histo,bkg,url,qcdUrl,w,options):
 		fIn=ROOT.TFile.Open(qcdUrl)
 		for cat in CATEGORIES:
 			catname=cat
-			hname = 'met_%s_%s_template'%(catname,bkg.lower())
+			hname = 'met_%s%s_qcd_template'%(catname,SELECTION)
 			print '        importing %s' %hname
 			h=fIn.Get(hname)
 			histos['bkg'][cat]=h.Clone('%s_bkg'%cat)
@@ -213,7 +212,8 @@ Instantiate a workspace and perform a combined fit
 """
 def main(args, options) :
 	#create output directory
-	os.system('mkdir -p %s' % OUTDIR)
+	options.outDir = os.path.join(options.outDir,'qcdfits')
+	os.system('mkdir -p %s' % options.outDir)
 
 	#start a workspace to store all information
 	w=ROOT.RooWorkspace("w")
@@ -224,7 +224,6 @@ def main(args, options) :
 
 	#import histos
 	importPdfsAndNormalizationsFrom(histo='MET',
-	                                bkg='QCD',
 	                                url=args[0],
 	                                qcdUrl=args[1],
 	                                w=w,
@@ -304,24 +303,22 @@ def main(args, options) :
 	from makeSVLMassHistos import NTRKBINS
 
 	for cat in CATEGORIES:
-		print cat,fQCD
-		inc = fQCD.Get('%s_qcd_template'%cat)
+		inc = fQCD.Get('%s%s_qcd_template'%(cat,SELECTION))
 		totalIncSideBand = inc.Integral()
 		totalInc = w.function('N_bkg_%s'%cat).getVal()
 		for ntk in [tk1 for tk1,_ in NTRKBINS]:
-			for sel in SELECTIONS:
-				h_ntk = fQCD.Get('%s%s_qcd_template_%d'%(cat,sel,ntk))
-				iniNorm=1
-				try:
-					iniNorm = h_ntk.Integral()
-				except:
-					continue
-				frac = iniNorm/totalIncSideBand
-				finalNorm = frac*totalInc
-				h_ntk.Scale(finalNorm/iniNorm)
+			h_ntk = fQCD.Get('%s%s_qcd_template_%d'%(cat,SELECTION,ntk))
+			iniNorm=1
+			try:
+				iniNorm = h_ntk.Integral()
+			except:
+				continue
+			frac = iniNorm/totalIncSideBand
+			finalNorm = frac*totalInc
+			h_ntk.Scale(finalNorm/iniNorm)
 
-				finalTemplates[(sel,ntk,cat)] = h_ntk.Clone()
-				finalTemplates[(sel,ntk,cat)].SetDirectory(0)
+			finalTemplates[(SELECTION,ntk,cat)] = h_ntk.Clone()
+			finalTemplates[(SELECTION,ntk,cat)].SetDirectory(0)
 	fQCD.Close()
 
 	#dump to a file
@@ -330,11 +327,11 @@ def main(args, options) :
 	cachefile.close()
 	print ' >>> Stored qcd templates in .svlqcdtemplates.pck'
 
-	fOut=ROOT.TFile.Open(os.path.join(OUTDIR,'scaled_qcd_templates.root'),'recreate')
+	fOut=ROOT.TFile.Open(os.path.join(options.outDir,'scaled_qcd_templates.root'),'recreate')
 	for h in finalTemplates.values() :  h.Write(h.GetName())
 	fOut.Close()
 
-	print ' >>> Plots saved to %s/' % OUTDIR
+	print ' >>> Plots saved to %s/' % options.outDir
 	return 0
 
 if __name__ == "__main__":
@@ -347,6 +344,8 @@ if __name__ == "__main__":
 	running makeSVLDataMCPlots.py
 	"""
 	parser = OptionParser(usage=usage)
+	parser.add_option('-o', '--outDir', dest='outDir', action="store",
+					  default='svlplots', help='Output directory')
 	parser.add_option('-s', '--useSideBand', dest='useSideBand', action="store_true",
 					  help='Use sidebands')
 	(opt, args) = parser.parse_args()

@@ -72,17 +72,17 @@ def openTFile(url):
         ## Failed to open url (file doesn't exist)
         return None
     return rootFile
-def getHistogramFromFile(key, tfile, options):
+def getHistogramFromFile(key, tfile, verbose=0):
     ihist = tfile.Get(key)
     try:
         if ihist.Integral() <= 0:
-            if options.verbose > 1:
+            if verbose > 1:
                 print ("   empty histogram: %s in %s" %
                            (ihist.GetName(), tfile.GetName()))
             return None
 
     except AttributeError:
-        if options.verbose > 1:
+        if verbose > 1:
             print ("   failed to load: %s from %s" %
                           (key, tfile.GetName()))
         return None
@@ -301,7 +301,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                             rootFile = openTFile(rootFileUrl)
                             if rootFile is None: continue
 
-                            ihist = getHistogramFromFile(key, rootFile, options)
+                            ihist = getHistogramFromFile(key, rootFile, verbose=options.verbose)
                             if not ihist:
                                 rootFile.Close()
                                 continue
@@ -336,7 +336,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                         rootFile = openTFile(rootFileUrl)
                         if rootFile is None: continue
 
-                        ihist = getHistogramFromFile(key, rootFile, options)
+                        ihist = getHistogramFromFile(key, rootFile, verbose=options.verbose)
                         if not ihist:
                             rootFile.Close()
                             continue
@@ -367,7 +367,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                     # ihist = baseRootFile.Get(dtag+'/'+dtag+'_'+pName)
                     histkey = '%s_%s' % (key,dtag.split('_',1)[1])
                     ihist = getHistogramFromFile(histkey, baseRootFile,
-                                                 options)
+                                                 verbose=options.verbose)
                     if not ihist: continue
 
                     if not options.cutUnderOverFlow:

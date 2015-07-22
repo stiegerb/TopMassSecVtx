@@ -393,14 +393,23 @@ class RatioPlot(object):
 
         try:
             if not len(self.reference): # no reference given
-                self.reference = [self.histos[0]]
-            if len(self.reference) == 1: # only one reference given
-                self.reference = len(self.histsforratios)*[self.reference[0].Rebin(self.rebin)]
+                self.reference = len(self.histsforratios)*[self.histos[0]]
+                # No rebinning needed, was already done when adding the histo
+
+            elif len(self.reference) == 1: # only one reference given
+                refhist = self.reference[0].Clone("%s_reference"%self.name)
+                # Need to rebin since the ref histo is external
+                refhist.Rebin(self.rebin)
+                self.reference = len(self.histsforratios)*[refhist]
             else:
                 self.reference = [h.Rebin(self.rebin) for h in self.reference[:]]
+
         except TypeError:
             # Backwards compatibility
-            self.reference = len(self.histsforratios)*[self.reference.Rebin(self.rebin)]
+            refhist = self.reference.Clone("%s_reference"%self.name)
+            if refhist.GetNbinsX() != self.histos[0].GetNbinsX():
+                refhist.Rebin(self.rebin)
+            self.reference = len(self.histsforratios)*[refhist]
 
         assert(len(self.reference) == len(self.histsforratios))
 

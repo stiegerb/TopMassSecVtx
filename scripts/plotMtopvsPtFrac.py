@@ -21,13 +21,14 @@ BFRAGSYSTS = [s for s in SYSTSFROMWEIGHTS if 'bfrag' in s[0]]
 
 VARS = [
 	('SVPtChFrac', 100, 0., 2., 'SVPtChFrac'),
-	('SVMass',     100, 0., 5., 'Secondary Vertex Mass [GeV]'),
+	('SVMass',      60, 0., 5., 'Secondary Vertex Mass [GeV]'),
 	]
 
 def makeHistos((url, name)):
 	print "... processing", url
 	tree = ROOT.TFile.Open(url,'READ').Get(TREENAME)
 	histos = {}
+	# selection = "SVMassWeight*(SVLCombRank>0 && %s)"%INCSEL
 	selection = "(SVLCombRank>0 && %s)"%INCSEL
 	# selection = "(SVLCombRank>0 && %s)"%EMSEL
 	for varname, nbins, xmin, xmax, titlex in VARS:

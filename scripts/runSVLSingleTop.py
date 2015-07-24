@@ -333,6 +333,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 				histos['BDToutput_'+tag]  = ROOT.TH1F('BDToutput_'+tag,';BDT Output;Events',25,-0.4,0.45)
 				histos['BDToutputoriginal_'+tag]  = ROOT.TH1F('BDToutputoriginal_'+tag,';BDT Output;Events',25,-0.4,0.45)
 				histos['SVLMassWJets_'+tag]       = ROOT.TH1F('SVLMassWJets_'+tag,';m(SV,lepton) [GeV]',50,0,200)
+				histos['BDToutputQCD_'+tag]       = ROOT.TH1F('BDToutputQCD_'+tag,'BDT Output; Events',25,-0.4,0.45)
 				histos['SVLMassQCD_' +tag]        = ROOT.TH1F('SVLMassQCD_'+tag,';m(SV,lepton) [GeV]',50,0,200)
 
 	mass = '172'
@@ -431,7 +432,19 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	for i in xrange(0,SVLInfo.GetEntriesFast()):
 		
 		SVLInfo.GetEntry(i)
-		weight = 1 if isData else SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]
+		weight = 1 
+		if isData:
+			weight = 1
+		elif 'up' in filename:
+			weight = SVLInfo.Weight[0]*SVLInfo.Weight[2]*SVLInfo.Weight[5]*SVLInfo.METWeight[1]*SVLInfo.BtagWeight[1]*SVLInfo.JESWeight[1]*SVLInfo.JESWeight[3]
+		elif 'down' in filename:
+			weight = SVLInfo.Weight[0]*SVLInfo.Weight[3]*SVLInfo.Weight[6]*SVLInfo.METWeight[2]*SVLInfo.BtagWeight[2]*SVLInfo.JESWeight[2]*SVLInfo.JESWeight[4]
+		elif 'P11' in filename:
+			weight = SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[3]
+		elif 'Z2' in filename:
+			weight = SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[0]*SVLInfo.SVBfragWeight[1]*SVLInfo.SVBfragWeight[2]*SVBfragWeight[4]*SVLInfo.SVBfragWeight[5]
+		else:
+			weight = SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]
 		lumiweight = 1 if isData else SVLInfo.XSWeight*LUMI
 
 ######################################
@@ -459,17 +472,22 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		#require e or mu events
 		chCat=''
 		if ROOT.TMath.Abs(SVLInfo.EvCat)==1100 or ROOT.TMath.Abs(SVLInfo.EvCat)==1300:
-			if ROOT.TMath.Abs(SVLInfo.FJEta) <= 20 and SVLInfo.FJPt >= 40 and SVLInfo.JPt >= 40 and ((SVLInfo.NJets+SVLInfo.NFJets) == 2 or (SVLInfo.NJets+SVLInfo.NFJets) == 3) and SVLInfo.SVMass > 0 and SVLInfo.NBTags > 0 and SVLInfo.MT >= 50 and tmva_reader.EvaluateMVA('BDT') >= 0.11:
+			if ROOT.TMath.Abs(SVLInfo.FJEta) <= 20 and SVLInfo.FJPt >= 40 and SVLInfo.JPt >= 40 and ((SVLInfo.NJets+SVLInfo.NFJets) == 2 or (SVLInfo.NJets+SVLInfo.NFJets) == 3) and SVLInfo.SVMass > 0 and SVLInfo.NBTags > 0 and SVLInfo.MT >= 50 and tmva_reader.EvaluateMVA('BDT') < 0.11:
+				mvaBDT = tmva_reader.EvaluateMVA('BDT')
 				if ROOT.TMath.Abs(SVLInfo.EvCat)==1100 and SVLInfo.MET >= 45:
 					if (SVLInfo.NJets+SVLInfo.NFJets) == 2:
 						histos['SVLMassQCD_e2j'].Fill(SVLInfo.SVLMass, weight)
+						histos['BDToutputQCD_e2j'].Fill(mvaBDT,weight)
 					elif (SVLInfo.NJets+SVLInfo.NFJets) == 3:
 						histos['SVLMassQCD_e3j'].Fill(SVLInfo.SVLMass, weight)
+						histos['BDToutputQCD_e3j'].Fill(mvaBDT,weight)
 				elif ROOT.TMath.Abs(SVLInfo.EvCat)==1300:
 					if (SVLInfo.NJets+SVLInfo.NFJets) == 2:
 						histos['SVLMassQCD_mu2j'].Fill(SVLInfo.SVLMass, weight)
+						histos['BDToutputQCD_mu2j'].Fill(mvaBDT,weight)
 					elif (SVLInfo.NJets+SVLInfo.NFJets) == 3:
 						histos['SVLMassQCD_mu3j'].Fill(SVLInfo.SVLMass, weight)
+						histos['BDToutputQCD_mu3j'].Fill(mvaBDT,weight)
 				
 		if ROOT.TMath.Abs(SVLInfo.EvCat)!=11 and ROOT.TMath.Abs(SVLInfo.EvCat)!=13 : continue
 		chCat = 'e' if ROOT.TMath.Abs(SVLInfo.EvCat)==11 else 'mu'
@@ -541,7 +559,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		tag1 = ''
 		if 'SingleT' in filename:
 			tag1+='t_'
-		elif 'TT' in filename:
+		elif ('TT' in filename) and ('TTW' not in filename) and ('TTZ' not in filename) and ('AUET' not in filename):
 			tag1+='tt_'
 		else:
 			tag1+='bg_'

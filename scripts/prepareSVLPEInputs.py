@@ -405,13 +405,16 @@ def main(args, opt):
 		for tag,_,_ in SELECTIONS:
 			for ntk,_ in NTRKBINS:
 				hname = "SVLMass_%s_%s_%s" % (tag,syst+'_172v5',ntk)
-				if not syst in ['dyup','dydown','qcdup','qcddown','ntkmult','tchscaleup','tchscaledown','twchscaleup','twchscaledown']:
+				if not syst in ['dyup','dydown','qcdup','qcddown','ntkmult',
+				                'tchscaleup','tchscaledown',
+				                'twchscaleup','twchscaledown']:
 					hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
 				else:
 					hfinal = systhistos[(tag,'nominal','tot',ntk)].Clone(hname)
 				try:
 					## Systs from separate samples
-					if syst in ['tchscaleup','tchscaledown','twchscaleup','twchscaledown']:
+					if syst in ['tchscaleup','tchscaledown',
+					            'twchscaleup','twchscaledown']:
 						scale = LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]]
 					else:
 						scale = LUMI*xsecweights[SYSTTOPROCNAME[syst][0]]

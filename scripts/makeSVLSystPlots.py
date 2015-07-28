@@ -285,7 +285,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 
 		## Fix the duplicate weight in case of JES/MET/Btag/Lep sel Weights
 		if syst in ['jesup', 'jesdn', 'jerup', 'jerdn']:
-			finalsel = finalsel.replace('JESWeight[0]*JESWeight[','JESWeight[')
+			finalsel = finalsel.replace('JESWeight[0]*','')
 		if syst in ['btagup','btagdn']:
 			finalsel = finalsel.replace('BtagWeight[0]*','')
 		if syst in ['umetup','umetdn']:
@@ -314,7 +314,7 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 							 sel, combsel,tksel)
 			## Fix the duplicate weight in case of JES/MET/Btag Weight
 			if syst in ['jesup', 'jesdn', 'jerup', 'jerdn']:
-				finalsel = finalsel.replace('JESWeight[0]*JESWeight[','JESWeight[')
+				finalsel = finalsel.replace('JESWeight[0]*','')
 			if syst in ['btagup','btagdn']:
 				finalsel = finalsel.replace('BtagWeight[0]*','')
 			if syst in ['umetup','umetdn']:

@@ -242,10 +242,10 @@ Loops over the results in a directory and builds a map of PE results
 def parsePEResultsFromFile(url,verbose=False, doPlots=False):
     results, calibGrMap, resCalibGrMap = {}, {}, {}
     fileNames=[f for f in os.listdir(url) if f.endswith('results.root')]
-    for f in fileNames:
-        fIn=ROOT.TFile.Open(os.path.join(url,f))
+    for fname in fileNames:
+        fIn=ROOT.TFile.Open(os.path.join(url,fname))
 
-        tag=os.path.splitext(f)[0]
+        tag=os.path.splitext(fname)[0]
         selection = ''
         try:
             syst, massstr, selection, _ = tag.rsplit('_', 3)
@@ -920,8 +920,8 @@ def makeSystPlot(results, totup, totdn):
         label.SetTextColor(graph_comb.GetLineColor())
         # label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
         # label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
-        label.DrawLatex(-3,mt_comb,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} #pm %4.2f GeV" %
-                                   (mt_comb, totup[sel]['comb_0'], totdn[sel]['comb_0'], staterr_comb))
+        label.DrawLatex(-3,mt_comb,"m_{top}^{comb.} = %5.2f  #pm %4.2f ^{+%4.2f}_{-%4.2f} GeV" %
+                                   (mt_comb, staterr_comb, totup[sel]['comb_0'], totdn[sel]['comb_0']))
 
         label.SetTextColor(ROOT.kGray+2)
         label.SetTextSize(14)
@@ -1060,11 +1060,6 @@ def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
                               '#Delta#LTp_{T}(B)/p_{T}(b)#GT '
                               '#lower[0.1]{#void8} #scale[0.7]{'
                               '#lower[0.7]{Z2*LEP rb}}'%(pol1.GetParameter(1)/100.))
-    # tmt.DrawLatex(0.15, 0.83, '#Deltam_{t} = %0.1f + %0.1f #times '
-    #                           '#Delta#LTp_{T}(B)/p_{T}(b)#GT '
-    #                           '#lower[0.1]{#void8} #scale[0.7]{'
-    #                           '#lower[0.7]{Z2*LEP rb}} GeV'%(pol1.GetParameter(0),
-    #                                                          pol1.GetParameter(1)))
 
     # # Draw the data result (dummy for now)
     # data_dm = -0.5

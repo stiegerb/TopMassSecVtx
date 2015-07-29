@@ -452,6 +452,8 @@ def makeQCDPlots(outDir, norm=None):
         else:
             ratplot.show('qcd_'+tag+'_compare',outDir)
 
+        histos[tag+'_data'].SaveAs(outDir+'bkg_templates/QCD_template_'+tag+'.root')
+
 
 """
 Make W+Jets comparison plots.
@@ -558,6 +560,8 @@ def makeWJetsPlots(outDir,norm=None):
         else:
             ratplot.show('wjets_'+tag+'_compare',outDir)
 
+        histos[tag+'WJets'].SaveAs(outDir+'bkg_templates/WJets_template_'+tag+'.root')
+
 """
 Make plots for systematics.
 """
@@ -640,60 +644,70 @@ def makeSystPlots(outDir):
         ratplot.show('syst_'+tag+'_compare_reweight',outDir)
         ratplot.reset()
 
-        #Then for single top systematics
+    #Then for systematics rather than reweightings
+    for key in histos1.keys():
+        cur_tag=''
+        for tag in tags:
+            if tag in key:
+                cur_tag=tag
+        cur_proc=''
+        if 'SingleT' in key:
+            cur_proc='SingleT'
+        elif 'TT' in key:
+            cur_proc='TT'
+
         ratplot = RatioPlot('ratioplot')
         ratplot.normalized = False
-        ratplot.ratiotitle = 'Ratio wrt Nominal Systematics SingleT'
+        ratplot.ratiotitle = 'Ratio wrt Nominal Systematics '+cur_proc
         ratplot.ratiorange = (0.5,1.5)
         
-        reference = histos['nominal_'+tag]
-        ratplot.reference = reference
-        
-        legentry = 'nominal_'+tag
-        hist = histos['nominal_'+tag]
-        ratplot.add(hist,legentry)
-        for key in histos1.keys():
-            if tag in key:
-                if 'SingleT' in key:
-                    legentry = key
-                    hist = histos1[key]
-                    ratplot.add(hist,legentry)
+        #For single top
+        if cur_proc=='SingleT':
+            reference = histos['nominal_'+cur_tag]
+            reference.Scale(1/reference.Integral())
+            ratplot.reference = reference
+            
+            legentry = 'nominal_singlet_'+cur_tag
+            hist = histos['nominal_'+cur_tag]
+            hist.Scale(1/hist.Integral())
+            ratplot.add(hist,legentry)
+            legentry = key
+            hist = histos1[key]
+            hist.Scale(1/hist.Integral())
+            ratplot.add(hist,legentry)
 
-        ratplot.tag = 'Systematics SingleT '+tag
-        ratplot.subtag = 'syst_singlet'
-        ratplot.show('syst_'+tag+'_compare_syst_singlet',outDir)
-        ratplot.reset()
+            ratplot.tag = 'Systematics SingleT '+cur_tag
+            ratplot.subtag = 'syst_singlet_'+key
+            ratplot.show('syst_'+cur_tag+'_compare_syst_singlet_'+key,outDir)
+            ratplot.reset()
 
-        #Finally for ttbar systematics
-        ratplot = RatioPlot('ratioplot')
-        ratplot.normalized = False
-        ratplot.ratiotitle = 'Ratio wrt Nominal Systematics TTbar'
-        ratplot.ratiorange = (0.5,1.5)
+        #For ttbar
+        else:
         
-        rootfile1.cd('SVLMass_'+tag)
-        ttbar_hist = ROOT.TH1F()
-        for key in ROOT.gDirectory.GetListOfKeys():
-            name = key.GetName()
-            if 'MSDecays' in name:
-                ROOT.gDirectory.GetObject(name,ttbar_hist)
-        ttbar_hist.SetFillColor(0)
-        reference = ttbar_hist
-        ratplot.reference = reference
-        
-        legentry = 'nominal_'+tag
-        hist = ttbar_hist
-        ratplot.add(hist,legentry)
-        for key in histos1.keys():
-            if tag in key:
-                if 'TT' in key:
-                    legentry = key
-                    hist = histos1[key]
-                    ratplot.add(hist,legentry)
+            rootfile1.cd('SVLMass_'+cur_tag)
+            ttbar_hist = ROOT.TH1F()
+            for key1 in ROOT.gDirectory.GetListOfKeys():
+                name = key1.GetName()
+                if 'MSDecays' in name:
+                    ROOT.gDirectory.GetObject(name,ttbar_hist)
+            ttbar_hist.SetFillColor(0)
+            reference = ttbar_hist
+            reference.Scale(1/reference.Integral())
+            ratplot.reference = reference
+            
+            legentry = 'nominal_tt_'+cur_tag
+            hist = ttbar_hist
+            hist.Scale(1/hist.Integral())
+            ratplot.add(hist,legentry)
+            legentry = key
+            hist = histos1[key]
+            hist.Scale(1/hist.Integral())
+            ratplot.add(hist,legentry)
 
-        ratplot.tag = 'Systematics TTbar '+tag
-        ratplot.subtag = 'syst_ttbar'
-        ratplot.show('syst_'+tag+'_compare_syst_ttbar',outDir)
-        ratplot.reset()
+            ratplot.tag = 'Systematics TTbar '+cur_tag
+            ratplot.subtag = 'syst_ttbar_'+key
+            ratplot.show('syst_'+cur_tag+'_compare_syst_ttbar_'+key,outDir)
+            ratplot.reset()
 
 
 

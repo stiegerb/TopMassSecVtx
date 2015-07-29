@@ -657,14 +657,6 @@ def runSingleTopAnalysis(filename,isData,outDir):
 			for key in weight_opts.keys():
 				histos['SVLMass_'+key+'_'+tag].Fill(SVLInfo.SVLMass,weight_opts[key])
 		
-		#Create list of weights for cross check
-		if 'SingleT' in filename:
-			myfile = open('Weights_Systs.txt','a')
-			myfile.write('\n\n'+filename+'\n\n')
-			for key in weight_opts.keys():
-				myfile.write(key+': '+str(weight_opts[key])+'\n')
-			myfile.close()
-
 	#close input file, after analysis
 	fIn.Close()
 

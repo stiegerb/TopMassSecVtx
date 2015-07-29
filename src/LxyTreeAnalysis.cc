@@ -942,8 +942,7 @@ bool LxyTreeAnalysis::selectSVLSingleTopEvent(bool &passBtagNom, bool &passBtagU
 
     // QCD control sample (non-isolated leptons)
     if (abs(evcat) == 11*100 || abs(evcat) == 13*100) {
-        if (nj < 4 && nfj==0) return false;
-        if (nbjets > 1 || nsvjets > 1) return false; // suppress ttbar
+        if ((nj+nfj)<2) return false;
         return true;
     }
     return false;

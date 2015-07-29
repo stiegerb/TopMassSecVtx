@@ -312,7 +312,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	for chCat in ['e','mu']:
 		for jetCat in ['2j','3j']:
 			#for nTrack in ['1t','2t','3t','4t','5t']:
-				tag=chCat+jetCat#+nTrack
+				tag=chCat+jetCat
 				histos['NPVtx_'+tag]      = ROOT.TH1F('NPVtx_'+tag,';N_{PV}-N_{HP};Events',30,0,30)
 				histos['MT_'+tag]         = ROOT.TH1F('MT_'+tag,';Transverse mass [GeV];Events',50,0,250)
 				histos['MET_'+tag]        = ROOT.TH1F('MET_'+tag,';Missing transverse energy [GeV];Events',50,0,200)
@@ -335,6 +335,33 @@ def runSingleTopAnalysis(filename,isData,outDir):
 				histos['SVLMassWJets_'+tag]       = ROOT.TH1F('SVLMassWJets_'+tag,';m(SV,lepton) [GeV]',50,0,200)
 				histos['BDToutputQCD_'+tag]       = ROOT.TH1F('BDToutputQCD_'+tag,'BDT Output; Events',25,-0.4,0.45)
 				histos['SVLMassQCD_' +tag]        = ROOT.TH1F('SVLMassQCD_'+tag,';m(SV,lepton) [GeV]',50,0,200)
+				#Create histos to be filled with reweighted signal only
+				if 'SingleT' in filename:
+					histos['SVLMass_nominal_'+tag] = ROOT.TH1F('SVLMass_nominal_'+tag,';m(SV,lepton) [GeV] Nominal',50,0,200)
+					histos['SVLMass_puup_'+tag] = ROOT.TH1F('SVLMass_puup_'+tag,';m(SV,lepton) [GeV] Pileup up',50,0,200)
+					histos['SVLMass_pudn_'+tag] = ROOT.TH1F('SVLMass_pudn_'+tag,';m(SV,lepton) [GeV] Pileup down',50,0,200)
+					histos['SVLMass_lepselup_'+tag] = ROOT.TH1F('SVLMass_lepselup_'+tag,';m(SV,lepton) [GeV] Lepton selection up',50,0,200)
+					histos['SVLMass_lepseldn_'+tag] = ROOT.TH1F('SVLMass_lepseldn_'+tag,';m(SV,lepton) [GeV] Lepton selection down',50,0,200)
+					histos['SVLMass_umetup_'+tag] = ROOT.TH1F('SVLMass_umetup_'+tag,';m(SV,lepton) [GeV] Uncl. MET up',50,0,200)
+					histos['SVLMass_umetdn_'+tag] = ROOT.TH1F('SVLMass_umetdn_'+tag,';m(SV,lepton) [GeV] Uncl. MET down',50,0,200)
+					histos['SVLMass_toppt_'+tag] = ROOT.TH1F('SVLMass_toppt_'+tag,';m(SV,lepton) [GeV] Top p_{T} weight applied',50,0,200)
+					histos['SVLMass_topptup_'+tag] = ROOT.TH1F('SVLMass_topptup_'+tag,';m(SV,lepton) [GeV] Top p_{T} weight up',50,0,200)
+					histos['SVLMass_bfrag_'+tag] = ROOT.TH1F('SVLMass_bfrag_'+tag,';m(SV,lepton) [GeV] Z2* rb LEP',50,0,200)
+					histos['SVLMass_bfragup_'+tag] = ROOT.TH1F('SVLMass_bfragup_'+tag,';m(SV,lepton) [GeV] Z2* rb LEP hard',50,0,200)
+					histos['SVLMass_bfragdn_'+tag] = ROOT.TH1F('SVLMass_bfragdn_'+tag,';m(SV,lepton) [GeV] Z2* rb LEP soft',50,0,200)
+					histos['SVLMass_bfragp11_'+tag] = ROOT.TH1F('SVLMass_bfragp11_'+tag,';m(SV,lepton) [GeV] P11 fragmentation',50,0,200)
+					histos['SVLMass_bfragpete_'+tag] = ROOT.TH1F('SVLMass_bfragpete_'+tag,';m(SV,lepton) [GeV] Z2* Peterson',50,0,200)
+					histos['SVLMass_bfraglund_'+tag] = ROOT.TH1F('SVLMass_bfraglund_'+tag,';m(SV,lepton) [GeV] Z2* Lund',50,0,200)
+					histos['SVLMass_jesup_'+tag] = ROOT.TH1F('SVLMass_jesup_'+tag,';m(SV,lepton) [GeV] Jet energy scale up',50,0,200)
+					histos['SVLMass_jesdn_'+tag] = ROOT.TH1F('SVLMass_jesdn_'+tag,';m(SV,lepton) [GeV] Jet energy scale down',50,0,200)
+					histos['SVLMass_jerup_'+tag] = ROOT.TH1F('SVLMass_jerup_'+tag,';m(SV,lepton) [GeV] Jet energy resolution up',50,0,200)
+					histos['SVLMass_jerdn_'+tag] = ROOT.TH1F('SVLMass_jerdn_'+tag,';m(SV,lepton) [GeV] Jet energy resolution down',50,0,200)
+					histos['SVLMass_btagup_'+tag] = ROOT.TH1F('SVLMass_btagup_'+tag,';m(SV,lepton) [GeV] b-tag eff up',50,0,200)
+					histos['SVLMass_btagdn_'+tag] = ROOT.TH1F('SVLMass_btagdn_'+tag,';m(SV,lepton) [GeV] b-tag eff down',50,0,200)
+					histos['SVLMass_lesup_'+tag] = ROOT.TH1F('SVLMass_lesup_'+tag,';m(SV,lepton) [GeV] Lepton energy scale up',50,0,200)
+					histos['SVLMass_lesdn_'+tag] = ROOT.TH1F('SVLMass_lesdn_'+tag,';m(SV,lepton) [GeV] Lepton energy scale down',50,0,200)
+					histos['SVLMass_bfnuup_'+tag] = ROOT.TH1F('SVLMass_bfnuup_'+tag,';m(SV,lepton) [GeV] B hadron semi-lep BF up',50,0,200)
+					histos['SVLMass_bfnudn_'+tag] = ROOT.TH1F('SVLMass_bfnudn_'+tag,';m(SV,lepton) [GeV] B hadron semi-lep BF down',50,0,200)
 
 	mass = '172'
 	if '166' in filename:
@@ -363,7 +390,6 @@ def runSingleTopAnalysis(filename,isData,outDir):
 	for h in histos:
 		histos[h].Sumw2()
 		histos[h].SetDirectory(0)
-
 		
 	#open input file and get tree for analysis
 	print ' ... processing',filename
@@ -435,18 +461,41 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		weight = 1 
 		if isData:
 			weight = 1
-		elif 'up' in filename:
-			weight = SVLInfo.Weight[0]*SVLInfo.Weight[2]*SVLInfo.Weight[5]*SVLInfo.METWeight[1]*SVLInfo.BtagWeight[1]*SVLInfo.JESWeight[1]*SVLInfo.JESWeight[3]
-		elif 'down' in filename:
-			weight = SVLInfo.Weight[0]*SVLInfo.Weight[3]*SVLInfo.Weight[6]*SVLInfo.METWeight[2]*SVLInfo.BtagWeight[2]*SVLInfo.JESWeight[2]*SVLInfo.JESWeight[4]
-		elif 'P11' in filename:
-			weight = SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[3]
-		elif 'Z2' in filename:
-			weight = SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[0]*SVLInfo.SVBfragWeight[1]*SVLInfo.SVBfragWeight[2]*SVBfragWeight[4]*SVLInfo.SVBfragWeight[5]
 		else:
 			weight = SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]
 		lumiweight = 1 if isData else SVLInfo.XSWeight*LUMI
 
+		#Reweighting dictionary for single top
+		weight_opts = {}
+		if 'SingleT' in filename:
+			weight_opts = {
+				'nominal':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0],
+				'puup':SVLInfo.Weight[0]*SVLInfo.Weight[2]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0],
+				'pudn':SVLInfo.Weight[0]*SVLInfo.Weight[3]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0],
+				'lepselup':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[5]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0],
+				'lepseldn':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[6]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0],
+				'umetup':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[1]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0],
+				'umetdn':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[2]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0],
+				'toppt':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.Weight[10],
+				'topptup':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.Weight[7],
+				'bfrag':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[0],
+				'bfragup':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[1],
+				'bfragdn':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[2],
+				'bfragp11':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[3],
+				'bfragpete':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[4],
+				'bfraglund':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*SVLInfo.SVBfragWeight[5],
+				'jesup':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[1],
+				'jesdn':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[2],
+				'jerup':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[3],
+				'jerdn':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[4],
+				'btagup':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[1]*SVLInfo.JESWeight[0],
+				'btagdn':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[2]*SVLInfo.JESWeight[0],
+				'lesup':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0],
+				'lesdn':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0],
+				'bfnuup':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*((SVLInfo.BHadNeutrino==0)*0.984+(SVLInfo.BHadNeutrino==1)*1.048+(SVLInfo.BHadNeutrino==-1)),
+				'bfnudn':SVLInfo.Weight[0]*SVLInfo.Weight[1]*SVLInfo.Weight[4]*SVLInfo.METWeight[0]*SVLInfo.BtagWeight[0]*SVLInfo.JESWeight[0]*((SVLInfo.BHadNeutrino==0)*1.012+(SVLInfo.BHadNeutrino==1)*0.988+(SVLInfo.BHadNeutrino==-1))
+				}
+			
 ######################################
 		#TMVA Definitions - adjust mt and nbtags
 
@@ -601,6 +650,20 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		histos['CombInfo_'+tag].Fill(SVLInfo.CombInfo,  weight)
 		histos['BDToutput_'+tag].Fill(mvaBDT,        weight)
 		histos[tag1].Fill(SVLInfo.SVLMass,weight)
+		tag=chCat+jetCat
+
+		#Fill histos for reweighted signal
+		if 'SingleT' in filename:
+			for key in weight_opts.keys():
+				histos['SVLMass_'+key+'_'+tag].Fill(SVLInfo.SVLMass,weight_opts[key])
+		
+		#Create list of weights for cross check
+		if 'SingleT' in filename:
+			myfile = open('Weights_Systs.txt','a')
+			myfile.write('\n\n'+filename+'\n\n')
+			for key in weight_opts.keys():
+				myfile.write(key+': '+str(weight_opts[key])+'\n')
+			myfile.close()
 
 	#close input file, after analysis
 	fIn.Close()

@@ -936,6 +936,17 @@ def makeSystPlot(results, totup, totdn):
         label.DrawLatex(7.5,168.0+0.05,CATTOFLABEL['comb_4'])
         label.DrawLatex(8.5,168.0+0.05,CATTOFLABEL['comb_5'])
 
+        label.SetTextFont(63)
+        label.SetTextSize(20)
+        label.SetTextAlign(11)
+        label.DrawLatex(0.1,mtmax+0.15,'CMS')
+        label.SetTextFont(53)
+        label.SetTextSize(18)
+        label.DrawLatex(1.1,mtmax+0.18,'Preliminary')
+        label.SetTextFont(43)
+        label.SetTextSize(16)
+        label.SetTextAlign(31)
+        label.DrawLatex(8.9,mtmax+0.15,'19.6 fb^{-1} (8 TeV)')
 
         ROOT.gPad.RedrawAxis()
         if sel == '': sel = 'inclusive'
@@ -946,11 +957,11 @@ def makeSystPlot(results, totup, totdn):
 
 def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
     #hardcoded values, from simulation
-    fragModels={'172.5'    :("Z2*LEP r_{b}",      ROOT.kBlue,      20, 1.2, 0.7616, 0.0002),
-                'bfragdn'  :("Z2*LEP r_{b} soft", ROOT.kMagenta,   24, 1.2, 0.7481, 0.0003),
-                'bfragup'  :("Z2*LEP r_{b} hard", ROOT.kMagenta+2, 24, 1.2, 0.7729, 0.0003),
-                'bfragpete':("Z2*LEP Peterson",   ROOT.kRed+1,     32, 1.2, 0.7189, 0.0007),
-                'bfraglund':("Z2*LEP Lund",       ROOT.kAzure+7,   26, 1.2, 0.7670, 0.0007),
+    fragModels={'172.5'    :("Z2* LEP r_{b}",      ROOT.kBlue,      20, 1.2, 0.7616, 0.0002),
+                'bfragdn'  :("Z2* LEP r_{b} soft", ROOT.kMagenta,   24, 1.2, 0.7481, 0.0003),
+                'bfragup'  :("Z2* LEP r_{b} hard", ROOT.kMagenta+2, 24, 1.2, 0.7729, 0.0003),
+                'bfragpete':("Z2* LEP Peterson",   ROOT.kRed+1,     32, 1.2, 0.7189, 0.0007),
+                'bfraglund':("Z2* LEP Lund",       ROOT.kAzure+7,   26, 1.2, 0.7670, 0.0007),
                 'bfragz2s' :('Z2*',               ROOT.kOrange+7, 25, 1.2, 0.73278, 0.00009),
     }
 
@@ -1049,7 +1060,7 @@ def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
     pt.SetFillStyle(0)
     pt.SetTextAlign(12)
     pt.SetTextSize(24)
-    pt.AddText('#bf{CMS} #it{preliminary}')
+    pt.AddText('#bf{CMS} #it{Preliminary}')
     pt.Draw()
 
     tmt = ROOT.TLatex()
@@ -1060,6 +1071,9 @@ def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
                               '#Delta#LTp_{T}(B)/p_{T}(b)#GT '
                               '#lower[0.1]{#void8} #scale[0.7]{'
                               '#lower[0.7]{Z2*LEP rb}}'%(pol1.GetParameter(1)/100.))
+
+    tmt.SetTextSize(18)
+    tmt.DrawLatex(0.55, 0.88, '19.6 fb^{-1} (8 TeV)')
 
     # # Draw the data result (dummy for now)
     # data_dm = -0.5

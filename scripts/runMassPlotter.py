@@ -11,7 +11,7 @@ sys.path.append('/afs/cern.ch/cms/caf/python/')
 from cmsIO import cmsFile
 
 """
-Create the mass scan plots.
+Create the mass scan plots. - possible bug?
 """
 def makeMassScanPlots(outDir):
 
@@ -85,13 +85,14 @@ def makeMassScanPlots(outDir):
             histo1 = histo.GetName()
             if masshistos[(tag,ch,mass,comb)] == None:
                 ROOT.gDirectory.GetObject(histo1,hist)
+                hist.SetTitle('')
                 masshistos[(tag,ch,mass,comb)] = hist
             else:
                 ROOT.gDirectory.GetObject(histo1,hist)
+                hist.SetTitle('')
                 masshistos[(tag,ch,mass,comb)].Add(hist)
-                
-            print(tag+' '+ch+' '+mass+' '+comb+' '+name+' '+histo1)
-        
+                print('Added for '+tag+' '+ch+' '+mass+' '+comb+'\n')
+                        
         if masshistos[(tag,ch,mass,comb)]!=None:
             masshistos[(tag,ch,mass,comb)].SetLineColor(colors[mass])
             masshistos[(tag,ch,mass,comb)].SetFillColor(0)
@@ -133,12 +134,13 @@ def makeMassScanPlots(outDir):
             histo1 = histo.GetName()
             if masshistos[(tag,ch,mass,comb)] == None:
                 ROOT.gDirectory.GetObject(histo1,hist)
+                hist.SetTitle('')
                 masshistos[(tag,ch,mass,comb)] = hist
             else:
                 ROOT.gDirectory.GetObject(histo1,hist)
+                hist.SetTitle('')
                 masshistos[(tag,ch,mass,comb)].Add(hist)
-                
-            print(tag+' '+ch+' '+mass+' '+comb+' '+name+' '+histo1)
+                print('Added for '+tag+' '+ch+' '+mass+' '+comb+'\n')
 
         if masshistos[(tag,ch,mass,comb)]!=None:
             masshistos[(tag,ch,mass,comb)].SetFillColor(0)
@@ -162,13 +164,35 @@ def makeMassScanPlots(outDir):
                 except KeyError: pass
                 except AttributeError: pass
             
-            ratplot.tag = 'All combinations'
+            ratplot.tag = comb+' combinations'
             ratplot.subtag = '%s %s' % ('t', chan)
             ratplot.show("massscan_%s_%s_%s_tot"%('t',chan,comb), outDir)
 
+    #Make the ratio plots for single top combined
+    for chan in channels:
+        ratplot = RatioPlot('ratioplot')
+        ratplot.normalized = False
+        ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
+        ratplot.ratiorange = (0.5, 1.5)
+        
+        reference = masshistos[('t',chan,'172','cor')]
+        reference.Add(masshistos[('t',chan,'172','wro')])
+        ratplot.reference = reference
+        for mass in masses:
+            legentry = 'm_{t} = %5.1f GeV' % (float(mass)+0.5)
+            try:
+                histo = masshistos[('t',chan,mass,'cor')]
+                histo.Add(masshistos[('t',chan,mass,'wro')])
+                ratplot.add(histo, legentry)
+            except KeyError: pass
+            except AttributeError: pass
+            
+        ratplot.tag = 'All combinations'
+        ratplot.subtag = '%s %s' % ('t', chan)
+        ratplot.show("massscan_%s_%s_tot"%('t',chan), outDir)
+
     #Make the ratio plots for ttbar
     for chan in channels:
-        #Original Code
         ratplot.reset()
         ratplot = RatioPlot('ratioplot')
         ratplot.normalized = False
@@ -203,31 +227,95 @@ def makeTTbarPlots(outDir,norm=None):
 
     histos = {}
 
-    #Fill histos directory with svlmass plots for ttbar
+    #Fill histos directory with svlmass plots for ttbar with -0.05 <= BDT <= 0.11
+    for tag in tags:
+        rootfile.cd('SVLMassWJets_'+tag)
+        hist = ROOT.TH1F()
+
+        ROOT.gDirectory.GetObject('MC8TeV_TTJets_MSDecays_172v5_SVLMassWJets_'+tag,hist)
+        hist.SetFillColor(0)
+        hist.SetTitle('')
+        if norm=='norm':
+            hist.Scale(1/hist.Integral())
+        hist.Rebin()
+        histos[tag+'_BDT']=hist
+        hist1 = ROOT.TH1F()
+        foundone = False
+        for key in ROOT.gDirectory.GetListOfKeys():
+            name = key.GetName()
+            if ('Data' in name) and ('Graph' not in name):
+                if foundone==False:
+                    ROOT.gDirectory.GetObject(name,hist1)
+                    foundone=True
+                else:
+                    hist2 = ROOT.TH1F()
+                    ROOT.gDirectory.GetObject(name,hist2)
+                    hist1.Add(hist2)
+        for key in ROOT.gDirectory.GetListOfKeys():
+            name = key.GetName()
+            if ('Data' not in name) and ('MSDecays' not in name):
+                hist2 = ROOT.TH1F()
+                ROOT.gDirectory.GetObject(name,hist2)
+                hist1.Add(hist2,-1)
+        hist1.Rebin()
+        hist1.SetFillColor(0)
+        if norm=='norm':
+            hist1.Scale(1/hist1.Integral())
+        histos[tag+'_data_BDT']=hist1
+
+    #Fill histos directory with svlmass plots for ttbar with nominal cuts
     for tag in tags:
         rootfile.cd('SVLMass_'+tag)
         hist = ROOT.TH1F()
 
         ROOT.gDirectory.GetObject('MC8TeV_TTJets_MSDecays_172v5_SVLMass_'+tag,hist)
         hist.SetFillColor(0)
+        hist.SetTitle('')
         if norm=='norm':
             hist.Scale(1/hist.Integral())
+        hist.Rebin()
         histos[tag]=hist
+        hist1 = ROOT.TH1F()
+        foundone = False
+        for key in ROOT.gDirectory.GetListOfKeys():
+            name = key.GetName()
+            if ('Data' in name) and ('Graph' not in name):
+                if foundone==False:
+                    ROOT.gDirectory.GetObject(name,hist1)
+                    foundone=True
+                else:
+                    hist2 = ROOT.TH1F()
+                    ROOT.gDirectory.GetObject(name,hist2)
+                    hist1.Add(hist2)
+        for key in ROOT.gDirectory.GetListOfKeys():
+            name = key.GetName()
+            if ('Data' not in name) and ('MSDecays' not in name):
+                hist2 = ROOT.TH1F()
+                ROOT.gDirectory.GetObject(name,hist2)
+                hist1.Add(hist2,-1)
+        hist1.Rebin()
+        hist1.SetFillColor(0)
+        if norm=='norm':
+            hist1.Scale(1/hist1.Integral())
+        histos[tag+'_data']=hist1
 
-    #Create ttbar electron plot (2jets vs 3jets)
+    #Create ttbar electron plot (nominal vs 3jets with inverted BDT)
     ratplot = RatioPlot('ratioplot')
     ratplot.normalized = False
     ratplot.ratiotitle = 'Ratio wrt 3 jets'
     ratplot.ratiorange = (0.5,1.5)
 
-    reference = histos['e3j']
+    reference = histos['e3j_BDT']
     ratplot.reference = reference
 
     legentry = 'ttbar e2j'
     hist = histos['e2j']
     ratplot.add(hist,legentry)
     legentry = 'ttbar e3j'
-    hist = histos['e3j']
+    hist = histos['e3j_BDT']
+    ratplot.add(hist,legentry)
+    legentry = 'Data e3j'
+    hist = histos['e3j_data_BDT']
     ratplot.add(hist,legentry)
 
     ratplot.tag = 'TTbar electrons'
@@ -244,14 +332,17 @@ def makeTTbarPlots(outDir,norm=None):
     ratplot.ratiotitle = 'Ratio wrt 3 jets'
     ratplot.ratiorange = (0.5,1.5)
 
-    reference = histos['mu3j']
+    reference = histos['mu3j_BDT']
     ratplot.reference = reference
 
     legentry = 'ttbar mu2j'
     hist = histos['mu2j']
     ratplot.add(hist,legentry)
     legentry = 'ttbar mu3j'
-    hist = histos['mu3j']
+    hist = histos['mu3j_BDT']
+    ratplot.add(hist,legentry)
+    legentry = 'Data mu3j'
+    hist = histos['mu3j_data_BDT']
     ratplot.add(hist,legentry)
 
     ratplot.tag = 'TTbar muons'
@@ -286,8 +377,10 @@ def makeQCDPlots(outDir, norm=None):
             try:
                 ROOT.gDirectory.GetObject('MC8TeV_'+p+'_SVLMassQCD_'+tag,hist1)
                 hist1.SetFillColor(0)
+                hist1.SetTitle('')
                 if norm=='norm':
                     hist1.Scale(1/hist1.Integral())
+                hist1.Rebin()
                 histos[tag+'QCD']=hist1
             except LookupError: pass
 
@@ -297,10 +390,37 @@ def makeQCDPlots(outDir, norm=None):
             try:
                 ROOT.gDirectory.GetObject('MC8TeV_'+p+'_SVLMass_'+tag,hist2)
                 hist2.SetFillColor(0)
+                hist2.SetTitle('')
                 if norm=='norm':
                     hist2.Scale(1/hist2.Integral())
+                hist2.Rebin()
                 histos[tag]=hist2
             except LookupError: pass
+
+        hist1 = ROOT.TH1F()
+        foundone = False
+        rootfile.cd('SVLMassQCD_'+tag)
+        for key in ROOT.gDirectory.GetListOfKeys():
+            name = key.GetName()
+            if ('Data' in name) and ('Graph' not in name):
+                if foundone==False:
+                    ROOT.gDirectory.GetObject(name,hist1)
+                    foundone=True
+                else:
+                    hist2 = ROOT.TH1F()
+                    ROOT.gDirectory.GetObject(name,hist2)
+                    hist1.Add(hist2)
+        for key in ROOT.gDirectory.GetListOfKeys():
+            name = key.GetName()
+            if ('Data' not in name) and ('QCD' not in name):
+                hist2 = ROOT.TH1F()
+                ROOT.gDirectory.GetObject(name,hist2)
+                hist1.Add(hist2,-1)
+        hist1.Rebin()
+        hist1.SetFillColor(0)
+        if norm=='norm':
+            hist1.Scale(1/hist1.Integral())
+        histos[tag+'_data']=hist1
 
     ratplot = RatioPlot('ratioplot')
 
@@ -321,6 +441,9 @@ def makeQCDPlots(outDir, norm=None):
         legentry = 'QCD Cuts '+ tag
         hist = histos[tag+'QCD']
         ratplot.add(hist,legentry)
+        legentry = 'Data '+tag
+        hist = histos[tag+'_data']
+        ratplot.add(hist,legentry)
 
         ratplot.tag = 'QCD '+tag
         ratplot.subtag = 'qcd'
@@ -328,6 +451,8 @@ def makeQCDPlots(outDir, norm=None):
             ratplot.show('qcd_'+tag+'_compare_normalized',outDir)
         else:
             ratplot.show('qcd_'+tag+'_compare',outDir)
+
+        histos[tag+'_data'].SaveAs(outDir+'bkg_templates/QCD_template_'+tag+'.root')
 
 
 """
@@ -355,8 +480,10 @@ def makeWJetsPlots(outDir,norm=None):
             try:
                 ROOT.gDirectory.GetObject('MC8TeV_'+p+'_SVLMassWJets_'+tag,hist1)
                 hist1.SetFillColor(0)
+                hist1.SetTitle('')
                 if norm=='norm':
                     hist1.Scale(1/hist1.Integral())
+                hist1.Rebin()
                 histos[tag+'WJets']=hist1
             except LookupError: pass
 
@@ -366,10 +493,42 @@ def makeWJetsPlots(outDir,norm=None):
             try:
                 ROOT.gDirectory.GetObject('MC8TeV_'+p+'_SVLMass_'+tag,hist2)
                 hist2.SetFillColor(0)
+                hist2.SetTitle('')
                 if norm=='norm':
                     hist2.Scale(1/hist2.Integral())
+                hist2.Rebin()
                 histos[tag]=hist2
             except LookupError: pass
+
+        hist1 = ROOT.TH1F()
+        foundone = False
+        rootfile.cd('SVLMassWJets_'+tag)
+        for key in ROOT.gDirectory.GetListOfKeys():
+            name = key.GetName()
+            if ('Data' in name) and ('Graph' not in name):
+                if foundone==False:
+                    ROOT.gDirectory.GetObject(name,hist1)
+                    foundone=True
+                else:
+                    hist2 = ROOT.TH1F()
+                    ROOT.gDirectory.GetObject(name,hist2)
+                    hist1.Add(hist2)
+        for key in ROOT.gDirectory.GetListOfKeys():
+            name = key.GetName()
+            if ('Data' not in name): 
+                good = True
+                for item in possibilities:
+                    if item in name:
+                        good=False
+                if good:
+                    hist2 = ROOT.TH1F()
+                    ROOT.gDirectory.GetObject(name,hist2)
+                    hist1.Add(hist2,-1)
+        hist1.Rebin()
+        hist1.SetFillColor(0)
+        if norm=='norm':
+            hist1.Scale(1/hist1.Integral())
+        histos[tag+'_data']=hist1
 
     ratplot = RatioPlot('ratioplot')
 
@@ -390,6 +549,9 @@ def makeWJetsPlots(outDir,norm=None):
         legentry = 'WJets Cuts '+ tag
         hist = histos[tag+'WJets']
         ratplot.add(hist,legentry)
+        legentry = 'Data '+tag
+        hist = histos[tag+'_data']
+        ratplot.add(hist,legentry)
 
         ratplot.tag = 'WJets '+tag
         ratplot.subtag = 'wjets'
@@ -398,6 +560,157 @@ def makeWJetsPlots(outDir,norm=None):
         else:
             ratplot.show('wjets_'+tag+'_compare',outDir)
 
+        histos[tag+'WJets'].SaveAs(outDir+'bkg_templates/WJets_template_'+tag+'.root')
+
+"""
+Make plots for systematics.
+"""
+def makeSystPlots(outDir):
+    
+    #Open the root file with the reweighted events
+    rootfile1 = ROOT.TFile.Open('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/plots_base/plotter.root')
+
+    #List of reweightings
+    weight_opts = ['nominal','puup','pudn','lepselup','lepseldn','umetup','umetdn','toppt','topptup','bfrag','bfragup','bfragdn','bfragp11','bfragpete','bfraglund','jesup','jesdn','jerup','jerdn','btagup','btagdn','lesup','lesdn','bfnuup','bfnudn']
+
+    tags = ['e2j','e3j','mu2j','mu3j']
+
+    #histos for reweightings; histos1 for syst files
+    histos = {}
+    histos1 = {}
+
+    for weight in weight_opts:
+        for tag in tags:
+            histos[weight+'_'+tag]=None
+
+    #Fill histos with reweighted signal files
+    for weight in weight_opts:
+        for tag in tags:
+            rootfile1.cd('SVLMass_'+weight+'_'+tag)
+            for key in ROOT.gDirectory.GetListOfKeys():
+                name = key.GetName()
+                hist = ROOT.TH1F()
+                ROOT.gDirectory.GetObject(name,hist)
+                if histos[weight+'_'+tag]==None:
+                    histos[weight+'_'+tag]=hist
+                else:
+                    histos[weight+'_'+tag].Add(hist)
+            histos[weight+'_'+tag].SetFillColor(0)
+    
+    #List of systematics files
+    systs = ['scaledown','scaleup','matchingdown','matchingup','TuneP11mpiHi','TuneP11noCR','TuneP11','TuneP11TeV','widthx5','mcatnlo','Z2Star']
+
+    #Fill histos1 with systematics files
+    for key in os.listdir('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/rootfiles_syst/'):
+        rootfile2 = ROOT.TFile.Open('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/rootfiles_syst/'+key)
+        process = ''
+        syst_cur=''
+        for syst in systs:
+            if syst in key:
+                syst_cur = syst
+        if 'SemiLep' in key:
+            syst_cur = 'SemiLep_'+syst_cur
+        if 'SingleT' in key:
+            process = 'SingleT'
+        if 'TTJets' in key:
+            process = 'TT'
+
+        hist = ROOT.TH1F()
+
+        for tag in tags:
+            ROOT.gDirectory.GetObject('SVLMass_'+tag,hist)
+            histos1[process+'_'+syst_cur+'_'+tag]=hist
+        histos1[process+'_'+syst_cur+'_'+tag].SetFillColor(0)
+
+    #Create the ratio plots
+    for tag in tags:
+        #First for the reweighted signal
+        ratplot = RatioPlot('ratioplot')
+        ratplot.normalized = False
+        ratplot.ratiotitle = 'Ratio wrt Nominal Reweighting'
+        ratplot.ratiorange = (0.5,1.5)
+        
+        reference = histos['nominal_'+tag]
+        ratplot.reference = reference
+        
+        for key in histos.keys():
+            if tag in key:
+                legentry = key
+                hist = histos[key]
+                ratplot.add(hist,legentry)
+
+        ratplot.tag = 'Reweighting '+tag
+        ratplot.subtag = 'syst'
+        ratplot.show('syst_'+tag+'_compare_reweight',outDir)
+        ratplot.reset()
+
+    #Then for systematics rather than reweightings
+    for key in histos1.keys():
+        cur_tag=''
+        for tag in tags:
+            if tag in key:
+                cur_tag=tag
+        cur_proc=''
+        if 'SingleT' in key:
+            cur_proc='SingleT'
+        elif 'TT' in key:
+            cur_proc='TT'
+
+        ratplot = RatioPlot('ratioplot')
+        ratplot.normalized = False
+        ratplot.ratiotitle = 'Ratio wrt Nominal Systematics '+cur_proc
+        ratplot.ratiorange = (0.5,1.5)
+        
+        #For single top
+        if cur_proc=='SingleT':
+            reference = histos['nominal_'+cur_tag]
+            reference.Scale(1/reference.Integral())
+            ratplot.reference = reference
+            
+            legentry = 'nominal_singlet_'+cur_tag
+            hist = histos['nominal_'+cur_tag]
+            hist.Scale(1/hist.Integral())
+            ratplot.add(hist,legentry)
+            legentry = key
+            hist = histos1[key]
+            hist.Scale(1/hist.Integral())
+            ratplot.add(hist,legentry)
+
+            ratplot.tag = 'Systematics SingleT '+cur_tag
+            ratplot.subtag = 'syst_singlet_'+key
+            ratplot.show('syst_'+cur_tag+'_compare_syst_singlet_'+key,outDir)
+            ratplot.reset()
+
+        #For ttbar
+        else:
+        
+            rootfile1.cd('SVLMass_'+cur_tag)
+            ttbar_hist = ROOT.TH1F()
+            for key1 in ROOT.gDirectory.GetListOfKeys():
+                name = key1.GetName()
+                if 'MSDecays' in name:
+                    ROOT.gDirectory.GetObject(name,ttbar_hist)
+            ttbar_hist.SetFillColor(0)
+            reference = ttbar_hist
+            reference.Scale(1/reference.Integral())
+            ratplot.reference = reference
+            
+            legentry = 'nominal_tt_'+cur_tag
+            hist = ttbar_hist
+            hist.Scale(1/hist.Integral())
+            ratplot.add(hist,legentry)
+            legentry = key
+            hist = histos1[key]
+            hist.Scale(1/hist.Integral())
+            ratplot.add(hist,legentry)
+
+            ratplot.tag = 'Systematics TTbar '+cur_tag
+            ratplot.subtag = 'syst_ttbar_'+key
+            ratplot.show('syst_'+cur_tag+'_compare_syst_ttbar_'+key,outDir)
+            ratplot.reset()
+
+
+
 """
 Main function
 """
@@ -405,6 +718,7 @@ def main():
     makeMassScanPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/')
     makeTTbarPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
     makeWJetsPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
-    #makeQCDPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/')#,'norm')
+    makeQCDPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
+    makeSystPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/')
 
 main()

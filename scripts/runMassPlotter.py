@@ -25,17 +25,6 @@ def makeMassScanPlots(outDir):
     #Masses are given as whole numbers; 0.5 added later
     masses = ['163','166','169','171','172','173','175','178','181']
     combinations = ['cor','wro','inc']#,'unm']
-    colors = {
-        '163':ROOT.kGray,
-        '166':ROOT.kAzure+5,
-        '169':ROOT.kOrange-3,
-        '171':ROOT.kOrange+9,
-        '173':ROOT.kGray+2,
-        '175':ROOT.kSpring-5,
-        '178':ROOT.kBlue+2,
-        '181':ROOT.kTeal-9,
-        '172':ROOT.kMagenta-2
-        }
 
     #Rootfile1 is for the mass scans; rootfile2 is for the base case (172.5)
     rootfile1 = ROOT.TFile.Open('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/plots_mass_scans/plotter.root')
@@ -86,15 +75,13 @@ def makeMassScanPlots(outDir):
             if masshistos[(tag,ch,mass,comb)] == None:
                 ROOT.gDirectory.GetObject(histo1,hist)
                 hist.SetTitle('')
-                masshistos[(tag,ch,mass,comb)] = hist
+                masshistos[(tag,ch,mass,comb)] = hist.Clone()
             else:
                 ROOT.gDirectory.GetObject(histo1,hist)
                 hist.SetTitle('')
-                masshistos[(tag,ch,mass,comb)].Add(hist)
-                print('Added for '+tag+' '+ch+' '+mass+' '+comb+'\n')
+                masshistos[(tag,ch,mass,comb)].Add(hist.Clone())
                         
         if masshistos[(tag,ch,mass,comb)]!=None:
-            masshistos[(tag,ch,mass,comb)].SetLineColor(colors[mass])
             masshistos[(tag,ch,mass,comb)].SetFillColor(0)
 
     #Fill masshistos for the base case
@@ -135,16 +122,14 @@ def makeMassScanPlots(outDir):
             if masshistos[(tag,ch,mass,comb)] == None:
                 ROOT.gDirectory.GetObject(histo1,hist)
                 hist.SetTitle('')
-                masshistos[(tag,ch,mass,comb)] = hist
+                masshistos[(tag,ch,mass,comb)] = hist.Clone()
             else:
                 ROOT.gDirectory.GetObject(histo1,hist)
                 hist.SetTitle('')
-                masshistos[(tag,ch,mass,comb)].Add(hist)
-                print('Added for '+tag+' '+ch+' '+mass+' '+comb+'\n')
+                masshistos[(tag,ch,mass,comb)].Add(hist.Clone())
 
         if masshistos[(tag,ch,mass,comb)]!=None:
             masshistos[(tag,ch,mass,comb)].SetFillColor(0)
-            masshistos[(tag,ch,mass,comb)].SetLineColor(colors[mass])
 
     #Make the ratio plots for single top
     for chan in channels:
@@ -154,12 +139,12 @@ def makeMassScanPlots(outDir):
             ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
             ratplot.ratiorange = (0.5, 1.5)
             
-            reference = masshistos[('t',chan,'172',comb)]
+            reference = masshistos[('t',chan,'172',comb)].Clone()
             ratplot.reference = reference
             for mass in masses:
                 legentry = 'm_{t} = %5.1f GeV' % (float(mass)+0.5)
                 try:
-                    histo = masshistos[('t',chan,mass,comb)]
+                    histo = masshistos[('t',chan,mass,comb)].Clone()
                     ratplot.add(histo, legentry)
                 except KeyError: pass
                 except AttributeError: pass
@@ -167,6 +152,7 @@ def makeMassScanPlots(outDir):
             ratplot.tag = comb+' combinations'
             ratplot.subtag = '%s %s' % ('t', chan)
             ratplot.show("massscan_%s_%s_%s_tot"%('t',chan,comb), outDir)
+            ratplot.reset()
 
     #Make the ratio plots for single top combined
     for chan in channels:
@@ -175,14 +161,14 @@ def makeMassScanPlots(outDir):
         ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
         ratplot.ratiorange = (0.5, 1.5)
         
-        reference = masshistos[('t',chan,'172','cor')]
-        reference.Add(masshistos[('t',chan,'172','wro')])
+        reference = masshistos[('t',chan,'172','cor')].Clone()
+        reference.Add(masshistos[('t',chan,'172','wro')].Clone())
         ratplot.reference = reference
         for mass in masses:
             legentry = 'm_{t} = %5.1f GeV' % (float(mass)+0.5)
             try:
-                histo = masshistos[('t',chan,mass,'cor')]
-                histo.Add(masshistos[('t',chan,mass,'wro')])
+                histo = masshistos[('t',chan,mass,'cor')].Clone()
+                histo.Add(masshistos[('t',chan,mass,'wro')].Clone())
                 ratplot.add(histo, legentry)
             except KeyError: pass
             except AttributeError: pass
@@ -190,23 +176,23 @@ def makeMassScanPlots(outDir):
         ratplot.tag = 'All combinations'
         ratplot.subtag = '%s %s' % ('t', chan)
         ratplot.show("massscan_%s_%s_tot"%('t',chan), outDir)
+        ratplot.reset()
 
     #Make the ratio plots for ttbar
     for chan in channels:
-        ratplot.reset()
         ratplot = RatioPlot('ratioplot')
         ratplot.normalized = False
         ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
         ratplot.ratiorange = (0.5, 1.5)
         
-        reference = masshistos[('tt',chan,'172','inc')]
+        reference = masshistos[('tt',chan,'172','inc')].Clone()
         ratplot.reference = reference
         print ratplot.reference 
         
         for mass in masses:
             legentry = 'm_{t} = %5.1f GeV' % (float(mass)+0.5)
             try:
-                histo = masshistos[('tt',chan,mass,'inc')]
+                histo = masshistos[('tt',chan,mass,'inc')].Clone()
                 ratplot.add(histo, legentry)
             except KeyError: pass
             except AttributeError: pass
@@ -214,6 +200,7 @@ def makeMassScanPlots(outDir):
         ratplot.tag = 'All combinations'
         ratplot.subtag = '%s %s' % ('tt', chan)
         ratplot.show("massscan_%s_%s_unm_tot"%('tt',chan), outDir)
+        ratplot.reset()
 
 """
 Make ttbar comparison plots. norm option makes the histograms normalized to 1.
@@ -226,6 +213,7 @@ def makeTTbarPlots(outDir,norm=None):
     tags = ['e2j','e3j','mu2j','mu3j']
 
     histos = {}
+    histos_unweighted = {}
 
     #Fill histos directory with svlmass plots for ttbar with -0.05 <= BDT <= 0.11
     for tag in tags:
@@ -238,8 +226,10 @@ def makeTTbarPlots(outDir,norm=None):
         if norm=='norm':
             hist.Scale(1/hist.Integral())
         hist.Rebin()
-        histos[tag+'_BDT']=hist
+        histos[tag+'_BDT']=hist.Clone()
+
         hist1 = ROOT.TH1F()
+ 
         foundone = False
         for key in ROOT.gDirectory.GetListOfKeys():
             name = key.GetName()
@@ -250,18 +240,19 @@ def makeTTbarPlots(outDir,norm=None):
                 else:
                     hist2 = ROOT.TH1F()
                     ROOT.gDirectory.GetObject(name,hist2)
-                    hist1.Add(hist2)
+                    hist1.Add(hist2.Clone())
         for key in ROOT.gDirectory.GetListOfKeys():
             name = key.GetName()
             if ('Data' not in name) and ('MSDecays' not in name):
                 hist2 = ROOT.TH1F()
                 ROOT.gDirectory.GetObject(name,hist2)
-                hist1.Add(hist2,-1)
+                hist1.Add(hist2.Clone(),-1)
+        histos_unweighted[tag+'_data_BDT']=hist1.Clone()
         hist1.Rebin()
         hist1.SetFillColor(0)
         if norm=='norm':
             hist1.Scale(1/hist1.Integral())
-        histos[tag+'_data_BDT']=hist1
+        histos[tag+'_data_BDT']=hist1.Clone()
 
     #Fill histos directory with svlmass plots for ttbar with nominal cuts
     for tag in tags:
@@ -274,7 +265,8 @@ def makeTTbarPlots(outDir,norm=None):
         if norm=='norm':
             hist.Scale(1/hist.Integral())
         hist.Rebin()
-        histos[tag]=hist
+        histos[tag]=hist.Clone()
+
         hist1 = ROOT.TH1F()
         foundone = False
         for key in ROOT.gDirectory.GetListOfKeys():
@@ -286,18 +278,18 @@ def makeTTbarPlots(outDir,norm=None):
                 else:
                     hist2 = ROOT.TH1F()
                     ROOT.gDirectory.GetObject(name,hist2)
-                    hist1.Add(hist2)
+                    hist1.Add(hist2.Clone())
         for key in ROOT.gDirectory.GetListOfKeys():
             name = key.GetName()
             if ('Data' not in name) and ('MSDecays' not in name):
                 hist2 = ROOT.TH1F()
                 ROOT.gDirectory.GetObject(name,hist2)
-                hist1.Add(hist2,-1)
+                hist1.Add(hist2.Clone(),-1)
         hist1.Rebin()
         hist1.SetFillColor(0)
         if norm=='norm':
             hist1.Scale(1/hist1.Integral())
-        histos[tag+'_data']=hist1
+        histos[tag+'_data']=hist1.Clone()
 
     #Create ttbar electron plot (nominal vs 3jets with inverted BDT)
     ratplot = RatioPlot('ratioplot')
@@ -305,17 +297,17 @@ def makeTTbarPlots(outDir,norm=None):
     ratplot.ratiotitle = 'Ratio wrt 3 jets'
     ratplot.ratiorange = (0.5,1.5)
 
-    reference = histos['e3j_BDT']
+    reference = histos['e3j_BDT'].Clone()
     ratplot.reference = reference
-
+ 
     legentry = 'ttbar e2j'
-    hist = histos['e2j']
+    hist = histos['e2j'].Clone()
     ratplot.add(hist,legentry)
     legentry = 'ttbar e3j'
-    hist = histos['e3j_BDT']
+    hist = histos['e3j_BDT'].Clone()
     ratplot.add(hist,legentry)
     legentry = 'Data e3j'
-    hist = histos['e3j_data_BDT']
+    hist = histos['e3j_data_BDT'].Clone()
     ratplot.add(hist,legentry)
 
     ratplot.tag = 'TTbar electrons'
@@ -324,6 +316,9 @@ def makeTTbarPlots(outDir,norm=None):
         ratplot.show('tt_e_compare_normalized',outDir)
     else:
         ratplot.show('tt_e_compare',outDir)
+        
+    histos_unweighted['e3j_data_BDT'].SaveAs(outDir+'bkg_templates/ttbar_template_e.root')
+    histos_unweighted['mu3j_data_BDT'].SaveAs(outDir+'bkg_templates/ttbar_template_mu.root')
 
     #Create ttbar muon plot (2jets vs 3jets)
     ratplot.reset()
@@ -332,17 +327,17 @@ def makeTTbarPlots(outDir,norm=None):
     ratplot.ratiotitle = 'Ratio wrt 3 jets'
     ratplot.ratiorange = (0.5,1.5)
 
-    reference = histos['mu3j_BDT']
+    reference = histos['mu3j_BDT'].Clone()
     ratplot.reference = reference
 
     legentry = 'ttbar mu2j'
-    hist = histos['mu2j']
+    hist = histos['mu2j'].Clone()
     ratplot.add(hist,legentry)
     legentry = 'ttbar mu3j'
-    hist = histos['mu3j_BDT']
+    hist = histos['mu3j_BDT'].Clone()
     ratplot.add(hist,legentry)
     legentry = 'Data mu3j'
-    hist = histos['mu3j_data_BDT']
+    hist = histos['mu3j_data_BDT'].Clone()
     ratplot.add(hist,legentry)
 
     ratplot.tag = 'TTbar muons'
@@ -362,6 +357,7 @@ def makeQCDPlots(outDir, norm=None):
 
     tags = ['e2j','e3j','mu2j','mu3j']
     histos = {}
+    histos_unscaled = {}
 
     #runPlotter may save the QCD histogram as any of these names
     possibilities = ['QCDMuPt20toInf','QCDPt170to250','QCDPt250to350','QCDPt30to80','QCDPt350toInf','QCDPt80to170']
@@ -381,7 +377,7 @@ def makeQCDPlots(outDir, norm=None):
                 if norm=='norm':
                     hist1.Scale(1/hist1.Integral())
                 hist1.Rebin()
-                histos[tag+'QCD']=hist1
+                histos[tag+'QCD']=hist1.Clone()
             except LookupError: pass
 
         #For the standard analysis plots
@@ -394,10 +390,11 @@ def makeQCDPlots(outDir, norm=None):
                 if norm=='norm':
                     hist2.Scale(1/hist2.Integral())
                 hist2.Rebin()
-                histos[tag]=hist2
+                histos[tag]=hist2.Clone()
             except LookupError: pass
 
         hist1 = ROOT.TH1F()
+
         foundone = False
         rootfile.cd('SVLMassQCD_'+tag)
         for key in ROOT.gDirectory.GetListOfKeys():
@@ -409,18 +406,19 @@ def makeQCDPlots(outDir, norm=None):
                 else:
                     hist2 = ROOT.TH1F()
                     ROOT.gDirectory.GetObject(name,hist2)
-                    hist1.Add(hist2)
+                    hist1.Add(hist2.Clone())
         for key in ROOT.gDirectory.GetListOfKeys():
             name = key.GetName()
             if ('Data' not in name) and ('QCD' not in name):
                 hist2 = ROOT.TH1F()
                 ROOT.gDirectory.GetObject(name,hist2)
-                hist1.Add(hist2,-1)
+                hist1.Add(hist2.Clone(),-1)
+        histos_unscaled[tag+'_data']=hist1.Clone()
         hist1.Rebin()
         hist1.SetFillColor(0)
         if norm=='norm':
             hist1.Scale(1/hist1.Integral())
-        histos[tag+'_data']=hist1
+        histos[tag+'_data']=hist1.Clone()
 
     ratplot = RatioPlot('ratioplot')
 
@@ -432,17 +430,17 @@ def makeQCDPlots(outDir, norm=None):
         ratplot.ratiotitle = 'Ratio wrt Inverse EvCat Selection'
         ratplot.ratiorange = (0.5,1.5)
         
-        reference = histos[tag+'QCD']
+        reference = histos[tag+'QCD'].Clone()
         ratplot.reference = reference
         
         legentry = 'Full cuts ' + tag
-        hist = histos[tag]
+        hist = histos[tag].Clone()
         ratplot.add(hist,legentry)
         legentry = 'QCD Cuts '+ tag
-        hist = histos[tag+'QCD']
+        hist = histos[tag+'QCD'].Clone()
         ratplot.add(hist,legentry)
         legentry = 'Data '+tag
-        hist = histos[tag+'_data']
+        hist = histos[tag+'_data'].Clone()
         ratplot.add(hist,legentry)
 
         ratplot.tag = 'QCD '+tag
@@ -452,7 +450,7 @@ def makeQCDPlots(outDir, norm=None):
         else:
             ratplot.show('qcd_'+tag+'_compare',outDir)
 
-        histos[tag+'_data'].SaveAs(outDir+'bkg_templates/QCD_template_'+tag+'.root')
+        histos_unscaled[tag+'_data'].SaveAs(outDir+'bkg_templates/QCD_template_'+tag+'.root')
 
 
 """
@@ -465,6 +463,7 @@ def makeWJetsPlots(outDir,norm=None):
 
     tags = ['e2j','e3j','mu2j','mu3j']
     histos = {}
+    histos_unscaled = {}
 
     #runPlotter may save the WJets plot as any of these
     possibilities = ['WJets','W1Jets','W2Jets','W3Jets','W4Jets']
@@ -484,7 +483,7 @@ def makeWJetsPlots(outDir,norm=None):
                 if norm=='norm':
                     hist1.Scale(1/hist1.Integral())
                 hist1.Rebin()
-                histos[tag+'WJets']=hist1
+                histos[tag+'WJets']=hist1.Clone()
             except LookupError: pass
 
         #For the standard analysis plots
@@ -494,13 +493,15 @@ def makeWJetsPlots(outDir,norm=None):
                 ROOT.gDirectory.GetObject('MC8TeV_'+p+'_SVLMass_'+tag,hist2)
                 hist2.SetFillColor(0)
                 hist2.SetTitle('')
+                histos_unscaled[tag]=hist2.Clone()
                 if norm=='norm':
                     hist2.Scale(1/hist2.Integral())
                 hist2.Rebin()
-                histos[tag]=hist2
+                histos[tag]=hist2.Clone()
             except LookupError: pass
 
-        hist1 = ROOT.TH1F()
+        hist1 = ROOT.TH1F(
+)
         foundone = False
         rootfile.cd('SVLMassWJets_'+tag)
         for key in ROOT.gDirectory.GetListOfKeys():
@@ -512,7 +513,7 @@ def makeWJetsPlots(outDir,norm=None):
                 else:
                     hist2 = ROOT.TH1F()
                     ROOT.gDirectory.GetObject(name,hist2)
-                    hist1.Add(hist2)
+                    hist1.Add(hist2.Clone())
         for key in ROOT.gDirectory.GetListOfKeys():
             name = key.GetName()
             if ('Data' not in name): 
@@ -523,12 +524,12 @@ def makeWJetsPlots(outDir,norm=None):
                 if good:
                     hist2 = ROOT.TH1F()
                     ROOT.gDirectory.GetObject(name,hist2)
-                    hist1.Add(hist2,-1)
+                    hist1.Add(hist2.Clone(),-1)
         hist1.Rebin()
         hist1.SetFillColor(0)
         if norm=='norm':
             hist1.Scale(1/hist1.Integral())
-        histos[tag+'_data']=hist1
+        histos[tag+'_data']=hist1.Clone()
 
     ratplot = RatioPlot('ratioplot')
 
@@ -540,17 +541,17 @@ def makeWJetsPlots(outDir,norm=None):
         ratplot.ratiotitle = 'Ratio wrt Inverse BDT Cut'
         ratplot.ratiorange = (0.5,1.5)
         
-        reference = histos[tag+'WJets']
+        reference = histos[tag+'WJets'].Clone()
         ratplot.reference = reference
         
         legentry = 'Full cuts ' + tag
-        hist = histos[tag]
+        hist = histos[tag].Clone()
         ratplot.add(hist,legentry)
         legentry = 'WJets Cuts '+ tag
-        hist = histos[tag+'WJets']
+        hist = histos[tag+'WJets'].Clone()
         ratplot.add(hist,legentry)
         legentry = 'Data '+tag
-        hist = histos[tag+'_data']
+        hist = histos[tag+'_data'].Clone()
         ratplot.add(hist,legentry)
 
         ratplot.tag = 'WJets '+tag
@@ -560,7 +561,7 @@ def makeWJetsPlots(outDir,norm=None):
         else:
             ratplot.show('wjets_'+tag+'_compare',outDir)
 
-        histos[tag+'WJets'].SaveAs(outDir+'bkg_templates/WJets_template_'+tag+'.root')
+        histos_unscaled[tag].SaveAs(outDir+'bkg_templates/WJets_template_'+tag+'.root')
 
 """
 Make plots for systematics.
@@ -592,10 +593,11 @@ def makeSystPlots(outDir):
                 hist = ROOT.TH1F()
                 ROOT.gDirectory.GetObject(name,hist)
                 if histos[weight+'_'+tag]==None:
-                    histos[weight+'_'+tag]=hist
+                    histos[weight+'_'+tag]=hist.Clone()
                 else:
-                    histos[weight+'_'+tag].Add(hist)
+                    histos[weight+'_'+tag].Add(hist.Clone())
             histos[weight+'_'+tag].SetFillColor(0)
+            histos[weight+'_'+tag].Scale(1/histos[weight+'_'+tag].Integral())
     
     #List of systematics files
     systs = ['scaledown','scaleup','matchingdown','matchingup','TuneP11mpiHi','TuneP11noCR','TuneP11','TuneP11TeV','widthx5','mcatnlo','Z2Star']
@@ -606,7 +608,7 @@ def makeSystPlots(outDir):
         process = ''
         syst_cur=''
         for syst in systs:
-            if syst in key:
+            if (syst in key) and (len(syst) > len(syst_cur)):
                 syst_cur = syst
         if 'SemiLep' in key:
             syst_cur = 'SemiLep_'+syst_cur
@@ -619,29 +621,36 @@ def makeSystPlots(outDir):
 
         for tag in tags:
             ROOT.gDirectory.GetObject('SVLMass_'+tag,hist)
-            histos1[process+'_'+syst_cur+'_'+tag]=hist
-        histos1[process+'_'+syst_cur+'_'+tag].SetFillColor(0)
+            histos1[process+'_'+syst_cur+'_'+tag]=hist.Clone()
+            histos1[process+'_'+syst_cur+'_'+tag].SetFillColor(0)
+            histos1[process+'_'+syst_cur+'_'+tag].Scale(1/histos1[process+'_'+syst_cur+'_'+tag].Integral())
 
     #Create the ratio plots
-    for tag in tags:
+    for key in histos.keys():
+        cur_tag = ''
+        for tag in tags:
+            if tag in key:
+                cur_tag = tag
+        
         #First for the reweighted signal
         ratplot = RatioPlot('ratioplot')
         ratplot.normalized = False
         ratplot.ratiotitle = 'Ratio wrt Nominal Reweighting'
         ratplot.ratiorange = (0.5,1.5)
         
-        reference = histos['nominal_'+tag]
+        reference = histos['nominal_'+cur_tag].Clone()
         ratplot.reference = reference
         
-        for key in histos.keys():
-            if tag in key:
-                legentry = key
-                hist = histos[key]
-                ratplot.add(hist,legentry)
+        legentry = 'nominal_'+cur_tag
+        hist = histos['nominal_'+cur_tag].Clone()
+        ratplot.add(hist,legentry)
+        legentry = key
+        hist = histos[key].Clone()
+        ratplot.add(hist,legentry)
 
-        ratplot.tag = 'Reweighting '+tag
-        ratplot.subtag = 'syst'
-        ratplot.show('syst_'+tag+'_compare_reweight',outDir)
+        ratplot.tag = 'Reweighting '+key
+        ratplot.subtag = 'syst '+key
+        ratplot.show('syst_'+key+'_compare_reweight',outDir)
         ratplot.reset()
 
     #Then for systematics rather than reweightings
@@ -663,17 +672,14 @@ def makeSystPlots(outDir):
         
         #For single top
         if cur_proc=='SingleT':
-            reference = histos['nominal_'+cur_tag]
-            reference.Scale(1/reference.Integral())
+            reference = histos['nominal_'+cur_tag].Clone()
             ratplot.reference = reference
             
             legentry = 'nominal_singlet_'+cur_tag
-            hist = histos['nominal_'+cur_tag]
-            hist.Scale(1/hist.Integral())
+            hist = histos['nominal_'+cur_tag].Clone()
             ratplot.add(hist,legentry)
             legentry = key
-            hist = histos1[key]
-            hist.Scale(1/hist.Integral())
+            hist = histos1[key].Clone()
             ratplot.add(hist,legentry)
 
             ratplot.tag = 'Systematics SingleT '+cur_tag
@@ -691,17 +697,15 @@ def makeSystPlots(outDir):
                 if 'MSDecays' in name:
                     ROOT.gDirectory.GetObject(name,ttbar_hist)
             ttbar_hist.SetFillColor(0)
-            reference = ttbar_hist
-            reference.Scale(1/reference.Integral())
+            ttbar_hist.Scale(1/ttbar_hist.Integral())
+            reference = ttbar_hist.Clone()
             ratplot.reference = reference
             
             legentry = 'nominal_tt_'+cur_tag
-            hist = ttbar_hist
-            hist.Scale(1/hist.Integral())
+            hist = ttbar_hist.Clone()
             ratplot.add(hist,legentry)
             legentry = key
-            hist = histos1[key]
-            hist.Scale(1/hist.Integral())
+            hist = histos1[key].Clone()
             ratplot.add(hist,legentry)
 
             ratplot.tag = 'Systematics TTbar '+cur_tag
@@ -719,6 +723,6 @@ def main():
     makeTTbarPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
     makeWJetsPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
     makeQCDPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
-    makeSystPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/')
+    makeSystPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/syst')
 
 main()

@@ -53,7 +53,7 @@ def makePseudoInputPlots(outDir):
         if ch == '': continue
 
         for c in combinations:
-            if (c) in name:
+            if c in name:
                 comb = c
         if comb == '': continue
 
@@ -69,9 +69,9 @@ def makePseudoInputPlots(outDir):
             ROOT.gDirectory.GetObject(hist_name, hist)
             hist.SetTitle('')
             if masshistos[(tag,ch,mass,comb)] == None:
-                masshistos[(tag,ch,mass,comb)] = hist
+                masshistos[(tag,ch,mass,comb)] = hist.Clone()
             else:
-                masshistos[(tag,ch,mass,comb)].Add(hist)
+                masshistos[(tag,ch,mass,comb)].Add(hist.Clone())
 
         if masshistos[(tag,ch,mass,comb)] != None:
             masshistos[(tag,ch,mass,comb)].SetFillColor(0)
@@ -115,9 +115,9 @@ def makePseudoInputPlots(outDir):
             ROOT.gDirectory.GetObject(hist_name,hist)
             hist.SetTitle('')
             if masshistos[(tag,ch,mass,comb)] == None:
-                masshistos[(tag,ch,mass,comb)] = hist
+                masshistos[(tag,ch,mass,comb)] = hist.Clone()
             else:
-                masshistos[(tag,ch,mass,comb)].Add(hist)
+                masshistos[(tag,ch,mass,comb)].Add(hist.Clone())
 
         if masshistos[(tag,ch,mass,comb)] != None:
             masshistos[(tag,ch,mass,comb)].SetFillColor(0)
@@ -135,7 +135,7 @@ def makePseudoInputPlots(outDir):
             hist = ROOT.TH1F()
             ROOT.gDirectory.GetObject(hist_name,hist)
             hist.SetFillColor(0)
-            bkghistos[key] = hist
+            bkghistos[key] = hist.Clone()
 
     #Gather syst histos
     systhistos = {}
@@ -155,9 +155,9 @@ def makePseudoInputPlots(outDir):
                 hist = ROOT.TH1F()
                 ROOT.gDirectory.GetObject(name,hist)
                 if systhistos[weight+'_'+tag] == None:
-                    systhistos[weight+'_'+tag] = hist
+                    systhistos[weight+'_'+tag] = hist.Clone()
                 else:
-                    systhistos[weight+'_'+tag].Add(hist)
+                    systhistos[weight+'_'+tag].Add(hist.Clone())
             systhistos[weight+'_'+tag].SetFillColor(0)
 
     for key in os.listdir('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/rootfiles_syst/'):
@@ -181,8 +181,8 @@ def makePseudoInputPlots(outDir):
 
         for tag in channels1:
             ROOT.gDirectory.GetObject('SVLMass_'+tag,hist)
-            systhistos[process+'_'+syst_cur+'_'+tag] = hist
-        systhistos[process+'_'+syst_cur+'_'+tag].SetFillColor(0)
+            systhistos[process+'_'+syst_cur+'_'+tag] = hist.Clone()
+            systhistos[process+'_'+syst_cur+'_'+tag].SetFillColor(0)
 
     #Make the plots - masshistos
     for tag in channels:
@@ -195,27 +195,28 @@ def makePseudoInputPlots(outDir):
             tag1 = 'mu3j'
         for mass in masses:
             
-            bkg_histo = bkghistos['QCD_template_'+tag1+'.root']
-            bkg_histo.Add(bkghistos['WJets_template_'+tag1+'.root'])
+            bkg_histo = bkghistos['QCD_template_'+tag1+'.root'].Clone()
+            bkg_histo.Add(bkghistos['WJets_template_'+tag1+'.root'].Clone())
             
-            ttbar_histo = masshistos[('tt',tag,mass,'inc')]
-            if ttbar_histo == None: continue
-            sig_histo = masshistos[('t',tag,mass,'cor')]
-            if sig_histo == None: continue
-            sig_histo.Add(masshistos[('t',tag,mass,'wro')])
+            if masshistos[('tt',tag,mass,'inc')]==None or masshistos[('t',tag,mass,'cor')]==None: continue
+            ttbar_histo = masshistos[('tt',tag,mass,'inc')].Clone()
+            sig_histo = masshistos[('t',tag,mass,'cor')].Clone()
+            sig_histo.Add(masshistos[('t',tag,mass,'wro')].Clone())
             
             bkg_histo.SetFillColor(ROOT.kBlue)
             ttbar_histo.SetFillColor(ROOT.kGray)
             sig_histo.SetFillColor(ROOT.kRed)
+
+            #sig_histo.Rebin()
             
-            total_hist = bkg_histo
-            total_hist.Add(ttbar_histo)
-            total_hist.Add(sig_histo)
+            total_hist = bkg_histo.Clone()
+            total_hist.Add(ttbar_histo.Clone())
+            total_hist.Add(sig_histo.Clone())
             
             total_stack = ROOT.THStack()
-            total_stack.Add(bkg_histo)
-            total_stack.Add(ttbar_histo)
-            total_stack.Add(sig_histo)
+            total_stack.Add(bkg_histo.Clone())
+            total_stack.Add(ttbar_histo.Clone())
+            total_stack.Add(sig_histo.Clone())
 
             total_stack.SaveAs(outDir+'stack_mass_check_'+mass+'_'+tag+'.root')
             total_hist.SaveAs(outDir+'mass_check_'+mass+'_'+tag+'.root')
@@ -223,29 +224,31 @@ def makePseudoInputPlots(outDir):
         #Make the plots - systs
         for key in systhistos.keys():
             if 'TT' in key: continue
-            bkg_histo = bkghistos['QCD_template_'+tag1+'.root']
-            bkg_histo.Add(bkghistos['WJets_template_'+tag1+'.root'])
+            bkg_histo = bkghistos['QCD_template_'+tag1+'.root'].Clone()
+            bkg_histo.Add(bkghistos['WJets_template_'+tag1+'.root'].Clone())
 
             ttbar_histo = ROOT.TH1F()
             if 'e' in tag:
-                ttbar_histo = bkghistos['ttbar_template_e.root']
+                ttbar_histo = bkghistos['ttbar_template_e.root'].Clone()
             else:
-                ttbar_histo = bkghistos['ttbar_template_mu.root']
+                ttbar_histo = bkghistos['ttbar_template_mu.root'].Clone()
 
-            sig_histo = systhistos[key]
+            sig_histo = systhistos[key].Clone()
             
             bkg_histo.SetFillColor(ROOT.kBlue)
             ttbar_histo.SetFillColor(ROOT.kGray)
             sig_histo.SetFillColor(ROOT.kRed)
 
-            total_stack = ROOT.THStack()
-            total_stack.Add(bkg_histo)
-            total_stack.Add(ttbar_histo)
-            total_stack.Add(sig_histo)
+            #sig_histo.Rebin()
 
-            total_hist = bkg_histo
-            total_hist.Add(ttbar_histo)
-            total_hist.Add(sig_histo)
+            total_stack = ROOT.THStack()
+            total_stack.Add(bkg_histo.Clone())
+            total_stack.Add(ttbar_histo.Clone())
+            total_stack.Add(sig_histo.Clone())
+
+            total_hist = bkg_histo.Clone()
+            total_hist.Add(ttbar_histo.Clone())
+            total_hist.Add(sig_histo.Clone())
 
             total_stack.SaveAs(outDir+'stack_syst_'+key+'_'+tag+'.root')
             total_hist.SaveAs(outDir+'syst_'+key+'_'+tag+'.root')

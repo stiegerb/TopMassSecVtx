@@ -320,6 +320,17 @@ def makeTTbarPlots(outDir,norm=None):
     histos_unweighted['e3j_data_BDT'].SaveAs(outDir+'bkg_templates/ttbar_template_e.root')
     histos_unweighted['mu3j_data_BDT'].SaveAs(outDir+'bkg_templates/ttbar_template_mu.root')
 
+    can1 = ROOT.TCanvas()
+    can1.cd()
+    histos_unweighted['e3j_data_BDT'].SetTitle('ttbar e2j')
+    histos_unweighted['e3j_data_BDT'].Draw('HIST')
+    can1.SaveAs(outDir+'bkg_templates/ttbar_template_e.png')
+    can2 = ROOT.TCanvas()
+    can2.cd()
+    histos_unweighted['mu3j_data_BDT'].SetTitle('ttbar mu3j')
+    histos_unweighted['mu3j_data_BDT'].Draw('HIST')
+    can2.SaveAs(outDir+'bkg_templates/ttbar_template_mu.png')
+
     #Create ttbar muon plot (2jets vs 3jets)
     ratplot.reset()
     ratplot = RatioPlot('ratioplot')
@@ -451,6 +462,12 @@ def makeQCDPlots(outDir, norm=None):
             ratplot.show('qcd_'+tag+'_compare',outDir)
 
         histos_unscaled[tag+'_data'].SaveAs(outDir+'bkg_templates/QCD_template_'+tag+'.root')
+        
+        can = ROOT.TCanvas()
+        can.cd()
+        histos_unscaled[tag+'_data'].SetTitle('QCD '+tag)
+        histos_unscaled[tag+'_data'].Draw('HIST')
+        can.SaveAs(outDir+'bkg_templates/QCD_template_'+tag+'.png')
 
 
 """
@@ -562,6 +579,12 @@ def makeWJetsPlots(outDir,norm=None):
             ratplot.show('wjets_'+tag+'_compare',outDir)
 
         histos_unscaled[tag].SaveAs(outDir+'bkg_templates/WJets_template_'+tag+'.root')
+
+        can = ROOT.TCanvas()
+        can.cd()
+        histos_unscaled[tag].SetTitle('WJets '+tag)
+        histos_unscaled[tag].Draw('HIST')
+        can.SaveAs(outDir+'bkg_templates/WJets_template_'+tag+'.png')
 
 """
 Make plots for systematics.
@@ -719,10 +742,10 @@ def makeSystPlots(outDir):
 Main function
 """
 def main():
-    makeMassScanPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/')
+    #makeMassScanPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/')
     makeTTbarPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
     makeWJetsPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
     makeQCDPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
-    makeSystPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/syst')
+    #makeSystPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/syst')
 
 main()

@@ -621,7 +621,7 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		else:
 			tag1+='m3j_'
 		tag1+=(mass+'_')
-		if 'tt' in tag1:
+		if 'tt_' in tag1:
 			tag1+='inc'
 		elif 't_' in tag1:
 			if SVLInfo.CombInfo==1:
@@ -655,7 +655,12 @@ def runSingleTopAnalysis(filename,isData,outDir):
 		#Fill histos for reweighted signal
 		if 'SingleT' in filename:
 			for key in weight_opts.keys():
-				histos['SVLMass_'+key+'_'+tag].Fill(SVLInfo.SVLMass,weight_opts[key])
+				if key=='lesdn':
+					histos['SVLMass_'+key+'_'+tag].Fill(SVLInfo.SVLMass*SVLInfo.SVLMass_sf[0],weight_opts[key])
+				elif key=='lesup':
+					histos['SVLMass_'+key+'_'+tag].Fill(SVLInfo.SVLMass*SVLInfo.SVLMass_sf[1],weight_opts[key])
+				else:
+					histos['SVLMass_'+key+'_'+tag].Fill(SVLInfo.SVLMass,weight_opts[key])
 		
 	#close input file, after analysis
 	fIn.Close()

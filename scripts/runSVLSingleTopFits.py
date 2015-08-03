@@ -78,12 +78,10 @@ def fitSignalPermutation((ws, chan, masses, procname, SVLmass, options)):
 		for i in xrange(0,7):
 			ws.var('slope_%s_p%d'%(tag,i)).setRange(0,0)
 			ws.var('slope_%s_p%d'%(tag,i)).setVal(0)
-		ws.var('offset_%s_p4'%tag).setRange(2,100)
-		ws.var('offset_%s_p5'%tag).setRange(1,100)
 
 		thePDF = ws.factory("SUM::model_%s("
 				    "%s_p0*RooBifurGauss::%s_f1(SVLMass,%s_p1,%s_p2,%s_p3),"
-				    "RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
+				               "RooGamma::%s_f2(SVLMass,%s_p4,%s_p5,%s_p6))"%
 				    (tag,tag,tag,tag,tag,tag,tag,tag,tag,tag))
 		theData = ws.data('SVLMass_%s_%s'%(chan,procname))
 		catNames=['']
@@ -145,6 +143,9 @@ def gatherHistos(inputdir, verbose=0):
 		if key[0] in ['tW', 'tbarW']: continue
 		if verbose>0: print '... processing', procname
 		fname = '%s.root' % procname
+
+		#inputdir needs to have outputs of runSVLSingleTop (ie. rootfiles_*) for nominal and additional masses
+
 		if not fname in os.listdir(inputdir):
 			if verbose>0: print '%s not found'%(fname)
 			continue
@@ -179,38 +180,37 @@ def gatherHistos(inputdir, verbose=0):
 					hists[(pname,key[1],chan)] = histo
 
 	# Now the backgrounds
+
+	# inputdir also needs to have background modeling rootfiles
+
 	for fname in os.listdir(inputdir):
 		if not osp.splitext(fname)[1] == '.root': continue
-		isdata, procname, splitno = resolveFilename(fname)
-		if isdata: continue
-		if ('TTJets' in procname or
-			'SingleT' in procname or
-			'TT_AUET' in procname): continue
+
+		if not (fname.startswith('WJets') or fname.startswith('QCD')): continue
 		if verbose>0: print '... processing', fname
 
 		tfile = openTFile(osp.join(inputdir,fname))
-		for chan in CHANNELS:
-			hkey = 'bg_%s_172_unm'%(chan)
+		for key in tfile.GetListOfKeys():
+			name = key.GetName()
+			cur_tag = ''
+			for chan in ['e2j','mu2j']:
+				if chan in name:
+					if chan == 'e2j':
+						cur_tag = chan
+					else:
+						cur_tag = 'm2j'
+			if cur_tag == '': continue
+			hkey = name #'bg_%s_172_unm'%(chan)
 			histo = getHistogramFromFile(hkey,tfile,verbose)
 			if histo == None: continue
 
 			## Scale it to lumi (assuming they are unscaled before)
-			histo.Scale(LUMI*xsecweights['MC8TeV_'+procname])
+			#histo.Scale(LUMI*xsecweights['MC8TeV_'+procname])
 
 			## Combine them all
-			if ('bg',chan) in hists: hists[('bg',chan)].Add(histo)
-			else:                    hists[('bg',chan)] = histo
+			if ('bg',cur_tag) in hists: hists[('bg',cur_tag)].Add(histo)
+			else:                    hists[('bg',cur_tag)] = histo
 
-
-	# masses = sorted(list(set([k[1] for k in hists.keys() if not k[0] == 'bg'])))
-	# print '----'
-	# for mass in masses:
-	# 	print "%f, %.1f, %.1f" % (mass, hists[('t',mass,'m2j')].Integral(), hists[('t',mass,'m2j')].GetEntries())
-
-	# print '----'
-	# for mass in masses:
-	# 	print "%f, %.1f, %.1f" % (mass, hists[('t',mass,'e2j')].Integral(), hists[('t',mass,'e2j')].GetEntries())
-	# print '----'
 	return hists
 
 def parameterizeSignalFraction(ws, chan, masses, masshistos, options) :
@@ -379,12 +379,14 @@ def createWorkspace(masshistos, options):
 	print "Done extracting histograms, commencing fits"
 
 
-	for chan in CHANNELS:
-		parameterizeSignalFraction(ws=ws, chan=chan, masses=masses,
-			                       masshistos=masshistos,
-			                       options=options)
-		# for procname in proclist:
-		# 	fitSignalPermutation((ws, chan, masses, procname, SVLmass, options))
+	# for chan in CHANNELS:
+	# 	parameterizeSignalFraction(ws=ws, chan=chan, masses=masses,
+	# 		                       masshistos=masshistos,
+	# 		                       options=options)
+	# 	for procname in proclist:
+	# 		fitSignalPermutation((ws, chan, masses, procname, SVLmass, options))
+
+	fitSignalPermutation((ws, 'm2j', masses, 'bg', SVLmass, options))
 
 	# Save all to file
 	ws.saveSnapshot("model_params", ws.allVars(), True)

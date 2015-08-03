@@ -29,7 +29,7 @@ def fitSignalPermutation((ws, chan, masses, procname, SVLmass, options)):
 	"""
 
 	print ' ...processing %2s chan=%s'%(procname,chan)
-	tag='%s_%s'%(chan,procname)
+	tag='%s_%s'%(chan,procname) # m2j_t e2j_tt etc
 
 	# free parameters are linear functions of the top mass
 	ws.factory("RooFormulaVar::%s_p0('@0*(@1-172.5)+@2',{" ## fraction of gaussian
@@ -149,7 +149,8 @@ def gatherHistos(inputdir, verbose=0):
 			if verbose>0: print '%s not found'%(fname)
 			continue
 
-		if key[1] in [163.5, 181.5]: continue # skip outermost samples
+		# skip outermost samples
+		if key[1] in [163.5, 181.5]: continue
 
 		tfile = openTFile(osp.join(inputdir,fname))
 		massstr = str(key[1]).replace('.5','')
@@ -200,7 +201,134 @@ def gatherHistos(inputdir, verbose=0):
 			if ('bg',chan) in hists: hists[('bg',chan)].Add(histo)
 			else:                    hists[('bg',chan)] = histo
 
+
+	# masses = sorted(list(set([k[1] for k in hists.keys() if not k[0] == 'bg'])))
+	# print '----'
+	# for mass in masses:
+	# 	print "%f, %.1f, %.1f" % (mass, hists[('t',mass,'m2j')].Integral(), hists[('t',mass,'m2j')].GetEntries())
+
+	# print '----'
+	# for mass in masses:
+	# 	print "%f, %.1f, %.1f" % (mass, hists[('t',mass,'e2j')].Integral(), hists[('t',mass,'e2j')].GetEntries())
+	# print '----'
 	return hists
+
+def parameterizeSignalFraction(ws, chan, masses, masshistos, options) :
+	"""
+	Parameterizes the fraction of single top over ttbar
+	"""
+	prepend = '[parameterizeSignalFraction]'
+	print prepend
+
+	canvas=ROOT.TCanvas('c','c',500,500)
+	canvas.SetLeftMargin(0.15)
+	canvas.SetRightMargin(0.05)
+
+	if options.verbose > 4: print prepend,chan
+
+	# Make the graphs used in the linear fits
+	grToParametrize={}
+	for n,(key,title) in enumerate([('t','single top expected'),
+					                ('ttfrac','t#bar{t} / single top')]):
+		grToParametrize[key] = ROOT.TGraphErrors()
+		grToParametrize[key].SetName(key)
+		grToParametrize[key].SetTitle(title)
+		grToParametrize[key].SetFillStyle(0)
+		grToParametrize[key].SetMarkerStyle(20+n)
+		grToParametrize[key].SetLineColor(2*n+1)
+		grToParametrize[key].SetMarkerColor(2*n+1)
+
+	for mass in masses:
+		if options.verbose > 4: print "%s   %4.1f GeV" % (prepend, mass)
+
+		combCtrs={}
+
+		# masshistos[('tt',172.5,'m2j')]
+
+		for proc in ['t','tt']:
+
+			# Integrate events expected for this category and mass
+			h = None
+			try:
+				h = masshistos[(proc,mass,chan)]
+			except KeyError:
+				print 'histogram with key', proc,mass,chan, 'not found'
+			err = ROOT.Double(0)
+			val = h.IntegralAndError(1, h.GetXaxis().GetNbins(), err)
+
+			# Add to counters
+			if proc in combCtrs:
+				combCtrs[proc][0] += val
+				combCtrs[proc][1] += err*err
+			else:
+				combCtrs[proc] = [val, err*err]
+
+		# err^2 -> err
+		for key in combCtrs: combCtrs[key][1] = ROOT.TMath.Sqrt(combCtrs[key][1])
+
+		if options.verbose > 4:
+			print ("%s    yields: %8.1f+-%5.1f (t) %8.1f+-%5.1f (tt)" %
+				           (prepend, combCtrs['t'][0],combCtrs['t'][1],
+				                     combCtrs['tt'][0],combCtrs['tt'][1]))
+
+		# Normalize fractions by total expectations
+		combCtrs['ttfrac']=(combCtrs['tt'][0]/combCtrs['t'][0],
+						   sqrt( (combCtrs['tt'][0]*combCtrs['t'][1])**2
+							   + (combCtrs['t'][0]*combCtrs['tt'][1])**2 )
+							   / (combCtrs['t'][0])**2)
+
+		if options.verbose > 4:
+			print ("%s    tt fraction: %4.2f" % (prepend,
+				          combCtrs['ttfrac'][0]))
+
+		# Add point to the graph
+		np = grToParametrize['t'].GetN()
+		grToParametrize['t'].SetPoint     (np,mass,combCtrs['t'][0])
+		grToParametrize['t'].SetPointError(np,   0,combCtrs['t'][1])
+
+		np = grToParametrize['ttfrac'].GetN()
+		grToParametrize['ttfrac'].SetPoint     (np,mass,combCtrs['ttfrac'][0])
+		grToParametrize['ttfrac'].SetPointError(np,   0,combCtrs['ttfrac'][1])
+
+
+	#extrapolate dependency with straight line and show
+	for key in ['t','ttfrac']:
+		canvas.Clear()
+		drawOpt = 'ap'
+
+		tag='%s_%s' % (chan, key)
+		grToParametrize[key].Fit('pol1','Q+','same')
+		grToParametrize[key].Draw('AP')
+		drawOpt='p'
+		grToParametrize[key].GetFunction('pol1').SetLineColor(grToParametrize[key].GetLineColor())
+		grToParametrize[key].GetXaxis().SetTitle("Top mass [GeV]")
+		grToParametrize[key].GetYaxis().SetTitleOffset(1.2)
+
+		if key == 't':
+			grToParametrize[key].GetYaxis().SetTitle("Expected single top events")
+			ws.factory("%s[%f]"%(tag,grToParametrize[key].GetFunction('pol1').Eval(172.5)))
+		elif key == 'ttfrac':
+			grToParametrize[key].GetYaxis().SetTitle('t#bar{t} / t')
+			ws.factory("RooFormulaVar::%s('%f+@0*(%f)',{mtop})"%
+					   (tag,grToParametrize[key].GetFunction('pol1').GetParameter(0),
+							grToParametrize[key].GetFunction('pol1').GetParameter(1)))
+
+		if drawOpt=='ap': continue
+		leg = canvas.BuildLegend()
+		leg.SetFillStyle(0)
+		leg.SetTextFont(42)
+		leg.SetBorderSize(0)
+		leg.SetTextSize(0.03)
+		leg.SetNColumns(2)
+		label = ROOT.TLatex()
+		label.SetNDC()
+		label.SetTextFont(42)
+		label.SetTextSize(0.035)
+		channelTitle=chan.replace('_',' ')
+		label.DrawLatex(0.12,0.92,'#bf{CMS} #it{simulation}')
+		label.DrawLatex(0.2,0.84,channelTitle)
+		canvas.SaveAs('%s/plots/%s_%s.pdf'%(options.outDir,key,tag))
+		canvas.SaveAs('%s/plots/%s_%s.png'%(options.outDir,key,tag))
 
 def createWorkspace(masshistos, options):
 	"""
@@ -217,6 +345,7 @@ def createWorkspace(masshistos, options):
 	print 'Processes available: ' , proclist
 	print 'Channels available: ' , CHANNELS
 
+	assert(proclist == sorted(['t', 'tt', 'bg']))
 
 	# Initiate a workspace where the observable is the SVLMass
 	# and the variable to fit is mtop
@@ -249,9 +378,13 @@ def createWorkspace(masshistos, options):
 
 	print "Done extracting histograms, commencing fits"
 
+
 	for chan in CHANNELS:
-		for procname in proclist:
-			fitSignalPermutation((ws, chan, masses, procname, SVLmass, options))
+		parameterizeSignalFraction(ws=ws, chan=chan, masses=masses,
+			                       masshistos=masshistos,
+			                       options=options)
+		# for procname in proclist:
+		# 	fitSignalPermutation((ws, chan, masses, procname, SVLmass, options))
 
 	# Save all to file
 	ws.saveSnapshot("model_params", ws.allVars(), True)
@@ -398,14 +531,12 @@ def main():
 	ROOT.gStyle.SetOptStat(0)
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gROOT.SetBatch(True)
-	if options.spy : ROOT.gROOT.SetBatch(False)
+	ROOT.gSystem.Load("libUserCodeTopMassSecVtx")
+	ROOT.AutoLibraryLoader.enable()
+	if not options.verbose > 5:
+		ROOT.shushRooFit()
 
 	ROOT.gSystem.Load("libUserCodeTopMassSecVtx")
-	if not options.test:
-		ROOT.AutoLibraryLoader.enable()
-		if not options.verbose > 5:
-			ROOT.shushRooFit()
-			# see TError.h - gamma function prints lots of errors when scanning
 	ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
 
 	os.system('mkdir -p %s' % options.outDir)

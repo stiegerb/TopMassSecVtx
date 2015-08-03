@@ -909,9 +909,10 @@ bool LxyTreeAnalysis::selectSVLSingleTopEvent(bool &passBtagNom, bool &passBtagU
             btsfutil_.modifyBTagsWithSF(nomBtagStatusDown,sf-sfunc,eff);
         }
 
-        nbjets     += (svlxy[i] > 0 || nomBtagStatus);
-        nbjetsUp   += (svlxy[i] > 0 || nomBtagStatusUp);
-        nbjetsDown += (svlxy[i] > 0 || nomBtagStatusDown);
+        // Ask for one btag later
+        nbjets     += (nomBtagStatus);
+        nbjetsUp   += (nomBtagStatusUp);
+        nbjetsDown += (nomBtagStatusDown);
 
         //count svtx separately
         nsvjets += (svlxy[i] > 0);
@@ -936,8 +937,19 @@ bool LxyTreeAnalysis::selectSVLSingleTopEvent(bool &passBtagNom, bool &passBtagU
         return true;
     }
 
-    // For single lepton, ask at least two jets
-    if (abs(evcat) == 11 && (nj+nfj) > 1) return true;
+    // For single lepton, ask at least two jets (one of which can be forward)
+    if (abs(evcat) == 11 || abs(evcat) == 13){
+        passBtagNom  = (nbjets     > 0);
+        passBtagUp   = (nbjetsUp   > 0);
+        passBtagDown = (nbjetsDown > 0);
+    }
+    if (abs(evcat) == 11 && (nj+nfj) > 1){
+        // Ask for MET > 45 in e later
+        passMETNom  = (metpt > 45);
+        passMETUp   = (metvar[4] > 45);
+        passMETDown = (metvar[5] > 45);
+        return true;
+    }
     if (abs(evcat) == 13 && (nj+nfj) > 1) return true;
 
     // QCD control sample (non-isolated leptons)
@@ -1300,7 +1312,7 @@ void LxyTreeAnalysis::analyze() {
 
     bool passBtag(true), passBtagup(true), passBtagdown(true);
     bool passMET(true), passMETup(true),passMETdown(true);
-    if(selectSVLSingleTopEvent(passBtag, passBtagup, passBtagdown,passMET,passMETup,passMETdown))
+    if(selectSVLSingleTopEvent(passBtag, passBtagup, passBtagdown, passMET, passMETup, passMETdown))
     {
         // Fill some control histograms:
         if(passBtag && passMET){
@@ -1368,8 +1380,8 @@ void LxyTreeAnalysis::analyze() {
                 if(jpt[svind]       > 30.) svl_pairing.jesweights[0] = 1; // nominal
                 if(jjesup[svind][0] > 30.) svl_pairing.jesweights[1] = 1; // jes up
                 if(jjesdn[svind][0] > 30.) svl_pairing.jesweights[2] = 1; // jes down
-                if(jjerup[svind]    > 30.) svl_pairing.jesweights[3] = 1; // jes up
-                if(jjerdn[svind]    > 30.) svl_pairing.jesweights[4] = 1; // jes down
+                if(jjerup[svind]    > 30.) svl_pairing.jesweights[3] = 1; // jer up
+                if(jjerdn[svind]    > 30.) svl_pairing.jesweights[4] = 1; // jer down
                 svl_pairing.bfragweights[0] = bwgt[svind][0];
                 svl_pairing.bfragweights[1] = bwgt[svind][1];
                 svl_pairing.bfragweights[2] = bwgt[svind][2];

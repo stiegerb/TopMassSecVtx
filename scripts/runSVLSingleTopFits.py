@@ -145,6 +145,9 @@ def gatherHistos(inputdir, verbose=0):
 		if key[0] in ['tW', 'tbarW']: continue
 		if verbose>0: print '... processing', procname
 		fname = '%s.root' % procname
+
+		#inputdir needs to have outputs of runSVLSingleTop (ie. rootfiles_*) for nominal and additional masses
+
 		if not fname in os.listdir(inputdir):
 			if verbose>0: print '%s not found'%(fname)
 			continue
@@ -178,27 +181,43 @@ def gatherHistos(inputdir, verbose=0):
 					hists[(pname,key[1],chan)] = histo
 
 	# Now the backgrounds
+
+	# inputdir also needs to have background modeling rootfiles
+
 	for fname in os.listdir(inputdir):
 		if not osp.splitext(fname)[1] == '.root': continue
-		isdata, procname, splitno = resolveFilename(fname)
-		if isdata: continue
-		if ('TTJets' in procname or
-			'SingleT' in procname or
-			'TT_AUET' in procname): continue
+		
+		#EDIT
+#		isdata, procname, splitno = resolveFilename(fname)
+#		if isdata: continue
+		if ('QCD' not in fname) and ('WJets' not in fname): continue
+
+#		if ('TTJets' in procname or
+#			'SingleT' in procname or
+#			'TT_AUET' in procname): continue
 		if verbose>0: print '... processing', fname
 
 		tfile = openTFile(osp.join(inputdir,fname))
-		for chan in CHANNELS:
-			hkey = 'bg_%s_172_unm'%(chan)
+		for key in tfile.GetListOfKeys():
+			name = key.GetName()
+			cur_tag = ''
+			for chan in ['e2j','mu2j']:
+				if chan in name:
+					if chan == 'e2j':
+						cur_tag = chan
+					else:
+						cur_tag = 'm2j'
+			if cur_tag == '': continue
+			hkey = name #'bg_%s_172_unm'%(chan)
 			histo = getHistogramFromFile(hkey,tfile,verbose)
 			if histo == None: continue
 
 			## Scale it to lumi (assuming they are unscaled before)
-			histo.Scale(LUMI*xsecweights['MC8TeV_'+procname])
+			#histo.Scale(LUMI*xsecweights['MC8TeV_'+procname])
 
 			## Combine them all
-			if ('bg',chan) in hists: hists[('bg',chan)].Add(histo)
-			else:                    hists[('bg',chan)] = histo
+			if ('bg',cur_tag) in hists: hists[('bg',cur_tag)].Add(histo)
+			else:                    hists[('bg',cur_tag)] = histo
 
 	return hists
 
@@ -398,13 +417,15 @@ def main():
 	ROOT.gStyle.SetOptStat(0)
 	ROOT.gStyle.SetOptTitle(0)
 	ROOT.gROOT.SetBatch(True)
-	if options.spy : ROOT.gROOT.SetBatch(False)
+	#EDIT: Need to put back in
+	#if options.spy : ROOT.gROOT.SetBatch(False)
 
 	ROOT.gSystem.Load("libUserCodeTopMassSecVtx")
-	if not options.test:
-		ROOT.AutoLibraryLoader.enable()
-		if not options.verbose > 5:
-			ROOT.shushRooFit()
+	#EDIT: Need to put back in
+#	if not options.test:
+#		ROOT.AutoLibraryLoader.enable()
+#		if not options.verbose > 5:
+#			ROOT.shushRooFit()
 			# see TError.h - gamma function prints lots of errors when scanning
 	ROOT.gROOT.ProcessLine("gErrorIgnoreLevel=kFatal")
 

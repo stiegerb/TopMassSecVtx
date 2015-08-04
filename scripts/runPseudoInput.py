@@ -127,6 +127,7 @@ def makePseudoInputPlots(outDir):
     
     for key in os.listdir('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/bkg_templates/'):
         
+        if '.png' in key: continue
         rootfile = ROOT.TFile.Open('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/bkg_templates/'+key)
 
         for histo in ROOT.gDirectory.GetListOfKeys():
@@ -184,6 +185,7 @@ def makePseudoInputPlots(outDir):
             systhistos[process+'_'+syst_cur+'_'+tag] = hist.Clone()
             systhistos[process+'_'+syst_cur+'_'+tag].SetFillColor(0)
 
+    outfile = ROOT.TFile(outDir+'pseudo_inputs.root','new')
     #Make the plots - masshistos
     for tag in channels:
         tag1 = ''
@@ -213,13 +215,13 @@ def makePseudoInputPlots(outDir):
             total_hist.Add(ttbar_histo.Clone())
             total_hist.Add(sig_histo.Clone())
             
-            total_stack = ROOT.THStack()
-            total_stack.Add(bkg_histo.Clone())
-            total_stack.Add(ttbar_histo.Clone())
-            total_stack.Add(sig_histo.Clone())
+            #total_stack = ROOT.THStack()
+            #total_stack.Add(bkg_histo.Clone())
+            #total_stack.Add(ttbar_histo.Clone())
+            #total_stack.Add(sig_histo.Clone())
 
-            total_stack.SaveAs(outDir+'stack_mass_check_'+mass+'_'+tag+'.root')
-            total_hist.SaveAs(outDir+'mass_check_'+mass+'_'+tag+'.root')
+            #total_stack.SaveAs(outDir+'stack_mass_check_'+mass+'_'+tag+'.root')
+            total_hist.Write('mass_check_'+mass+'_'+tag)
 
         #Make the plots - systs
         for key in systhistos.keys():
@@ -241,18 +243,19 @@ def makePseudoInputPlots(outDir):
 
             #sig_histo.Rebin()
 
-            total_stack = ROOT.THStack()
-            total_stack.Add(bkg_histo.Clone())
-            total_stack.Add(ttbar_histo.Clone())
-            total_stack.Add(sig_histo.Clone())
+            #total_stack = ROOT.THStack()
+            #total_stack.Add(bkg_histo.Clone())
+            #total_stack.Add(ttbar_histo.Clone())
+            #total_stack.Add(sig_histo.Clone())
 
             total_hist = bkg_histo.Clone()
             total_hist.Add(ttbar_histo.Clone())
             total_hist.Add(sig_histo.Clone())
 
-            total_stack.SaveAs(outDir+'stack_syst_'+key+'_'+tag+'.root')
-            total_hist.SaveAs(outDir+'syst_'+key+'_'+tag+'.root')
+            #total_stack.SaveAs(outDir+'stack_syst_'+key+'_'+tag+'.root')
+            total_hist.Write('syst_'+key+'_'+tag)
 
+    outfile.Close()
 
 """
 Main function

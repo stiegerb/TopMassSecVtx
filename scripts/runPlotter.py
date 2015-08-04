@@ -241,7 +241,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
-    newPlot.plotformats = ['pdf', 'png']
+    newPlot.plotformats = ['pdf', 'png', 'root']
     newPlot.ratiorange = (0.4,2.3)
     baseRootFile = None
 

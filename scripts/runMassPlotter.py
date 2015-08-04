@@ -317,7 +317,9 @@ def makeTTbarPlots(outDir,norm=None):
     else:
         ratplot.show('tt_e_compare',outDir)
         
+    histos_unweighted['e3j_data_BDT'].Scale(histos['e2j'].Integral())
     histos_unweighted['e3j_data_BDT'].SaveAs(outDir+'bkg_templates/ttbar_template_e.root')
+    histos_unweighted['mu3j_data_BDT'].Scale(histos['mu2j'].Integral())
     histos_unweighted['mu3j_data_BDT'].SaveAs(outDir+'bkg_templates/ttbar_template_mu.root')
 
     can1 = ROOT.TCanvas()
@@ -424,6 +426,7 @@ def makeQCDPlots(outDir, norm=None):
                 hist2 = ROOT.TH1F()
                 ROOT.gDirectory.GetObject(name,hist2)
                 hist1.Add(hist2.Clone(),-1)
+        hist1.SetTitle('')
         histos_unscaled[tag+'_data']=hist1.Clone()
         hist1.Rebin()
         hist1.SetFillColor(0)
@@ -461,6 +464,7 @@ def makeQCDPlots(outDir, norm=None):
         else:
             ratplot.show('qcd_'+tag+'_compare',outDir)
 
+        histos_unscaled[tag+'_data'].Scale(histos[tag].Integral())
         histos_unscaled[tag+'_data'].SaveAs(outDir+'bkg_templates/QCD_template_'+tag+'.root')
         
         can = ROOT.TCanvas()
@@ -517,8 +521,7 @@ def makeWJetsPlots(outDir,norm=None):
                 histos[tag]=hist2.Clone()
             except LookupError: pass
 
-        hist1 = ROOT.TH1F(
-)
+        hist1 = ROOT.TH1F()
         foundone = False
         rootfile.cd('SVLMassWJets_'+tag)
         for key in ROOT.gDirectory.GetListOfKeys():
@@ -542,6 +545,7 @@ def makeWJetsPlots(outDir,norm=None):
                     hist2 = ROOT.TH1F()
                     ROOT.gDirectory.GetObject(name,hist2)
                     hist1.Add(hist2.Clone(),-1)
+        hist1.SetTitle('')
         hist1.Rebin()
         hist1.SetFillColor(0)
         if norm=='norm':
@@ -599,6 +603,9 @@ def makeSystPlots(outDir):
 
     tags = ['e2j','e3j','mu2j','mu3j']
 
+    list_weights = [['nominal'],['puup','pudn'],['lepselup','lepseldn'],['umetup','umetdn'],['toppt','topptup'],['bfrag','bfragup','bfragdn','bfragp11','bfragpete','bfraglund'],['jesup','jesdn'],['jerup','jerdn'],['btagup','btagdn'],['lesup','lesdn'],['bfnuup','bfnudn']]
+    weight_names = ['nominal','pile_up','lepton_selection','umet','toppt','bfrag','jes','jer','btag','les','bfnu']
+
     #histos for reweightings; histos1 for syst files
     histos = {}
     histos1 = {}
@@ -621,9 +628,12 @@ def makeSystPlots(outDir):
                     histos[weight+'_'+tag].Add(hist.Clone())
             histos[weight+'_'+tag].SetFillColor(0)
             histos[weight+'_'+tag].Scale(1/histos[weight+'_'+tag].Integral())
-    
+            histos[weight+'_'+tag].SetTitle('')
+
     #List of systematics files
     systs = ['scaledown','scaleup','matchingdown','matchingup','TuneP11mpiHi','TuneP11noCR','TuneP11','TuneP11TeV','widthx5','mcatnlo','Z2Star']
+
+    syst_names = ['scale','matching','TuneP11','SemiLep_TuneP11','widthx5','mcatnlo','Z2Star']
 
     #Fill histos1 with systematics files
     for key in os.listdir('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/rootfiles_syst/'):
@@ -644,108 +654,102 @@ def makeSystPlots(outDir):
 
         for tag in tags:
             ROOT.gDirectory.GetObject('SVLMass_'+tag,hist)
-            histos1[process+'_'+syst_cur+'_'+tag]=hist.Clone()
+            try:
+                histos1[process+'_'+syst_cur+'_'+tag].Add(hist.Clone())
+                print('Added '+key)
+            except KeyError:
+                histos1[process+'_'+syst_cur+'_'+tag]=hist.Clone()
+                print('Assigned '+key)
             histos1[process+'_'+syst_cur+'_'+tag].SetFillColor(0)
             histos1[process+'_'+syst_cur+'_'+tag].Scale(1/histos1[process+'_'+syst_cur+'_'+tag].Integral())
+            histos1[process+'_'+syst_cur+'_'+tag].SetTitle('')
 
     #Create the ratio plots
-    for key in histos.keys():
-        cur_tag = ''
-        for tag in tags:
-            if tag in key:
-                cur_tag = tag
-        
-        #First for the reweighted signal
-        ratplot = RatioPlot('ratioplot')
-        ratplot.normalized = False
-        ratplot.ratiotitle = 'Ratio wrt Nominal Reweighting'
-        ratplot.ratiorange = (0.5,1.5)
-        
-        reference = histos['nominal_'+cur_tag].Clone()
-        ratplot.reference = reference
-        
-        legentry = 'nominal_'+cur_tag
-        hist = histos['nominal_'+cur_tag].Clone()
-        ratplot.add(hist,legentry)
-        legentry = key
-        hist = histos[key].Clone()
-        ratplot.add(hist,legentry)
-
-        ratplot.tag = 'Reweighting '+key
-        ratplot.subtag = 'syst '+key
-        ratplot.show('syst_'+key+'_compare_reweight',outDir)
-        ratplot.reset()
-
-    #Then for systematics rather than reweightings
-    for key in histos1.keys():
-        cur_tag=''
-        for tag in tags:
-            if tag in key:
-                cur_tag=tag
-        cur_proc=''
-        if 'SingleT' in key:
-            cur_proc='SingleT'
-        elif 'TT' in key:
-            cur_proc='TT'
-
-        ratplot = RatioPlot('ratioplot')
-        ratplot.normalized = False
-        ratplot.ratiotitle = 'Ratio wrt Nominal Systematics '+cur_proc
-        ratplot.ratiorange = (0.5,1.5)
-        
-        #For single top
-        if cur_proc=='SingleT':
-            reference = histos['nominal_'+cur_tag].Clone()
+    i = 0
+    while i<len(list_weights):
+        for tag in ['e2j','mu2j']:
+            ratplot = RatioPlot('ratioplot')
+            ratplot.normalized = False
+            ratplot.ratiotitle = 'Ratio wrt Nominal Weight '+tag
+            ratplot.ratiorange = (0.5,1.5)
+            
+            reference = histos['nominal_'+tag].Clone()
             ratplot.reference = reference
             
-            legentry = 'nominal_singlet_'+cur_tag
-            hist = histos['nominal_'+cur_tag].Clone()
+            legentry = 'nominal_'+tag
+            hist = histos['nominal_'+tag].Clone()
             ratplot.add(hist,legentry)
-            legentry = key
-            hist = histos1[key].Clone()
-            ratplot.add(hist,legentry)
-
-            ratplot.tag = 'Systematics SingleT '+cur_tag
-            ratplot.subtag = 'syst_singlet_'+key
-            ratplot.show('syst_'+cur_tag+'_compare_syst_singlet_'+key,outDir)
+            for thing in list_weights[i]:
+                legentry = thing+'_'+tag
+                hist = histos[thing+'_'+tag].Clone()
+                ratplot.add(hist,legentry)
+            ratplot.tag = 'Reweighting '+weight_names[i]
+            ratplot.suptag = 'syst '+weight_names[i]
+            ratplot.show('syst_'+weight_names[i]+'_compare_reweight',outDir)
             ratplot.reset()
+        i+=1
 
-        #For ttbar
-        else:
-        
-            rootfile1.cd('SVLMass_'+cur_tag)
-            ttbar_hist = ROOT.TH1F()
-            for key1 in ROOT.gDirectory.GetListOfKeys():
-                name = key1.GetName()
-                if 'MSDecays' in name:
-                    ROOT.gDirectory.GetObject(name,ttbar_hist)
-            ttbar_hist.SetFillColor(0)
-            ttbar_hist.Scale(1/ttbar_hist.Integral())
-            reference = ttbar_hist.Clone()
-            ratplot.reference = reference
-            
-            legentry = 'nominal_tt_'+cur_tag
-            hist = ttbar_hist.Clone()
-            ratplot.add(hist,legentry)
-            legentry = key
-            hist = histos1[key].Clone()
-            ratplot.add(hist,legentry)
+    #Then for systematics rather than reweightings           
+    i = 0
+    while i < len(syst_names):
+        for tag in ['e2j','mu2j']:
+            for proc in ['SingleT','TT']:
+                ratplot = RatioPlot('ratioplot')
+                ratplot.normalized = False
+                ratplot.ratiotitle = 'Ratio wrt Nominal '+proc+' '+tag
+                ratplot.ratiorange = (0.5,1.5)
+                if proc == 'SingleT':
+                    reference = histos['nominal_'+tag].Clone()
+                    ratplot.reference = reference
+                    
+                    legentry = 'nominal_SingleT_'+tag
+                    hist = histos['nominal_'+tag].Clone()
+                    ratplot.add(hist,legentry)
+                else:
+                    rootfile1.cd('SVLMass_'+tag)
+                    ttbar_hist = ROOT.TH1F()
+                    for key1 in ROOT.gDirectory.GetListOfKeys():
+                        name = key1.GetName()
+                        if 'MSDecays' in name:
+                            ROOT.gDirectory.GetObject(name,ttbar_hist)
+                    ttbar_hist.SetFillColor(0)
+                    ttbar_hist.Scale(1/ttbar_hist.Integral())
+                    ttbar_hist.SetTitle('')
 
-            ratplot.tag = 'Systematics TTbar '+cur_tag
-            ratplot.subtag = 'syst_ttbar_'+key
-            ratplot.show('syst_'+cur_tag+'_compare_syst_ttbar_'+key,outDir)
-            ratplot.reset()
+                    reference = ttbar_hist.Clone()
+                    ratplot.reference = reference
+                    
+                    legentry = 'nominal_TT_'+tag
+                    hist = ttbar_hist.Clone()
+                    ratplot.add(hist,legentry)
 
-
+                foundone = False
+                for key in histos1.keys():
+                    if ('SemiLep' in key) and ('SemiLep' not in syst_names[i]): continue
+                    if (syst_names[i] in key) and (tag in key) and (proc in key):
+                        legentry = key
+                        hist = histos1[key].Clone()
+                        ratplot.add(hist,legentry)
+                        foundone = True
+                        
+                if foundone==False:
+                    ratplot.reset()
+                    continue
+                
+                ratplot.tag = 'Systematics '+proc+' '+tag
+                ratplot.subtag = 'syst_'+proc+'_'+syst_names[i]+'_'+tag
+                ratplot.show('syst_'+proc+'_'+syst_names[i]+'_'+tag,outDir)
+                ratplot.reset()
+        i+=1
 
 """
 Main function
 """
 def main():
-    #makeMassScanPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/')
+    makeMassScanPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/')
     makeTTbarPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
     makeWJetsPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
     makeQCDPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/','norm')
-    #makeSystPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/syst')
+    makeSystPlots('/afs/cern.ch/user/e/edrueke/edrueke/top_lxy/CMSSW_5_3_22/src/UserCode/TopMassSecVtx/singleTop/ratio_plots/syst')
 
 main()

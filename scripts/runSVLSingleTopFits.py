@@ -137,7 +137,7 @@ def gatherHistos(inputdir, verbose=0):
 	xsecweights = pickle.load(cachefile)
 	cachefile.close()
 	print '>>> Read xsec weights from cache (.xsecweights.pck)'
-
+						
 	# First the single top and ttbar ones
 	for key,procname in CHANMASSTOPROCNAME.iteritems():
 		if key[0] in ['tW', 'tbarW']: continue
@@ -166,10 +166,9 @@ def gatherHistos(inputdir, verbose=0):
 
 		## Extract the histograms
 		for chan in CHANNELS:
-			for pair in perms:
+			for pair in perms:					
 				hkey = '%s_%s_%s_%s'%(pname, chan, massstr, pair)
 				histo = getHistogramFromFile(hkey,tfile,verbose)
-
 				## Scale it to lumi (assuming they are unscaled before)
 				histo.Scale(LUMI*xsecweights[procname])
 
@@ -379,14 +378,14 @@ def createWorkspace(masshistos, options):
 	print "Done extracting histograms, commencing fits"
 
 
-	# for chan in CHANNELS:
-	# 	parameterizeSignalFraction(ws=ws, chan=chan, masses=masses,
-	# 		                       masshistos=masshistos,
-	# 		                       options=options)
-	# 	for procname in proclist:
-	# 		fitSignalPermutation((ws, chan, masses, procname, SVLmass, options))
+	for chan in CHANNELS:
+	 	parameterizeSignalFraction(ws=ws, chan=chan, masses=masses,
+					   masshistos=masshistos,
+					   options=options)
+	 	for procname in proclist:
+	 		fitSignalPermutation((ws, chan, masses, procname, SVLmass, options))
 
-	fitSignalPermutation((ws, 'm2j', masses, 'bg', SVLmass, options))
+	#fitSignalPermutation((ws, 'm2j', masses, 'bg', SVLmass, options))
 
 	# Save all to file
 	ws.saveSnapshot("model_params", ws.allVars(), True)

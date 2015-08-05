@@ -60,9 +60,10 @@ class PseudoExperimentResults:
 
     def initHistos(self,key):
         self.histos[key]={}
-        pfix=''
-        for tk in key: pfix += str(tk)+'_'
-        pfix=pfix[:-1]
+        pfix=key
+        # pfix=''
+        # for tk in key: pfix += str(tk)+'_'
+        # pfix=pfix[:-1]
         self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,
                                                         ';#Deltam_{t} [GeV];Pseudo-experiments',
                                                         200,self.dmrange[0],self.dmrange[1])
@@ -92,9 +93,10 @@ class PseudoExperimentResults:
     def saveResults(self):
         peFile=ROOT.TFile(self.outFileUrl,'RECREATE')
         for key in self.histos:
-            dirName=''
-            for tk in key: dirName+=str(tk)+'_'
-            dirName=dirName[:-1]
+            dirName=key
+            # dirName=''
+            # for tk in key: dirName+=str(tk)+'_'
+            # dirName=dirName[:-1]
             peFile.cd()
             outDir=peFile.mkdir(dirName)
             outDir.cd()

@@ -14,11 +14,20 @@ Wrapper to contain the histograms with the results of the pseudo-experiments
 """
 class PseudoExperimentResults:
 
-    def __init__(self,genMtop,outFileUrl):
+    def __init__(self,genMtop,outFileUrl,
+                 dmrange=(-5.0,5.0),
+                 statuncrange=(0,1.5),
+                 pullrange=(-3.03,2.97),
+                 murange=(0.85,1.15)):
         self.genMtop=genMtop
         self.outFileUrl=outFileUrl
         self.histos={}
         self.trees={}
+
+        self.dmrange      = dmrange
+        self.statuncrange = statuncrange
+        self.pullrange    = pullrange
+        self.murange      = murange
 
         self.genmtop = numpy.zeros(1, dtype=float)
         self.genmtop[0] = self.genMtop
@@ -56,16 +65,17 @@ class PseudoExperimentResults:
         pfix=pfix[:-1]
         self.histos[key]['mtopfit']         = ROOT.TH1F('mtopfit_%s'%pfix,
                                                         ';#Deltam_{t} [GeV];Pseudo-experiments',
-                                                        200,-5,5)
+                                                        200,self.dmrange[0],self.dmrange[1])
         self.histos[key]['mtopfit_statunc'] = ROOT.TH1F('mtopfit_statunc_%s'%pfix,
                                                         ';#sigma_{stat}(m_{t}) [GeV];Pseudo-experiments',
-                                                        200,0,1.5)
+                                                        200,self.statuncrange[0],self.statuncrange[1])
         self.histos[key]['mtopfit_pull']    = ROOT.TH1F('mtopfit_pull_%s'%pfix,
                                                         ';Pull=(m_{t}-m_{t}^{true})/#sigma_{stat}(m_{t});Pseudo-experiments',
-                                                        100,-3.03,2.97)
+                                                        100,self.pullrange[0],self.pullrange[1])
         self.histos[key]['muvsmtop']        = ROOT.TH2F('muvsmtop_%s'%pfix,
                                                         ';#Delta m_{t} [GeV];#mu=#sigma/#sigma_{th}(172.5 GeV);Pseudo-experiments',
-                                                        100,-5,5,100,0.85,1.15)
+                                                        100,self.dmrange[0],self.dmrange[1],
+                                                        100,self.murange[0],self.murange[1])
         for var in self.histos[key]:
             self.histos[key][var].SetDirectory(0)
             self.histos[key][var].Sumw2()

@@ -598,6 +598,10 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
                             diffstr = '$ %5.2f \\pm %4.2f $ & ' % (diff, diffErr)
                             if insum: dns.append((diff,diffErr))
 
+                        if insum and len(variations) == 1 and syst != 'toppt':
+                            if diff > 0: dns.append((-1.0*diff, -1.0*diffErr))
+                            else:        ups.append((-1.0*diff, -1.0*diffErr))
+
                     except KeyError:
                         ## Syst not defined, write empty entry
                         diffstr = '$ %14s $ & ' % (' ')

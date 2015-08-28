@@ -75,8 +75,8 @@ SYSTTOPROCNAME = dict([(k,[v.replace('.root','') for v in vlist]) for k,_,vlist,
 
 SYSTSFROMWEIGHTS = [
 	('nominal',     'Nominal',                   '1',                      ['tot','cor','wro','unm']),
-	('puup',        'Pileup up',                 'Weight[2]',    ['tot']),
-	('pudn',        'Pileup down',               'Weight[3]',    ['tot']),
+	('puup',        'Pileup up',                 'Weight[2]/Weight[1]',    ['tot']),
+	('pudn',        'Pileup down',               'Weight[3]/Weight[1]',    ['tot']),
 	('lepselup',    'Lepton selection up',       'Weight[5]',    ['tot']),
 	('lepseldn',    'Lepton selection down',     'Weight[6]',    ['tot']),
 	('umetup',      'Uncl. MET up',              'METWeight[1]',           ['tot']),
@@ -334,6 +334,11 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
 			tasks.append((hname, svlmassVar, finalsel,
 				          NBINS, XMIN, XMAX, MASSXAXISTITLE))
+			### DEBUG
+			# if 'bfrag' in syst:
+			# 	print 50*'#'
+			# 	print syst
+			# 	print finalsel
 			hname_to_keys[hname] = (tag, syst, comb, ntk1)
 	return tasks
 

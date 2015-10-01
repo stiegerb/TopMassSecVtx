@@ -10,6 +10,7 @@ struct GenTopEvent_t
   Int_t nj;
   Int_t jflav[100];
   Float_t jpt[100],jeta[100],jphi[100],jmass[100];
+  Float_t bpt[100],beta[100],bphi[100],bmass[100];
   Int_t nl;
   Int_t lid[100];
   Float_t lpt[100],leta[100],lphi[100],lmass[100];
@@ -29,6 +30,10 @@ void bookGenTopEvent(TTree *t, GenTopEvent_t &ev)
   t->Branch("jphi",   ev.jphi,   "jphi[nj]/F");
   t->Branch("jmass",  ev.jmass,  "jmass[nj]/F");
   t->Branch("jflav",  ev.jflav,  "jflav[nj]/I");
+  t->Branch("bpt",    ev.bpt,   "bpt[nj]/F");
+  t->Branch("beta",   ev.beta,   "beta[nj]/F");
+  t->Branch("bphi",   ev.bphi,   "bphi[nj]/F");
+  t->Branch("bmass",  ev.bmass,  "bmass[nj]/F");
   t->Branch("nl",    &ev.nl,     "nl/I");
   t->Branch("lpt",    ev.lpt,    "lpt[nj]/F");
   t->Branch("leta",   ev.leta,   "leta[nj]/F");

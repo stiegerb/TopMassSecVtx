@@ -17,18 +17,28 @@ process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True),
                                         ) 
 
 #the source and output
-from UserCode.TopMassSecVtx.MarkusSherpaSamples_cfi import getMarkusSherpaSamplesFor
+
+#from UserCode.TopMassSecVtx.MarkusSherpaSamples_cfi import getMarkusSherpaSamplesFor
+#generator='Lund'
+#generator='Cluster'
+
+from UserCode.TopMassSecVtx.OfficialSamples_cfi import getOfficialSamplesFor
+#generator='PowhegPythia6'
+#generator='PowhegHerwig6'
+generator='MadGraphPythia6'
+
 process.source = cms.Source("PoolSource",
-                            fileNames = getMarkusSherpaSamplesFor('Lund'),
+                            #fileNames = getMarkusSherpaSamplesFor(generator),
+                            fileNames = getOfficialSamplesFor(generator),
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck')
                             )
 
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000000) )
 
 process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
 
-process.TFileService = cms.Service("TFileService", fileName = cms.string("AcceptanceAnalysis.root"))
+process.TFileService = cms.Service("TFileService", fileName = cms.string("AcceptanceAnalysis_%s.root" % generator))
 
 process.accAnalyzer = cms.EDFilter("GeneratorLevelAcceptanceAnalyzer")
 

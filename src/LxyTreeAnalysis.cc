@@ -95,6 +95,35 @@ TLorentzVector LxyTreeAnalysis::RotateLepton(TLorentzVector &origLep,
 
 
 void LxyTreeAnalysis::RunJob(TString filename) {
+
+  //open MCFM weights file
+  TString comb[]={"correct","wrong"};
+  for(size_t i=0; i<2; i++)
+    {
+      TString url("${CMSSW_BASE}/src/UserCode/TopMassSecVtx/data/weights/"+comb[i]+"_combinations_norm.root");
+      gSystem->ExpandPathName(url);
+      TFile *fIn=TFile::Open(url);
+      TString refDen("dist_MCFM NLO (prod)_MadGraph+Pythia6_norm_ratio");
+      if(filename.Contains("powheg")) refDen="dist_MCFM NLO (prod)_Powheg+Pythia6_norm_ratio";
+      TH1 *hDen=(TH1 *)fIn->Get(refDen);
+      if(hDen==0) continue;
+      mcfmWeights_[comb[i]+"_nloprod"]=new TGraphErrors(hDen);
+      TH1 *hNum=(TH1 *)fIn->Get("dist_MCFM NLO (prod+decay)_norm_ratio");
+      if(hNum==0) continue;
+      hNum->Divide(hDen);
+      for(Int_t xbin=1; xbin<=hNum->GetNbinsX(); xbin++)
+	{
+	  Float_t wgt=hNum->GetBinContent(xbin);
+	  Float_t xlo=hNum->GetXaxis()->GetBinLowEdge(xbin);
+	  if(xlo<20) wgt=hNum->GetBinContent( hNum->GetXaxis()->FindBin(20.) );
+	  if(xlo>190) wgt=hNum->GetBinContent( hNum->GetXaxis()->FindBin(190.) );
+	  hNum->SetBinContent(xbin,wgt);
+	  hNum->SetBinError(xbin,0);
+	}
+      mcfmWeights_[comb[i]+"_nloproddec"]=new TGraphErrors(hNum);
+      fIn->Close();
+    }
+
     TFile *file = TFile::Open(filename, "recreate");
 
     //add PDF information, if relevant
@@ -932,6 +961,7 @@ void LxyTreeAnalysis::BookSVLTree() {
     fSVLInfoTree->Branch("Lumi",           &fTLumi,          "Lumi/I");
     fSVLInfoTree->Branch("EvCat",          &fTEvCat,         "EvCat/I");
     fSVLInfoTree->Branch("Weight",          fTWeight,        "Weight[11]/F");
+    fSVLInfoTree->Branch("MCFMWeight",     &fTMCFMWeight,     "MCFMWeight/F");
     fSVLInfoTree->Branch("JESWeight",       fTJESWeight,     "JESWeight[5]/F");
     fSVLInfoTree->Branch("METWeight",       fTMETWeight,     "METWeight[3]/F");
     fSVLInfoTree->Branch("BtagWeight",      fTBtagWeight,    "BtagWeight[3]/F");
@@ -997,10 +1027,12 @@ void LxyTreeAnalysis::ResetSVLTree()
     fTNJets     = nj;
     fTNBTags    = -1;
     fTNPVtx     = nvtx;
-    for (int i = 0; i < 11; ++i) {
+    fTMCFMWeight=1.0;
+    for (int i = 0; i < 11; ++i) 
+      {
         if(nw<i+1) fTWeight[i]=0;
         else       fTWeight[i]=w[i];
-    }
+      }
 
     for (int i = 0; i < 3; ++i) fTMETWeight[i] = -99.99;
     for (int i = 0; i < 3; ++i) fTBtagWeight[i] = -99.99;
@@ -1545,13 +1577,17 @@ void LxyTreeAnalysis::analyze() {
                 (lid[svl.lepindex] > 0 && bid[svl.svindex] == 5  ) || // el-/mu- / t/b
                 (lid[svl.lepindex] < 0 && bid[svl.svindex] == -5 ) )  // el+/mu+ / tbar/bbar
                 fTCombInfo = 0; // wrong
-
+	    
             // Generator level info
             fTGenTopPt = tpt[svl.svindex];
             TLorentzVector p_genb, p_genl;
             p_genb.SetPtEtaPhiM(bpt[svl.svindex], beta[svl.svindex], bphi[svl.svindex], 0.);
             p_genl.SetPtEtaPhiM(glpt[svl.lepindex], gleta[svl.lepindex], glphi[svl.lepindex], 0.);
             fTGenMlb = (p_genb+p_genl).M();
+
+	    fTMCFMWeight=1.0;
+	    if(fTCombInfo==1)      fTMCFMWeight=mcfmWeights_["correct_nloproddec"]->Eval(TMath::Min((Float_t)fTGenMlb,(Float_t)200.));
+	    else if(fTCombInfo==0) fTMCFMWeight=mcfmWeights_["wrong_nloproddec"]->Eval(TMath::Min((Float_t)fTGenMlb,(Float_t)200.));
 
             fSVLInfoTree->Fill();
         }

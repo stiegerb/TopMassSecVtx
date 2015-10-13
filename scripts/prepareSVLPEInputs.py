@@ -22,19 +22,19 @@ TWXSECS = {
 }
 
 QCDTEMPLATESTOADD = {
-	'inclusive'          : ('',       ['e', 'm']),
-	'inclusive_mrank1'   : ('_mrank1',['e', 'm']),
-	'inclusive_mrank1dr' : ('_mrank1dr',['e', 'm']),
-	'inclusive_drrank1dr': ('_drrank1dr',['e', 'm']),
+#	'inclusive'          : ('',       ['e', 'm']),
+#	'inclusive_mrank1'   : ('_mrank1',['e', 'm']),
+#	'inclusive_mrank1dr' : ('_mrank1dr',['e', 'm']),
+#	'inclusive_drrank1dr': ('_drrank1dr',['e', 'm']),
 	'inclusive_optmrank' : ('_optmrank',['e', 'm']),
-	'e'                  : ('',       ['e']),
-	'm'                  : ('',       ['m']),
-	'e_mrank1'           : ('_mrank1',['e']),
-	'm_mrank1'           : ('_mrank1',['m']),
-	'e_mrank1dr'         : ('_mrank1dr',['e']),
-	'm_mrank1dr'         : ('_mrank1dr',['m']),
-	'e_drrank1dr'        : ('_drrank1dr',['e']),
-	'm_drrank1dr'        : ('_drrank1dr',['m']),
+#	'e'                  : ('',       ['e']),
+#	'm'                  : ('',       ['m']),
+#	'e_mrank1'           : ('_mrank1',['e']),
+#	'm_mrank1'           : ('_mrank1',['m']),
+#	'e_mrank1dr'         : ('_mrank1dr',['e']),
+#	'm_mrank1dr'         : ('_mrank1dr',['m']),
+#	'e_drrank1dr'        : ('_drrank1dr',['e']),
+#	'm_drrank1dr'        : ('_drrank1dr',['m']),
 	'e_optmrank'         : ('_optmrank',['e']),
 	'm_optmrank'         : ('_optmrank',['m']),
 }
@@ -51,6 +51,8 @@ SYSTSTOBERENORMALIZED = [
 	'bfragp11',
 	'bfragpete',
 	'bfraglund',
+	'mgmcfmnloproddec',
+	'powpythmcfmnloproddec'
 ]
 
 def makeSystTask(tag, sel, pname, hname_to_keys, weight='1'):

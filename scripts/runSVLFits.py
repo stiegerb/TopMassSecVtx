@@ -844,18 +844,7 @@ def main():
 		inF.Close()
 	print 80*'-'
 
-	# launch pseudo-experiments
-	if not opt.isData :
-		print 'Reading input file from %s' % opt.input
-		print 'Running pseudo-experiments using PDFs and signal expectations'
-
-		runPseudoExperiments(ws=ws, options=opt, experimentTag='nominal_173v5')
-		return 0
-
-	else:
-		print 'Ready to unblind?'
-		print '...ah ah this is not even implemented'
-		return -1
+	
 	print 80*'-'
 	return 0
 

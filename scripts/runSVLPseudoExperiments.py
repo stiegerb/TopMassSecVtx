@@ -14,11 +14,12 @@ Wrapper to contain the histograms with the results of the pseudo-experiments
 """
 class PseudoExperimentResults:
 
-    def __init__(self,genMtop,outFileUrl):
+    def __init__(self,genMtop,outFileUrl,selection=None):
         self.genMtop=genMtop
         self.outFileUrl=outFileUrl
         self.histos={}
         self.trees={}
+        self.selection = selection
 
         self.genmtop = numpy.zeros(1, dtype=float)
         self.genmtop[0] = self.genMtop
@@ -26,6 +27,17 @@ class PseudoExperimentResults:
         self.statunc = numpy.zeros(1, dtype=float)
         self.pull    = numpy.zeros(1, dtype=float)
         self.mu      = numpy.zeros(1, dtype=float)
+
+        self.ntt_prefit  = 0
+        self.nt_prefit   = 0
+        self.nbkg_prefit = 0
+
+
+    def incrementPreFitExpectation(self, ntt, nt, nbkg):
+        self.ntt_prefit  += ntt
+        self.nt_prefit   += nt
+        self.nbkg_prefit += nbkg
+
 
     def addFitResult(self,key,ws):
 
@@ -48,6 +60,18 @@ class PseudoExperimentResults:
             self.histos[key]['mtopfit_pull']   .Fill(bias/error)
             self.histos[key]['muvsmtop']       .Fill(bias, ws.var('mu').getVal())
             self.trees[key].Fill()
+
+            self.ntt  = 0
+            self.nt   = 0
+            self.nbkg = 0
+
+            for ch in ['em','mm','ee','m','e']:
+                chsel=ch
+                if self.selection: chsel += '_' + self.selection
+                for ntrk in [tklow for tklow,_ in NTRKBINS]: # [3,4,5]
+                    self.ntt  += ws.function("Ntt_%s_%d"%(chsel,ntrk)).getVal()
+                    self.nt   += ws.function("Nt_%s_%d"%(chsel,ntrk)).getVal()
+                    self.nbkg += ws.function("Nbkg_%s_%d"%(chsel,ntrk)).getVal()
 
     def initHistos(self,key):
         self.histos[key]={}
@@ -265,14 +289,17 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     try:
         genMtop=float(experimentTag.rsplit('_', 1)[1].replace('v','.'))
     except Exception, e:
-        raise e
+        if options.isData:
+            genMtop = 172.5
+        else: raise e
     print prepend+'Generated top mass is %5.1f GeV'%genMtop
 
     #prepare results summary
     selTag=''
     if len(options.selection)>0 : selTag='_%s'%options.selection
     summary=PseudoExperimentResults(genMtop=genMtop,
-                                    outFileUrl=osp.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)))
+                                    outFileUrl=osp.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)),
+                                    selection=options.selection)
 
     #load the model parameters and set all to constant
     ws.loadSnapshot("model_params")
@@ -288,6 +315,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             varCtr+=1
         var = varIter.Next()
     print prepend+'setting to constant %d numbers in the model'%varCtr
+
+    ws.var("mtop").setVal(genMtop)
+    ws.var("mu").setVal(1.0)
 
     #build the relevant PDFs
     allPdfs = {}
@@ -324,8 +354,11 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             #30% unc on background
             Nbkg = ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
 
-            # print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
-            #                       chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
+            print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
+                                  chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
+
+            summary.incrementPreFitExpectation(Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
+
             # This is wrong, for some reason tfrac is evaluated at mtop = 100
             # Nbkg will also be wrong then
 
@@ -349,6 +382,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             ws.factory("RooFormulaVar::calibmtop_%s_%d('(@0-%f)/%f',{mtop})"%(chsel,ntrk,offset,slope))
             allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d,mtop=calibmtop_%s_%d)"%
                                                (chsel,ntrk,chsel,ntrk,chsel,ntrk))
+
 
     #throw pseudo-experiments
     poi = ROOT.RooArgSet( ws.var('mtop') )
@@ -448,12 +482,14 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             minuit.minos(poi)
 
             #save fit results
+
             summary.addFitResult(key=key,ws=ws)
 
             #show, if required
             selstring = options.selection if options.selection else 'inclusive'
             if options.spy and i==0:
                 pll=nllMap[('comb',0)][-1].createProfile(poi)
+
                 showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,nllMap[('comb',0)][-1]],
                                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
                                    outDir=options.outDir,
@@ -479,6 +515,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         if options.verbose>3:
             sys.stdout.write(prepend+'[combining channels and categories]')
             sys.stdout.flush()
+
         for key in nllMap:
 
             #reset to central values
@@ -495,6 +532,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             minuit.hesse()
             minuit.minos(poi)
             summary.addFitResult(key=key,ws=ws)
+
+            print "Pre  fit yield summary: Ntt: %f, Nt: %f, Nbkg: %f" % (summary.ntt_prefit, summary.nt_prefit, summary.nbkg_prefit)
+            print "Post fit yield summary: Ntt: %f, Nt: %f, Nbkg: %f" % (summary.ntt, summary.nt, summary.nbkg)
+
             combll.Delete()
 
             if options.verbose>3:
@@ -662,10 +703,11 @@ def main():
 
         return 0
     else:
-	opt.isData=True
         opt.spy=True
         opt.nPexp=1
-        runPseudoExperiments(ws,options=opt,experimentTag='data')
+        opt.verbose=5
+        runPseudoExperiments(wsfile=args[0], pefile=args[1],
+                             options=opt,experimentTag='data')
         return -1
 
     print 80*'-'

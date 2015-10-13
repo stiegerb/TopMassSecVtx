@@ -169,6 +169,7 @@ public:
     TH1D *fLJNtkWeights, *fSVMassWeights3, *fSVMassWeights4, *fSVMassWeights5;
 
     std::vector<TH1*> fHistos;
+    std::map<TString, TGraphErrors *> mcfmWeights_;
 
     // Charm resonance histos
     TH1D *fHMJPsi, *fHMJPsimu, *fHMJPsie, *fHMJPsiK;
@@ -206,7 +207,7 @@ public:
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
     Int_t fTNJets, fTNBTags;
     Float_t fTMET,fTMT;
-    Float_t fTWeight[11], fTJESWeight[5], fTMETWeight[3], fTBtagWeight[3], fTXSWeight, fTSVMassWeight;
+    Float_t fTWeight[11], fTJESWeight[5], fTMETWeight[3], fTBtagWeight[3], fTXSWeight, fTSVMassWeight,fTMCFMWeight;
     Float_t fTSVLMass, fTSVLMass_sf[2], fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot;
     Float_t fTLPt, fTSVMass, fTSVPt, fTSVLxy, fTSVLxySig, fTJPt, fTJEta, fMjj,fTSVPtChFrac, fTSVPzChFrac,fTSVProjFrac,fTSVPtRel;
     Float_t fTFJPt, fTFJEta;

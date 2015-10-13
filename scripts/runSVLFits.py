@@ -854,7 +854,10 @@ def main():
 
 	else:
 		print 'Ready to unblind?'
-		print '...ah ah this is not even implemented'
+		opt.isData=True
+		opt.spy=True
+		opt.nPexp=1
+		runPseudoExperiments(ws,options=opt,experimentTag='data')
 		return -1
 	print 80*'-'
 	return 0

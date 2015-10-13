@@ -259,6 +259,7 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
 
     //look at the jets now
     bev_.nj=0;
+    int nMatchedTopJets(0);
     for(size_t i=0; i<jets.size(); i++)
     {
         const data::PhysicsObject_t &genJet=jets[i]->getObject("genJet");
@@ -292,12 +293,39 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
 
         const data::PhysicsObject_t &genParton=jets[i]->getObject("gen");
         if(genParton.pt()>0) {
-            bev_.bid[bev_.nj]  = genParton.info.find("id")->second;
-            bev_.bpt[bev_.nj]  = genParton.pt();
+	    bev_.bid[bev_.nj]  = genParton.info.find("id")->second;
+	    bev_.bpt[bev_.nj]  = genParton.pt();
             bev_.beta[bev_.nj] = genParton.eta();
             bev_.bphi[bev_.nj] = genParton.phi();
-        }
 
+	    //match to a top quark in case it is a b-jet
+	    if(abs(bev_.bid[bev_.nj])==5)
+	      {
+		for(size_t imc=0; imc<mctruth.size(); imc++)
+		  {
+		    int id=mctruth[imc].get("id");
+		    int status=mctruth[imc].get("status");		   
+		    if(abs(id)!=6 || status!=3) continue;
+		    
+		    //check if top can be matched by charge to the quark
+		    if( bev_.bid[bev_.nj]*id<0 )         // they have opposite charge (t -> bW+)
+		      {
+			//accept the matching only for the two leading pT b-jets
+			nMatchedTopJets++;
+			if(nMatchedTopJets<=2)
+			  {
+			    bev_.tid[bev_.nj]   = id;
+			    bev_.tpt[bev_.nj]   = mctruth[imc].pt();
+			    bev_.teta[bev_.nj]  = mctruth[imc].eta();
+			    bev_.tphi[bev_.nj]  = mctruth[imc].phi();
+			    bev_.tmass[bev_.nj] = mctruth[imc].mass();
+			  }
+		      }
+		  }
+	      }
+        }
+	
+	//secondary vertex information
         const data::PhysicsObject_t &svx=jets[i]->getObject("svx");
         if(svx.pt()>0) {
             bev_.svpt[bev_.nj]     = svx.pt();
@@ -307,26 +335,7 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
             bev_.svntk[bev_.nj]    = svx.info.find("ntrk")->second;
             bev_.svlxy[bev_.nj]    = svx.vals.find("lxy")->second;
             bev_.svlxyerr[bev_.nj] = svx.vals.find("lxyErr")->second;
-        }
-
-        //match to a top quark
-        for(size_t imc=0; imc<mctruth.size(); imc++)
-        {
-            int id=mctruth[imc].get("id");
-
-            //check if top can be matched by charge to the quark
-            if(genParton.pt()>0 && abs(id)==6 && // this is a top
-                    abs(bev_.bid[bev_.nj])==5 &&      // the other one was a b
-                    bev_.bid[bev_.nj]*id<0 &&         // they have opposite charge (t -> bW+)
-                    mctruth[imc].get("status")==3 )
-            {
-                bev_.tid[bev_.nj]   = id;
-                bev_.tpt[bev_.nj]   = mctruth[imc].pt();
-                bev_.teta[bev_.nj]  = mctruth[imc].eta();
-                bev_.tphi[bev_.nj]  = mctruth[imc].phi();
-                bev_.tmass[bev_.nj] = mctruth[imc].mass();
-            }
-        }
+        }	  
 
         //charged PF candidates clustered in jet
         size_t pfstart = jets[i]->get("pfstart");
@@ -351,6 +360,7 @@ void LxyAnalysis::analyze(std::vector<data::PhysicsObject_t *> &leptons,
                 }
             }
         }
+
         bev_.nj++;
     } // end jet loop
     

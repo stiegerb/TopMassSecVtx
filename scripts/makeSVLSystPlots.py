@@ -68,8 +68,11 @@ SYSTSFROMFILES = [
 	 ['tot']),
 	('powpyth', 'Powheg/PYTHIA Z2*',
 	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
-	 ['tot']),
-]
+	 ['tot','cor','wro','unm']),
+	('powpythmcfmnloproddec', 'Powheg/PYTHIA Z2* (MCFM NLO prod+dec)',
+	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
+	 ['tot','cor','wro','unm']),
+	]
 
 SYSTTOPROCNAME = dict([(k,[v.replace('.root','') for v in vlist]) for k,_,vlist,_ in SYSTSFROMFILES])
 
@@ -106,12 +109,16 @@ SYSTSFROMWEIGHTS = [
 	('bfnudn',   'B hadron semi-lep BF down',
 	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))', ['tot']),
 	('svmass',      'SV mass reweighting',       'SVMassWeight',           ['tot']),
+	('mgmcfmnloproddec', 'NLO in decay',        'MCFMWeight',   ['tot','cor','wro','unm']),
 	]
 
 #fun...
-for i in xrange(1,53): SYSTSFROMWEIGHTS.append( ('pdf%d'%i, 'PDF variation %d'%i,'PDFWeight[%d]'%i, ['tot']) )
+#for i in xrange(1,53): SYSTSFROMWEIGHTS.append( ('pdf%d'%i, 'PDF variation %d'%i,'PDFWeight[%d]'%i, ['tot']) )
 
 ALLSYSTS = SYSTSFROMFILES + SYSTSFROMWEIGHTS
+
+#ALLSYSTS = SYSTSFROMFILES
+
 
 SYSTNAMES = dict([(syst,name) for syst,name,_,_ in ALLSYSTS])
 SELNAMES = dict([(tag,name) for tag,_,name in SELECTIONS])
@@ -123,85 +130,90 @@ COMBNAMES = {
 }
 
 SYSTPLOTS = [
-	('toppt', 'Top p_{T} reweighting',
-	 ['nominal', 'toppt', 'topptup'],
-	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'tot'),
+#	('toppt', 'Top p_{T} reweighting',
+#	 ['nominal', 'toppt', 'topptup'],
+#	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'tot'),
+#
+#	('toppt', 'Top p_{T} reweighting',
+#	 ['nominal', 'toppt', 'topptup'],
+#	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'cor'),
+#
+#	('toppt', 'Top p_{T} reweighting',
+#	 ['nominal', 'toppt', 'topptup'],
+#	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'wro'),
+#
+#	('scale', 'Q^{2} Scale',
+#	 ['nominal', 'scaleup', 'scaledown'],
+#	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
+#
+#	('matching', 'ME/PS matching scale',
+#	 ['nominal', 'matchingup', 'matchingdown'],
+#	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
+#
+#	('width', 'Top quark width',
+#	 ['nominal', 'width'],
+#	 [ROOT.kBlack, ROOT.kGreen+1], 'tot'),
+#
+#	('uecr', 'Underlying event / Color reconnection',
+#	 ['p11', 'p11tev', 'p11mpihi', 'p11nocr', 'nominal'],
+#	 [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
+#	  ROOT.kViolet+2, ROOT.kBlack],'tot'),
+#
+#	('bfrag', 'b fragmentation',
+#	 ['nominal', 'bfragz2s', 'bfragup', 'bfragdn', 'bfragp11',
+#	  'bfraglund', 'bfragpete'],
+#	 [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
+#	  ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+#
+#	('jes', 'Jet energy scale',
+#	 ['nominal', 'jesup', 'jesdn'],
+#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+#
+#	('jer', 'Jet energy resolution',
+#	 ['nominal', 'jerup', 'jerdn'],
+#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+#
+#	('btag', 'b-tag efficiency',
+#	 ['nominal', 'btagup', 'btagdn'],
+#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+#
+#	('les', 'Lepton energy scale',
+#	 ['nominal', 'lesup', 'lesdn'],
+#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+#
+#	('umet', 'Unclustered MET',
+#	 ['nominal', 'umetup', 'umetdn'],
+#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+#
+#	('lepsel', 'Lepton selection efficiency',
+#	 ['nominal', 'lepselup', 'lepseldn'],
+#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+#
+#	('pu', 'Pileup',
+#	 ['nominal', 'puup', 'pudn'],
+#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+#
+#	('bfnu', 'B-hadron branching fractions',
+#	 ['nominal', 'bfnuup', 'bfnudn'],
+#	 [ROOT.kBlack, ROOT.kYellow-3, ROOT.kYellow+3],'tot'),
+#
+#	('svmass', 'SV Mass reweighting',
+#	 ['nominal', 'svmass'],
+#	 [ROOT.kBlack, ROOT.kMagenta-9],'tot'),
 
-	('toppt', 'Top p_{T} reweighting',
-	 ['nominal', 'toppt', 'topptup'],
-	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'cor'),
+	('nlo', 'NLO',
+	 ['nominal', 'powpyth', 'mgmcfmnloproddec','powpythmcfmnloproddec'],
+	 [ROOT.kBlack, ROOT.kMagenta-9, ROOT.kRed,ROOT.kYellow-3],'tot'),
 
-	('toppt', 'Top p_{T} reweighting',
-	 ['nominal', 'toppt', 'topptup'],
-	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'wro'),
-
-	('scale', 'Q^{2} Scale',
-	 ['nominal', 'scaleup', 'scaledown'],
-	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
-
-	('matching', 'ME/PS matching scale',
-	 ['nominal', 'matchingup', 'matchingdown'],
-	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
-
-	('width', 'Top quark width',
-	 ['nominal', 'width'],
-	 [ROOT.kBlack, ROOT.kGreen+1], 'tot'),
-
-	('uecr', 'Underlying event / Color reconnection',
-	 ['p11', 'p11tev', 'p11mpihi', 'p11nocr', 'nominal'],
-	 [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
-	  ROOT.kViolet+2, ROOT.kBlack],'tot'),
-
-	('bfrag', 'b fragmentation',
-	 ['nominal', 'bfragz2s', 'bfragup', 'bfragdn', 'bfragp11',
-	  'bfraglund', 'bfragpete'],
-	 [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
-	  ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-
-	('jes', 'Jet energy scale',
-	 ['nominal', 'jesup', 'jesdn'],
-	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-
-	('jer', 'Jet energy resolution',
-	 ['nominal', 'jerup', 'jerdn'],
-	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-
-	('btag', 'b-tag efficiency',
-	 ['nominal', 'btagup', 'btagdn'],
-	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-
-	('les', 'Lepton energy scale',
-	 ['nominal', 'lesup', 'lesdn'],
-	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-
-	('umet', 'Unclustered MET',
-	 ['nominal', 'umetup', 'umetdn'],
-	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-
-	('lepsel', 'Lepton selection efficiency',
-	 ['nominal', 'lepselup', 'lepseldn'],
-	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-
-	('pu', 'Pileup',
-	 ['nominal', 'puup', 'pudn'],
-	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-
-	('bfnu', 'B-hadron branching fractions',
-	 ['nominal', 'bfnuup', 'bfnudn'],
-	 [ROOT.kBlack, ROOT.kYellow-3, ROOT.kYellow+3],'tot'),
-
-	('svmass', 'SV Mass reweighting',
-	 ['nominal', 'svmass'],
-	 [ROOT.kBlack, ROOT.kMagenta-9],'tot'),
 ]
 
 
 #fun...
-PDFPLOTDESC=('pdf', 'PDF variations',	 ['nominal'], [ROOT.kBlack], 'tot')
-for i in xrange(1,53):
-	PDFPLOTDESC[2].append('pdf%d'%i)
-	PDFPLOTDESC[3].append(ROOT.kGray)
-SYSTPLOTS.append(PDFPLOTDESC)
+#PDFPLOTDESC=('pdf', 'PDF variations',	 ['nominal'], [ROOT.kBlack], 'tot')
+#for i in xrange(1,53):
+#	PDFPLOTDESC[2].append('pdf%d'%i)
+#	PDFPLOTDESC[3].append(ROOT.kGray)
+#SYSTPLOTS.append(PDFPLOTDESC)
 
 
 def makeControlPlot(systhistos, syst, tag, seltag, opt):
@@ -294,9 +306,9 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			finalsel = finalsel.replace('Weight[4]*','')
 
 		## Remove the BR weight for the POWHEG samples
-		if syst in ['powherw', 'powpyth','mcatnlohw'] or 'p11' in syst:
+		if syst in ['powherw', 'powpyth','mcatnlohw','powpythmcfmnloproddec'] or 'p11' in syst:
 			finalsel = finalsel[len('Weight[0]*'):]
-
+			if syst=='powpythmcfmnloproddec': finalsel='MCFMWeight*'+finalsel
 
 		#add scale factor
 		svlmassVar='SVLMass'
@@ -323,8 +335,9 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 				finalsel = finalsel.replace('Weight[4]*','')
 
 			## Remove the BR weight for the POWHEG samples
-			if syst in ['powherw', 'powpyth','mcatnlohw'] or 'p11' in syst:
+			if syst in ['powherw', 'powpyth','mcatnlohw','powpythmcfmnloproddec'] or 'p11' in syst:
 				finalsel = finalsel[len('Weight[0]*'):]
+				if syst=='powpythmcfmnloproddec': finalsel='MCFMWeight*'+finalsel
 
 			#add scale factor
 			svlmassVar='SVLMass'
@@ -479,10 +492,10 @@ def main(args, opt):
 
 	for var,_,_,_,_ in CONTROLVARS:
 		for sel,tag in [
-			('inclusive', 'Fully Inclusive'),
-			('inclusive_mrank1', 'Mass ranked, leading p_{T}'),
-			('inclusive_mrank1dr', 'Mass ranked, #DeltaR<2, leading p_{T}'),
-			('inclusive_drrank1dr', '#DeltaR ranked, #DeltaR<2, leading p_{T}'),
+			#('inclusive', 'Fully Inclusive'),
+			#('inclusive_mrank1', 'Mass ranked, leading p_{T}'),
+			#('inclusive_mrank1dr', 'Mass ranked, #DeltaR<2, leading p_{T}'),
+			#('inclusive_drrank1dr', '#DeltaR ranked, #DeltaR<2, leading p_{T}'),
 			('inclusive_optmrank', 'Optimized mass rank')]:
 			try: makeControlPlot(systhistos, var, sel, tag, opt)
 			except KeyError:
@@ -510,6 +523,7 @@ def main(args, opt):
 		plot.reset()
 
 		for name, title, systs, colors, comb in SYSTPLOTS:
+			print name, title, systs, colors, comb
 			plot = RatioPlot('%s_%s'%(name,comb))
 			plot.rebin = 2
 

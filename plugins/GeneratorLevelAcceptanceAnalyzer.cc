@@ -104,6 +104,7 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
    std::vector<int> chLeptonsId; 
    std::vector<TLorentzVector> chLeptons;
    std::vector<TLorentzVector> bQuarks;
+   std::vector<int> bQuarkId;
    TLorentzVector totLeptons(0,0,0,0);
    int itop(0);
    
@@ -129,10 +130,11 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
 	       itop++;
 	     }
 	 }
-       if(abs(pid)==5 && genParticle->pt()>0) 
+       if(status==3 && abs(pid)==5 && genParticle->pt()>0) 
 	 {
 	   TLorentzVector p4( genParticle->px(), genParticle->py(), genParticle->pz(), genParticle->energy() );
 	   bQuarks.push_back(p4);
+	   bQuarkId.push_back(pid);
 	 }
        if(status==1)
 	 {
@@ -155,7 +157,7 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
 	   if(abs(pid)==12 || abs(pid)==14 || abs(pid)==16) neutFlux += p4;
 	 }
      }
-
+   
    //determine channel and leading leptons
    int leadId(0),trailerId(0);
    float leadPt(0),trailerPt(0);
@@ -164,7 +166,8 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
        if(chLeptons[i].Pt()>leadPt)         { trailerId=leadId;         trailerPt=leadPt;            leadId=chLeptonsId[i]; leadPt=chLeptons[i].Pt(); }
        else if(chLeptons[i].Pt()>trailerPt) { trailerId=chLeptonsId[i]; trailerPt=chLeptons[i].Pt();                                                  }
      }
-   int ch(leadId*trailerId);
+   int ch(leadId);
+   if(trailerId!=0) ch*=trailerId;
 
    //
    // gen jets
@@ -177,21 +180,33 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
    genev_.nj=0;
    for(std::vector<reco::GenJet>::const_iterator genJet=genJets->begin(); genJet!=genJets->end(); genJet++)
      {
-       if(genJet->energy()<10 || genJet->pt()<25 || fabs(genJet->eta())>4.7) continue;
+       // if(genJet->energy()<5 || genJet->pt()<5 || fabs(genJet->eta())>4.7) continue;
 
        //quality cuts                                                                        
        if(genJet->hadEnergy()/genJet->energy()<0.05) continue;
        if(genJet->emEnergy()/genJet->energy()>0.95)  continue;
        if(genJet->getGenConstituents().size()<2)   continue;
 
-       //
        TLorentzVector p4( genJet->px(), genJet->py(), genJet->pz(), genJet->energy() );
-       bool matchesBquark(false);
+
+       //not matching a lepton
+       bool matchesLepton(false);
+       for(size_t i=0; i<chLeptons.size(); i++)
+       	 {
+	   float dR=p4.DeltaR(chLeptons[i]);
+	   if(dR>0.4) continue;
+	   matchesLepton=true;
+	   break;
+       	 }
+       if(matchesLepton) continue;
+       
+       //mc truth
+       Int_t matchesBquark(-1);
        for(size_t i=0; i<bQuarks.size(); i++)
 	 {
 	   float dR=p4.DeltaR(bQuarks[i]);
-	   if(dR>0.4) continue;
-	   matchesBquark=true;
+	   if(dR>0.5) continue;
+	   matchesBquark=i;
 	 }
        
        if(genev_.nj<100)
@@ -200,23 +215,28 @@ bool GeneratorLevelAcceptanceAnalyzer::filter( edm::Event &iEvent , const edm::E
 	   genev_.jeta[genev_.nj]=genJet->eta();
 	   genev_.jphi[genev_.nj]=genJet->phi();
 	   genev_.jmass[genev_.nj]=genJet->mass();
-	   genev_.jflav[genev_.nj]=(matchesBquark? 5 : 0);
+	   genev_.jflav[genev_.nj]=matchesBquark>-1 ? bQuarkId[matchesBquark] : 0;
+	   if(matchesBquark>-1)
+	     {
+	       genev_.bpt[genev_.nj]=bQuarks[matchesBquark].Pt();
+	       genev_.beta[genev_.nj]=bQuarks[matchesBquark].Eta();
+	       genev_.bphi[genev_.nj]=bQuarks[matchesBquark].Phi();
+	       genev_.bmass[genev_.nj]=bQuarks[matchesBquark].M();
+	     }
+	   else
+	     {
+	       genev_.bpt[genev_.nj]=0;
+	       genev_.beta[genev_.nj]=0;
+	       genev_.bphi[genev_.nj]=0;
+	       genev_.bmass[genev_.nj]=0;
+	     }
 	   genev_.nj++;
 	 }
 
        //standard selection
-       if(fabs(genJet->eta())>2.5) continue; 
-       bool matchesLepton(false);
-       for(size_t i=0; i<chLeptons.size(); i++)
-       	 {
-          float dR=p4.DeltaR(chLeptons[i]);
-       	   if(dR>0.4) continue;
-       	   matchesLepton=true;
-       	   break;
-       	 }
-        if(matchesLepton) continue;
-	jets.push_back(p4);
-	if(matchesBquark) bJets.push_back(p4);
+       if(fabs(genJet->eta())>2.5) continue;        
+       jets.push_back(p4);
+       if(matchesBquark) bJets.push_back(p4);
      }
 
    //fill the ntuple

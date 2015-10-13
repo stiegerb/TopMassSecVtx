@@ -405,7 +405,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             nevtsToGen = ROOT.gRandom.Poisson(nevtsSeed)
 
             pseudoDataH,pseudoData=None,None
-            if options.genFromPDF:
+            if options.isData:
+                pseudoDataH=ihist.Clone('eh')
+                pseudoData  = ROOT.RooDataHist('Data_%s_%s_%d'%(experimentTag,chsel,trk),
+                                               'Data_%s_%s_%d'%(experimentTag,chsel,trk),
+                                               ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
+            elif options.genFromPDF:
                 obs = ROOT.RooArgSet(ws.var('SVLMass'))
                 pseudoData = allPdfs[key].generateBinned(obs, nevtsToGen)
             else:
@@ -657,9 +662,12 @@ def main():
 
         return 0
     else:
-        print 'Ready to unblind?'
-        print '...ah ah this is not even implemented'
+	opt.isData=True
+        opt.spy=True
+        opt.nPexp=1
+        runPseudoExperiments(ws,options=opt,experimentTag='data')
         return -1
+
     print 80*'-'
     return 0
 

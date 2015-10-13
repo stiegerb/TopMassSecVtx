@@ -26,12 +26,12 @@ EMSEL  = '(EvCat==-143 && NJets>=2)'
 MMSEL  = '(EvCat==-169 && NJets>=2)'
 INCSEL = '(%s || %s || %s || %s || %s)' % (MSEL, ESEL, EESEL , EMSEL, MMSEL)
 SELECTIONS = [
-	# ('inclusive', ''+INCSEL, '#geq 1 lepton'),
-	# ('ee',        ''+EESEL,  'ee'),
-	# ('em',        ''+EMSEL,  'e#mu'),
-	# ('mm',        ''+MMSEL,  '#mu#mu'),
-	# ('e',         ''+ESEL,   'e'),
-	# ('m',         ''+MSEL,   '#mu'),
+	('inclusive', ''+INCSEL, '#geq 1 lepton'),
+	('ee',        ''+EESEL,  'ee'),
+	('em',        ''+EMSEL,  'e#mu'),
+	('mm',        ''+MMSEL,  '#mu#mu'),
+	('e',         ''+ESEL,   'e'),
+	('m',         ''+MSEL,   '#mu'),
 
 	# ('inclusive_mrank1', 'SVLMassRank==1&&CombCat%2!=0&&'+INCSEL, '#geq 1 lepton'),
 	# ('ee_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+EESEL,  'ee'),

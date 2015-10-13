@@ -69,9 +69,9 @@ SYSTSFROMFILES = [
 	('powpyth', 'Powheg/PYTHIA Z2*',
 	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
 	 ['tot','cor','wro','unm']),
-	('powpythmcfmnloproddec', 'Powheg/PYTHIA Z2* (MCFM NLO prod+dec)',
-	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
-	 ['tot','cor','wro','unm']),
+	# ('powpythmcfmnloproddec', 'Powheg/PYTHIA Z2* (MCFM NLO prod+dec)',
+	#  ['MC8TeV_TT_Z2star_powheg_pythia.root'],
+	#  ['tot','cor','wro','unm']),
 	]
 
 SYSTTOPROCNAME = dict([(k,[v.replace('.root','') for v in vlist]) for k,_,vlist,_ in SYSTSFROMFILES])
@@ -109,7 +109,7 @@ SYSTSFROMWEIGHTS = [
 	('bfnudn',   'B hadron semi-lep BF down',
 	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))', ['tot']),
 	('svmass',      'SV mass reweighting',       'SVMassWeight',           ['tot']),
-	('mgmcfmnloproddec', 'NLO in decay',        'MCFMWeight',   ['tot','cor','wro','unm']),
+	# ('mgmcfmnloproddec', 'NLO in decay',        'MCFMWeight',   ['tot','cor','wro','unm']),
 	]
 
 #fun...
@@ -201,9 +201,9 @@ SYSTPLOTS = [
 #	 ['nominal', 'svmass'],
 #	 [ROOT.kBlack, ROOT.kMagenta-9],'tot'),
 
-	('nlo', 'NLO',
-	 ['nominal', 'powpyth', 'mgmcfmnloproddec','powpythmcfmnloproddec'],
-	 [ROOT.kBlack, ROOT.kMagenta-9, ROOT.kRed,ROOT.kYellow-3],'tot'),
+	# ('nlo', 'NLO',
+	#  ['nominal', 'powpyth', 'mgmcfmnloproddec','powpythmcfmnloproddec'],
+	#  [ROOT.kBlack, ROOT.kMagenta-9, ROOT.kRed,ROOT.kYellow-3],'tot'),
 
 ]
 
@@ -286,7 +286,6 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
 
 	return getError
 
-
 def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 	tasks = []
 	htag = "%s_%s"%(tag,syst)
@@ -306,9 +305,13 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			finalsel = finalsel.replace('Weight[4]*','')
 
 		## Remove the BR weight for the POWHEG samples
-		if syst in ['powherw', 'powpyth','mcatnlohw','powpythmcfmnloproddec'] or 'p11' in syst:
-			finalsel = finalsel[len('Weight[0]*'):]
-			if syst=='powpythmcfmnloproddec': finalsel='MCFMWeight*'+finalsel
+		if (syst in ['powherw', 'powpyth', 'mcatnlohw',
+			         'powpythmcfmnloproddec']
+			or 'p11' in syst):
+			# Remove 'Weight[0]*', but not 'XXWeight[0]*'
+			finalsel = re.sub('(^|\*)Weight\[0\]\*', '', finalsel)
+			if syst=='powpythmcfmnloproddec':
+				finalsel = 'MCFMWeight*' + finalsel
 
 		#add scale factor
 		svlmassVar='SVLMass'
@@ -334,10 +337,15 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			if syst in ['lepselup','lepseldn']:
 				finalsel = finalsel.replace('Weight[4]*','')
 
+
 			## Remove the BR weight for the POWHEG samples
-			if syst in ['powherw', 'powpyth','mcatnlohw','powpythmcfmnloproddec'] or 'p11' in syst:
-				finalsel = finalsel[len('Weight[0]*'):]
-				if syst=='powpythmcfmnloproddec': finalsel='MCFMWeight*'+finalsel
+			if (syst in ['powherw', 'powpyth', 'mcatnlohw',
+				         'powpythmcfmnloproddec']
+				or 'p11' in syst):
+				# Remove 'Weight[0]*', but not 'XXWeight[0]*'
+				finalsel = re.sub('(^|\*)Weight\[0\]\*', '', finalsel)
+				if syst=='powpythmcfmnloproddec':
+					finalsel = 'MCFMWeight*' + finalsel
 
 			#add scale factor
 			svlmassVar='SVLMass'

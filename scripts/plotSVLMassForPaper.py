@@ -48,11 +48,13 @@ def main(args, opt):
 	ratplot.ratiorange = (0.5, 1.5)
 	ratplot.reference = [masshistos[172.5]]
 
+	####################################################
 	# Construct dummy data for now
 	dummy = masshistos[172.5].Clone('dummy_data')
 	dummy.Reset('ICE')
 	dummy.FillRandom(masshistos[173.5], ROOT.gRandom.Poisson(masshistos[172.5].Integral()))
 	ratplot.add(dummy,'Pseudo Data (@173.5 GeV)')
+	####################################################
 
 	####################################################
 	# REAL DATA:
@@ -80,7 +82,7 @@ def main(args, opt):
 if __name__ == "__main__":
 	from optparse import OptionParser
 	usage = """
-	usage: %prog [options] pe_inputs.root [plotter.root]
+	usage: %prog [options] pe_inputs.root
 	"""
 	parser = OptionParser(usage=usage)
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',

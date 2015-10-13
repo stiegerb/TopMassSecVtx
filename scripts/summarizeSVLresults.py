@@ -235,11 +235,34 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
     ## Return results
     return PEsummary
 
+def analyzeDataResults(key,fIn):
+    PEsummary={}
+
+    # read the tree
+    peinfo = fIn.Get('%s/peinfo_%s'%(key,key)) ## TTree
+    assert(peinfo.GetEntries() == 1)
+
+    genmtop = 172.5
+    mtopfit,statunc,mu = None,None,None
+
+    for entry in peinfo:
+        mtopfit = entry.mtopfit
+        statunc = entry.statunc
+        mu = entry.mu
+        break ## only need one entry
+
+    PEsummary['bias'] = (mtopfit-genmtop, 0.0)
+    PEsummary['stat'] = statunc
+    PEsummary['mu']   = mu
+
+    ## Return results
+    return PEsummary
+
 
 """
 Loops over the results in a directory and builds a map of PE results
 """
-def parsePEResultsFromFile(url,verbose=False, doPlots=False):
+def parsePEResultsFromDir(url,verbose=False, doPlots=False, isData=False):
     results, calibGrMap, resCalibGrMap = {}, {}, {}
     fileNames=[f for f in os.listdir(url) if f.endswith('results.root')]
     for fname in fileNames:
@@ -247,17 +270,26 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
 
         tag=os.path.splitext(fname)[0]
         selection = ''
-        try:
-            syst, massstr, selection, _ = tag.rsplit('_', 3)
-        except ValueError:
-            syst, massstr, _ = tag.rsplit('_', 2)
 
-        # Extract a XXXvX number from the tag string:
-        # This is a bit superfluous, but it will catch if something went wrong
-        # in the splitting above (e.g. a syst name containing a '_')
-        mass = re.search(r'[\w]*([\d]{3}v[\d]{1})+[\w]*', tag).group(1)
-        mass = float(mass.replace('v5','.5'))
-        assert(mass == float(massstr.replace('v5','.5')))
+        if isData:
+            syst = 'data'
+            try: selection = tag.split('_')[1]
+            except ValueError: pass
+            massstr = '172v5'
+            mass = 172.5
+
+        else:
+            try:
+                syst, massstr, selection, _ = tag.rsplit('_', 3)
+            except ValueError:
+                syst, massstr, _ = tag.rsplit('_', 2)
+
+            # Extract a XXXvX number from the tag string:
+            # This is a bit superfluous, but it will catch if something went wrong
+            # in the splitting above (e.g. a syst name containing a '_')
+            mass = re.search(r'[\w]*([\d]{3}v[\d]{1})+[\w]*', tag).group(1)
+            mass = float(mass.replace('v5','.5'))
+            assert(mass == float(massstr.replace('v5','.5')))
 
         if verbose:
             print '%sSyst: %s, %5.1f GeV, %s%s' % (bcolors.BOLD,
@@ -266,11 +298,17 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
 
 
         useForCalib=True if 'nominal' in syst else False
-        for key in fIn.GetListOfKeys():
+        for key in sorted(fIn.GetListOfKeys()):
             if verbose: print '  %-18s  ' % key.GetName(),
 
             keyName=key.GetName()
-            PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=(doPlots and useForCalib),syst=syst)
+            if not isData:
+                PEsummary = analyzePEresults(key=keyName, fIn=fIn,
+                                       outDir=url,doPlots=(doPlots and useForCalib),
+                                       syst=syst)
+            else:
+                PEsummary = analyzeDataResults(key=keyName, fIn=fIn)
+
             if not 'bias' in PEsummary : continue
 
             bias, biasErr = PEsummary['bias']
@@ -289,8 +327,8 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
             # if not useForCalib or mass==172.5:
             results[(keyName,selection)][syst] = (mass+bias,biasErr,PEsummary['stat'])
 
-            # add statistical error for nominal 172.5:
-            if syst == '172.5':
+            # add statistical error for nominal 172.5 and for data:
+            if syst == '172.5' or isData:
                 results[(keyName,selection)]['stat'] = PEsummary['stat']
             if not useForCalib: continue
 
@@ -738,7 +776,7 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
 
     return totup, totdn
 
-def makeSystPlot(results, totup, totdn):
+def makeSystPlot(results, totup, totdn, dataresults=None):
     assert(totup.keys() == totdn.keys())
     for sel in totup.keys():
         assert(totup[sel].keys() == totdn[sel].keys())
@@ -751,6 +789,13 @@ def makeSystPlot(results, totup, totdn):
     cats = ['comb_0', 'combem_0', 'combee_0', 'combmm_0',
             'combe_0', 'combm_0', 'comb_3', 'comb_4', 'comb_5']
 
+    centralkey = '172.5'
+    isData = False
+    if dataresults is not None:
+        isData = True
+        results = dataresults
+        centralkey = 'data'
+
     ## Print it
     for sel in totup.keys():
         print 80*'-'
@@ -761,7 +806,7 @@ def makeSystPlot(results, totup, totdn):
         print ''
 
         print 'mass [GeV]  ',
-        for cat in cats: print ('  %6.2f  ' % results[(cat,sel)]['172.5'][0]),
+        for cat in cats: print ('  %6.2f  ' % results[(cat,sel)][centralkey][0]),
         print ''
 
         print ' err up    ',
@@ -779,8 +824,12 @@ def makeSystPlot(results, totup, totdn):
 
 
     ## Make the plot
-    mtmin = 167.0
-    mtmax = 176.0
+    mtmin,mtmax = 167.0, 176.0
+
+    if isData:
+        mtmin, mtmax = 170.0, 179.0
+
+
     for sel in totup.keys():
         haxis = ROOT.TH2D("axes","axes", 1, 0., 9., 1, mtmin, mtmax)
 
@@ -789,7 +838,7 @@ def makeSystPlot(results, totup, totdn):
         graph_comb.SetName("systs_comb_%s"%sel)
         graph_comb_stat = ROOT.TGraphAsymmErrors(1)
         graph_comb_stat.SetName("systs_comb_stat_%s"%sel)
-        mt_comb = results[('comb_0',sel)]['172.5'][0]
+        mt_comb = results[('comb_0',sel)][centralkey][0]
         staterr_comb = results[('comb_0',sel)]['stat']
         toterrup = math.sqrt(staterr_comb**2 + totup[sel]['comb_0']**2)
         toterrdn = math.sqrt(staterr_comb**2 + totdn[sel]['comb_0']**2)
@@ -846,9 +895,9 @@ def makeSystPlot(results, totup, totdn):
             staterr = results[(cat,sel)]['stat']
             toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2) ## FIXME: Full stat error up or half?
             toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
-            graph_chan.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+            graph_chan.SetPoint(n, xpos, results[(cat,sel)][centralkey][0])
             graph_chan.SetPointError(n, 0., 0., toterrdn, toterrup)
-            graph_chan_stat.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+            graph_chan_stat.SetPoint(n, xpos, results[(cat,sel)][centralkey][0])
             graph_chan_stat.SetPointError(n, 0., 0., staterr, staterr)
 
         graph_chan.SetLineWidth(1)
@@ -861,7 +910,7 @@ def makeSystPlot(results, totup, totdn):
         graph_chan_stat.SetLineColor(graph_chan.GetLineColor())
 
         ############################
-        ntrkcats = ['comb_3','comb_3','comb_5']
+        ntrkcats = ['comb_3','comb_4','comb_5']
         ntrkxpos = [6.5,7.5,8.5]
         graph_ntrk = ROOT.TGraphAsymmErrors(len(ntrkcats))
         graph_ntrk.SetName("systs_ntrk_%s"%sel)
@@ -871,9 +920,9 @@ def makeSystPlot(results, totup, totdn):
             staterr = results[(cat,sel)]['stat']
             toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2)
             toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
-            graph_ntrk.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+            graph_ntrk.SetPoint(n, xpos, results[(cat,sel)][centralkey][0])
             graph_ntrk.SetPointError(n, 0., 0., toterrdn, toterrup)
-            graph_ntrk_stat.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+            graph_ntrk_stat.SetPoint(n, xpos, results[(cat,sel)][centralkey][0])
             graph_ntrk_stat.SetPointError(n, 0., 0., staterr, staterr)
 
         graph_ntrk.SetLineWidth(1)
@@ -930,16 +979,16 @@ def makeSystPlot(results, totup, totdn):
 
         label.SetTextColor(ROOT.kGray+2)
         label.SetTextSize(14)
-        label.DrawLatex(0.55,168.0+0.1,CATTOFLABEL['comb_0'])
-        label.DrawLatex(1.5,168.0,CATTOFLABEL['combem_0'])
-        label.DrawLatex(2.5,168.0,CATTOFLABEL['combee_0'])
-        label.DrawLatex(3.5,168.0,CATTOFLABEL['combmm_0'])
-        label.DrawLatex(4.5,168.0,CATTOFLABEL['combe_0'])
-        label.DrawLatex(5.5,168.0,CATTOFLABEL['combm_0'])
+        label.DrawLatex(0.55,mtmin+0.6+0.1,CATTOFLABEL['comb_0'])
+        label.DrawLatex(1.5,mtmin+0.6,CATTOFLABEL['combem_0'])
+        label.DrawLatex(2.5,mtmin+0.6,CATTOFLABEL['combee_0'])
+        label.DrawLatex(3.5,mtmin+0.6,CATTOFLABEL['combmm_0'])
+        label.DrawLatex(4.5,mtmin+0.6,CATTOFLABEL['combe_0'])
+        label.DrawLatex(5.5,mtmin+0.6,CATTOFLABEL['combm_0'])
 
-        label.DrawLatex(6.5,168.0+0.05,CATTOFLABEL['comb_3'])
-        label.DrawLatex(7.5,168.0+0.05,CATTOFLABEL['comb_4'])
-        label.DrawLatex(8.5,168.0+0.05,CATTOFLABEL['comb_5'])
+        label.DrawLatex(6.5,mtmin+0.6+0.05,CATTOFLABEL['comb_3'])
+        label.DrawLatex(7.5,mtmin+0.6+0.05,CATTOFLABEL['comb_4'])
+        label.DrawLatex(8.5,mtmin+0.6+0.05,CATTOFLABEL['comb_5'])
 
         label.SetTextFont(63)
         label.SetTextSize(20)
@@ -947,7 +996,10 @@ def makeSystPlot(results, totup, totdn):
         label.DrawLatex(0.1,mtmax+0.15,'CMS')
         label.SetTextFont(53)
         label.SetTextSize(18)
-        label.DrawLatex(1.1,mtmax+0.18,'Preliminary')
+        if not isData:
+            label.DrawLatex(1.1,mtmax+0.18,'Simulation')
+        else:
+            label.DrawLatex(1.1,mtmax+0.18,'Preliminary')
         label.SetTextFont(43)
         label.SetTextSize(16)
         label.SetTextAlign(31)
@@ -955,8 +1007,10 @@ def makeSystPlot(results, totup, totdn):
 
         ROOT.gPad.RedrawAxis()
         if sel == '': sel = 'inclusive'
-        canv.SaveAs("syst_by_channel_%s.pdf"%sel)
-        canv.SaveAs("syst_by_channel_%s.png"%sel)
+        outname = "syst_by_channel_%s" % sel
+        if not isData: outname += '_pseudodata'
+        canv.SaveAs("%s.pdf"%outname)
+        canv.SaveAs("%s.png"%outname)
 
     return
 
@@ -1201,6 +1255,8 @@ def main():
                       help='show systematics table')
     parser.add_option('--rebin', dest='rebin', default=2, type=int,
                       help='rebin pe plots by this factor')
+    parser.add_option('--dataresults', dest='dataresults', default='',
+                      help='Root file with results of data fits')
     parser.add_option('--compare', dest='compare', default='', type='string',
                       help='compare uncertainties from ROOT summaries (CSV list)')
     (opt, args) = parser.parse_args()
@@ -1209,14 +1265,17 @@ def main():
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True)
 
-    #compare final results from ROOT files
+    #compare final PE results from ROOT files
     if opt.compare:
         compareResults(files=opt.compare.split(','))
         return 0
 
     #parse calibration results from directory
     if opt.calib:
-        results,calibGrMap,resCalibGrMap = parsePEResultsFromFile(url=opt.calib, verbose=False, doPlots=False)
+        peresults,calibGrMap,resCalibGrMap = parsePEResultsFromDir(
+                                                         url=opt.calib,
+                                                         verbose=False,
+                                                         doPlots=False)
 
         calibMap = show(grCollMap=calibGrMap,
                         outDir=opt.calib+'/plots',
@@ -1240,31 +1299,39 @@ def main():
         calibFile=os.path.join(opt.calib,'.svlcalib.pck')
         cachefile = open(calibFile, 'w')
         pickle.dump(calibMap, cachefile, pickle.HIGHEST_PROTOCOL)
-        pickle.dump(results,  cachefile, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(peresults,  cachefile, pickle.HIGHEST_PROTOCOL)
         cachefile.close()
-        print 'Wrote %s with calibration constants and results'%calibFile
+        print 'Wrote %s with calibration constants and peresults'%calibFile
         return 0
 
     #show systematics table
     if opt.syst:
         cachefile = open(opt.syst, 'r')
         calibMap  = pickle.load(cachefile)
-        results   = pickle.load(cachefile)
+        peresults   = pickle.load(cachefile)
         cachefile.close()
         catsByChan =   ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0']
         catsByTracks = ['comb_0','comb_3','comb_4','comb_5']
         allCats = ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0', 'comb_3','comb_4','comb_5']
-        # showSystematicsTable(results=results, filterCats=catsByChan)
-        # showSystematicsTable(results=results, filterCats=catsByTracks)
+        # showSystematicsTable(results=peresults, filterCats=catsByChan)
+        # showSystematicsTable(results=peresults, filterCats=catsByTracks)
 
         systfile = os.path.join(os.path.dirname(opt.syst),'systematics_%s.tex')
-        writeSystematicsTable(results=results, filterCats=catsByChan,
-                             ofile=systfile%'bychan',printout=True)
-        writeSystematicsTable(results=results, filterCats=catsByTracks,
-                             ofile=systfile%'bytracks')
-        totup, totdn = writeSystematicsTable(results=results, filterCats=allCats,
+        # writeSystematicsTable(results=peresults, filterCats=catsByChan,
+        #                      ofile=systfile%'bychan',printout=True)
+        # writeSystematicsTable(results=peresults, filterCats=catsByTracks,
+        #                      ofile=systfile%'bytracks')
+        totup, totdn = writeSystematicsTable(results=peresults, filterCats=allCats,
                              ofile=systfile%'all')
-        makeSystPlot(results, totup, totdn)
+        makeSystPlot(peresults, totup, totdn)
+        if opt.dataresults:
+            print 80*'-'
+            print "Data results:"
+            dataresults,_,_ = parsePEResultsFromDir(url=opt.dataresults,
+                                                     verbose=True,
+                                                     doPlots=False,
+                                                     isData=True)
+            makeSystPlot(peresults, totup, totdn, dataresults=dataresults)
         return 0
 
     #compare inputs for pseudo-experiments

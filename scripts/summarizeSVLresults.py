@@ -748,7 +748,8 @@ def makeSystPlot(results, totup, totdn):
                                      'combmm_0', 'comb_3','comb_4',
                                      'comb_5']))
 
-    cats = ['comb_0', 'combem_0', 'combee_0', 'combmm_0', 'combe_0', 'combm_0', 'comb_3', 'comb_4', 'comb_5']
+    cats = ['comb_0', 'combem_0', 'combee_0', 'combmm_0',
+            'combe_0', 'combm_0', 'comb_3', 'comb_4', 'comb_5']
 
     ## Print it
     for sel in totup.keys():

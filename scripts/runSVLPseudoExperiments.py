@@ -8,6 +8,8 @@ import numpy
 
 from UserCode.TopMassSecVtx.PlotUtils import printProgress, bcolors
 from makeSVLMassHistos import NTRKBINS
+from summarizeSVLresults import CATTOLABEL
+from myRootFunctions import checkKeyInFile
 
 """
 Wrapper to contain the histograms with the results of the pseudo-experiments
@@ -61,17 +63,17 @@ class PseudoExperimentResults:
             self.histos[key]['muvsmtop']       .Fill(bias, ws.var('mu').getVal())
             self.trees[key].Fill()
 
-            self.ntt  = 0
-            self.nt   = 0
-            self.nbkg = 0
+            # self.ntt  = 0
+            # self.nt   = 0
+            # self.nbkg = 0
 
-            for ch in ['em','mm','ee','m','e']:
-                chsel=ch
-                if self.selection: chsel += '_' + self.selection
-                for ntrk in [tklow for tklow,_ in NTRKBINS]: # [3,4,5]
-                    self.ntt  += ws.function("Ntt_%s_%d"%(chsel,ntrk)).getVal()
-                    self.nt   += ws.function("Nt_%s_%d"%(chsel,ntrk)).getVal()
-                    self.nbkg += ws.function("Nbkg_%s_%d"%(chsel,ntrk)).getVal()
+            # for ch in ['em','mm','ee','m','e']:
+            #     chsel=ch
+            #     if self.selection: chsel += '_' + self.selection
+            #     for ntrk in [tklow for tklow,_ in NTRKBINS]: # [3,4,5]
+            #         self.ntt  += ws.function("Ntt_%s_%d"%(chsel,ntrk)).getVal()
+            #         self.nt   += ws.function("Nt_%s_%d"%(chsel,ntrk)).getVal()
+            #         self.nbkg += ws.function("Nbkg_%s_%d"%(chsel,ntrk)).getVal()
 
     def initHistos(self,key):
         self.histos[key]={}
@@ -265,12 +267,14 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
 run pseudo-experiments
 """
 def runPseudoExperiments(wsfile,pefile,experimentTag,options):
+    prepend = '[runPseudoExperiments %s] '%experimentTag
 
     #read the file with input distributions
     inputDistsF = ROOT.TFile.Open(pefile, 'READ')
-    prepend = '[runPseudoExperiments %s] '%experimentTag
-    print prepend+'Reading PE input from %s' % pefile
-    print prepend+'with %s' % experimentTag
+    print prepend+'Reading PE input from %s with %s' % (pefile, experimentTag)
+    if not checkKeyInFile(experimentTag, inputDistsF, doraise=False):
+        print prepend+"ERROR: experiment tag %s not found in input file %s" %(experimentTag, pefile)
+        sys.exit(-1)
 
     wsInputFile = ROOT.TFile.Open(wsfile, 'READ')
     ws = wsInputFile.Get('w')
@@ -288,17 +292,18 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     genMtop=172.5
     try:
         genMtop=float(experimentTag.rsplit('_', 1)[1].replace('v','.'))
-    except Exception, e:
-        if options.isData:
-            genMtop = 172.5
-        else: raise e
+    except (IndexError, ValueError) as e:
+        print ("%sERROR: Could not extract generated mass value "
+               "from experiment tag: '%s'"%(prepend, experimentTag))
+        sys.exit(-1)
     print prepend+'Generated top mass is %5.1f GeV'%genMtop
 
     #prepare results summary
     selTag=''
     if len(options.selection)>0 : selTag='_%s'%options.selection
     summary=PseudoExperimentResults(genMtop=genMtop,
-                                    outFileUrl=osp.join(options.outDir,'%s%s_results.root'%(experimentTag,selTag)),
+                                    outFileUrl=osp.join(options.outDir,
+                                       '%s%s_results.root'%(experimentTag,selTag)),
                                     selection=options.selection)
 
     #load the model parameters and set all to constant
@@ -310,7 +315,6 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     while var :
         varName=var.GetName()
         if not varName in ['mtop', 'SVLMass', 'mu']:
-        # if not varName in ['mtop', 'SVLMass']:
             ws.var(varName).setConstant(True)
             varCtr+=1
         var = varIter.Next()
@@ -321,10 +325,12 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
     #build the relevant PDFs
     allPdfs = {}
+    print prepend+"Building pdfs"
     for ch in ['em','mm','ee','m','e']:
         chsel=ch
-        if len(options.selection)>0 : chsel += '_' + options.selection
+        if len(options.selection)>0: chsel += '_' + options.selection
         for ntrk in [tklow for tklow,_ in NTRKBINS]: # [3,4,5]
+            if options.verbose>4: print prepend+"  chan %s ntk=%d" %(chsel, ntrk)
             ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
             ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
             ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
@@ -338,9 +344,14 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             bkgExp     = '%s_bgexp_%d'              %(chsel,ntrk)
             bkgPDF     = 'model_%s_%d_unm_bg'       %(chsel,ntrk)
 
+            ## Check for existence of necessary pdfs in Workspace
+            for key in [ttcorPDF, ttwroPDF, ttunmPDF, tcorPDF, twrounmPDF, bkgPDF]:
+                if not ws.pdf(key):
+                    print "ERROR: pdf %s not found in workspace!" %key
+                    sys.exit(-1)
+
             ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
             Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
-            # Ntt is fixed at the expected events for 172.5 GeV
 
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
             Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
@@ -348,26 +359,18 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             bkgConstPDF = ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
-            #ws.var('bg_nuis_%s_%d'%(chsel,ntrk)).setVal(0.0)
-            #ws.var('bg_nuis_%s_%d'%(chsel,ntrk)).setConstant(True)
 
             #30% unc on background
             Nbkg = ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
 
-            print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
-                                  chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
-
-            summary.incrementPreFitExpectation(Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
-
-            # This is wrong, for some reason tfrac is evaluated at mtop = 100
-            # Nbkg will also be wrong then
+            # print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
+            #                       chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
 
             #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
             sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
-                                                                              Ntt.GetName(), ttShapePDF.GetName(),
-                                                                              Nt.GetName(), tShapePDF.GetName(),
-                                                                              Nbkg.GetName(), bkgPDF
-                                                                              ))
+                                      Ntt.GetName(), ttShapePDF.GetName(),
+                                      Nt.GetName(), tShapePDF.GetName(),
+                                      Nbkg.GetName(), bkgPDF) )
             ws.factory('PROD::uncalibmodel_%s_%d(%s,%s)'%(chsel,ntrk,
                                                           sumPDF.GetName(),
                                                           bkgConstPDF.GetName()))
@@ -377,8 +380,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             if calibMap:
                 try:
                     offset, slope = calibMap[options.selection][ '%s_%d'%(ch,ntrk) ]
-                except KeyError, e:
-                    print 'Failed to retrieve calibration with',e
+                except KeyError as e:
+                    print prepend+'ERROR: Failed to retrieve calibration for %s' % options.selection
+                    sys.exit(-1)
             ws.factory("RooFormulaVar::calibmtop_%s_%d('(@0-%f)/%f',{mtop})"%(chsel,ntrk,offset,slope))
             allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d,mtop=calibmtop_%s_%d)"%
                                                (chsel,ntrk,chsel,ntrk,chsel,ntrk))
@@ -390,14 +394,14 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         print prepend+'Running %d experiments' % options.nPexp
         print 80*'-'
 
-    if not 'nominal' in experimentTag:
-        cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../../'))
-        # cfilepath = osp.abspath(osp.join(osp.dirname(__file__),'../'))
-        cfilepath = osp.join(cfilepath, ".svlsysthistos.pck")
-        cachefile = open(cfilepath, 'r')
-        systhistos = pickle.load(cachefile)
-        print prepend+'>>> Read systematics histograms from cache (.svlsysthistos.pck)'
-        cachefile.close()
+    # if not 'nominal' in experimentTag:
+    #     cfilepath = osp.abspath(osp.join(osp.dirname(wsfile),'../../'))
+    #     # cfilepath = osp.abspath(osp.join(osp.dirname(__file__),'../'))
+    #     cfilepath = osp.join(cfilepath, ".svlsysthistos.pck")
+    #     cachefile = open(cfilepath, 'r')
+    #     systhistos = pickle.load(cachefile)
+    #     print prepend+'>>> Read systematics histograms from cache (.svlsysthistos.pck)'
+    #     cachefile.close()
 
     for i in xrange(0,options.nPexp):
 
@@ -412,7 +416,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             chsel, trk = key
             mukey=(chsel+'_mu',trk)
             if options.verbose>3:
-                sys.stdout.write(prepend+'Exp %-3d (%-2s, %d):' % (i+1, chsel, trk))
+                sys.stdout.write(prepend+'Exp %-3d (%-12s, %d):' % (i+1, chsel, trk))
                 sys.stdout.flush()
 
             ws.var('mtop').setVal(172.5)
@@ -439,12 +443,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             nevtsToGen = ROOT.gRandom.Poisson(nevtsSeed)
 
             pseudoDataH,pseudoData=None,None
-            if options.isData:
-                pseudoDataH=ihist.Clone('eh')
-                pseudoData  = ROOT.RooDataHist('Data_%s_%s_%d'%(experimentTag,chsel,trk),
-                                               'Data_%s_%s_%d'%(experimentTag,chsel,trk),
-                                               ROOT.RooArgList(ws.var('SVLMass')), pseudoDataH)
-            elif options.genFromPDF:
+            if options.genFromPDF:
                 obs = ROOT.RooArgSet(ws.var('SVLMass'))
                 pseudoData = allPdfs[key].generateBinned(obs, nevtsToGen)
             else:
@@ -513,10 +512,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
         #combined likelihoods
         if options.verbose>3:
-            sys.stdout.write(prepend+'[combining channels and categories]')
-            sys.stdout.flush()
+            print '%s------ Combining channels and categories'%(prepend)
 
-        for key in nllMap:
+        for key in sorted(nllMap.keys()):
 
             #reset to central values
             ws.var('mtop').setVal(172.5)
@@ -533,22 +531,21 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             minuit.minos(poi)
             summary.addFitResult(key=key,ws=ws)
 
-            print "Pre  fit yield summary: Ntt: %f, Nt: %f, Nbkg: %f" % (summary.ntt_prefit, summary.nt_prefit, summary.nbkg_prefit)
-            print "Post fit yield summary: Ntt: %f, Nt: %f, Nbkg: %f" % (summary.ntt, summary.nt, summary.nbkg)
-
             combll.Delete()
 
             if options.verbose>3:
-                print key,len(nllMap[key]),' likelihoods to combine'
-                sys.stdout.write(' %s%s DONE%s%s '
-                                 '(mt: %6.2f+-%4.2f GeV, '
-                                 'mu: %5.3f+-%5.3f)%s \n'%
-                                 (bcolors.OKGREEN, bcolors.BOLD, bcolors.ENDC, bcolors.BOLD,
-                                  ws.var('mtop').getVal(), ws.var('mtop').getError(),
-                                  ws.var('mu').getVal(), ws.var('mu').getError(),
-                                  bcolors.ENDC))
+                try: catlabel = CATTOLABEL[('%s_%d'%key)]
+                except KeyError: catlabel = CATTOLABEL[('%s_%d'%key).replace('_%s'%options.selection, '')]
+                sys.stdout.write(prepend)
+                sys.stdout.write('%8s (%2d cats): ' % (catlabel,len(nllMap[key])))
+                resultstring = ('mt: %6.2f+-%4.2f GeV, mu: %5.3f+-%5.3f \n' % (
+                                   ws.var('mtop').getVal(), ws.var('mtop').getError(),
+                                   ws.var('mu').getVal(), ws.var('mu').getError()) )
+                if key == ('comb', 0):
+                    resultstring = bcolors.BOLD + resultstring + bcolors.ENDC
+                sys.stdout.write(resultstring)
                 sys.stdout.flush()
-                print 80*'-'
+        print 80*'-'
 
         #free used memory
         for h in allPseudoDataH      : h.Delete()
@@ -657,58 +654,48 @@ def main():
     os.system('mkdir -p %s' % osp.join(opt.outDir, 'plots'))
 
     # launch pseudo-experiments
-    if not opt.isData:
-        try:
-            peInputFile = ROOT.TFile.Open(args[1], 'READ')
-        except TypeError: ## this sometimes fails (too many accesses to this file?)
-            import time
-            time.sleep(5)
-            peInputFile = ROOT.TFile.Open(args[1], 'READ')
+    try:
+        peInputFile = ROOT.TFile.Open(args[1], 'READ')
+    except TypeError: ## this sometimes fails (too many accesses to this file?)
+        import time
+        time.sleep(5)
+        peInputFile = ROOT.TFile.Open(args[1], 'READ')
 
-        allTags = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()
-                                              if not tkey.GetName() == 'data']
-        peInputFile.Close()
-        print 'Running pseudo-experiments using PDFs and signal expectations'
+    allTags = [tkey.GetName() for tkey in peInputFile.GetListOfKeys()
+                                          if not tkey.GetName() == 'data']
+    peInputFile.Close()
+    print 'Running pseudo-experiments using PDFs and signal expectations'
 
-        if len(opt.calib) :
-            print 'Calibration will be taken from %s' % opt.calib
+    if len(opt.calib) :
+        print 'Calibration will be taken from %s' % opt.calib
 
-        ## Run a single experiment
-        if len(args)>2:
-            if not args[2] in allTags:
+    ## Run a single experiment
+    if len(args)>2:
+        if not args[2] in allTags:
+            print ("ERROR: variation not "
+                   "found in input file! Aborting")
+            return -2
+
+        ## Only run one PE for spy option
+        if opt.spy:
+            opt.nPexp = 1
+
+        runPseudoExperiments(wsfile=args[0], pefile=args[1],
+                             experimentTag=args[2],
+                             options=opt)
+        return 0
+
+    #loop over the required number of jobs
+    print 'Submitting PE jobs to batch'
+    if len(opt.filter)>0:
+        filteredTags = opt.filter.split(',')
+        for tag in filteredTags:
+            if not tag in allTags:
                 print ("ERROR: variation not "
                        "found in input file! Aborting")
-                return -2
-
-            ## Only run one PE for spy option
-            if opt.spy:
-                opt.nPexp = 1
-
-            runPseudoExperiments(wsfile=args[0], pefile=args[1],
-                                 experimentTag=args[2],
-                                 options=opt)
-            return 0
-
-        #loop over the required number of jobs
-        print 'Submitting PE jobs to batch'
-        if len(opt.filter)>0:
-            filteredTags = opt.filter.split(',')
-            for tag in filteredTags:
-                if not tag in allTags:
-                    print ("ERROR: variation not "
-                           "found in input file! Aborting")
-                    return -3
-            allTags = filteredTags
-        submitBatchJobs(args[0], args[1], allTags, opt)
-
-        return 0
-    else:
-        opt.spy=True
-        opt.nPexp=1
-        opt.verbose=5
-        runPseudoExperiments(wsfile=args[0], pefile=args[1],
-                             options=opt,experimentTag='data')
-        return -1
+                return -3
+        allTags = filteredTags
+    submitBatchJobs(args[0], args[1], allTags, opt)
 
     print 80*'-'
     return 0

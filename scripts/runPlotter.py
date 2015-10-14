@@ -242,7 +242,8 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     pName = key.replace('/','')
     newPlot = Plot(pName)
     newPlot.plotformats = ['pdf', 'png']
-    newPlot.ratiorange = (0.4,2.3)
+    newPlot.ratiorange = (0.7,1.2)
+    # newPlot.ratiorange = (0.4,2.3)
     try:
         ratiolo,ratiohi = tuple([float(x) for x in options.ratioRange.split(',')])
         newPlot.ratiorange =  (ratiolo, ratiohi)

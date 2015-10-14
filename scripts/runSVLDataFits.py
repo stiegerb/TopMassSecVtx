@@ -12,7 +12,7 @@ from summarizeSVLresults import CATTOLABEL
 from myRootFunctions import checkKeyInFile
 
 from runSVLPseudoExperiments import PseudoExperimentResults, showFinalFitResult
-
+from runSVLPseudoExperiments import buildPDFs
 
 """
 run the fits on the data
@@ -69,80 +69,10 @@ def runDataFits(wsfile,pefile,options):
     ws.var("mu").setVal(1.0)
 
     #build the relevant PDFs
-    allPdfs = {}
-    for ch in ['em','mm','ee','m','e']:
-        chsel=ch
-        if len(options.selection)>0 : chsel += '_' + options.selection
-        for ntrk in [tklow for tklow,_ in NTRKBINS]: # [3,4,5]
-            ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
-            ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
-            ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
-            ttwro      = '%s_ttwro_%d'              %(chsel,ntrk)
-            ttwroPDF   = 'simplemodel_%s_%d_wro_tt' %(chsel,ntrk)
-            ttunmPDF   = 'model_%s_%d_unm_tt'       %(chsel,ntrk)
-            tfrac      = '%s_tfrac_%d'              %(chsel,ntrk)
-            tcor       = '%s_tcor_%d'               %(chsel,ntrk)
-            tcorPDF    = 'simplemodel_%s_%d_cor_t'  %(chsel,ntrk)
-            twrounmPDF = 'model_%s_%d_wrounm_t'     %(chsel,ntrk)
-            bkgExp     = '%s_bgexp_%d'              %(chsel,ntrk)
-            bkgPDF     = 'model_%s_%d_unm_bg'       %(chsel,ntrk)
-
-            ## Check for existence of necessary pdfs in Workspace
-            for key in [ttcorPDF, ttwroPDF, ttunmPDF, tcorPDF, twrounmPDF, bkgPDF]:
-                if not ws.pdf(key):
-                    print "ERROR: pdf %s not found in workspace!" %key
-                    sys.exit(-1)
-
-            ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(
-                                           chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
-            Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
-            # Ntt is fixed at the expected events for 172.5 GeV
-
-            tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(
-                                           chsel,ntrk,tcor,tcorPDF,twrounmPDF))
-            Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(
-                                           chsel,ntrk,ttexp,tfrac))
-
-            bkgConstPDF = ws.factory('Gaussian::bgprior_%s_%d('
-                                             'bg0_%s_%d[0,-10,10],'
-                                             'bg_nuis_%s_%d[0,-10,10],1.0)'%(
-                                             chsel,ntrk,chsel,ntrk,chsel,ntrk))
-            ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
-            ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
-            #ws.var('bg_nuis_%s_%d'%(chsel,ntrk)).setVal(0.0)
-            #ws.var('bg_nuis_%s_%d'%(chsel,ntrk)).setConstant(True)
-
-            #30% unc on background
-            Nbkg = ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',"
-                                            "{%s,bg_nuis_%s_%d})"%(
-                                             chsel,ntrk,bkgExp,chsel,ntrk))
-
-            print '[Prefit yields] %12s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
-                                  chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(),
-                                  Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
-
-            summary.incrementPreFitExpectation(Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
-
-            #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
-            sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
-                                                    Ntt.GetName(), ttShapePDF.GetName(),
-                                                    Nt.GetName(), tShapePDF.GetName(),
-                                                    Nbkg.GetName(), bkgPDF))
-            ws.factory('PROD::uncalibmodel_%s_%d(%s,%s)'%(chsel,ntrk,
-                                                          sumPDF.GetName(),
-                                                          bkgConstPDF.GetName()))
-
-            #add calibration for this category if available (read from a pickle file)
-            offset, slope = 0.0, 1.0
-            if calibMap:
-                try:
-                    offset, slope = calibMap[options.selection][ '%s_%d'%(ch,ntrk) ]
-                except KeyError, e:
-                    print 'Failed to retrieve calibration with',e
-            ws.factory("RooFormulaVar::calibmtop_%s_%d('(@0-%f)/%f',{mtop})"%(chsel,ntrk,offset,slope))
-            allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d,mtop=calibmtop_%s_%d)"%
-                                               (chsel,ntrk,chsel,ntrk,chsel,ntrk))
-
+    print prepend+"Building pdfs"
+    allPdfs = buildPDFs(ws=ws, options=options,
+                        calibMap=calibMap,
+                        prepend=prepend)
 
     poi = ROOT.RooArgSet( ws.var('mtop') )
 
@@ -195,21 +125,24 @@ def runDataFits(wsfile,pefile,options):
         selstring = options.selection if options.selection else 'inclusive'
         pll=nllMap[('comb',0)][-1].createProfile(poi)
 
-        showFinalFitResult(data=data,pdf=allPdfs[key], nll=[pll,nllMap[('comb',0)][-1]],
-                           SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
-                           outDir=options.outDir,
-                           tag=[selstring,
-                           "%s channel, =%s tracks"%(
-                             str(chsel.split('_',1)[0]),
-                             str(trk))])
+        # showFinalFitResult(data=data,pdf=allPdfs[key], nll=[pll,nllMap[('comb',0)][-1]],
+        #                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
+        #                    outDir=options.outDir,
+        #                    tag=[selstring,
+        #                    "%s channel, =%s tracks"%(
+        #                      str(chsel.split('_',1)[0]),
+        #                      str(trk))])
 
         if options.verbose>3:
             sys.stdout.write('%s DONE %s'
                              '(mt: %6.2f+-%4.2f GeV, '
-                              'mu: %4.2f+-%4.2f)\n'%
-                            (bcolors.OKGREEN,bcolors.ENDC,
+                              'mu: %4.2f+-%4.2f, '
+                              'corfrac: %5.2f+-%5.2f)\n'%
+                            (bcolors.OKGREEN, bcolors.ENDC,
                              ws.var('mtop').getVal(), ws.var('mtop').getError(),
-                             ws.var('mu').getVal(), ws.var('mu').getError()) )
+                             ws.var('mu').getVal(), ws.var('mu').getError(),
+                             ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getVal()+1.0,
+                             ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getError()))
             sys.stdout.flush()
 
     #combined likelihoods
@@ -269,6 +202,10 @@ def main():
                        help='calibration file')
     parser.add_option('-o', '--outDir', dest='outDir', default='svlfits/pexp',
                        help='Output directory [default: %default]')
+
+    parser.add_option('--floatCorrFrac', dest='floatCorrFrac', default=False,
+                       action='store_true',
+                       help='Let the fraction of correct pairings float in the fit')
 
     (opt, args) = parser.parse_args()
 

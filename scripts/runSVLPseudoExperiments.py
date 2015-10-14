@@ -263,6 +263,85 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     canvas.SaveAs('%s/plots/%s_fit.pdf'%(outDir,data.GetName()))
     canvas.Delete()
 
+
+"""
+build the fit model
+"""
+def buildPDFs(ws, options, calibMap=None, prepend=''):
+    allPdfs = {}
+    for ch in ['em','mm','ee','m','e']:
+        chsel = ch
+        if len(options.selection) > 0: chsel += '_%s'%options.selection
+
+        for ntrk in [tklow for tklow,_ in NTRKBINS]: # [3,4,5]
+            if options.verbose>4: print prepend+"  chan %s ntk=%d" %(chsel, ntrk)
+            ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
+            ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
+            ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
+            ttwro      = '%s_ttwro_%d'              %(chsel,ntrk)
+            ttwroPDF   = 'simplemodel_%s_%d_wro_tt' %(chsel,ntrk)
+            ttunmPDF   = 'model_%s_%d_unm_tt'       %(chsel,ntrk)
+            tfrac      = '%s_tfrac_%d'              %(chsel,ntrk)
+            tcor       = '%s_tcor_%d'               %(chsel,ntrk)
+            tcorPDF    = 'simplemodel_%s_%d_cor_t'  %(chsel,ntrk)
+            twrounmPDF = 'model_%s_%d_wrounm_t'     %(chsel,ntrk)
+            bkgExp     = '%s_bgexp_%d'              %(chsel,ntrk)
+            bkgPDF     = 'model_%s_%d_unm_bg'       %(chsel,ntrk)
+
+            ## Check for existence of necessary pdfs in Workspace
+            for key in [ttcorPDF, ttwroPDF, ttunmPDF, tcorPDF, twrounmPDF, bkgPDF]:
+                if not ws.pdf(key):
+                    print "ERROR: pdf %s not found in workspace!" %key
+                    sys.exit(-1)
+
+            if options.floatCorrFrac:
+                ttcorfrac = ws.factory("ttcorfracshift_%s_%d[0.0,-0.8,0.8]"%(chsel,ntrk))
+            else:
+                ttcorfrac = ws.factory("ttcorfracshift_%s_%d[0.0]"%(chsel,ntrk))
+
+            ttcorshifted = ws.factory("RooFormulaVar::ttcorshifted_%s_%d('@0*(1+@1)',{%s,ttcorfracshift_%s_%d})"%(chsel,ntrk,ttcor,chsel,ntrk))
+            ttwroshifted = ws.factory("RooFormulaVar::ttwroshifted_%s_%d('@0*-@1*@2',{%s,ttcorfracshift_%s_%d,%s})"%(chsel,ntrk,ttwro,chsel,ntrk,ttcor))
+
+            ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcorshifted.GetName(),ttcorPDF,
+                                                                                     ttwroshifted.GetName(),ttwroPDF,ttunmPDF))
+            Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
+
+            tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
+            Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
+
+            bkgConstPDF = ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
+            ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
+            ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
+
+            #30% unc on background
+            Nbkg = ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
+
+            # print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
+            #                       chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
+
+            #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
+            sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
+                                      Ntt.GetName(), ttShapePDF.GetName(),
+                                      Nt.GetName(), tShapePDF.GetName(),
+                                      Nbkg.GetName(), bkgPDF) )
+            ws.factory('PROD::uncalibmodel_%s_%d(%s,%s)'%(chsel,ntrk,
+                                                          sumPDF.GetName(),
+                                                          bkgConstPDF.GetName()))
+
+            #add calibration for this category if available (read from a pickle file)
+            offset, slope = 0.0, 1.0
+            if calibMap:
+                try:
+                    offset, slope = calibMap[options.selection][ '%s_%d'%(ch,ntrk) ]
+                except KeyError as e:
+                    print prepend+'ERROR: Failed to retrieve calibration for %s' % options.selection
+                    sys.exit(-1)
+            ws.factory("RooFormulaVar::calibmtop_%s_%d('(@0-%f)/%f',{mtop})"%(chsel,ntrk,offset,slope))
+            allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d,mtop=calibmtop_%s_%d)"%
+                                               (chsel,ntrk,chsel,ntrk,chsel,ntrk))
+    return allPdfs
+
+
 """
 run pseudo-experiments
 """
@@ -324,69 +403,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     ws.var("mu").setVal(1.0)
 
     #build the relevant PDFs
-    allPdfs = {}
     print prepend+"Building pdfs"
-    for ch in ['em','mm','ee','m','e']:
-        chsel=ch
-        if len(options.selection)>0: chsel += '_' + options.selection
-        for ntrk in [tklow for tklow,_ in NTRKBINS]: # [3,4,5]
-            if options.verbose>4: print prepend+"  chan %s ntk=%d" %(chsel, ntrk)
-            ttexp      = '%s_ttexp_%d'              %(chsel,ntrk)
-            ttcor      = '%s_ttcor_%d'              %(chsel,ntrk)
-            ttcorPDF   = 'simplemodel_%s_%d_cor_tt' %(chsel,ntrk)
-            ttwro      = '%s_ttwro_%d'              %(chsel,ntrk)
-            ttwroPDF   = 'simplemodel_%s_%d_wro_tt' %(chsel,ntrk)
-            ttunmPDF   = 'model_%s_%d_unm_tt'       %(chsel,ntrk)
-            tfrac      = '%s_tfrac_%d'              %(chsel,ntrk)
-            tcor       = '%s_tcor_%d'               %(chsel,ntrk)
-            tcorPDF    = 'simplemodel_%s_%d_cor_t'  %(chsel,ntrk)
-            twrounmPDF = 'model_%s_%d_wrounm_t'     %(chsel,ntrk)
-            bkgExp     = '%s_bgexp_%d'              %(chsel,ntrk)
-            bkgPDF     = 'model_%s_%d_unm_bg'       %(chsel,ntrk)
-
-            ## Check for existence of necessary pdfs in Workspace
-            for key in [ttcorPDF, ttwroPDF, ttunmPDF, tcorPDF, twrounmPDF, bkgPDF]:
-                if not ws.pdf(key):
-                    print "ERROR: pdf %s not found in workspace!" %key
-                    sys.exit(-1)
-
-            ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
-            Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
-
-            tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
-            Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
-
-            bkgConstPDF = ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
-            ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)
-            ws.var('bg0_%s_%d'%(chsel,ntrk)).setConstant(True)
-
-            #30% unc on background
-            Nbkg = ws.factory("RooFormulaVar::Nbkg_%s_%d('@0*max(1+0.30*@1,0.)',{%s,bg_nuis_%s_%d})"%(chsel,ntrk,bkgExp,chsel,ntrk))
-
-            # print '[Expectation] %2s, %d: %8.2f (Ntt: %8.2f) (Nt: %8.2f) (Bkg: %8.2f)' % (
-            #                       chsel, ntrk, Ntt.getVal()+Nt.getVal()+Nbkg.getVal(), Ntt.getVal(), Nt.getVal(), Nbkg.getVal())
-
-            #see syntax here https://root.cern.ch/root/html/RooFactoryWSTool.html#RooFactoryWSTool:process
-            sumPDF = ws.factory("SUM::uncalibexpmodel_%s_%d( %s*%s, %s*%s, %s*%s )"%(chsel,ntrk,
-                                      Ntt.GetName(), ttShapePDF.GetName(),
-                                      Nt.GetName(), tShapePDF.GetName(),
-                                      Nbkg.GetName(), bkgPDF) )
-            ws.factory('PROD::uncalibmodel_%s_%d(%s,%s)'%(chsel,ntrk,
-                                                          sumPDF.GetName(),
-                                                          bkgConstPDF.GetName()))
-
-            #add calibration for this category if available (read from a pickle file)
-            offset, slope = 0.0, 1.0
-            if calibMap:
-                try:
-                    offset, slope = calibMap[options.selection][ '%s_%d'%(ch,ntrk) ]
-                except KeyError as e:
-                    print prepend+'ERROR: Failed to retrieve calibration for %s' % options.selection
-                    sys.exit(-1)
-            ws.factory("RooFormulaVar::calibmtop_%s_%d('(@0-%f)/%f',{mtop})"%(chsel,ntrk,offset,slope))
-            allPdfs[(chsel,ntrk)] = ws.factory("EDIT::model_%s_%d(uncalibmodel_%s_%d,mtop=calibmtop_%s_%d)"%
-                                               (chsel,ntrk,chsel,ntrk,chsel,ntrk))
-
+    allPdfs = buildPDFs(ws=ws, options=options,
+                        calibMap=calibMap,
+                        prepend=prepend)
 
     #throw pseudo-experiments
     poi = ROOT.RooArgSet( ws.var('mtop') )
@@ -635,6 +655,10 @@ def main():
                        help='Total # pseudo-experiments.')
     parser.add_option('-o', '--outDir', dest='outDir', default='svlfits/pexp',
                        help='Output directory [default: %default]')
+
+    parser.add_option('--floatCorrFrac', dest='floatCorrFrac', default=False,
+                       action='store_true',
+                       help='Let the fraction of correct pairings float in the fit')
 
     (opt, args) = parser.parse_args()
 

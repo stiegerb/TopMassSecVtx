@@ -618,6 +618,8 @@ def submitBatchJobs(wsfile, pefile, experimentTags, options, queue='8nh'):
                       (wsfilepath, pefilepath, odirpath, tag, options.nPexp))
         if options.genFromPDF:
             command += ' --genFromPDF'
+        if options.floatCorrFrac:
+            command += ' --floatCorrFrac'
         if options.calib:
             command += ' --calib %s' % osp.abspath(options.calib)
         if len(options.selection):

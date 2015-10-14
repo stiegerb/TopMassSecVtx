@@ -273,8 +273,7 @@ def parsePEResultsFromDir(url,verbose=False, doPlots=False, isData=False):
 
         if isData:
             syst = 'data'
-            try: selection = tag.split('_')[1]
-            except ValueError: pass
+            if len(tag.split('_')) > 2: selection = tag.split('_')[1]
             massstr = '172v5'
             mass = 172.5
 
@@ -786,6 +785,8 @@ def makeSystPlot(results, totup, totdn, dataresults=None):
                                      'combmm_0', 'comb_3','comb_4',
                                      'comb_5']))
 
+    assert len(totup.keys()) == 1
+
     cats = ['comb_0', 'combem_0', 'combee_0', 'combmm_0',
             'combe_0', 'combm_0', 'comb_3', 'comb_4', 'comb_5']
 
@@ -797,37 +798,39 @@ def makeSystPlot(results, totup, totdn, dataresults=None):
         centralkey = 'data'
 
     ## Print it
-    for sel in totup.keys():
-        print 80*'-'
-        print 'selection:', sel
+    selection = totup.keys()[0]
+    print 80*'-'
+    print 'selection:', selection
 
-        print 'category  ',
-        for cat in cats: print '%10s' %CATTOLABEL[cat],
-        print ''
+    print 'category  ',
+    for cat in cats: print '%10s' %CATTOLABEL[cat],
+    print ''
 
-        print 'mass [GeV]  ',
-        for cat in cats: print ('  %6.2f  ' % results[(cat,sel)][centralkey][0]),
-        print ''
+    print 'mass [GeV]  ',
+    for cat in cats: print ('  %6.2f  ' % results[(cat,selection)][centralkey][0]),
+    print ''
 
-        print ' err up    ',
-        for cat in cats: print ('    +%4.2f ' % totup[sel][cat]),
-        print ''
+    print ' err up    ',
+    for cat in cats: print ('    +%4.2f ' % totup[selection][cat]),
+    print ''
 
-        print ' err down  ',
-        for cat in cats: print ('    -%4.2f ' % totdn[sel][cat]),
-        print ''
+    print ' err down  ',
+    for cat in cats: print ('    -%4.2f ' % totdn[selection][cat]),
+    print ''
 
-        print ' stat err  ',
-        for cat in cats: print ('   +-%4.2f ' % results[(cat,sel)]['stat']),
-        print ''
+    print ' stat err  ',
+    for cat in cats: print ('   +-%4.2f ' % results[(cat,selection)]['stat']),
+    print ''
     print 80*'-'
 
 
     ## Make the plot
-    mtmin,mtmax = 167.0, 176.0
+    # mtmin,mtmax = 167.0, 176.0
 
-    if isData:
-        mtmin, mtmax = 170.0, 179.0
+    # if isData:
+    #     mtmin, mtmax = 170.0, 179.0
+    mtmax =  0.4+max([results[(c, selection)][centralkey][0]+totup[selection][c] for c in cats])
+    mtmin = -1.2+min([results[(c, selection)][centralkey][0]-totdn[selection][c] for c in cats])
 
 
     for sel in totup.keys():
@@ -1310,9 +1313,11 @@ def main():
         calibMap  = pickle.load(cachefile)
         peresults   = pickle.load(cachefile)
         cachefile.close()
-        catsByChan =   ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0']
+        catsByChan =   ['comb_0','combe_0','combee_0',
+                        'combem_0','combm_0','combmm_0']
         catsByTracks = ['comb_0','comb_3','comb_4','comb_5']
-        allCats = ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0', 'comb_3','comb_4','comb_5']
+        allCats = ['comb_0','combe_0','combee_0','combem_0',
+                   'combm_0','combmm_0', 'comb_3','comb_4','comb_5']
         # showSystematicsTable(results=peresults, filterCats=catsByChan)
         # showSystematicsTable(results=peresults, filterCats=catsByTracks)
 

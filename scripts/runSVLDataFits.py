@@ -136,13 +136,15 @@ def runDataFits(wsfile,pefile,options):
         if options.verbose>3:
             sys.stdout.write('%s DONE %s'
                              '(mt: %6.2f+-%4.2f GeV, '
-                              'mu: %4.2f+-%4.2f, '
-                              'corfrac: %5.2f+-%5.2f)\n'%
+                              'mu: %4.2f+-%4.2f'%
                             (bcolors.OKGREEN, bcolors.ENDC,
                              ws.var('mtop').getVal(), ws.var('mtop').getError(),
-                             ws.var('mu').getVal(), ws.var('mu').getError(),
-                             ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getVal()+1.0,
-                             ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getError()))
+                             ws.var('mu').getVal(), ws.var('mu').getError()))
+            if options.floatCorrFrac:
+                sys.stdout.write(' corfrac: %4.2f+-%4.2f)'% (
+                                 ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getVal()+1.0,
+                                 ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getError()))
+            sys.stdout.write('\n')
             sys.stdout.flush()
 
     #combined likelihoods

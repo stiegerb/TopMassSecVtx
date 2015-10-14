@@ -294,16 +294,17 @@ def buildPDFs(ws, options, calibMap=None, prepend=''):
                     print "ERROR: pdf %s not found in workspace!" %key
                     sys.exit(-1)
 
+            ## Float the fraction of correct pairings
             if options.floatCorrFrac:
                 ttcorfrac = ws.factory("ttcorfracshift_%s_%d[0.0,-0.8,0.8]"%(chsel,ntrk))
+                ttcorshifted = ws.factory("RooFormulaVar::ttcorshifted_%s_%d('@0*(1+@1)',{%s,ttcorfracshift_%s_%d})"%(chsel,ntrk,ttcor,chsel,ntrk))
+                ttwroshifted = ws.factory("RooFormulaVar::ttwroshifted_%s_%d('@0*-@1*@2',{%s,ttcorfracshift_%s_%d,%s})"%(chsel,ntrk,ttwro,chsel,ntrk,ttcor))
+
+                ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcorshifted.GetName(),ttcorPDF,
+                                                                                         ttwroshifted.GetName(),ttwroPDF,ttunmPDF))
             else:
-                ttcorfrac = ws.factory("ttcorfracshift_%s_%d[0.0]"%(chsel,ntrk))
+                ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcor,ttcorPDF,ttwro,ttwroPDF,ttunmPDF))
 
-            ttcorshifted = ws.factory("RooFormulaVar::ttcorshifted_%s_%d('@0*(1+@1)',{%s,ttcorfracshift_%s_%d})"%(chsel,ntrk,ttcor,chsel,ntrk))
-            ttwroshifted = ws.factory("RooFormulaVar::ttwroshifted_%s_%d('@0*-@1*@2',{%s,ttcorfracshift_%s_%d,%s})"%(chsel,ntrk,ttwro,chsel,ntrk,ttcor))
-
-            ttShapePDF = ws.factory("SUM::ttshape_%s_%d(%s*%s,%s*%s,%s)"%(chsel,ntrk,ttcorshifted.GetName(),ttcorPDF,
-                                                                                     ttwroshifted.GetName(),ttwroPDF,ttunmPDF))
             Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
 
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
@@ -524,10 +525,15 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             if options.verbose>3:
                 sys.stdout.write('%s DONE %s'
                                  '(mt: %6.2f+-%4.2f GeV, '
-                                  'mu: %4.2f+-%4.2f)\n'%
-                                (bcolors.OKGREEN,bcolors.ENDC,
+                                  'mu: %4.2f+-%4.2f'%
+                                (bcolors.OKGREEN, bcolors.ENDC,
                                  ws.var('mtop').getVal(), ws.var('mtop').getError(),
-                                 ws.var('mu').getVal(), ws.var('mu').getError()) )
+                                 ws.var('mu').getVal(), ws.var('mu').getError()))
+                if options.floatCorrFrac:
+                    sys.stdout.write(' corfrac: %4.2f+-%4.2f)'% (
+                                     ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getVal()+1.0,
+                                     ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getError()))
+                sys.stdout.write('\n')
                 sys.stdout.flush()
 
         #combined likelihoods

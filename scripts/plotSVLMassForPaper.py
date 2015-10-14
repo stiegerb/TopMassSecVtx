@@ -11,60 +11,35 @@ from UserCode.TopMassSecVtx.PlotUtils import RatioPlot
 ALLMASSES = [166.5, 169.5, 171.5, 172.5, 173.5, 175.5, 178.5]
 MASSESTOPLOT = [166.5, 172.5, 178.5]
 
-def main(args, opt):
-	os.system('mkdir -p %s'%opt.outDir)
-	ROOT.gStyle.SetOptTitle(0)
-	ROOT.gStyle.SetOptStat(0)
-	ROOT.gROOT.SetBatch(1)
-
-	# Construct histograms
-	peInputFile = ROOT.TFile.Open(args[0], 'READ')
-	masshistos = {}
-	for mass in ALLMASSES+['data']:
-		masshist = None
-		masstag = mass
-		if type(mass) == float:
-			masstag = 'nominal_'+str(mass).replace('.','v')
-
-		for trk,_ in NTRKBINS:
-			ihist = peInputFile.Get('%s/SVLMass_inclusive_optmrank_%s_%d'%(masstag,masstag,trk))
-			try:
-				masshist.Add(ihist)
-			except AttributeError:
-				try:
-					masshist = ihist.Clone(masstag)
-				except ReferenceError:
-					print "Histogram not found: %s/SVLMass_inclusive_optmrank_%s_%d"%(masstag,masstag,trk)
-					continue
-		masshistos[mass] = masshist
-
+def makeMassPlot(histos, outname, tag='', subtag=''):
 	ratplot = RatioPlot('ratioplot')
 	ratplot.normalized = False
 	ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
-	ratplot.tag = 'All channels combined'
+	ratplot.tag = tag
+	ratplot.subtag = subtag
 	ratplot.extratext = 'Preliminary'
 	ratplot.rebin = 1
-	ratplot.legpos = (0.55, 0.15)
+	ratplot.legpos = (0.65, 0.15)
 	ratplot.ratiorange = (0.5, 1.5)
-	ratplot.reference = [masshistos[172.5]]
+	ratplot.reference = [histos[172.5]]
 
 	####################################################
 	# Construct dummy data for now
-	# dummy = masshistos[172.5].Clone('dummy_data')
+	# dummy = histos[172.5].Clone('dummy_data')
 	# dummy.Reset('ICE')
-	# dummy.FillRandom(masshistos[173.5], ROOT.gRandom.Poisson(masshistos[172.5].Integral()))
+	# dummy.FillRandom(histos[173.5], ROOT.gRandom.Poisson(histos[172.5].Integral()))
 	# ratplot.add(dummy,'Pseudo Data (@173.5 GeV)')
 	####################################################
 
 	####################################################
 	# REAL DATA:
-	ratplot.add(masshistos['data'], 'Data')
+	ratplot.add(histos['data'], 'Data')
 	####################################################
 
 	for mass in MASSESTOPLOT:
 		legentry = 'MC (m_{top} = %5.1f GeV)' % mass
 		try:
-			histo = masshistos[mass]
+			histo = histos[mass]
 			ratplot.add(histo, legentry, includeInRatio=(mass != 172.5))
 		except KeyError: pass
 
@@ -74,7 +49,46 @@ def main(args, opt):
 	ratplot.drawoptions = ['PE', 'hist', 'hist', 'hist']
 	ratplot.markerstyles = [20,1,1,1]
 	ratplot.markersizes =  [1.5,1,1,1]
-	ratplot.show("massscan_paper_optmrank", opt.outDir)
+	ratplot.show("massscan_paper_%s"%outname, opt.outDir)
+
+def main(args, opt):
+	os.system('mkdir -p %s'%opt.outDir)
+	ROOT.gStyle.SetOptTitle(0)
+	ROOT.gStyle.SetOptStat(0)
+	ROOT.gROOT.SetBatch(1)
+
+	# Construct histograms
+	peInputFile = ROOT.TFile.Open(args[0], 'READ')
+
+	for selection in ['inclusive', 'optmrank']:
+		seltag = '' if not selection == 'optmrank' else '_optmrank'
+		masshistos = {}
+		masshistosntk = {}
+		masshistosntk[3] = {}
+		masshistosntk[4] = {}
+		masshistosntk[5] = {}
+		for mass in ALLMASSES+['data']:
+			masshist = None
+			masstag = mass
+			if type(mass) == float:
+				masstag = 'nominal_'+str(mass).replace('.','v')
+
+			for trk,_ in NTRKBINS:
+				ihist = peInputFile.Get('%s/SVLMass_inclusive%s_%s_%d'%(masstag,seltag,masstag,trk))
+				masshistosntk[trk][mass] = ihist.Clone('%s_%d'%(masstag, trk))
+				try:
+					masshist.Add(ihist)
+				except AttributeError:
+					try:
+						masshist = ihist.Clone(masstag)
+					except ReferenceError:
+						print "Histogram not found: %s/SVLMass_inclusive%s_%s_%d"%(masstag,seltag,masstag,trk)
+						continue
+			masshistos[mass] = masshist
+		makeMassPlot(histos=masshistos, outname=selection, tag='All channels combined', subtag=selection)
+		makeMassPlot(histos=masshistosntk[3], outname='%s_3'%selection, tag='N_{tracks} = 3', subtag=selection)
+		makeMassPlot(histos=masshistosntk[4], outname='%s_4'%selection, tag='N_{tracks} = 4', subtag=selection)
+		makeMassPlot(histos=masshistosntk[5], outname='%s_5'%selection, tag='N_{tracks} = 5', subtag=selection)
 
 	return 0
 

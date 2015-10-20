@@ -21,17 +21,25 @@ LUMIWEIGHT = "XSWeight*%f"%LUMI  # x XS weight
 TREENAME = 'SVLInfo'
 MSEL   = '(abs(EvCat)==13 && NJets>=4)'
 ESEL   = '(abs(EvCat)==11 && NJets>=4)'
+MplusSEL   = '(EvCat==13 && NJets>=4)'
+EplusSEL   = '(EvCat==11 && NJets>=4)'
+MminusSEL   = '(EvCat==-13 && NJets>=4)'
+EminusSEL   = '(EvCat==-11 && NJets>=4)'
 EESEL  = '(EvCat==-121 && NJets>=2)'
 EMSEL  = '(EvCat==-143 && NJets>=2)'
 MMSEL  = '(EvCat==-169 && NJets>=2)'
 INCSEL = '(%s || %s || %s || %s || %s)' % (MSEL, ESEL, EESEL , EMSEL, MMSEL)
 SELECTIONS = [
-	# ('inclusive', ''+INCSEL, '#geq 1 lepton'),
-	# ('ee',        ''+EESEL,  'ee'),
-	# ('em',        ''+EMSEL,  'e#mu'),
-	# ('mm',        ''+MMSEL,  '#mu#mu'),
-	# ('e',         ''+ESEL,   'e'),
-	# ('m',         ''+MSEL,   '#mu'),
+	 ('inclusive', ''+INCSEL, '#geq 1 lepton'),
+	 ('ee',        ''+EESEL,  'ee'),
+	 ('em',        ''+EMSEL,  'e#mu'),
+	 ('mm',        ''+MMSEL,  '#mu#mu'),
+	 ('e',         ''+ESEL,   'e'),
+	 ('m',         ''+MSEL,   '#mu'),
+	 ('eplus',         ''+EplusSEL,   'e+'),
+	 ('mplus',         ''+MplusSEL,   '#mu+'),
+	 ('eminus',         ''+EminusSEL,   'e-'),
+	 ('mminus',         ''+MminusSEL,   '#mu-'),
 
 	# ('inclusive_mrank1', 'SVLMassRank==1&&CombCat%2!=0&&'+INCSEL, '#geq 1 lepton'),
 	# ('ee_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+EESEL,  'ee'),
@@ -60,6 +68,11 @@ SELECTIONS = [
 	('mm_optmrank',        'SVLCombRank>0 && '+MMSEL,  '#mu#mu'),
 	('e_optmrank',         'SVLCombRank>0 && '+ESEL,   'e'),
 	('m_optmrank',         'SVLCombRank>0 && '+MSEL,   '#mu'),
+
+	('eplus_optmrank',         'SVLCombRank>0 && '+EplusSEL,   'e+'),
+	('mplus_optmrank',         'SVLCombRank>0 && '+MplusSEL,   '#mu+'),
+	('eminus_optmrank',         'SVLCombRank>0 && '+EminusSEL,   'e-'),
+	('mminus_optmrank',         'SVLCombRank>0 && '+MminusSEL,   '#mu-'),
 ]
 
 COMBINATIONS = {
@@ -434,7 +447,10 @@ def main(args, opt):
 			chanTitle=chanTitle.replace('tbar','#bar{t}')
 			if chan in ['t','tbar'] and ('ee' in tag or 'mm' in tag or 'em' in tag):
 				continue
-			if chan in ['tW','tbarW'] and tag in ['e', 'm', 'e_mrank1', 'm_mrank1']:
+			if chan in ['tW','tbarW'] and tag in ['e', 'm', 
+							      'eplus','eminus', 'mplus','mminus',
+							      'e_optmrank', 'm_optmrank',
+							      'eplus_optmrank','eminus_optmrank', 'mplus_optmrank','mminus_optmrank']:
 				continue
 
 			ratplot = RatioPlot('ratioplot')

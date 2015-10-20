@@ -428,13 +428,13 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 sys.stdout.write(' [generated pseudodata]')
                 sys.stdout.flush()
 
-            #create likelihood
-            #store it in the appropriate categories for posterior combination
-            for nllMapKey in [('comb',0),('comb',trk),('comb%s'%chsel,0)]:
+            #create likelihood : store it in the appropriate categories for posterior combination
+            chType='ll' if ch in ['em','mm','ee'] else 'lj'
+            for nllMapKey in [('comb',0),('comb',trk),('comb%s'%chsel,0),('comb%s'%chType,trk),('comb%s'%chType,0)]:
                 if not (nllMapKey in nllMap):
                     nllMap[nllMapKey]=[]
                 if nllMapKey[0]=='comb' and nllMapKey[1]==0:
-                    nllMap[nllMapKey].append( allPdfs[key].createNLL(pseudoData, ROOT.RooFit.Extended()) )
+                    nllMap[nllMapKey].append( allPdfs[key].createNLL(pseudoData, ROOT.RooFit.Extended()) )                
                 else:
                     nllMap[nllMapKey].append( nllMap[('comb',0)][-1] )
 

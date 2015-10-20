@@ -11,10 +11,14 @@ from makeSVLMassHistos import COMMONWEIGHT, LUMI
 
 DATAMCPLOTS = [
 	('SVLDeltaR'   , NBINS, 0  , 5 , '#Delta R(Sec.Vtx., lepton)'),
+	('JLDeltaR'   , NBINS, 0  , 5 , '#Delta R(Jet, lepton)'),
 	('SVNtrk'      , 8,     2  , 10, 'SV Track Multiplicity'),
+	('SVPt'        , NBINS,     0  , 200, 'SV p_{T} [GeV]'),
+	('SVLxy'        , NBINS,     0  , 5, 'SV L_{xy} [cm]'),
 	('LPt'         , NBINS, 20 , 200, 'Lepton pt [GeV]'),
-	('JPt'         , NBINS, 30 , 200, 'Jet pt [GeV]'),
+	('JPt'         , NBINS, 30 , 200, 'Jet p_{T} [GeV]'),
 	('SVLMass'     , NBINS, XMIN, XMAX, MASSXAXISTITLE),
+	('JLMass'     , NBINS, XMIN, XMAX*2, MASSXAXISTITLE),
 ]
 
 def projectFromTree(hist, varname, sel, tree, option=''):

@@ -1,7 +1,7 @@
 #!/bin/bash
 WHAT=$1; if [[ "$1" == "" ]]; then echo "runCharmPeaks.sh <TREES/MERGE/UNFOLD/DIFF/DIFFZ>"; exit 1; fi
 
-tag=Jul13
+tag=Oct28
 hash=bbbcb36
 treedir=SVLInfo/${tag}/
 eosdir=/store/cmst3/group/top/summer2015/${hash}/
@@ -45,7 +45,7 @@ case $WHAT in
 	    "syst/MC8TeV_TTJets_TuneP11"
 	    "syst/MC8TeV_TT_AUET2_powheg_herwig"
 	    "z_control/MC8TeV_DY_merged_filt23"
-	    "z_control/Data8TeV_DoubleLepton_merged_filt23"
+	    "z_control/Data8TeV_merged_filt23"
 	)
 	for c in ${cands[@]}; do
 	    for i in ${inputs[@]}; do
@@ -83,7 +83,7 @@ case $WHAT in
     DIFF )
 	plotdir=${outdir}/plots/
 	mkdir -p ${plotdir}
-	a=("D0" "JPsi" "Dpm" "Dsm")
+	a=("JPsi" "D0" "JPsi" "Dpm" "Dsm")
 	
 	for c in ${cands[@]}; do
 	    a="D0"
@@ -98,22 +98,20 @@ case $WHAT in
 	    ctag="${c}"
 	    ctag=${ctag/","/"_"}
 	    
-	    #differential measurements
-	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.75  --tag ${a} --showMean;
-	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS  -m 0.75 --tag ${a} --showMean;
+	    #differential measurements	    
+	    echo "python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.75  --tag ${a};"
 	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.75  --tag ${a};
 	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS  -m 0.75 --tag ${a};
 	    
 	    #unfolded
-	    unfvars=("norm_ptrel_signal" "norm_pfrac_signal" "norm_ptfrac_signal" "norm_pzfrac_signal" "norm_ptchfrac_signal" "norm_pzchfrac_signal" "norm_dr_signal")
+	    unfvars=("norm_ptrel_signal" "norm_pfrac_signal" "norm_ptfrac_signal" "norm_pzfrac_signal" "norm_ptchfrac_signal" "norm_pzchfrac_signal" "norm_dr_signal")	    
 	    for var in ${unfvars[@]}; do
-		python scripts/compareUnfoldedDistributions.py -d ${var} -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.60 --tag ${a} --showMean;
 		python scripts/compareUnfoldedDistributions.py -d ${var} -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b UnfoldedDistributions -m 0.60 --tag ${a};
 	    done
 	done
 	;;
     DIFFZ )
-	plotdir=${outdir}z_control/plots/
+	plotdir=${outdir}/z_control/plots/
 	mkdir -p ${plotdir}
 	a=("D0" "JPsi" "Dpm" "Dsm")
 	
@@ -133,14 +131,11 @@ case $WHAT in
 	    #differential measurements
 	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5  --tag ${a} -z;
 	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS  -m 0.75 --tag ${a} -z;
-	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_eta_dS -m 0.5  --tag ${a} -z --showMean;
-	    python scripts/compareUnfoldedDistributions.py -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b CharmInfo_diff -d norm_pt_dS  -m 0.75 --tag ${a} -z --showMean;
 	    
 	    #unfolded
 	    unfvars=("norm_ptrel_signal" "norm_pfrac_signal" "norm_ptfrac_signal" "norm_pzfrac_signal" "norm_ptchfrac_signal" "norm_pzchfrac_signal" "norm_dr_signal")
 	    for var in ${unfvars[@]}; do
 		python scripts/compareUnfoldedDistributions.py -d ${var} -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b UnfoldedDistributions --tag ${a} -z;
-		python scripts/compareUnfoldedDistributions.py -d ${var} -i ${outdir}/c_${ctag}/ -o ${plotdir}${a}/ -b UnfoldedDistributions --tag ${a} -z --showMean;
 	    done
 	done
 	;;

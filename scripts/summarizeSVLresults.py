@@ -1049,7 +1049,7 @@ def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
     pt.SetFillStyle(0)
     pt.SetTextAlign(12)
     pt.SetTextSize(24)
-    pt.AddText('#bf{CMS} #it{preliminary}')
+    pt.AddText('#bf{CMS}') # #it{preliminary}')
     pt.Draw()
 
     tmt = ROOT.TLatex()

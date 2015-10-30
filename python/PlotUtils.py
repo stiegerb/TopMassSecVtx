@@ -129,7 +129,7 @@ class RatioPlot(object):
         self.subtagpos = (0.85,0.78)
         self.legpos = (0.60, 0.15)
         self.extratext = 'Simulation'
-        self.plotformats = ['.pdf', '.png']
+        self.plotformats = ['.pdf', '.png','.C']
         self.colors1 = [ ## rainbow ('gay flag')
             ROOT.kViolet-6,
             ROOT.kBlue+2,
@@ -486,7 +486,7 @@ class Plot(object):
         self.data = None
         self._garbageList = []
         self.normalizedToData=False
-        self.plotformats = ['pdf','png']
+        self.plotformats = ['pdf','png','C']
         self.savelog = False
         self.ratiorange = (0.62, 1.36)
 
@@ -722,7 +722,7 @@ class Plot(object):
 
 
         ## Draw CMS Preliminary label
-        CMS_lumi(pad=t1,iPeriod=2,iPosX=0,extraText='Work in Progress')
+        CMS_lumi(pad=t1,iPeriod=2,iPosX=0,extraText='') #Work in Progress')
 
         if self.normalizedToData:
             txt=TLatex()

@@ -345,7 +345,7 @@ def main(args, options):
 		templateplot.subtagpos = (0.90, 0.78)
 		templateplot.legpos = (0.75, 0.25)
 		templateplot.ratiotitle = 'Ratio wrt Inclusive'
-		templateplot.extratext = 'Work in Progress'
+		templateplot.extratext = '' #Work in Progress'
 		templateplot.ratiorange = (0.2, 2.2)
 		templateplot.colors = [ROOT.kBlack, ROOT.kBlue-8, ROOT.kAzure-2,
 		                       ROOT.kCyan-3]

@@ -36,15 +36,27 @@ def runRecoAnalysis(fileNames,outFileName):
     jetMultH=ROOT.TH1F("njets",   ";Jet multiplicity; Events",4,0,4)
     jetMultH.SetDirectory(0)
     jetMultH.Sumw2()
-        
+    observablesH={'ptpos':    ROOT.TH1F('ptpos',';Lepton transverse momentum [GeV];Events',100,0,200),
+                  'ptll':     ROOT.TH1F('ptll',';Dilepton transverse momentum [GeV];Events',100,0,200),
+                  'mll':      ROOT.TH1F('mll',';Invariant mass [GeV];Events',100,0,400),
+                  'EposEm':   ROOT.TH1F('EposEm',';Energy sum [GeV];Events',100,40,500),
+                  'ptposptm': ROOT.TH1F('ptposptm',';Transverse momentum sum [GeV];Events',100,40,300)}
+    for var in observablesH:
+        observablesH[var].SetDirectory(0)
+        observablesH[var].Sumw2()
+
+
     #open file
     tree=ROOT.TChain('DileptonInfo')
     for f in fileNames: tree.AddFile(f)
     
     #loop over events in the tree and fill histos
-    for i in xrange(0,tree.GetEntries()):
+    totalEntries=tree.GetEntries()
+    for i in xrange(0,totalEntries):
 
         tree.GetEntry(i)
+
+        if i%100==0 : sys.stdout.write('\r [ %d/100 ] done' %(int(float(100.*i)/float(totalEntries))) )
 
         #select only emu events
         if tree.EvCat != -11*13 : continue
@@ -109,6 +121,9 @@ def runRecoAnalysis(fileNames,outFileName):
             observables_rec['EposEm']=lp.E()+lm.E()
             observables_rec['ptposptm']=lp.Pt()+lm.Pt()
             obsMoments_rec[var].measure(observables_rec,weight)
+            if var=='nominal':
+                for obsName in observables_rec:
+                    observablesH[obsName].Fill(observables_rec[obsName],weight)
 
             observables_gen['ptpos']=glp.Pt()
             observables_gen['ptll']=gll.Pt()
@@ -120,6 +135,7 @@ def runRecoAnalysis(fileNames,outFileName):
     #save results
     fOut=ROOT.TFile.Open(outFileName,'RECREATE')
     jetMultH.Write()
+    for var in observablesH: observablesH[var].Write()
     for var in obsMoments_rec:
         obsMoments_rec[var].finalize()
         obsMoments_rec[var].save(fOut)

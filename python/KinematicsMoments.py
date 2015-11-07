@@ -75,9 +75,12 @@ class KinematicsMoments:
 
         if self.N==0: return
 
+        avgX0=self.ObsCorrHisto.GetBinContent(1,1)
+
         for iobs in xrange(0,self.nObs):
 
             baseXbin=iobs*self.maxMoment+1
+            
             for xbin in xrange(2,self.maxMoment+1):
 
                 #compute average and standard deviation for each observable
@@ -85,8 +88,9 @@ class KinematicsMoments:
                 if xmomOrder>self.maxMomentToReport: continue
                 xxbin=2*xbin-1
                 idx=iobs*self.maxMomentToReport+(xbin-2)
-                self.avgX[idx]=self.ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseXbin)/float(self.N)
-                avgXX=self.ObsCorrHisto.GetBinContent(baseXbin+xxbin-1,baseXbin)/float(self.N)
+
+                self.avgX[idx]=self.ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseXbin)/avgX0
+                avgXX=self.ObsCorrHisto.GetBinContent(baseXbin+xxbin-1,baseXbin)/avgX0
                 sigma2=avgXX-self.avgX[idx]**2
                 self.sigmaX[idx]=ROOT.TMath.Sqrt(sigma2) if sigma2>0 else -ROOT.TMath.Sqrt(-sigma2)
             
@@ -97,15 +101,14 @@ class KinematicsMoments:
                         ymomOrder=ybin-1
                         if ymomOrder>self.maxMomentToReport: continue
 
-                        xlab=self.ObsCorrHisto.GetXaxis().GetBinLabel(baseXbin+xbin-1)
-                        ylab=self.ObsCorrHisto.GetYaxis().GetBinLabel(baseYbin+ybin-1)
+                        #xlab=self.ObsCorrHisto.GetXaxis().GetBinLabel(baseXbin+xbin-1)
+                        #ylab=self.ObsCorrHisto.GetYaxis().GetBinLabel(baseYbin+ybin-1)
                         
                         idy=jobs*self.maxMomentToReport+(ybin-2)
-                        self.avgXY[idx][idy]=self.ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseYbin+ybin-1)/float(self.N)
+                        self.avgXY[idx][idy]=self.ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseYbin+ybin-1)/avgX0
                         
                         diff=self.avgXY[idx][idy]-self.avgX[idx]*self.avgX[idy]
                         sxsy=self.sigmaX[idx]*self.sigmaX[idy]
-                        print xlab,ylab,self.avgXY[idx][idy],self.avgX[idx],self.avgX[idy]
                         self.cXY[idx][idy]=diff/sxsy if sxsy!=0 else 0
 
         if report is True:
@@ -122,9 +125,9 @@ class KinematicsMoments:
         #write relevant objects to a sub-directory of the file
         outDir=outF.mkdir(self.name)
         outDir.cd()
-        self.avgX.Write()
-        self.sigmaX.Write()
-        self.avgXY.Write()
-        self.cXY.Write()
+        self.avgX.Write('avgX')
+        self.sigmaX.Write('sigmaX')
+        self.avgXY.Write('avgXY')
+        self.cXY.Write('cXY')
         self.ObsCorrHisto.Write()
         outF.cd()

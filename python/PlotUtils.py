@@ -129,7 +129,7 @@ class RatioPlot(object):
         self.subtagpos = (0.85,0.78)
         self.legpos = (0.60, 0.15)
         self.extratext = 'Simulation'
-        self.plotformats = ['.pdf', '.png']
+        self.plotformats = ['.pdf', '.png', '.C']
         self.colors1 = [ ## rainbow ('gay flag')
             ROOT.kViolet-6,
             ROOT.kBlue+2,

@@ -520,20 +520,20 @@ def main(args, opt):
 
 		# Make plot of mass with and without neutrino:
 		# for comb in COMBINATIONS.keys():
-		plot = RatioPlot('neutrino_%s'%tag)
-		plot.rebin = 2
-		plot.add(systhistos[(tag,'nonu', 'tot')], 'Without neutrino')
-		plot.add(systhistos[(tag,'nu',   'tot')], 'With neutrino')
-		plot.add(systhistos[(tag,'nuunm','tot')], 'Unmatched')
-		plot.reference = systhistos[(tag,'nominal','tot')]
-		plot.tag = "Mass shape with and without neutrinos"
-		plot.subtag = SELNAMES[tag] + COMBNAMES['tot']
-		plot.ratiotitle = 'Ratio wrt Total'
-		plot.ratiorange = (0.7, 1.3)
-		plot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
-		plot.show("neutrino_%s_%s"%(tag,'tot'),
-			      os.path.join(opt.outDir, 'syst_plots'))
-		plot.reset()
+		# plot = RatioPlot('neutrino_%s'%tag)
+		# plot.rebin = 2
+		# plot.add(systhistos[(tag,'nonu', 'tot')], 'Without neutrino')
+		# plot.add(systhistos[(tag,'nu',   'tot')], 'With neutrino')
+		# plot.add(systhistos[(tag,'nuunm','tot')], 'Unmatched')
+		# plot.reference = systhistos[(tag,'nominal','tot')]
+		# plot.tag = "Mass shape with and without neutrinos"
+		# plot.subtag = SELNAMES[tag] + COMBNAMES['tot']
+		# plot.ratiotitle = 'Ratio wrt Total'
+		# plot.ratiorange = (0.7, 1.3)
+		# plot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
+		# plot.show("neutrino_%s_%s"%(tag,'tot'),
+		# 	      os.path.join(opt.outDir, 'syst_plots'))
+		# plot.reset()
 
 		for name, title, systs, colors, comb in SYSTPLOTS:
 			print name, title, systs, colors, comb
@@ -559,12 +559,13 @@ def main(args, opt):
 
 		# Make top pt plot with both correct and wrong
 		plot = RatioPlot('toppt_paper_cor_wro')
+		plot.canvassize = (600,600)
 		plot.tag = 'Top p_{T} mis-modeling'
 		plot.rebin = 2
 		plot.subtag = 'Inclusive channels'
-		plot.ratiotitle = 'Ratio wrt Nominal'
+		plot.ratiotitle = '1 / Nominal'
 		plot.ratiorange = (0.85, 1.15)
-		plot.legpos = (0.55, 0.15)
+		plot.legpos = (0.55, 0.30)
 		plot.colors = [ROOT.kGreen+2, ROOT.kGreen-6, ROOT.kRed+2, ROOT.kRed-6]
 		plot.add(systhistos[(tag,'nominal','cor')], 'Nominal (correct)',      includeInRatio=False)
 		plot.add(systhistos[(tag,'toppt','cor')], 'p_{T} weighted (correct)', includeInRatio=True)
@@ -577,12 +578,13 @@ def main(args, opt):
 
 		# Make b fragmentation plot for paper
 		plot = RatioPlot('bfrag_paper')
+		plot.canvassize = (600,600)
 		plot.tag = 'b fragmentation'
 		plot.rebin = 2
 		plot.subtag = 'Inclusive channels'
-		plot.ratiotitle = 'Ratio wrt Z2* rb LEP'
+		plot.ratiotitle = '1 / Z2* rb LEP'
 		plot.ratiorange = (0.85, 1.15)
-		plot.legpos = (0.55, 0.15)
+		plot.legpos = (0.65, 0.15)
 		plot.colors = [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9, ROOT.kAzure+7]
 		plot.add(systhistos[(tag,'nominal', 'tot')], 'Z2* rb LEP', includeInRatio=False)
 		plot.add(systhistos[(tag,'bfragdn', 'tot')], 'Z2* rb LEP soft')

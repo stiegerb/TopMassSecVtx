@@ -342,7 +342,7 @@ class RatioPlot(object):
                     ytit = "Events / %3.1f" % h.GetBinWidth(1)
                 mainframe.GetYaxis().SetTitle(ytit)
         else:
-            mainframe.GetXaxis().SetTitle(self.titley)
+            mainframe.GetYaxis().SetTitle(self.titley)
         mainframe.GetYaxis().SetLabelSize(22)
         mainframe.GetYaxis().SetTitleSize(26)
         mainframe.GetYaxis().SetTitleOffset(2.0)

@@ -874,13 +874,13 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         bandline0 = ROOT.TLine(0.0,mt_comb, MAXX, mt_comb)
         bandline1 = ROOT.TLine(0.0,midmass+errrange, MAXX, midmass+errrange)
         bandline2 = ROOT.TLine(0.0,midmass-errrange, MAXX, midmass-errrange)
+        bandline0.SetLineStyle(3)
         for l in [bandline0, bandline1, bandline2]:
             l.SetLineColor(gband.GetLineColor())
         divline1 = ROOT.TLine(1.0,mtmin, 1.0, mtmax)
         divline2 = ROOT.TLine(6.0,mtmin, 6.0, mtmax)
         for l in [divline1, divline2]:
             l.SetLineColor(ROOT.kGray+2)
-        bandline0.SetLineStyle(3)
         divline1.SetLineStyle(2)
         divline2.SetLineStyle(2)
 
@@ -945,14 +945,29 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         graph_ntrk_stat.SetLineColor(ROOT.kGray+2)
 
         ############################
-        canv = ROOT.TCanvas('c','c',700,300)
-        canv.SetLeftMargin(0.40)
-        canv.SetRightMargin(0.05)
-        canv.SetFrameLineColor(ROOT.kGray+2)
+        canv = ROOT.TCanvas('c','c',800,300)
+
+        p2 = ROOT.TPad("pad2","pad2",0.77,0.0,1.0,1.0);
+        p2.SetLeftMargin(0.01)
+        p2.SetRightMargin(0.15)
+        p2.SetFrameLineColor(ROOT.kGray+2)
+        p2.SetFillStyle(0)
+        p2.SetTicks(0,1)
+        p2.Draw()
+
+        p1 = ROOT.TPad("pad1","pad1",0.0,0.0,0.77,1.0);
+        p1.SetLeftMargin(0.40)
+        p1.SetRightMargin(0.01)
+        p1.SetTopMargin(p2.GetTopMargin())
+        p1.SetBottomMargin(p2.GetBottomMargin())
+        p1.SetFrameLineColor(ROOT.kGray+2)
+        p1.SetTicks(0,1)
+        p1.Draw()
+        p1.cd()
+
         haxis.GetYaxis().SetAxisColor(ROOT.kGray+2)
         haxis.GetXaxis().SetAxisColor(ROOT.kGray+2)
         haxis.Draw('axis')
-        ROOT.gPad.SetTicks(0,3)
         haxis.GetYaxis().SetTickLength(0.01)
         # haxis.GetYaxis().SetLabelOffset(0.01)
         haxis.GetYaxis().SetLabelFont(43)
@@ -973,8 +988,6 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         graph_comb_stat.Draw("E")
         graph_chan.Draw("PE")
         graph_chan_stat.Draw("E")
-        # graph_ntrk.Draw("PE")
-        # graph_ntrk_stat.Draw("E")
 
         ## Labels
         label=ROOT.TLatex()
@@ -985,7 +998,7 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         label.SetTextColor(graph_comb.GetLineColor())
         # label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
         # label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
-        label.DrawLatex(-2.3, mt_comb,
+        label.DrawLatex(-2.2, mt_comb,
                         "m_{top}^{comb.} = %5.2f  "
                         "#pm %4.2f ^{+%4.2f}_{-%4.2f} GeV" %
                         (mt_comb, staterr_comb,
@@ -995,15 +1008,12 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         label.SetTextColor(ROOT.kGray+2)
         label.SetTextSize(14)
         label.DrawLatex(0.55,mtmin+0.6+0.1,CATTOFLABEL['comb_0'])
-        label.DrawLatex(1.5,mtmin+0.6,CATTOFLABEL['combem_0'])
-        label.DrawLatex(2.5,mtmin+0.6,CATTOFLABEL['combee_0'])
-        label.DrawLatex(3.5,mtmin+0.6,CATTOFLABEL['combmm_0'])
-        label.DrawLatex(4.5,mtmin+0.6,CATTOFLABEL['combe_0'])
-        label.DrawLatex(5.5,mtmin+0.6,CATTOFLABEL['combm_0'])
+        label.DrawLatex(1.5, mtmin+0.6+0.05,CATTOFLABEL['combem_0'])
+        label.DrawLatex(2.5, mtmin+0.6+0.05,CATTOFLABEL['combee_0'])
+        label.DrawLatex(3.5, mtmin+0.6+0.05,CATTOFLABEL['combmm_0'])
+        label.DrawLatex(4.5, mtmin+0.6+0.05,CATTOFLABEL['combe_0'])
+        label.DrawLatex(5.5, mtmin+0.6+0.05,CATTOFLABEL['combm_0'])
 
-        # label.DrawLatex(6.5,mtmin+0.6+0.05,CATTOFLABEL['comb_3'])
-        # label.DrawLatex(7.5,mtmin+0.6+0.05,CATTOFLABEL['comb_4'])
-        # label.DrawLatex(8.5,mtmin+0.6+0.05,CATTOFLABEL['comb_5'])
 
         label.SetTextFont(63)
         label.SetTextSize(20)
@@ -1015,12 +1025,74 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
             label.DrawLatex(1.1,mtmax+0.18,'Simulation')
         # else:
         #     label.DrawLatex(1.1,mtmax+0.18,'Preliminary')
+        # label.SetTextFont(43)
+        # label.SetTextSize(16)
+        # label.SetTextAlign(31)
+        # label.DrawLatex(MAXX-0.1,mtmax+0.15,'19.6 fb^{-1} (8 TeV)')
+
+        p1.RedrawAxis()
+
+        p2.cd()
+        padscale = 3.8
+
+        haxis2 = ROOT.TH2D("axes2","axes2", 1, MAXX, 9.0, 1, mtmin, mtmax)
+        haxis2.GetYaxis().SetAxisColor(ROOT.kGray+2)
+        haxis2.GetXaxis().SetAxisColor(ROOT.kGray+2)
+        haxis2.Draw('Y+')
+        haxis2.GetYaxis().SetTickLength(0.01*padscale)
+        haxis2.GetYaxis().SetLabelOffset(0.01)
+        haxis2.GetYaxis().SetLabelFont(43)
+        haxis2.GetYaxis().SetLabelSize(12)
+        haxis2.GetYaxis().SetLabelColor(ROOT.kGray+2)
+        haxis2.GetYaxis().SetTitle("")
+        # haxis2.GetYaxis().SetTitleOffset(0.5)
+        # haxis2.GetYaxis().SetTitleColor(ROOT.kGray+2)
+        # haxis2.GetYaxis().SetTitleFont(43)
+        # haxis2.GetYaxis().SetTitleSize(16)
+        haxis2.GetXaxis().SetTickLength(0)
+        haxis2.GetXaxis().SetLabelSize(0)
+
+        gband2 = ROOT.TGraphErrors(2)
+        gband2.SetName("band_graph2_%s"%sel)
+
+        gband2.SetPoint(0,MAXX,midmass)
+        gband2.SetPoint(1,9.0,midmass)
+        for n in range(2):
+            gband2.SetPointError(n,0.0,errrange)
+
+        gband2.SetLineWidth(1)
+        gband2.SetLineColor(ROOT.kAzure-8)
+        gband2.SetFillColor(gband2.GetLineColor())
+        gband2.SetFillStyle(3005)
+        bandline02 = ROOT.TLine(MAXX,mt_comb, 9.0, mt_comb)
+        bandline12 = ROOT.TLine(MAXX,midmass+errrange, 9.0, midmass+errrange)
+        bandline22 = ROOT.TLine(MAXX,midmass-errrange, 9.0, midmass-errrange)
+        for l in [bandline02, bandline12, bandline22]:
+            l.SetLineColor(gband.GetLineColor())
+        bandline02.SetLineStyle(3)
+
+        gband2.Draw('3')
+        for l in [bandline02, bandline12, bandline22]:
+            l.Draw()
+
+        graph_ntrk.Draw("PE")
+        graph_ntrk_stat.Draw("E")
+
+        label.SetTextFont(43)
+        label.SetTextSize(14)
+        label.SetTextAlign(22)
+
+        label.DrawLatex(6.5,mtmin+0.65,CATTOFLABEL['comb_3'])
+        label.DrawLatex(7.5,mtmin+0.65,CATTOFLABEL['comb_4'])
+        label.DrawLatex(8.5,mtmin+0.65,CATTOFLABEL['comb_5'])
+
         label.SetTextFont(43)
         label.SetTextSize(16)
         label.SetTextAlign(31)
-        label.DrawLatex(MAXX-0.1,mtmax+0.15,'19.6 fb^{-1} (8 TeV)')
+        label.DrawLatex(8.9,mtmax+0.15,'19.6 fb^{-1} (8 TeV)')
 
-        ROOT.gPad.RedrawAxis()
+        p2.RedrawAxis()
+
         if sel == '': sel = 'inclusive'
         outname = "syst_by_channel_%s" % sel
         if not isData: outname += '_pseudodata'

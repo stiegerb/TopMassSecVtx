@@ -125,13 +125,15 @@ def runDataFits(wsfile,pefile,options):
         selstring = options.selection if options.selection else 'inclusive'
         pll=nllMap[('comb',0)][-1].createProfile(poi)
 
-        # showFinalFitResult(data=data,pdf=allPdfs[key], nll=[pll,nllMap[('comb',0)][-1]],
-        #                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
-        #                    outDir=options.outDir,
-        #                    tag=[selstring,
-        #                    "%s channel, =%s tracks"%(
-        #                      str(chsel.split('_',1)[0]),
-        #                      str(trk))])
+        chTitle=str(chsel.split('_',1)[0])
+        chTitle=chTitle.replace('m','#mu')
+        showFinalFitResult(data=data,pdf=allPdfs[key], 
+                           #nll=[pll,nllMap[('comb',0)][-1]],
+                           nll=[pll],
+                           SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
+                           outDir=options.outDir,
+                           #tag=[selstring,"%s channel, =%s tracks"%(str(chsel.split('_',1)[0]),str(trk))])
+                           tag=["%s channel, =%s tracks"%(chTitle,str(trk))])
 
         if options.verbose>3:
             sys.stdout.write('%s DONE %s'
@@ -204,7 +206,6 @@ def main():
                        help='calibration file')
     parser.add_option('-o', '--outDir', dest='outDir', default='svlfits/pexp',
                        help='Output directory [default: %default]')
-
     parser.add_option('--floatCorrFrac', dest='floatCorrFrac', default=False,
                        action='store_true',
                        help='Let the fraction of correct pairings float in the fit')

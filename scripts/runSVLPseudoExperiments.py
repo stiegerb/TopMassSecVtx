@@ -155,8 +155,10 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     pdf.plotOn(frame,
                ROOT.RooFit.Name('totalexp'),
                ROOT.RooFit.ProjWData(data),
-               ROOT.RooFit.LineColor(ROOT.kBlue),
+               ROOT.RooFit.LineColor(ROOT.kBlue),               
                ROOT.RooFit.LineWidth(2),
+               ROOT.RooFit.FillStyle(1001),
+               ROOT.RooFit.FillColor(0),
                ROOT.RooFit.MoveToBack())
     pdf.plotOn(frame,
                ROOT.RooFit.Name('singlet'),
@@ -179,17 +181,19 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
                ROOT.RooFit.MoveToBack())
     frame.Draw()
     frame.GetYaxis().SetTitleOffset(1.5)
+    frame.GetYaxis().SetRangeUser(0,1.2*frame.GetMaximum())
     frame.GetXaxis().SetTitle("m(SV,lepton) [GeV]")
     label=ROOT.TLatex()
     label.SetNDC()
     label.SetTextFont(42)
     label.SetTextSize(0.04)
-    label.DrawLatex(0.18,0.94,'#bf{CMS} #it{simulation}')
+    label.DrawLatex(0.18,0.94,'#bf{CMS}') # #it{simulation}')
+    label.DrawLatex(0.18,0.9,'#scale[0.9]{19.7 fb^{-1} (8 TeV)}') # #it{simulation}')
     leg=ROOT.TLegend(0.65,0.35,0.95,0.52)
-    leg.AddEntry('data',       'Pseudo data',      'p')
-    leg.AddEntry('totalexp',   'Total',     'l')
-    leg.AddEntry('tt',         't#bar{t}',  'f')
-    leg.AddEntry('singlet',    'Single top','f')
+    leg.AddEntry('data',       'Data',         'p')
+    leg.AddEntry('tt',         't#bar{t}',     'f')
+    leg.AddEntry('singlet',    'Single top',   'f')
+    leg.AddEntry('totalexp',   'Background',   'f')
     leg.SetFillStyle(0)
     leg.SetTextFont(43)
     leg.SetTextSize(14)
@@ -206,11 +210,10 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
         if type(tag) == str:
             tlat.DrawLatex(0.65, 0.32, tag)
         else:
-            ystart = 0.32
+            ystart = 0.86
             yinc = 0.05
             for n,text in enumerate(tag):
-                tlat.DrawLatex(0.65, ystart-n*yinc, text)
-
+                tlat.DrawLatex(0.18, ystart-n*yinc, text)
 
     canvas.cd()
     p2 = ROOT.TPad('p2','p2',0.0,0.86,1.0,1.0)
@@ -250,7 +253,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     frame2.GetYaxis().SetNdivisions(3)
     frame2.GetXaxis().SetNdivisions(3)
     frame2.GetXaxis().SetTitle('Top mass [GeV]')
-    frame2.GetYaxis().SetTitle('pLL and LL')
+    frame2.GetYaxis().SetTitle('-2#DeltalogL')
     frame2.GetYaxis().SetTitleOffset(1.5)
     frame2.GetXaxis().SetTitleSize(0.08)
     frame2.GetXaxis().SetLabelSize(0.08)
@@ -259,8 +262,8 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
 
     canvas.Modified()
     canvas.Update()
-    canvas.SaveAs('%s/plots/%s_fit.png'%(outDir,data.GetName()))
-    canvas.SaveAs('%s/plots/%s_fit.pdf'%(outDir,data.GetName()))
+    for ext in ['png','pdf','C']:
+        canvas.SaveAs('%s/plots/%s.%s'%(outDir,data.GetName(),ext))
     canvas.Delete()
 
 

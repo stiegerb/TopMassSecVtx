@@ -15,13 +15,14 @@ def makeMassPlot(histos, outname, tag='', subtag=''):
 	ratplot = RatioPlot('ratioplot')
 	ratplot.normalized = False
 	ratplot.ratiotitle = "Ratio wrt 172.5 GeV"
+	ratplot.extratext = ''
 	ratplot.tag = tag
 	ratplot.subtag = subtag
-	ratplot.extratext = 'Preliminary'
 	ratplot.rebin = 1
 	ratplot.legpos = (0.65, 0.15)
-	ratplot.ratiorange = (0.5, 1.5)
+	ratplot.ratiorange = (0.7, 1.3)
 	ratplot.reference = [histos[172.5]]
+        ratplot.titley = "Combinations / %3.1f GeV" %histos['data'].GetXaxis().GetBinWidth(1)
 
 	####################################################
 	# Construct dummy data for now
@@ -85,10 +86,10 @@ def main(args, opt):
 						print "Histogram not found: %s/SVLMass_inclusive%s_%s_%d"%(masstag,seltag,masstag,trk)
 						continue
 			masshistos[mass] = masshist
-		makeMassPlot(histos=masshistos, outname=selection, tag='All channels combined', subtag=selection)
-		makeMassPlot(histos=masshistosntk[3], outname='%s_3'%selection, tag='N_{tracks} = 3', subtag=selection)
-		makeMassPlot(histos=masshistosntk[4], outname='%s_4'%selection, tag='N_{tracks} = 4', subtag=selection)
-		makeMassPlot(histos=masshistosntk[5], outname='%s_5'%selection, tag='N_{tracks} = 5', subtag=selection)
+		makeMassPlot(histos=masshistos, outname=selection)
+		makeMassPlot(histos=masshistosntk[3], outname='%s_3'%selection, tag='N_{tracks} = 3')
+		makeMassPlot(histos=masshistosntk[4], outname='%s_4'%selection, tag='N_{tracks} = 4')
+		makeMassPlot(histos=masshistosntk[5], outname='%s_5'%selection, tag='N_{tracks} = 5')
 
 	return 0
 

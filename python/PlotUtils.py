@@ -130,6 +130,7 @@ class RatioPlot(object):
         self.legpos = (0.60, 0.15)
         self.extratext = 'Simulation'
         self.plotformats = ['.pdf', '.png', '.C']
+        self.canvassize = (800, 800) # default is 800,800, don't go below 600
         self.colors1 = [ ## rainbow ('gay flag')
             ROOT.kViolet-6,
             ROOT.kBlue+2,
@@ -254,6 +255,10 @@ class RatioPlot(object):
         if not os.path.isdir(outdir):
             os.system('mkdir -p %s' % outdir)
 
+        # Scaling with canvas size
+        canv_scalex = 800./self.canvassize[0]
+        canv_scaley = 800./self.canvassize[1]
+
         # Automatic coloring
         colors = self.colors1
         if len(self.histos) <= 6:
@@ -286,7 +291,7 @@ class RatioPlot(object):
         tc = ROOT.TCanvas(outname, "ratioplots", 800, 800)
         # self._garbageList.append(tc)
         tc.cd()
-        tc.SetCanvasSize(800, 800)
+        tc.SetCanvasSize(self.canvassize[0], self.canvassize[1])
         p2 = ROOT.TPad("pad2","pad2",0,0,1,0.31);
         self._garbageList.append(p2)
         p2.SetTopMargin(0);
@@ -305,19 +310,19 @@ class RatioPlot(object):
 
         # tl = ROOT.TLegend(0.66, 0.75-0.040*max(len(self.histos)-3,0), .89, .89)
         # tl = ROOT.TLegend(0.66, 0.15, .89, .30+0.040*max(len(self.histos)-3,0))
-        tl = ROOT.TLegend(self.legpos[0], self.legpos[1],
-                          min(self.legpos[0]+0.30,0.89),
-                          self.legpos[1]+0.15+0.042*max(len(self.histos)-3,0))
-        self._garbageList.append(tl)
-        tl.SetBorderSize(0)
-        tl.SetFillColor(0)
-        tl.SetFillStyle(0)
-        tl.SetShadowColor(0)
-        tl.SetTextFont(43)
-        tl.SetTextSize(20)
+        tleg = ROOT.TLegend(self.legpos[0], self.legpos[1],
+                            min(self.legpos[0]+0.30,0.89),
+                            min(self.legpos[1]+0.15+canv_scaley*0.042*max(len(self.histos)-3,0), 0.89))
+        self._garbageList.append(tleg)
+        tleg.SetBorderSize(0)
+        tleg.SetFillColor(0)
+        tleg.SetFillStyle(0)
+        tleg.SetShadowColor(0)
+        tleg.SetTextFont(43)
+        tleg.SetTextSize(20)
         if len(self.histos)>30 :
-            tl.SetTextSize(10)
-            tl.SetNColumns(3)
+            tleg.SetTextSize(10)
+            tleg.SetNColumns(3)
 
         mainframe = self.histos[0].Clone('mainframe')
         self._garbageList.append(mainframe)
@@ -345,12 +350,12 @@ class RatioPlot(object):
             mainframe.GetYaxis().SetTitle(self.titley)
         mainframe.GetYaxis().SetLabelSize(22)
         mainframe.GetYaxis().SetTitleSize(26)
-        mainframe.GetYaxis().SetTitleOffset(2.0)
+        mainframe.GetYaxis().SetTitleOffset(2.0/canv_scalex)
 
         mainframe.GetXaxis().SetTitle('')
         mainframe.GetXaxis().SetLabelSize(0)
         mainframe.GetXaxis().SetTitleSize(0)
-        mainframe.GetXaxis().SetTitleOffset(1.5)
+        mainframe.GetXaxis().SetTitleOffset(1.5/canv_scaley)
         mainframe.GetYaxis().SetNoExponent()
         mainframe.Draw()
 
@@ -358,13 +363,13 @@ class RatioPlot(object):
         # self.histos[0].Draw("axis")
         for hist,legentry,dopt in zip(self.histos,self.legentries,self.drawoptions):
             if dopt=='hist':
-                tl.AddEntry(hist, legentry, 'l')
+                tleg.AddEntry(hist, legentry, 'l')
             else:
-                tl.AddEntry(hist, legentry, 'p')
+                tleg.AddEntry(hist, legentry, 'p')
         for hist,dopt in reversed(zip(self.histos,self.drawoptions)):
             hist.Draw("%s same"%dopt)
 
-        tl.Draw()
+        tleg.Draw()
 
         tlat = TLatex()
         tlat.SetTextFont(43)

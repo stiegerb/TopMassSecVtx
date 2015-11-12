@@ -235,29 +235,65 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
     ## Return results
     return PEsummary
 
+def analyzeDataResults(key,fIn):
+    PEsummary={}
+
+    # read the tree
+    peinfo = fIn.Get('%s/peinfo_%s'%(key,key)) ## TTree
+    assert(peinfo.GetEntries() == 1)
+
+    genmtop = 172.5
+    mtopfit,statunc,mu = None,None,None
+
+    for entry in peinfo:
+        mtopfit = entry.mtopfit
+        statunc = entry.statunc
+        mu = entry.mu
+        break ## only need one entry
+
+    PEsummary['bias'] = (mtopfit-genmtop, 0.0)
+    PEsummary['stat'] = statunc
+    PEsummary['mu']   = mu
+
+    ## Return results
+    return PEsummary
+
 
 """
 Loops over the results in a directory and builds a map of PE results
 """
-def parsePEResultsFromFile(url,verbose=False, doPlots=False):
+def parsePEResultsFromDir(url,verbose=False, doPlots=False, isData=False):
     results, calibGrMap, resCalibGrMap = {}, {}, {}
     fileNames=[f for f in os.listdir(url) if f.endswith('results.root')]
+
+    if not fileNames:
+        print "ERROR: No results files found in %s" % url
+        sys.exit(-1)
+
     for fname in fileNames:
         fIn=ROOT.TFile.Open(os.path.join(url,fname))
 
         tag=os.path.splitext(fname)[0]
         selection = ''
-        try:
-            syst, massstr, selection, _ = tag.rsplit('_', 3)
-        except ValueError:
-            syst, massstr, _ = tag.rsplit('_', 2)
 
-        # Extract a XXXvX number from the tag string:
-        # This is a bit superfluous, but it will catch if something went wrong
-        # in the splitting above (e.g. a syst name containing a '_')
-        mass = re.search(r'[\w]*([\d]{3}v[\d]{1})+[\w]*', tag).group(1)
-        mass = float(mass.replace('v5','.5'))
-        assert(mass == float(massstr.replace('v5','.5')))
+        if isData:
+            syst = 'data'
+            if len(tag.split('_')) > 2: selection = tag.split('_')[1]
+            massstr = '172v5'
+            mass = 172.5
+
+        else:
+            try:
+                syst, massstr, selection, _ = tag.rsplit('_', 3)
+            except ValueError:
+                syst, massstr, _ = tag.rsplit('_', 2)
+
+            # Extract a XXXvX number from the tag string:
+            # This is a bit superfluous, but it will catch if something went wrong
+            # in the splitting above (e.g. a syst name containing a '_')
+            mass = re.search(r'[\w]*([\d]{3}v[\d]{1})+[\w]*', tag).group(1)
+            mass = float(mass.replace('v5','.5'))
+            assert(mass == float(massstr.replace('v5','.5')))
 
         if verbose:
             print '%sSyst: %s, %5.1f GeV, %s%s' % (bcolors.BOLD,
@@ -266,11 +302,17 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
 
 
         useForCalib=True if 'nominal' in syst else False
-        for key in fIn.GetListOfKeys():
+        for key in sorted(fIn.GetListOfKeys()):
             if verbose: print '  %-18s  ' % key.GetName(),
 
             keyName=key.GetName()
-            PEsummary=analyzePEresults(key=keyName,fIn=fIn,outDir=url,doPlots=(doPlots and useForCalib),syst=syst)
+            if not isData:
+                PEsummary = analyzePEresults(key=keyName, fIn=fIn,
+                                       outDir=url,doPlots=(doPlots and useForCalib),
+                                       syst=syst)
+            else:
+                PEsummary = analyzeDataResults(key=keyName, fIn=fIn)
+
             if not 'bias' in PEsummary : continue
 
             bias, biasErr = PEsummary['bias']
@@ -289,8 +331,8 @@ def parsePEResultsFromFile(url,verbose=False, doPlots=False):
             # if not useForCalib or mass==172.5:
             results[(keyName,selection)][syst] = (mass+bias,biasErr,PEsummary['stat'])
 
-            # add statistical error for nominal 172.5:
-            if syst == '172.5':
+            # add statistical error for nominal 172.5 and for data:
+            if syst == '172.5' or isData:
                 results[(keyName,selection)]['stat'] = PEsummary['stat']
             if not useForCalib: continue
 
@@ -455,8 +497,8 @@ def show(grCollMap,outDir,outName,xaxisTitle,yaxisTitle,
         #all done
         canvas.Modified()
         canvas.Update()
-        for ext in ['png','pdf']:
-            canvas.SaveAs(os.path.join(outDir,'%s.%s'%(outName,ext)))
+        for ext in ['.png','.pdf', '.C']:
+            canvas.SaveAs(os.path.join(outDir,'%s%s'%(outName,ext)))
     except UnboundLocalError:
         print 'WARNING: Missing some variations!'
     return fitParamsMap
@@ -510,7 +552,7 @@ def showSystematicsTable(results,filterCats):
         print 140*'-'
     return 0
 
-def writeSystematicsTable(results,filterCats,ofile,printout=False):
+def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
     selections = list(set([s for _,s in results.keys()]))
     categories = list(set([k for k,_ in results.keys()]))
 
@@ -597,6 +639,10 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
                         else:
                             diffstr = '$ %5.2f \\pm %4.2f $ & ' % (diff, diffErr)
                             if insum: dns.append((diff,diffErr))
+
+                        if insum and len(variations) == 1 and syst != 'toppt':
+                            if diff > 0: dns.append((-1.0*diff, -1.0*diffErr))
+                            else:        ups.append((-1.0*diff, -1.0*diffErr))
 
                     except KeyError:
                         ## Syst not defined, write empty entry
@@ -727,14 +773,15 @@ def writeSystematicsTable(results,filterCats,ofile,printout=False):
     statUnc.Write()
     outF.Close()
 
-    for sel in selections:
-        for cat in filterCats:
-            plotFragmentationVersusMtop(fitResults=results[(cat,sel)],
-                                        outName=cat+sel,ref='172.5')
+    # for sel in selections:
+    #     for cat in filterCats:
+    #         plotFragmentationVersusMtop(fitResults=results[(cat,sel)],
+    #                                     outName=cat+sel,ref='172.5',
+    #                                     options=options)
 
     return totup, totdn
 
-def makeSystPlot(results, totup, totdn):
+def makeSystPlot(results, totup, totdn, options, dataresults=None):
     assert(totup.keys() == totdn.keys())
     for sel in totup.keys():
         assert(totup[sel].keys() == totdn[sel].keys())
@@ -744,47 +791,64 @@ def makeSystPlot(results, totup, totdn):
                                      'combmm_0', 'comb_3','comb_4',
                                      'comb_5']))
 
-    cats = ['comb_0', 'combem_0', 'combee_0', 'combmm_0', 'combe_0', 'combm_0', 'comb_3', 'comb_4', 'comb_5']
+    assert len(totup.keys()) == 1
+
+    cats = ['comb_0', 'combem_0', 'combee_0', 'combmm_0',
+            'combe_0', 'combm_0', 'comb_3', 'comb_4', 'comb_5']
+
+    centralkey = '172.5'
+    isData = False
+    if dataresults is not None:
+        isData = True
+        results = dataresults
+        centralkey = 'data'
 
     ## Print it
-    for sel in totup.keys():
-        print 80*'-'
-        print 'selection:', sel
+    selection = totup.keys()[0]
+    print 80*'-'
+    print 'selection:', selection
 
-        print 'category  ',
-        for cat in cats: print '%10s' %CATTOLABEL[cat],
-        print ''
+    print 'category  ',
+    for cat in cats: print '%10s' %CATTOLABEL[cat],
+    print ''
 
-        print 'mass [GeV]  ',
-        for cat in cats: print ('  %6.2f  ' % results[(cat,sel)]['172.5'][0]),
-        print ''
+    print 'mass [GeV]  ',
+    for cat in cats: print ('  %6.2f  ' % results[(cat,selection)][centralkey][0]),
+    print ''
 
-        print ' err up    ',
-        for cat in cats: print ('    +%4.2f ' % totup[sel][cat]),
-        print ''
+    print ' err up    ',
+    for cat in cats: print ('    +%4.2f ' % totup[selection][cat]),
+    print ''
 
-        print ' err down  ',
-        for cat in cats: print ('    -%4.2f ' % totdn[sel][cat]),
-        print ''
+    print ' err down  ',
+    for cat in cats: print ('    -%4.2f ' % totdn[selection][cat]),
+    print ''
 
-        print ' stat err  ',
-        for cat in cats: print ('   +-%4.2f ' % results[(cat,sel)]['stat']),
-        print ''
+    print ' stat err  ',
+    for cat in cats: print ('   +-%4.2f ' % results[(cat,selection)]['stat']),
+    print ''
     print 80*'-'
 
 
     ## Make the plot
-    mtmin = 167.0
-    mtmax = 176.0
+    # mtmin,mtmax = 167.0, 176.0
+
+    # if isData:
+    #     mtmin, mtmax = 170.0, 179.0
+    mtmax =  0.4+max([results[(c, selection)][centralkey][0]+totup[selection][c] for c in cats])
+    mtmin = -1.2+min([results[(c, selection)][centralkey][0]-totdn[selection][c] for c in cats])
+
+
     for sel in totup.keys():
-        haxis = ROOT.TH2D("axes","axes", 1, 0., 9., 1, mtmin, mtmax)
+        MAXX = 6.0 # 9.0
+        haxis = ROOT.TH2D("axes","axes", 1, 0., MAXX, 1, mtmin, mtmax)
 
         ############################
         graph_comb = ROOT.TGraphAsymmErrors(1)
         graph_comb.SetName("systs_comb_%s"%sel)
         graph_comb_stat = ROOT.TGraphAsymmErrors(1)
         graph_comb_stat.SetName("systs_comb_stat_%s"%sel)
-        mt_comb = results[('comb_0',sel)]['172.5'][0]
+        mt_comb = results[('comb_0',sel)][centralkey][0]
         staterr_comb = results[('comb_0',sel)]['stat']
         toterrup = math.sqrt(staterr_comb**2 + totup[sel]['comb_0']**2)
         toterrdn = math.sqrt(staterr_comb**2 + totdn[sel]['comb_0']**2)
@@ -799,7 +863,7 @@ def makeSystPlot(results, totup, totdn):
         errrange = (toterrup+toterrdn)/2.0
         midmass = (mt_comb-toterrdn)+errrange
         gband.SetPoint(0,0.0,midmass)
-        gband.SetPoint(1,9.0,midmass)
+        gband.SetPoint(1,MAXX,midmass)
         for n in range(2):
             gband.SetPointError(n,0.0,errrange)
 
@@ -807,16 +871,16 @@ def makeSystPlot(results, totup, totdn):
         gband.SetLineColor(ROOT.kAzure-8)
         gband.SetFillColor(gband.GetLineColor())
         gband.SetFillStyle(3005)
-        bandline0 = ROOT.TLine(0.0,mt_comb, 9.0, mt_comb)
-        bandline1 = ROOT.TLine(0.0,midmass+errrange, 9.0, midmass+errrange)
-        bandline2 = ROOT.TLine(0.0,midmass-errrange, 9.0, midmass-errrange)
+        bandline0 = ROOT.TLine(0.0,mt_comb, MAXX, mt_comb)
+        bandline1 = ROOT.TLine(0.0,midmass+errrange, MAXX, midmass+errrange)
+        bandline2 = ROOT.TLine(0.0,midmass-errrange, MAXX, midmass-errrange)
+        bandline0.SetLineStyle(3)
         for l in [bandline0, bandline1, bandline2]:
             l.SetLineColor(gband.GetLineColor())
         divline1 = ROOT.TLine(1.0,mtmin, 1.0, mtmax)
         divline2 = ROOT.TLine(6.0,mtmin, 6.0, mtmax)
         for l in [divline1, divline2]:
             l.SetLineColor(ROOT.kGray+2)
-        bandline0.SetLineStyle(3)
         divline1.SetLineStyle(2)
         divline2.SetLineStyle(2)
 
@@ -841,9 +905,9 @@ def makeSystPlot(results, totup, totdn):
             staterr = results[(cat,sel)]['stat']
             toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2) ## FIXME: Full stat error up or half?
             toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
-            graph_chan.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+            graph_chan.SetPoint(n, xpos, results[(cat,sel)][centralkey][0])
             graph_chan.SetPointError(n, 0., 0., toterrdn, toterrup)
-            graph_chan_stat.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+            graph_chan_stat.SetPoint(n, xpos, results[(cat,sel)][centralkey][0])
             graph_chan_stat.SetPointError(n, 0., 0., staterr, staterr)
 
         graph_chan.SetLineWidth(1)
@@ -856,7 +920,7 @@ def makeSystPlot(results, totup, totdn):
         graph_chan_stat.SetLineColor(graph_chan.GetLineColor())
 
         ############################
-        ntrkcats = ['comb_3','comb_3','comb_5']
+        ntrkcats = ['comb_3','comb_4','comb_5']
         ntrkxpos = [6.5,7.5,8.5]
         graph_ntrk = ROOT.TGraphAsymmErrors(len(ntrkcats))
         graph_ntrk.SetName("systs_ntrk_%s"%sel)
@@ -866,9 +930,9 @@ def makeSystPlot(results, totup, totdn):
             staterr = results[(cat,sel)]['stat']
             toterrup = math.sqrt(staterr**2 + totup[sel][cat]**2)
             toterrdn = math.sqrt(staterr**2 + totdn[sel][cat]**2)
-            graph_ntrk.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+            graph_ntrk.SetPoint(n, xpos, results[(cat,sel)][centralkey][0])
             graph_ntrk.SetPointError(n, 0., 0., toterrdn, toterrup)
-            graph_ntrk_stat.SetPoint(n, xpos, results[(cat,sel)]['172.5'][0])
+            graph_ntrk_stat.SetPoint(n, xpos, results[(cat,sel)][centralkey][0])
             graph_ntrk_stat.SetPointError(n, 0., 0., staterr, staterr)
 
         graph_ntrk.SetLineWidth(1)
@@ -882,12 +946,28 @@ def makeSystPlot(results, totup, totdn):
 
         ############################
         canv = ROOT.TCanvas('c','c',800,300)
-        canv.SetLeftMargin(0.35)
-        canv.SetFrameLineColor(ROOT.kGray+2)
+
+        p2 = ROOT.TPad("pad2","pad2",0.77,0.0,1.0,1.0);
+        p2.SetLeftMargin(0.01)
+        p2.SetRightMargin(0.15)
+        p2.SetFrameLineColor(ROOT.kGray+2)
+        p2.SetFillStyle(0)
+        p2.SetTicks(0,1)
+        p2.Draw()
+
+        p1 = ROOT.TPad("pad1","pad1",0.0,0.0,0.77,1.0);
+        p1.SetLeftMargin(0.40)
+        p1.SetRightMargin(0.01)
+        p1.SetTopMargin(p2.GetTopMargin())
+        p1.SetBottomMargin(p2.GetBottomMargin())
+        p1.SetFrameLineColor(ROOT.kGray+2)
+        p1.SetTicks(0,1)
+        p1.Draw()
+        p1.cd()
+
         haxis.GetYaxis().SetAxisColor(ROOT.kGray+2)
         haxis.GetXaxis().SetAxisColor(ROOT.kGray+2)
         haxis.Draw('axis')
-        ROOT.gPad.SetTicks(0,3)
         haxis.GetYaxis().SetTickLength(0.01)
         # haxis.GetYaxis().SetLabelOffset(0.01)
         haxis.GetYaxis().SetLabelFont(43)
@@ -902,14 +982,12 @@ def makeSystPlot(results, totup, totdn):
         haxis.GetXaxis().SetLabelSize(0)
 
         gband.Draw('3')
-        for l in [bandline0, bandline1, bandline2, divline1, divline2]:
+        for l in [bandline0, bandline1, bandline2, divline1]:#, divline2]:
             l.Draw()
         graph_comb.Draw("PE")
         graph_comb_stat.Draw("E")
         graph_chan.Draw("PE")
         graph_chan_stat.Draw("E")
-        graph_ntrk.Draw("PE")
-        graph_ntrk_stat.Draw("E")
 
         ## Labels
         label=ROOT.TLatex()
@@ -920,38 +998,117 @@ def makeSystPlot(results, totup, totdn):
         label.SetTextColor(graph_comb.GetLineColor())
         # label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
         # label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
-        label.DrawLatex(-3,mt_comb,"m_{top}^{comb.} = %5.2f  #pm %4.2f ^{+%4.2f}_{-%4.2f} GeV" %
-                                   (mt_comb, staterr_comb, totup[sel]['comb_0'], totdn[sel]['comb_0']))
+        label.DrawLatex(-2.2, mt_comb,
+                        "m_{top}^{comb.} = %5.2f  "
+                        "#pm %4.2f ^{+%4.2f}_{-%4.2f} GeV" %
+                        (mt_comb, staterr_comb,
+                         totup[sel]['comb_0'],
+                         totdn[sel]['comb_0']))
 
         label.SetTextColor(ROOT.kGray+2)
         label.SetTextSize(14)
-        label.DrawLatex(0.55,168.0+0.1,CATTOFLABEL['comb_0'])
-        label.DrawLatex(1.5,168.0,CATTOFLABEL['combem_0'])
-        label.DrawLatex(2.5,168.0,CATTOFLABEL['combee_0'])
-        label.DrawLatex(3.5,168.0,CATTOFLABEL['combmm_0'])
-        label.DrawLatex(4.5,168.0,CATTOFLABEL['combe_0'])
-        label.DrawLatex(5.5,168.0,CATTOFLABEL['combm_0'])
-
-        label.DrawLatex(6.5,168.0+0.05,CATTOFLABEL['comb_3'])
-        label.DrawLatex(7.5,168.0+0.05,CATTOFLABEL['comb_4'])
-        label.DrawLatex(8.5,168.0+0.05,CATTOFLABEL['comb_5'])
+        label.DrawLatex(0.55,mtmin+0.6+0.1,CATTOFLABEL['comb_0'])
+        label.DrawLatex(1.5, mtmin+0.6+0.05,CATTOFLABEL['combem_0'])
+        label.DrawLatex(2.5, mtmin+0.6+0.05,CATTOFLABEL['combee_0'])
+        label.DrawLatex(3.5, mtmin+0.6+0.05,CATTOFLABEL['combmm_0'])
+        label.DrawLatex(4.5, mtmin+0.6+0.05,CATTOFLABEL['combe_0'])
+        label.DrawLatex(5.5, mtmin+0.6+0.05,CATTOFLABEL['combm_0'])
 
 
-        ROOT.gPad.RedrawAxis()
+        label.SetTextFont(63)
+        label.SetTextSize(20)
+        label.SetTextAlign(11)
+        label.DrawLatex(0.1,mtmax+0.15,'CMS')
+        label.SetTextFont(53)
+        label.SetTextSize(18)
+        if not isData:
+            label.DrawLatex(1.1,mtmax+0.18,'Simulation')
+        # else:
+        #     label.DrawLatex(1.1,mtmax+0.18,'Preliminary')
+        # label.SetTextFont(43)
+        # label.SetTextSize(16)
+        # label.SetTextAlign(31)
+        # label.DrawLatex(MAXX-0.1,mtmax+0.15,'19.6 fb^{-1} (8 TeV)')
+
+        p1.RedrawAxis()
+
+        p2.cd()
+        padscale = 3.8
+
+        haxis2 = ROOT.TH2D("axes2","axes2", 1, MAXX, 9.0, 1, mtmin, mtmax)
+        haxis2.GetYaxis().SetAxisColor(ROOT.kGray+2)
+        haxis2.GetXaxis().SetAxisColor(ROOT.kGray+2)
+        haxis2.Draw('Y+')
+        haxis2.GetYaxis().SetTickLength(0.01*padscale)
+        haxis2.GetYaxis().SetLabelOffset(0.01)
+        haxis2.GetYaxis().SetLabelFont(43)
+        haxis2.GetYaxis().SetLabelSize(12)
+        haxis2.GetYaxis().SetLabelColor(ROOT.kGray+2)
+        haxis2.GetYaxis().SetTitle("")
+        # haxis2.GetYaxis().SetTitleOffset(0.5)
+        # haxis2.GetYaxis().SetTitleColor(ROOT.kGray+2)
+        # haxis2.GetYaxis().SetTitleFont(43)
+        # haxis2.GetYaxis().SetTitleSize(16)
+        haxis2.GetXaxis().SetTickLength(0)
+        haxis2.GetXaxis().SetLabelSize(0)
+
+        gband2 = ROOT.TGraphErrors(2)
+        gband2.SetName("band_graph2_%s"%sel)
+
+        gband2.SetPoint(0,MAXX,midmass)
+        gband2.SetPoint(1,9.0,midmass)
+        for n in range(2):
+            gband2.SetPointError(n,0.0,errrange)
+
+        gband2.SetLineWidth(1)
+        gband2.SetLineColor(ROOT.kAzure-8)
+        gband2.SetFillColor(gband2.GetLineColor())
+        gband2.SetFillStyle(3005)
+        bandline02 = ROOT.TLine(MAXX,mt_comb, 9.0, mt_comb)
+        bandline12 = ROOT.TLine(MAXX,midmass+errrange, 9.0, midmass+errrange)
+        bandline22 = ROOT.TLine(MAXX,midmass-errrange, 9.0, midmass-errrange)
+        for l in [bandline02, bandline12, bandline22]:
+            l.SetLineColor(gband.GetLineColor())
+        bandline02.SetLineStyle(3)
+
+        gband2.Draw('3')
+        for l in [bandline02, bandline12, bandline22]:
+            l.Draw()
+
+        graph_ntrk.Draw("PE")
+        graph_ntrk_stat.Draw("E")
+
+        label.SetTextFont(43)
+        label.SetTextSize(14)
+        label.SetTextAlign(22)
+
+        label.DrawLatex(6.5,mtmin+0.65,CATTOFLABEL['comb_3'])
+        label.DrawLatex(7.5,mtmin+0.65,CATTOFLABEL['comb_4'])
+        label.DrawLatex(8.5,mtmin+0.65,CATTOFLABEL['comb_5'])
+
+        label.SetTextFont(43)
+        label.SetTextSize(16)
+        label.SetTextAlign(31)
+        label.DrawLatex(8.9,mtmax+0.15,'19.6 fb^{-1} (8 TeV)')
+
+        p2.RedrawAxis()
+
         if sel == '': sel = 'inclusive'
-        canv.SaveAs("syst_by_channel_%s.pdf"%sel)
-        canv.SaveAs("syst_by_channel_%s.png"%sel)
+        outname = "syst_by_channel_%s" % sel
+        if not isData: outname += '_pseudodata'
+        for ext in ['.pdf', '.png', '.C']:
+            canv.SaveAs(os.path.join(options.outDir, "%s%s"%(outname,ext)))
 
     return
 
-def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
+def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     #hardcoded values, from simulation
-    fragModels={'172.5'    :("Z2*LEP r_{b}",      ROOT.kBlue,      20, 1.2, 0.7616, 0.0002),
-                'bfragdn'  :("Z2*LEP r_{b} soft", ROOT.kMagenta,   24, 1.2, 0.7481, 0.0003),
-                'bfragup'  :("Z2*LEP r_{b} hard", ROOT.kMagenta+2, 24, 1.2, 0.7729, 0.0003),
-                'bfragpete':("Z2*LEP Peterson",   ROOT.kRed+1,     32, 1.2, 0.7189, 0.0007),
-                'bfraglund':("Z2*LEP Lund",       ROOT.kAzure+7,   26, 1.2, 0.7670, 0.0007),
-                'bfragz2s' :('Z2*',               ROOT.kOrange+7, 25, 1.2, 0.73278, 0.00009),
+    fragModels={'172.5'    :("Z2* LEP r_{b}",      ROOT.kBlue,      20, 1.2, 0.7616,  0.0002),
+                'bfragdn'  :("Z2* LEP r_{b} soft", ROOT.kGray,      24, 1.2, 0.7481,  0.0003),
+                'bfragup'  :("Z2* LEP r_{b} hard", ROOT.kGray,      24, 1.2, 0.7729,  0.0003),
+                'bfragpete':("Z2* LEP Peterson",   ROOT.kRed+1,     32, 1.2, 0.7189,  0.0007),
+                'bfraglund':("Z2* LEP Lund",       ROOT.kAzure+7,   26, 1.2, 0.7670,  0.0007),
+                'bfragz2s' :('Z2* nominal',        ROOT.kOrange+7,  25, 1.2, 0.73278, 0.00009),
     }
 
     #get the fitted values
@@ -984,7 +1141,10 @@ def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
     c.SetRightMargin(0.05)
 
     # haxis = ROOT.TH2D("axes","axes", 1, 0.71, 0.78, 1, -3.15, 1.05)
-    haxis = ROOT.TH2D("axes","axes", 1, 0.69, 0.81, 1, -3.15, 1.95)
+    if 'optmrank' in outName:
+        haxis = ROOT.TH2D("axes","axes", 1, 0.69, 0.81, 1, -3.15, 1.95)
+    else:
+        haxis = ROOT.TH2D("axes","axes", 1, 0.69, 0.81, 1, -3.5, 1.95)
 
     # Gray out axes and frame:
     c.SetFrameLineColor(ROOT.kGray+2)
@@ -1061,6 +1221,10 @@ def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
                               '#lower[0.1]{#void8} #scale[0.7]{'
                               '#lower[0.7]{Z2*LEP rb}}'%(pol1.GetParameter(1)/100.))
 
+    tmt.SetTextSize(18)
+    tmt.DrawLatex(0.55, 0.88, '(8 TeV)')
+    # tmt.DrawLatex(0.55, 0.88, '19.6 fb^{-1} (8 TeV)')
+
     # # Draw the data result (dummy for now)
     # data_dm = -0.5
     # data_dx = (data_dm-pol1.GetParameter(0))/pol1.GetParameter(1)
@@ -1082,14 +1246,16 @@ def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
     # gr_data.Draw('P')
 
     # leg = ROOT.TLegend(0.12,0.55,0.4,0.80)
-    leg = ROOT.TLegend(0.65,0.15,0.88,0.42)
+    # leg = ROOT.TLegend(0.65,0.15,0.88,0.42)
+    leg = ROOT.TLegend(0.65,0.15,0.88,0.33)
     leg.SetFillStyle(1001)
     leg.SetBorderSize(0)
     leg.SetFillColor(ROOT.kWhite)
     leg.SetTextFont(43)
     leg.SetTextSize(14)
     # leg.AddEntry(gr_data, 'Data (placeholder)', 'P')
-    for key in ['172.5', 'bfragdn', 'bfragup', 'bfragz2s', 'bfraglund', 'bfragpete']:
+    # for key in ['172.5', 'bfragdn', 'bfragup', 'bfragz2s', 'bfraglund', 'bfragpete']:
+    for key in ['172.5', 'bfragz2s', 'bfraglund', 'bfragpete']:
         leg.AddEntry(graphs[key], fragModels[key][0], 'P')
     leg.Draw()
 
@@ -1098,11 +1264,17 @@ def plotFragmentationVersusMtop(fitResults,outName,ref='172.5'):
     ROOT.gPad.RedrawAxis()
     c.Modified()
     c.Update()
-    for ext in ['.png','.pdf']: c.SaveAs('fragvsmtop_%s%s' % (outName,ext))
+    for ext in ['.png','.pdf', '.C']:
+        try:
+            c.SaveAs(os.path.join(options.outDir,
+                                  'fragvsmtop_%s%s' % (outName,ext)))
+        except AttributeError:
+            c.SaveAs('fragvsmtop_%s%s' % (outName,ext))
+
 
 """
 """
-def compareResults(files):
+def compareResults(files,options=None):
     labels = {
         'inclusive': "inclusive",
         'optmrank':  "optmrank",
@@ -1161,8 +1333,11 @@ def compareResults(files):
         appendix = ''
         if files[0].endswith('bychan.root'): appendix = '_bychan'
         if files[0].endswith('bytracks.root'): appendix = '_bytracks'
-        for ext in ['png','pdf']: c.SaveAs('%s_comp%s.%s'%(unc,appendix,ext))
-
+        for ext in ['png','pdf', '.C']:
+            try:
+                c.SaveAs(os.path.join(options.outDir, '%s_comp%s.%s'%(unc,appendix,ext)))
+            except AttributeError:
+                c.SaveAs('%s_comp%s.%s'%(unc,appendix,ext))
 
 """
 steer
@@ -1182,22 +1357,31 @@ def main():
                       help='show systematics table')
     parser.add_option('--rebin', dest='rebin', default=2, type=int,
                       help='rebin pe plots by this factor')
+    parser.add_option('--dataresults', dest='dataresults', default='',
+                      help='Root file with results of data fits')
     parser.add_option('--compare', dest='compare', default='', type='string',
                       help='compare uncertainties from ROOT summaries (CSV list)')
+    parser.add_option('-o', '--outDir', dest='outDir', default='svlsummary',
+                      help='Output directory for plots')
     (opt, args) = parser.parse_args()
 
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
     ROOT.gROOT.SetBatch(True)
 
-    #compare final results from ROOT files
+    os.system('mkdir -p %s'%opt.outDir)
+
+    #compare final PE results from ROOT files
     if opt.compare:
         compareResults(files=opt.compare.split(','))
         return 0
 
     #parse calibration results from directory
     if opt.calib:
-        results,calibGrMap,resCalibGrMap = parsePEResultsFromFile(url=opt.calib, verbose=False, doPlots=False)
+        peresults,calibGrMap,resCalibGrMap = parsePEResultsFromDir(
+                                                         url=opt.calib,
+                                                         verbose=False,
+                                                         doPlots=False)
 
         calibMap = show(grCollMap=calibGrMap,
                         outDir=opt.calib+'/plots',
@@ -1221,31 +1405,46 @@ def main():
         calibFile=os.path.join(opt.calib,'.svlcalib.pck')
         cachefile = open(calibFile, 'w')
         pickle.dump(calibMap, cachefile, pickle.HIGHEST_PROTOCOL)
-        pickle.dump(results,  cachefile, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(peresults,  cachefile, pickle.HIGHEST_PROTOCOL)
         cachefile.close()
-        print 'Wrote %s with calibration constants and results'%calibFile
+        print 'Wrote %s with calibration constants and peresults'%calibFile
         return 0
 
     #show systematics table
     if opt.syst:
         cachefile = open(opt.syst, 'r')
         calibMap  = pickle.load(cachefile)
-        results   = pickle.load(cachefile)
+        peresults = pickle.load(cachefile)
         cachefile.close()
-        catsByChan =   ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0']
+
+        # for key in sorted(peresults.keys()): print key
+
+        catsByChan =   ['comb_0','combe_0','combee_0',
+                        'combem_0','combm_0','combmm_0']
         catsByTracks = ['comb_0','comb_3','comb_4','comb_5']
-        allCats = ['comb_0','combe_0','combee_0','combem_0','combm_0','combmm_0', 'comb_3','comb_4','comb_5']
-        # showSystematicsTable(results=results, filterCats=catsByChan)
-        # showSystematicsTable(results=results, filterCats=catsByTracks)
+        allCats = ['comb_0','combe_0','combee_0','combem_0',
+                   'combm_0','combmm_0', 'comb_3','comb_4','comb_5']
+        # showSystematicsTable(results=peresults, filterCats=catsByChan)
+        # showSystematicsTable(results=peresults, filterCats=catsByTracks)
 
         systfile = os.path.join(os.path.dirname(opt.syst),'systematics_%s.tex')
-        writeSystematicsTable(results=results, filterCats=catsByChan,
-                             ofile=systfile%'bychan',printout=True)
-        writeSystematicsTable(results=results, filterCats=catsByTracks,
-                             ofile=systfile%'bytracks')
-        totup, totdn = writeSystematicsTable(results=results, filterCats=allCats,
-                             ofile=systfile%'all')
-        makeSystPlot(results, totup, totdn)
+        writeSystematicsTable(results=peresults, filterCats=catsByChan,
+                             ofile=systfile%'bychan',printout=True,options=opt)
+        # writeSystematicsTable(results=peresults, filterCats=catsByTracks,
+        #                      ofile=systfile%'bytracks',options=opt)
+        totup, totdn = writeSystematicsTable(results=peresults,
+                                             filterCats=allCats,
+                                             ofile=systfile%'all',
+                                             options=opt)
+        makeSystPlot(peresults, totup, totdn, options=opt)
+        if opt.dataresults:
+            print 80*'-'
+            print "Data results:"
+            dataresults,_,_ = parsePEResultsFromDir(url=opt.dataresults,
+                                                     verbose=True,
+                                                     doPlots=False,
+                                                     isData=True)
+            makeSystPlot(peresults, totup, totdn, dataresults=dataresults, options=opt)
         return 0
 
     #compare inputs for pseudo-experiments

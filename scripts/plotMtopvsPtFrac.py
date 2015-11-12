@@ -11,14 +11,6 @@ from makeSVLMassHistos import SELECTIONS, COMBINATIONS, INCSEL,EMSEL
 from makeSVLSystPlots import SYSTSFROMWEIGHTS
 from makeSVLDataMCPlots import resolveFilename, getHistoFromTree
 
-BFRAGSYSTS = [s for s in SYSTSFROMWEIGHTS if 'bfrag' in s[0]]
-	# ('bfrag',       'Z2* rb LEP',                'SVBfragWeight[0]',       ['tot']),
-	# ('bfragup',     'Z2* rb LEP hard',           'SVBfragWeight[1]',       ['tot']),
-	# ('bfragdn',     'Z2* rb LEP soft',           'SVBfragWeight[2]',       ['tot']),
-	# ('bfragp11',    'P11 fragmentation',         'SVBfragWeight[3]',       ['tot']),
-	# ('bfragpete',   'Z2* Peterson',              'SVBfragWeight[4]',       ['tot']),
-	# ('bfraglund',   'Z2* Lund',                  'SVBfragWeight[5]',       ['tot']),
-
 VARS = [
 	('SVPtChFrac', 100, 0., 2., 'SVPtChFrac'),
 	('SVMass',      60, 0., 5., 'Secondary Vertex Mass [GeV]'),

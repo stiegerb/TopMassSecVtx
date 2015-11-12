@@ -69,17 +69,17 @@ SYSTSFROMFILES = [
 	('powpyth', 'Powheg/PYTHIA Z2*',
 	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
 	 ['tot','cor','wro','unm']),
-	('powpythmcfmnloproddec', 'Powheg/PYTHIA Z2* (MCFM NLO prod+dec)',
-	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
-	 ['tot','cor','wro','unm']),
+	# ('powpythmcfmnloproddec', 'Powheg/PYTHIA Z2* (MCFM NLO prod+dec)',
+	#  ['MC8TeV_TT_Z2star_powheg_pythia.root'],
+	#  ['tot','cor','wro','unm']),
 	]
 
 SYSTTOPROCNAME = dict([(k,[v.replace('.root','') for v in vlist]) for k,_,vlist,_ in SYSTSFROMFILES])
 
 SYSTSFROMWEIGHTS = [
 	('nominal',     'Nominal',                   '1',                      ['tot','cor','wro','unm']),
-	('puup',        'Pileup up',                 'Weight[2]',    ['tot']),
-	('pudn',        'Pileup down',               'Weight[3]',    ['tot']),
+	('puup',        'Pileup up',                 'Weight[2]/Weight[1]',    ['tot']),
+	('pudn',        'Pileup down',               'Weight[3]/Weight[1]',    ['tot']),
 	('lepselup',    'Lepton selection up',       'Weight[5]',    ['tot']),
 	('lepseldn',    'Lepton selection down',     'Weight[6]',    ['tot']),
 	('umetup',      'Uncl. MET up',              'METWeight[1]',           ['tot']),
@@ -111,7 +111,7 @@ SYSTSFROMWEIGHTS = [
 	('bfnudn',   'B hadron semi-lep BF down',
 	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))', ['tot']),
 	('svmass',      'SV mass reweighting',       'SVMassWeight',           ['tot']),
-	('mgmcfmnloproddec', 'NLO in decay',        'MCFMWeight',   ['tot','cor','wro','unm']),
+	# ('mgmcfmnloproddec', 'NLO in decay',        'MCFMWeight',   ['tot','cor','wro','unm']),
 	]
 
 #fun...
@@ -207,9 +207,9 @@ SYSTPLOTS = [
 	 ['nominal', 'svmass'],
 	 [ROOT.kBlack, ROOT.kMagenta-9],'tot'),
 
-	('nlo', 'NLO',
-	 ['nominal', 'powpyth', 'mgmcfmnloproddec','powpythmcfmnloproddec'],
-	 [ROOT.kBlack, ROOT.kMagenta-9, ROOT.kRed,ROOT.kYellow-3],'tot'),
+	# ('nlo', 'NLO',
+	#  ['nominal', 'powpyth', 'mgmcfmnloproddec','powpythmcfmnloproddec'],
+	#  [ROOT.kBlack, ROOT.kMagenta-9, ROOT.kRed,ROOT.kYellow-3],'tot'),
 
 ]
 
@@ -292,7 +292,6 @@ def fitChi2(chi2s, tag='', oname='chi2fit.pdf', drawfit=False):
 
 	return getError
 
-
 def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 	tasks = []
 	htag = "%s_%s"%(tag,syst)
@@ -312,9 +311,13 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			finalsel = finalsel.replace('Weight[4]*','')
 
 		## Remove the BR weight for the POWHEG samples
-		if syst in ['powherw', 'powpyth','mcatnlohw','powpythmcfmnloproddec'] or 'p11' in syst:
-			finalsel = finalsel[len('Weight[0]*'):]
-			if syst=='powpythmcfmnloproddec': finalsel='MCFMWeight*'+finalsel
+		if (syst in ['powherw', 'powpyth', 'mcatnlohw',
+			         'powpythmcfmnloproddec']
+			or 'p11' in syst):
+			# Remove 'Weight[0]*', but not 'XXWeight[0]*'
+			finalsel = re.sub('(^|\*)Weight\[0\]\*', '', finalsel)
+			if syst=='powpythmcfmnloproddec':
+				finalsel = 'MCFMWeight*' + finalsel
 
 		#add scale factor
 		svlmassVar='SVLMass'
@@ -340,10 +343,15 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			if syst in ['lepselup','lepseldn']:
 				finalsel = finalsel.replace('Weight[4]*','')
 
+
 			## Remove the BR weight for the POWHEG samples
-			if syst in ['powherw', 'powpyth','mcatnlohw','powpythmcfmnloproddec'] or 'p11' in syst:
-				finalsel = finalsel[len('Weight[0]*'):]
-				if syst=='powpythmcfmnloproddec': finalsel='MCFMWeight*'+finalsel
+			if (syst in ['powherw', 'powpyth', 'mcatnlohw',
+				         'powpythmcfmnloproddec']
+				or 'p11' in syst):
+				# Remove 'Weight[0]*', but not 'XXWeight[0]*'
+				finalsel = re.sub('(^|\*)Weight\[0\]\*', '', finalsel)
+				if syst=='powpythmcfmnloproddec':
+					finalsel = 'MCFMWeight*' + finalsel
 
 			#add scale factor
 			svlmassVar='SVLMass'
@@ -353,6 +361,11 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			hname = "SVLMass_%s_%s_%d" % (comb, htag, ntk1)
 			tasks.append((hname, svlmassVar, finalsel,
 				          NBINS, XMIN, XMAX, MASSXAXISTITLE))
+			### DEBUG
+			# if 'bfrag' in syst:
+			# 	print 50*'#'
+			# 	print syst
+			# 	print finalsel
 			hname_to_keys[hname] = (tag, syst, comb, ntk1)
 	return tasks
 
@@ -513,20 +526,20 @@ def main(args, opt):
 
 		# Make plot of mass with and without neutrino:
 		# for comb in COMBINATIONS.keys():
-		plot = RatioPlot('neutrino_%s'%tag)
-		plot.rebin = 2
-		plot.add(systhistos[(tag,'nonu', 'tot')], 'Without neutrino')
-		plot.add(systhistos[(tag,'nu',   'tot')], 'With neutrino')
-		plot.add(systhistos[(tag,'nuunm','tot')], 'Unmatched')
-		plot.reference = systhistos[(tag,'nominal','tot')]
-		plot.tag = "Mass shape with and without neutrinos"
-		plot.subtag = SELNAMES[tag] + COMBNAMES['tot']
-		plot.ratiotitle = 'Ratio wrt Total'
-		plot.ratiorange = (0.7, 1.3)
-		plot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
-		plot.show("neutrino_%s_%s"%(tag,'tot'),
-			      os.path.join(opt.outDir, 'syst_plots'))
-		plot.reset()
+		# plot = RatioPlot('neutrino_%s'%tag)
+		# plot.rebin = 2
+		# plot.add(systhistos[(tag,'nonu', 'tot')], 'Without neutrino')
+		# plot.add(systhistos[(tag,'nu',   'tot')], 'With neutrino')
+		# plot.add(systhistos[(tag,'nuunm','tot')], 'Unmatched')
+		# plot.reference = systhistos[(tag,'nominal','tot')]
+		# plot.tag = "Mass shape with and without neutrinos"
+		# plot.subtag = SELNAMES[tag] + COMBNAMES['tot']
+		# plot.ratiotitle = 'Ratio wrt Total'
+		# plot.ratiorange = (0.7, 1.3)
+		# plot.colors = [ROOT.kBlue-3, ROOT.kRed-4, ROOT.kOrange-3]
+		# plot.show("neutrino_%s_%s"%(tag,'tot'),
+		# 	      os.path.join(opt.outDir, 'syst_plots'))
+		# plot.reset()
 
 		for name, title, systs, colors, comb in SYSTPLOTS:
 			print name, title, systs, colors, comb
@@ -552,12 +565,13 @@ def main(args, opt):
 
 		# Make top pt plot with both correct and wrong
 		plot = RatioPlot('toppt_paper_cor_wro')
+		plot.canvassize = (600,600)
 		plot.tag = 'Top p_{T} mis-modeling'
 		plot.rebin = 2
 		plot.subtag = 'Inclusive channels'
-		plot.ratiotitle = 'Ratio wrt Nominal'
+		plot.ratiotitle = '1 / Nominal'
 		plot.ratiorange = (0.85, 1.15)
-		plot.legpos = (0.55, 0.15)
+		plot.legpos = (0.55, 0.30)
 		plot.colors = [ROOT.kGreen+2, ROOT.kGreen-6, ROOT.kRed+2, ROOT.kRed-6]
 		plot.add(systhistos[(tag,'nominal','cor')], 'Nominal (correct)',      includeInRatio=False)
 		plot.add(systhistos[(tag,'toppt','cor')], 'p_{T} weighted (correct)', includeInRatio=True)
@@ -570,12 +584,13 @@ def main(args, opt):
 
 		# Make b fragmentation plot for paper
 		plot = RatioPlot('bfrag_paper')
+		plot.canvassize = (600,600)
 		plot.tag = 'b fragmentation'
 		plot.rebin = 2
 		plot.subtag = 'Inclusive channels'
-		plot.ratiotitle = 'Ratio wrt Z2* rb LEP'
+		plot.ratiotitle = '1 / Z2* rb LEP'
 		plot.ratiorange = (0.85, 1.15)
-		plot.legpos = (0.55, 0.15)
+		plot.legpos = (0.65, 0.15)
 		plot.colors = [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9, ROOT.kAzure+7]
 		plot.add(systhistos[(tag,'nominal', 'tot')], 'Z2* rb LEP', includeInRatio=False)
 		plot.add(systhistos[(tag,'bfragdn', 'tot')], 'Z2* rb LEP soft')

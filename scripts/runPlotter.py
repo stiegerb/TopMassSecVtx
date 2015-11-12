@@ -347,7 +347,10 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                             fixExtremities(ihist,False,False)
 
                         ## Apply xsec weights
-                        if xsecweights : ihist.Scale(xsecweights[str(dtag)])
+                        try:
+                            if xsecweights : ihist.Scale(xsecweights[str(dtag)])
+                        except:
+                            print 'no weights found for ',dtag
 
                         ## Apply external scale factor
                         if (key,str(title)) in scaleFactors:

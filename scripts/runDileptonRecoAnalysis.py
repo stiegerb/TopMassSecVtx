@@ -15,10 +15,10 @@ Loop over a tree and fill histograms you declared before
 If q is True, you get the quantiles from your histograms returned in an array, q_gen or q_rec depending on your histogram
 It could also work to return the quantiles from just one of the histograms - see commented lines
 """
-def runRecoAnalysis(fileNames,outFileName):
+def runRecoAnalysis(fileName,outFileName):
     
     isData = True if 'Data' in outFileName else False
-    print '...analysing ',len(fileNames),' file names isData=',isData,' output in',outFileName
+    print '...analysing ',fileName,' file names isData=',isData,' output in',outFileName
 
     observables_rec={'ptpos':0,'ptll':0,'mll':0,'EposEm':0,'ptposptm':0}
     observables_gen={'ptpos':0,'ptll':0,'mll':0,'EposEm':0,'ptposptm':0}
@@ -48,7 +48,7 @@ def runRecoAnalysis(fileNames,outFileName):
 
     #open file
     tree=ROOT.TChain('DileptonInfo')
-    for f in fileNames: tree.AddFile(f)
+    tree.AddFile(fileName)
     
     #loop over events in the tree and fill histos
     totalEntries=tree.GetEntries()
@@ -77,7 +77,6 @@ def runRecoAnalysis(fileNames,outFileName):
             if not isData:
                 if var=='nominal'   : 
                     weight = tree.Weight[0]*tree.Weight[1]*tree.Weight[4]*tree.BtagWeight[0]*tree.JESWeight[0]
-                    jetMultH.Fill(tree.NJets,weight)
                 elif var=='puup'    : weight = tree.Weight[0]*tree.Weight[2]*tree.Weight[4]*tree.BtagWeight[0]*tree.JESWeight[0]
                 elif var=='pudn'    : weight = tree.Weight[0]*tree.Weight[3]*tree.Weight[4]*tree.BtagWeight[0]*tree.JESWeight[0]
                 elif var=='lepselup': weight = tree.Weight[0]*tree.Weight[1]*tree.Weight[5]*tree.BtagWeight[0]*tree.JESWeight[0]
@@ -122,6 +121,7 @@ def runRecoAnalysis(fileNames,outFileName):
             observables_rec['ptposptm']=lp.Pt()+lm.Pt()
             obsMoments_rec[var].measure(observables_rec,weight)
             if var=='nominal':
+                jetMultH.Fill(tree.NJets,weight)
                 for obsName in observables_rec:
                     observablesH[obsName].Fill(observables_rec[obsName],weight)
 
@@ -137,9 +137,7 @@ def runRecoAnalysis(fileNames,outFileName):
     jetMultH.Write()
     for var in observablesH: observablesH[var].Write()
     for var in obsMoments_rec:
-        obsMoments_rec[var].finalize()
         obsMoments_rec[var].save(fOut)
-        obsMoments_gen[var].finalize()
         obsMoments_gen[var].save(fOut)
     fOut.Close()
 
@@ -152,7 +150,7 @@ def runRecoAnalysisPacked(args):
     try:
         fileNames,outFileName=args
         runRecoAnalysis(fileNames,outFileName)
-    except ReferenceError:
+    except : # ReferenceError:
         print 50*'<'
         print "  Problem with", name, "continuing without"
         print 50*'<'
@@ -163,27 +161,39 @@ Create summary distributions to unfold
 """
 def createRecoAnalysisTasks(opt):
 
+    onlyList=opt.only.split('v')
+
+    #########################
+    ## Multiple files
+    ## First collect all the files
+    file_list = []
+
+    ## Local directory
+    if os.path.isdir(opt.input):
+        for file_path in os.listdir(opt.input):
+            if file_path.endswith('.root'):
+                file_list.append(os.path.join(opt.input,file_path))
+
+    ## Directory on eos
+    elif opt.input.startswith('/store/'):
+        file_list = getEOSlslist(opt.input)
+
     #list of files to analyse
-    taggedFiles={}
-    for filename in fillFromStore(opt.input):
-        filename=filename.replace('file://','')
+    tasklist=[]
+    for filename in file_list:
         baseFileName=os.path.basename(filename)      
         tag,ext=os.path.splitext(baseFileName)
-        if ext != '.root': continue    
-        if 'Data8TeV' in tag: tag='Data8TeV'
-        else:
-            splitNb=re.search(r'\d+$',tag)
-            if splitNb:
-                postfix='_'+splitNb.group()
-                tag=tag[:-len(postfix)]
-        if not tag in taggedFiles:
-            taggedFiles[tag]=[]
-        taggedFiles[tag].append(filename)
-    
-    #get files from directory
-    tasklist=[]
-    for tag in taggedFiles:
-        tasklist.append((taggedFiles[tag],'%s/%s.root'%(opt.output,tag)))
+        splitNb=re.search(r'\d+$',tag)
+        if splitNb:
+            postfix='_'+splitNb.group()
+            tag=tag[:-len(postfix)]
+        if len(onlyList)>0:
+            processThis=False
+            for filtTag in onlyList:
+                if filtTag in tag:
+                    processThis=True
+            if not processThis : continue
+        tasklist.append((filename,'%s/%s'%(opt.output,baseFileName)))
 
     #loop over tasks
     if opt.jobs>0:
@@ -210,6 +220,11 @@ def main():
                           default=1,
                           type=int,
                           help='# of jobs to process in parallel the trees [default: %default]')
+	parser.add_option('--only',
+                          dest='only', 
+                          default='',
+                          type='string',
+                          help='csv list of tags to process')
 	parser.add_option('-o', '--output',
                           dest='output', 
                           default='dileptonMoments',

@@ -30,11 +30,6 @@ class KinematicsMoments:
         self.ObsCorrHisto.Sumw2()
         self.ObsCorrHisto.SetDirectory(0)
 
-        #book the vectors/matrices to store the final results
-        self.avgX=ROOT.TVectorT('float')(self.maxMomentToReport*self.nObs)
-        self.sigmaX=ROOT.TVectorT('float')(self.maxMomentToReport*self.nObs)
-        self.avgXY=ROOT.TMatrixT('float')(self.maxMomentToReport*self.nObs,self.maxMomentToReport*self.nObs)
-        self.cXY=ROOT.TMatrixT('float')(self.maxMomentToReport*self.nObs,self.maxMomentToReport*self.nObs)
             
     def measure(self,observables,wgt):
 
@@ -69,65 +64,74 @@ class KinematicsMoments:
                         self.ObsCorrHisto.Fill(baseXbin+xbin-1,baseYbin+ybin-1,ok_i*ok_j)
                         if ctr_i!=ctr_j:
                             self.ObsCorrHisto.Fill(baseYbin+ybin-1,baseXbin+xbin-1,ok_i*ok_j)
-                        
 
-    def finalize(self,report=False):
 
-        if self.N==0: return
-
-        avgX0=self.ObsCorrHisto.GetBinContent(1,1)
-
-        for iobs in xrange(0,self.nObs):
-
-            baseXbin=iobs*self.maxMoment+1
-            
-            for xbin in xrange(2,self.maxMoment+1):
-
-                #compute average and standard deviation for each observable
-                xmomOrder=xbin-1
-                if xmomOrder>self.maxMomentToReport: continue
-                xxbin=2*xbin-1
-                idx=iobs*self.maxMomentToReport+(xbin-2)
-
-                self.avgX[idx]=self.ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseXbin)/avgX0
-                avgXX=self.ObsCorrHisto.GetBinContent(baseXbin+xxbin-1,baseXbin)/avgX0
-                sigma2=avgXX-self.avgX[idx]**2
-                self.sigmaX[idx]=ROOT.TMath.Sqrt(sigma2) if sigma2>0 else -ROOT.TMath.Sqrt(-sigma2)
-            
-                #compute the cross average and correlations between observables
-                for jobs in xrange(0,self.nObs):
-                    baseYbin=jobs*self.maxMoment+1
-                    for ybin in xrange(2,self.maxMoment+1):
-                        ymomOrder=ybin-1
-                        if ymomOrder>self.maxMomentToReport: continue
-
-                        #xlab=self.ObsCorrHisto.GetXaxis().GetBinLabel(baseXbin+xbin-1)
-                        #ylab=self.ObsCorrHisto.GetYaxis().GetBinLabel(baseYbin+ybin-1)
-                        
-                        idy=jobs*self.maxMomentToReport+(ybin-2)
-                        self.avgXY[idx][idy]=self.ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseYbin+ybin-1)/avgX0
-                        
-                        diff=self.avgXY[idx][idy]-self.avgX[idx]*self.avgX[idy]
-                        sxsy=self.sigmaX[idx]*self.sigmaX[idy]
-                        self.cXY[idx][idy]=diff/sxsy if sxsy!=0 else 0
-
-        if report is True:
-            print '[Average for observables]'
-            self.avgX.Print('v')
-            print '[Standard deviation for observables]'
-            self.sigmaX.Print('v')
-            print '[Average for crossed observables]'
-            self.avgXY.Print('v')
-            print '[Correlation for crossed observables]'
-            self.cXY.Print('v')
-        
     def save(self,outF):
         #write relevant objects to a sub-directory of the file
         outDir=outF.mkdir(self.name)
         outDir.cd()
-        self.avgX.Write('avgX')
-        self.sigmaX.Write('sigmaX')
-        self.avgXY.Write('avgXY')
-        self.cXY.Write('cXY')
         self.ObsCorrHisto.Write()
         outF.cd()
+
+                        
+"""
+analyze correlation histogram
+"""
+def analyzeCorrelationOfMoments(ObsCorrHisto,nObs,maxMomentToReport,report=False):
+
+    avgX0=ObsCorrHisto.GetBinContent(1,1)
+
+    if avgX0==0: return
+
+    #book the vectors/matrices to store the final results
+    avgX=ROOT.TVectorT('float')(maxMomentToReport*nObs)
+    sigmaX=ROOT.TVectorT('float')(maxMomentToReport*nObs)
+    avgXY=ROOT.TMatrixT('float')(maxMomentToReport*nObs,maxMomentToReport*nObs)
+    cXY=ROOT.TMatrixT('float')(maxMomentToReport*nObs,maxMomentToReport*nObs)
+
+    maxMoment=ObsCorrHisto.GetNbinsX()/nObs
+    for iobs in xrange(0,nObs):
+
+        baseXbin=iobs*maxMoment+1
+            
+        for xbin in xrange(2,maxMoment+1):
+
+            #compute average and standard deviation for each observable
+            xmomOrder=xbin-1
+            if xmomOrder>maxMomentToReport: continue
+            xxbin=2*xbin-1
+            idx=iobs*maxMomentToReport+(xbin-2)
+
+            avgX[idx]=ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseXbin)/avgX0
+            avgXX=ObsCorrHisto.GetBinContent(baseXbin+xxbin-1,baseXbin)/avgX0
+            sigma2=avgXX-avgX[idx]**2
+            sigmaX[idx]=ROOT.TMath.Sqrt(sigma2) if sigma2>0 else -ROOT.TMath.Sqrt(-sigma2)
+            
+            #compute the cross average and correlations between observables
+            for jobs in xrange(0,nObs):
+                baseYbin=jobs*maxMoment+1
+                for ybin in xrange(2,maxMoment+1):
+                    ymomOrder=ybin-1
+                    if ymomOrder>maxMomentToReport: continue
+
+                    #xlab=ObsCorrHisto.GetXaxis().GetBinLabel(baseXbin+xbin-1)
+                    #ylab=ObsCorrHisto.GetYaxis().GetBinLabel(baseYbin+ybin-1)
+                        
+                    idy=jobs*maxMomentToReport+(ybin-2)
+                    avgXY[idx][idy]=ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseYbin+ybin-1)/avgX0
+                        
+                    diff=avgXY[idx][idy]-avgX[idx]*avgX[idy]
+                    sxsy=sigmaX[idx]*sigmaX[idy]
+                    cXY[idx][idy]=diff/sxsy if sxsy!=0 else 0
+
+    if report is True:
+        print '[Average for observables]'
+        avgX.Print('v')
+        print '[Standard deviation for observables]'
+        sigmaX.Print('v')
+        print '[Average for crossed observables]'
+        avgXY.Print('v')
+        print '[Correlation for crossed observables]'
+        cXY.Print('v')
+
+    return avgX,sigmaX,cXY,avgX0        

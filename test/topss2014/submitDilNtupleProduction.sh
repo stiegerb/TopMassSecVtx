@@ -4,7 +4,7 @@ step=$1
 outdir="${CMSSW_BASE}/src/UserCode/TopMassSecVtx/test/topss2014"
 indir="/store/cmst3/user/psilva/5311_ntuples"
 cfg="$CMSSW_BASE/src/UserCode/TopMassSecVtx/test/runAnalysis_cfg.py.templ"
-queue=1nd
+queue=2nd
 hash=bbbcb36
 
 #prepare output directories

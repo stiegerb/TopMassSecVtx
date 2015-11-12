@@ -62,17 +62,17 @@ SELECTIONS = [
 	# ('e_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+ESEL,   'e'),
 	# ('m_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MSEL,   '#mu'),
 
-	('inclusive_optmrank', 'SVLCombRank>0 && '+INCSEL, '#geq 1 lepton'),
-	('ee_optmrank',        'SVLCombRank>0 && '+EESEL,  'ee'),
-	('em_optmrank',        'SVLCombRank>0 && '+EMSEL,  'e#mu'),
-	('mm_optmrank',        'SVLCombRank>0 && '+MMSEL,  '#mu#mu'),
-	('e_optmrank',         'SVLCombRank>0 && '+ESEL,   'e'),
-	('m_optmrank',         'SVLCombRank>0 && '+MSEL,   '#mu'),
+#	('inclusive_optmrank', 'SVLCombRank>0 && '+INCSEL, '#geq 1 lepton'),
+#	('ee_optmrank',        'SVLCombRank>0 && '+EESEL,  'ee'),
+#	('em_optmrank',        'SVLCombRank>0 && '+EMSEL,  'e#mu'),
+#	('mm_optmrank',        'SVLCombRank>0 && '+MMSEL,  '#mu#mu'),
+#	('e_optmrank',         'SVLCombRank>0 && '+ESEL,   'e'),
+#	('m_optmrank',         'SVLCombRank>0 && '+MSEL,   '#mu'),
 
-	('eplus_optmrank',         'SVLCombRank>0 && '+EplusSEL,   'e+'),
-	('mplus_optmrank',         'SVLCombRank>0 && '+MplusSEL,   '#mu+'),
-	('eminus_optmrank',         'SVLCombRank>0 && '+EminusSEL,   'e-'),
-	('mminus_optmrank',         'SVLCombRank>0 && '+MminusSEL,   '#mu-'),
+#	('eplus_optmrank',         'SVLCombRank>0 && '+EplusSEL,   'e+'),
+#	('mplus_optmrank',         'SVLCombRank>0 && '+MplusSEL,   '#mu+'),
+#	('eminus_optmrank',         'SVLCombRank>0 && '+EminusSEL,   'e-'),
+#	('mminus_optmrank',         'SVLCombRank>0 && '+MminusSEL,   '#mu-'),
 ]
 
 COMBINATIONS = {

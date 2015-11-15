@@ -68,10 +68,7 @@ SYSTSFROMFILES = [
 	 ['tot']),
 	('powpyth', 'Powheg/PYTHIA Z2*',
 	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
-	 ['tot','cor','wro','unm']),
-	# ('powpythmcfmnloproddec', 'Powheg/PYTHIA Z2* (MCFM NLO prod+dec)',
-	#  ['MC8TeV_TT_Z2star_powheg_pythia.root'],
-	#  ['tot','cor','wro','unm']),
+	 ['tot','cor','wro','unm']),	
 	]
 
 SYSTTOPROCNAME = dict([(k,[v.replace('.root','') for v in vlist]) for k,_,vlist,_ in SYSTSFROMFILES])
@@ -104,14 +101,16 @@ SYSTSFROMWEIGHTS = [
 	('bhadcomp',    'B hadron composition',
 	 '(1.05125*(abs(BHadId)>=510&&abs(BHadId)<520)+1.06429*(abs(BHadId)>=520&&abs(BHadId)<530)+0.753548*(abs(BHadId)>=530&&abs(BHadId)<540)+0.807828*(abs(BHadId)>=540)+(BHadId==0))',
 	 ['tot']),
-	('ttHFup',      'Extra heavy flavour up', '((CombInfo<0 && abs(JFlav)==5)*2+(CombInfo>=0 && abs(JFlav)==5)*0.96555+(abs(JFlav)!=6)*1.0)', ['tot']),
-	('ttHFdn',    'Extra heavy flavour down', '((CombInfo<0 && abs(JFlav)==5)*0.5+(CombInfo>=0 && abs(JFlav)==5)*1.0172+(abs(JFlav)!=6)*1.0)', ['tot']),
+
+	('ttHFup',      'Extra heavy flavour up', '((CombInfo<0 && abs(BHadId)!=0)*1.66+((CombInfo<0 && abs(BHadId)==0) || CombInfo>=0)*1.0)*1.0', ['tot']),
+	('ttHFdn',    'Extra heavy flavour down', '((CombInfo<0 && abs(BHadId)!=0)*0.60+((CombInfo<0 && abs(BHadId)==0) || CombInfo>=0)*1.0)*1.0', ['tot']),
 	('bfnuup',      'B hadron semi-lep BF up',
 	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))', ['tot']),
 	('bfnudn',   'B hadron semi-lep BF down',
 	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))', ['tot']),
 	('svmass',      'SV mass reweighting',       'SVMassWeight',           ['tot']),
-	# ('mgmcfmnloproddec', 'NLO in decay',        'MCFMWeight',   ['tot','cor','wro','unm']),
+	('mgmcfmnloprod',    'NLO decay',        'MCFMWeight[0]',   ['tot','cor','wro','unm']),
+	('mgmcfmnloproddec', 'NLO prod+decay',   'MCFMWeight[1]',   ['tot','cor','wro','unm']),
 	]
 
 #fun...
@@ -206,11 +205,6 @@ SYSTPLOTS = [
 	('svmass', 'SV Mass reweighting',
 	 ['nominal', 'svmass'],
 	 [ROOT.kBlack, ROOT.kMagenta-9],'tot'),
-
-	# ('nlo', 'NLO',
-	#  ['nominal', 'powpyth', 'mgmcfmnloproddec','powpythmcfmnloproddec'],
-	#  [ROOT.kBlack, ROOT.kMagenta-9, ROOT.kRed,ROOT.kYellow-3],'tot'),
-
 ]
 
 
@@ -311,13 +305,9 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			finalsel = finalsel.replace('Weight[4]*','')
 
 		## Remove the BR weight for the POWHEG samples
-		if (syst in ['powherw', 'powpyth', 'mcatnlohw',
-			         'powpythmcfmnloproddec']
-			or 'p11' in syst):
+		if (syst in ['powherw', 'powpyth', 'mcatnlohw']	or 'p11' in syst):
 			# Remove 'Weight[0]*', but not 'XXWeight[0]*'
 			finalsel = re.sub('(^|\*)Weight\[0\]\*', '', finalsel)
-			if syst=='powpythmcfmnloproddec':
-				finalsel = 'MCFMWeight*' + finalsel
 
 		#add scale factor
 		svlmassVar='SVLMass'
@@ -345,13 +335,9 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 
 
 			## Remove the BR weight for the POWHEG samples
-			if (syst in ['powherw', 'powpyth', 'mcatnlohw',
-				         'powpythmcfmnloproddec']
-				or 'p11' in syst):
+			if (syst in ['powherw', 'powpyth', 'mcatnlohw'] or 'p11' in syst):
 				# Remove 'Weight[0]*', but not 'XXWeight[0]*'
 				finalsel = re.sub('(^|\*)Weight\[0\]\*', '', finalsel)
-				if syst=='powpythmcfmnloproddec':
-					finalsel = 'MCFMWeight*' + finalsel
 
 			#add scale factor
 			svlmassVar='SVLMass'

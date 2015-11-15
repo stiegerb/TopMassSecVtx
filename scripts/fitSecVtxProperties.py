@@ -57,7 +57,7 @@ def showFlavorFracs(opt):
    leg.SetFillStyle(0)
    leg.SetBorderSize(0)
    leg.SetTextFont(42)
-   leg.SetTextSize(0.03)
+   leg.SetTextSize(0.04)
    for flavor in flavorfracs:
       color=ROOT.kGray
       if flavor=='c' : color=ROOT.kAzure-3
@@ -77,7 +77,7 @@ def showFlavorFracs(opt):
    label=ROOT.TLatex()
    label.SetNDC()
    label.SetTextFont(42)
-   label.SetTextSize(0.04)
+   label.SetTextSize(0.05)
    label.DrawLatex(0.18,0.95,'#bf{CMS} #it{simulation}')
    label.DrawLatex(0.75,0.95,'#scale[0.8]{19.7 fb^{-1} (8 TeV)}')
    leg.Draw()
@@ -446,7 +446,7 @@ def compareDistributions(opt):
          leg.SetFillStyle(0)
          leg.SetBorderSize(0)
          leg.SetTextFont(42)
-         leg.SetTextSize(0.04)
+         leg.SetTextSize(0.05)
          leg.AddEntry(dataGr,'data','p')
          #leg.SetNColumns(2)
 
@@ -481,7 +481,7 @@ def compareDistributions(opt):
          stacks[nominalFragWgt].GetXaxis().SetTitle(title)
          stacks[nominalFragWgt].GetYaxis().SetTitleOffset(1.25)
          stacks[nominalFragWgt].GetYaxis().SetRangeUser(1,1.5*data.GetMaximum())
-         stacks[nominalFragWgt].GetXaxis().SetTitleOffset(0.9)
+         stacks[nominalFragWgt].GetXaxis().SetTitleOffset(1.0)
          stacks[nominalFragWgt].GetYaxis().SetTitleSize(0.04)
          stacks[nominalFragWgt].GetXaxis().SetTitleSize(0.04)
          stacks[nominalFragWgt].GetYaxis().SetLabelSize(0.04)
@@ -578,7 +578,7 @@ def compareDistributions(opt):
          fraglabel=ROOT.TLatex()
          fraglabel.SetNDC()
          fraglabel.SetTextFont(42)
-         fraglabel.SetTextSize(0.15)        
+         fraglabel.SetTextSize(0.18)        
          #fraglabel.SetTextAlign(12)
          if dataRef : 
             dataRef.Draw('f')    
@@ -586,7 +586,7 @@ def compareDistributions(opt):
          for wtitle,iwList,wcolor in fragToUse:        
             compGrs[iwList[0]].Draw('p')            
             xlabel=0.09+0.68*float(grCtr+1)/float(len(fragToUse))
-            fraglabel.DrawLatex(xlabel,0.8,'#it{%s}'%wtitle)
+            fraglabel.DrawLatex(xlabel,0.78,'#it{%s}'%wtitle)
             grCtr+=1
 
          postfix='_mean'
@@ -632,7 +632,7 @@ def main():
     ROOT.gStyle.SetOptStat(0)
     ROOT.RooMsgService.instance().setSilentMode(True)
     ROOT.gROOT.SetBatch(True)    
-    ROOT.gROOT.SetBatch(False)    
+    #ROOT.gROOT.SetBatch(False)    
 
     #create ROOT file with templates and data
     if opt.flavorFitUrl is None: 

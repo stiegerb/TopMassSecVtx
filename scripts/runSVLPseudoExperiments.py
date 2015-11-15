@@ -140,7 +140,7 @@ Show PE fit result
 def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     #init canvas
     canvas=ROOT.TCanvas('c','c',500,500)
-
+    print data,pdf,nll,SVLMass,mtop,outDir,tag
     p1 = ROOT.TPad('p1','p1',0.0,0.85,1.0,0.0)
     p1.SetRightMargin(0.05)
     p1.SetLeftMargin(0.12)
@@ -272,7 +272,7 @@ build the fit model
 """
 def buildPDFs(ws, options, calibMap=None, prepend=''):
     allPdfs = {}
-    for ch in ['em','mm','ee','m','e']:
+    for ch in ['em','mm','ee','m','e','eplus','mplus','eminus','mminus']:
         chsel = ch
         if len(options.selection) > 0: chsel += '_%s'%options.selection
 
@@ -430,6 +430,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
     for i in xrange(0,options.nPexp):
 
         #iterate over available categories to build the set of likelihoods to combine
+        indNLLs=[]
         nllMap={}
         allPseudoDataH=[]
         allPseudoData=[]
@@ -486,34 +487,45 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 sys.stdout.flush()
 
             #create likelihood : store it in the appropriate categories for posterior combination
-            chType='ll' if ch in ['em','mm','ee'] else 'lj'
-            for nllMapKey in [('comb',0),('comb',trk),('comb%s'%chsel,0),('comb%s'%chType,trk),('comb%s'%chType,0)]:
+            nll = allPdfs[key].createNLL(pseudoData, ROOT.RooFit.Extended())
+            indNLLs.append( nll )
+
+            chType=''
+            if chsel in ['em','mm','ee']   : chType='ll'
+            if chsel in ['e','m']          : chType='lj'
+            if chsel in ['eplus','mplus']  : chType='lplus'
+            if chsel in ['eminus','minus'] : chType='lminus'
+            nllMapKeys=[('comb%s'%chsel,0),('comb%s'%chType,trk),('comb%s'%chType,0)]
+            if chType!='lplus' and chType!='lminus':
+                nllMapKeys.insert(0,('comb',trk))
+                nllMapKeys.insert(0,('comb',0))
+            for nllMapKey in nllMapKeys:
                 if not (nllMapKey in nllMap):
                     nllMap[nllMapKey]=[]
                 if nllMapKey[0]=='comb' and nllMapKey[1]==0:
-                    nllMap[nllMapKey].append( allPdfs[key].createNLL(pseudoData, ROOT.RooFit.Extended()) )                
+                    nllMap[nllMapKey].append( nll )                
                 else:
-                    nllMap[nllMapKey].append( nllMap[('comb',0)][-1] )
-
+                    nllMap[nllMapKey].append( nll )
+            
             if options.verbose>3:
                 sys.stdout.write(' [running Minuit]')
                 sys.stdout.flush()
-            minuit=ROOT.RooMinuit(nllMap[('comb',0)][-1])
+
+            minuit=ROOT.RooMinuit(nll)
             minuit.setErrorLevel(0.5)
             minuit.migrad()
             minuit.hesse()
             minuit.minos(poi)
+            
 
             #save fit results
-
             summary.addFitResult(key=key,ws=ws)
 
             #show, if required
             selstring = options.selection if options.selection else 'inclusive'
             if options.spy and i==0:
-                pll=nllMap[('comb',0)][-1].createProfile(poi)
-
-                showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll,nllMap[('comb',0)][-1]],
+                pll=nll.createProfile(poi)
+                showFinalFitResult(data=pseudoData,pdf=allPdfs[key], nll=[pll],
                                    SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
                                    outDir=options.outDir,
                                    tag=[selstring,
@@ -577,9 +589,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
         print 80*'-'
 
         #free used memory
-        for h in allPseudoDataH      : h.Delete()
-        for d in allPseudoData       : d.Delete()
-        for ll in nllMap[('comb',0)] : ll.Delete()
+        for h in allPseudoDataH : h.Delete()
+        for d in allPseudoData  : d.Delete()
+        for ll in indNLLs       : ll.Delete()
 
     summary.saveResults()
 

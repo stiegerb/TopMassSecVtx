@@ -9,14 +9,34 @@ from makeSVLDataMCPlots import addDataMCPlotOptions
 from runPlotter import runPlotter, addPlotterOptions, openTFile
 
 SELECTIONS = [
-	# ('e',            'abs(EvCat)==11 && NJets>=4', 'e'),
-	# ('m',            'abs(EvCat)==13 && NJets>=4', '#mu'),
-	# ('etoppt',       'Weight[10]*(abs(EvCat)==11 && NJets>=4)', 'e'),
-	# ('mtoppt',       'Weight[10]*(abs(EvCat)==13 && NJets>=4)', '#mu'),
-	# ('e_qcd',        'abs(EvCat)==1100 && NJets>=4', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
-	# ('m_qcd',        'abs(EvCat)==1300 && NJets>=4', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
-	# ('etoppt_qcd',   'Weight[10]*(abs(EvCat)==1100 && NJets>=4)', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
-	# ('mtoppt_qcd',   'Weight[10]*(abs(EvCat)==1300 && NJets>=4)', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('e',            'abs(EvCat)==11 && NJets>=4', 'e'),
+	('m',            'abs(EvCat)==13 && NJets>=4', '#mu'),
+	('etoppt',       'Weight[10]*(abs(EvCat)==11 && NJets>=4)', 'e'),
+	('mtoppt',       'Weight[10]*(abs(EvCat)==13 && NJets>=4)', '#mu'),
+	('e_qcd',        'abs(EvCat)==1100 && NJets>=4', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('m_qcd',        'abs(EvCat)==1300 && NJets>=4', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('etoppt_qcd',   'Weight[10]*(abs(EvCat)==1100 && NJets>=4)', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('mtoppt_qcd',   'Weight[10]*(abs(EvCat)==1300 && NJets>=4)', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+
+
+	('eplus',            'EvCat==11 && NJets>=4', 'e+'),
+	('mplus',            'EvCat==13 && NJets>=4', '#mu+'),
+	('eplustoppt',       'Weight[10]*(EvCat==11 && NJets>=4)', 'e+'),
+	('mplustoppt',       'Weight[10]*(EvCat==13 && NJets>=4)', '#mu+'),
+	('eplus_qcd',        '0.5*(abs(EvCat)==1100 && NJets>=4)', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('mplus_qcd',        '0.5*(abs(EvCat)==1300 && NJets>=4)', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('eplustoppt_qcd',   '0.5*Weight[10]*(abs(EvCat)==1100 && NJets>=4)', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('mplustoppt_qcd',   '0.5*Weight[10]*(abs(EvCat)==1300 && NJets>=4)', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+
+	('eminus',            'EvCat==-11 && NJets>=4', 'e-'),
+	('mminus',            'EvCat==-13 && NJets>=4', '#mu-'),
+	('eminustoppt',       'Weight[10]*(EvCat==-11 && NJets>=4)', 'e-'),
+	('mminustoppt',       'Weight[10]*(EvCat==-13 && NJets>=4)', '#mu-'),
+	('eminus_qcd',        '0.5*(abs(EvCat)==1100 && NJets>=4)', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('mminus_qcd',        '0.5*(abs(EvCat)==1300 && NJets>=4)', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('eminustoppt_qcd',   '0.5*Weight[10]*(abs(EvCat)==1100 && NJets>=4)', 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+	('mminustoppt_qcd',   '0.5*Weight[10]*(abs(EvCat)==1300 && NJets>=4)', 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+
 
 	# ('e_mrank1',         'SVLMassRank==1&&CombCat%2!=0&&abs(EvCat)==11 && NJets>=4', 'e'),
 	# ('m_mrank1',         'SVLMassRank==1&&CombCat%2!=0&&abs(EvCat)==13 && NJets>=4', '#mu'),
@@ -69,22 +89,56 @@ SELECTIONS = [
 	#  'Weight[10]*(SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&abs(EvCat)==1300 && NJets>=4)',
 	#  'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
 
-	('e_optmrank',         'SVLCombRank>0&&abs(EvCat)==11 && NJets>=4', 'e'),
-	('m_optmrank',         'SVLCombRank>0&&abs(EvCat)==13 && NJets>=4', '#mu'),
-	('etoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&abs(EvCat)==11 && NJets>=4)', 'e'),
-	('mtoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&abs(EvCat)==13 && NJets>=4)', '#mu'),
-	('e_optmrank_qcd',
-	 '(SVLCombRank>0&&abs(EvCat)==1100 && NJets>=4)',
-	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
-	('m_optmrank_qcd',
-	 '(SVLCombRank>0&&abs(EvCat)==1300 && NJets>=4)',
-	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
-	('etoppt_optmrank_qcd',
-	 'Weight[10]*(SVLCombRank>0&&abs(EvCat)==1100 && NJets>=4)',
-	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
-	('mtoppt_optmrank_qcd',
-	 'Weight[10]*(SVLCombRank>0&&abs(EvCat)==1300 && NJets>=4)',
-	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1')
+#	('e_optmrank',         'SVLCombRank>0&&abs(EvCat)==11 && NJets>=4', 'e'),
+#	('m_optmrank',         'SVLCombRank>0&&abs(EvCat)==13 && NJets>=4', '#mu'),
+#	('etoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&abs(EvCat)==11 && NJets>=4)', 'e'),
+#	('mtoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&abs(EvCat)==13 && NJets>=4)', '#mu'),
+#	('e_optmrank_qcd',
+#	 '(SVLCombRank>0&&abs(EvCat)==1100 && NJets>=4)',
+#	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#	('m_optmrank_qcd',
+#	 '(SVLCombRank>0&&abs(EvCat)==1300 && NJets>=4)',
+#	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#	('etoppt_optmrank_qcd',
+#	 'Weight[10]*(SVLCombRank>0&&abs(EvCat)==1100 && NJets>=4)',
+#	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#	('mtoppt_optmrank_qcd',
+#	 'Weight[10]*(SVLCombRank>0&&abs(EvCat)==1300 && NJets>=4)',
+#	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#
+#	('eplus_optmrank',         'SVLCombRank>0&&EvCat==11 && NJets>=4', 'e+'),
+#	('mplus_optmrank',         'SVLCombRank>0&&EvCat==13 && NJets>=4', '#mu+'),
+#	('eplustoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&EvCat==11 && NJets>=4)', 'e+'),
+#	('mplustoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&EvCat==13 && NJets>=4)', '#mu+'),
+#	('eplus_optmrank_qcd',
+#	 '0.5*(SVLCombRank>0&&absEvCat)==1100 && NJets>=4)',
+#	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#	('mplus_optmrank_qcd',
+#	 '0.5*(SVLCombRank>0&&abs(EvCat)==1300 && NJets>=4)',
+#	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#	('eplustoppt_optmrank_qcd',
+#	 '0.5*Weight[10]*(SVLCombRank>0&&abs(EvCat)==1100 && NJets>=4)',
+#	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#	('mplustoppt_optmrank_qcd',
+#	 '0.5*Weight[10]*(SVLCombRank>0&&abs(EvCat)==1300 && NJets>=4)',
+#	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#
+#	('eminus_optmrank',         'SVLCombRank>0&&EvCat==-11 && NJets>=4', 'e-'),
+#	('mminus_optmrank',         'SVLCombRank>0&&EvCat==-13 && NJets>=4', '#mu-'),
+#	('eminustoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&EvCat==-11 && NJets>=4)', 'e-'),
+#	('mminustoppt_optmrank',    'Weight[10]*(SVLCombRank>0&&EvCat==-13 && NJets>=4)', '#mu-'),
+#	('eminus_optmrank_qcd',
+#	 '0.5*(SVLCombRank>0&&absEvCat)==1100 && NJets>=4)',
+#	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#	('mminus_optmrank_qcd',
+#	 '0.5*(SVLCombRank>0&&abs(EvCat)==1300 && NJets>=4)',
+#	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#	('eminustoppt_optmrank_qcd',
+#	 '0.5*Weight[10]*(SVLCombRank>0&&abs(EvCat)==1100 && NJets>=4)',
+#	 'non-isolated e, N_{jets}#geq 4, N_{b-tags} #leq 1'),
+#	('mminustoppt_optmrank_qcd',
+#	 '0.5*Weight[10]*(SVLCombRank>0&&abs(EvCat)==1300 && NJets>=4)',
+#	 'non-isolated #mu, N_{jets}#geq 4, N_{b-tags} #leq 1')
 ]
 
 def filterUseless(filename, sel=''):
@@ -291,7 +345,7 @@ def main(args, options):
 		templateplot.subtagpos = (0.90, 0.78)
 		templateplot.legpos = (0.75, 0.25)
 		templateplot.ratiotitle = 'Ratio wrt Inclusive'
-		templateplot.extratext = 'Work in Progress'
+		templateplot.extratext = '' #Work in Progress'
 		templateplot.ratiorange = (0.2, 2.2)
 		templateplot.colors = [ROOT.kBlack, ROOT.kBlue-8, ROOT.kAzure-2,
 		                       ROOT.kCyan-3]

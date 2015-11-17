@@ -5,8 +5,11 @@ import pickle
 import ROOT
 
 # CATEGORIES = ['e_optmrank','m_optmrank','etoppt_optmrank','mtoppt_optmrank']
-CATEGORIES = ['e','m','etoppt','mtoppt']
-SELECTION = '_optmrank'
+CATEGORIES = ['e','m','etoppt','mtoppt',
+	      'eplus','mplus','eplustoppt','mplustoppt',
+	      'eminus','mminus','eminustoppt','mminustoppt']
+SELECTION=''
+#SELECTION = '_optmrank'
 # SELECTIONS = ['_mrank1','_mrank1dr','_drrank1dr','','_optmrank']
 
 """

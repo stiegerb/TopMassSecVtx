@@ -9,7 +9,7 @@ cmsText     = "CMS";
 cmsTextFont   = 61  
 
 writeExtraText = True
-extraText   = "Preliminary"
+extraText   = "" #Preliminary"
 extraTextFont = 52 
 
 lumiTextSize     = 0.6

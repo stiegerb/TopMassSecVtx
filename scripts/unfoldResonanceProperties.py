@@ -64,8 +64,8 @@ def showUnfolded(sigData,bkgData,var=None,outD='unfolded',outF=None,postfixForOu
 	leg.Draw()
 
 	#save plot
-	# for ext in ['.pdf', '.png', '.C']:
-	for ext in ['.pdf']:
+	for ext in ['.pdf', '.png', '.C']:
+	#for ext in ['.pdf']:
 		c.SaveAs(os.path.join(outD, name+"_unfolded%s%s"%(postfixForOutputs,ext)))
 
 	#save also distributions if output file is given
@@ -206,8 +206,8 @@ def doTheMassFit(ws,data=None,
 	#save to file
 	outF='cfit%s'%postfixForOutputs
 
-	# for ext in ['.pdf', '.png', '.C']:
-	for ext in ['.pdf']:
+	for ext in ['.pdf', '.png', '.C']:
+	#for ext in ['.pdf']:
 		cfit.SaveAs(os.path.join(outD,outF+ext))
 
 
@@ -517,8 +517,8 @@ def runDifferentialMeasurement(ws,vname,ranges,outF):
 		dsigma[ds].SetMarkerStyle(20)
 		dsigma[ds].GetXaxis().SetTitle( xtitle )
 		dsigma[ds].GetYaxis().SetTitle( ytitle )
-		# for ext in ['.pdf', '.png', '.C']:
-		for ext in ['.pdf']:
+	        for ext in ['.pdf', '.png', '.C']:
+		#for ext in ['.pdf']:
 			cdiff.SaveAs(os.path.join(outdir,'diff_%s_%s%s'%(vname,ds,ext)))
 
 		# write to file

@@ -37,7 +37,6 @@ def computeFirstMoments(graph):
    x, y = ROOT.Double(0), ROOT.Double(0)
    for i in xrange(0,graph.GetN()):
       graph.GetPoint( i,x,y )
-      ey=graph.GetErrorY(i)
       mu0 += y
       mu1 += x*y
       mu2 += x*x*y
@@ -47,6 +46,7 @@ def computeFirstMoments(graph):
 
    emu1=0
    for i in xrange(0,graph.GetN()):
+      ey=graph.GetErrorY(i)
       emu1 += ROOT.TMath.Power(ey*(x*mu0-mu1)/mu0,2)
    emu1 = ROOT.TMath.Sqrt(emu1)
    return mu0,mu1,emu1,mu2
@@ -143,8 +143,10 @@ def computePullFromGraphs(graph, reference):
 steer the script
 """
 def main():
+
    global INPUTS
    global TAGS
+
    #configuration
    usage = 'usage: %prog [options]'
    parser = optparse.OptionParser(usage)
@@ -160,9 +162,6 @@ def main():
    parser.add_option('-d', '--dist' , dest='Dist',
                      help='distribution to compare',
                      default='ptfrac', type='string')
-   parser.add_option('--showMean' , dest='showMean',
-                     help='show mean instead of pull',
-                     default=False, action='store_true')
    parser.add_option('-m', '--maxY', dest='MaxY',
                      help='max y',
                      default=0.75, type=float)
@@ -178,7 +177,7 @@ def main():
    if opt.z:
       print 'Using Z control region inputs'
       INPUTS = [
-         ('data'       , 'Data'          ,    'Data8TeV_DoubleLepton_merged_filt23' , ROOT.kBlack),
+         ('data'       , 'Data'          ,    'Data8TeV_merged_filt23' , ROOT.kBlack),
          ('z2srblep'   , 'Z2*LEP r_{b}'     , 'MC8TeV_DY_merged_filt23_bfrag'       , ROOT.kBlack),
          ('z2srblepup' , 'Z2*LEP r_{b}+' ,    'MC8TeV_DY_merged_filt23_bfragup'     , ROOT.kMagenta),
          ('z2srblepdn' , 'Z2*LEP r_{b}-' ,    'MC8TeV_DY_merged_filt23_bfragdn'     , ROOT.kMagenta+2),
@@ -194,13 +193,20 @@ def main():
          'Dsm':  'Z/#gamma^{*}(ll) D*^{#pm}(D^{0}(K^{-}#pi^{+})#pi^{+}) X',
          }
 
+   #fragmentation variations to compare
+   fragToUse=[('Z2*LEP r_{b}', ['z2srblep','z2srblepup','z2srblepdn'], ROOT.kBlack),
+              ('Z2*',          ['z2s',     'z2s',       'z2s'],        ROOT.kRed+1),
+              ('Z2* peterson', ['z2spete', 'z2spete',   'z2spete'],    ROOT.kViolet+2),
+              ('Z2* Lund',     ['z2slund', 'z2slund',   'z2slund'],    ROOT.kAzure+7)
+              ]
+   if not opt.z:
+      fragToUse.append( ('Herwig AUET6', ['powherw', 'powherw', 'powherw'], ROOT.kMagenta+2) )
+   nominalFragWgt=fragToUse[0][0]
+
+
    #global ROOT configuration
    ROOT.gStyle.SetOptStat(0)
    ROOT.gStyle.SetOptTitle(0)
-   ROOT.gStyle.SetPadTopMargin(0.05)
-   ROOT.gStyle.SetPadBottomMargin(0.12)
-   ROOT.gStyle.SetPadLeftMargin(0.15)
-   ROOT.gStyle.SetPadRightMargin(0.05)
 
    print "Will store plots in", opt.outDir
 
@@ -224,21 +230,7 @@ def main():
       #format the new plot
       allGr[tag].SetName('gr%s'%tag)
       allGr[tag].SetTitle(title)
-      allGr[tag].GetYaxis().SetTitleFont(43)
-      allGr[tag].GetYaxis().SetLabelFont(43)
-      allGr[tag].GetYaxis().SetTitleSize(24)
-      allGr[tag].GetXaxis().SetTitleSize(24)
-      allGr[tag].GetXaxis().SetTitleFont(43)
-      allGr[tag].GetXaxis().SetLabelFont(43)
-      allGr[tag].GetXaxis().SetLabelSize(18)
-      allGr[tag].GetYaxis().SetLabelSize(18)
-      allGr[tag].GetXaxis().SetTitleOffset(0.9)
-      allGr[tag].GetYaxis().SetTitleOffset(1.1)
-
-      axistitles = AXISTITLES.get(opt.Dist,(opt.Dist,'Normalized'))
-      allGr[tag].GetXaxis().SetTitle(axistitles[0])
-      allGr[tag].GetYaxis().SetTitle(axistitles[1])
-
+   
       if tag == 'data':
          allGr[tag].SetFillStyle(0)
          allGr[tag].SetFillColor(0)
@@ -257,126 +249,172 @@ def main():
 
    # compute all the pulls or means:
    compGrs={}
-   itagCtr=0
-   for tag,_,_,_ in INPUTS:
-      graph=allGr[tag]
-      if opt.showMean:
-         mu0, avg, avgErr, mu2 = computeFirstMoments(graph)
-         rms = ROOT.TMath.Sqrt(mu2-avg*avg)
-         if tag=='data' : continue
-         compGrs[tag]=graph.Clone('compgr%s'%tag)
-         compGrs[tag].Set(0)
-         compGrs[tag].SetPoint(0,avg,len(compGrs))
-         compGrs[tag].SetPointError(0,avgErr,avgErr,0.5,0.5)
-         itagCtr+=1
-      else:
-         compGrs[tag]=computePullFromGraphs(graph, allGr['data'])
+   for wtitle,iwList,wcolor in fragToUse:  
 
+      compGrs[wtitle]=[0,0,0,0]
+      for itag in xrange(0,len(iwList)):
+         tag=iwList[itag]
+         mu0, avg, avgErr, mu2 = computeFirstMoments(allGr[tag])
+         rms = ROOT.TMath.Sqrt(mu2-avg*avg)
+         if itag==0:
+            compGrs[wtitle][0]=avg
+            compGrs[wtitle][1]=avgErr
+         else:
+            compGrs[wtitle][1+itag]=avg-compGrs[wtitle][0]
+   print compGrs
+
+      
    ##########################################
    # PLOTTING
    canvas=ROOT.TCanvas('c','c',500,500)
+   canvas.SetRightMargin(0)
+   canvas.SetLeftMargin(0.)
+   canvas.SetTopMargin(0)
+   canvas.SetBottomMargin(0.)
    canvas.cd()
+   p1 = ROOT.TPad('p1','p1',0.0,0.85,1.0,0.0)
+   p1.SetLeftMargin(0.12)
+   p1.SetBottomMargin(0.12)
+   p1.SetRightMargin(0.05)
+   p1.SetTopMargin(0.01)
+   p1.Draw()
+   canvas.cd()
+   p2 = ROOT.TPad('p2','p2',0.0,0.85,1.0,1.0)
+   p2.SetLeftMargin(0.12)
+   p2.SetBottomMargin(0.01)
+   p2.SetRightMargin(0.05)
+   p2.SetTopMargin(0.05)
+   p2.Draw()
+   p1.cd()
+   p1.Clear()
    try:
       allGr['z2srblep'].Draw('A3')
       allGr['z2srblep'].GetYaxis().SetRangeUser(0,opt.MaxY)
+      allGr['z2srblep'].GetYaxis().SetTitleOffset(1.25)
+      axistitles = AXISTITLES.get(opt.Dist,(opt.Dist,'Normalized'))
+      allGr['z2srblep'].GetXaxis().SetTitle(axistitles[0])
+      allGr['z2srblep'].GetYaxis().SetTitle(axistitles[1])
+      allGr['z2srblep'].GetXaxis().SetTitleOffset(1.0)
+      allGr['z2srblep'].GetYaxis().SetTitleOffset(1.2)
+      allGr['z2srblep'].GetYaxis().SetTitleSize(0.04)
+      allGr['z2srblep'].GetXaxis().SetTitleSize(0.04)
+      allGr['z2srblep'].GetYaxis().SetLabelSize(0.035)
+      allGr['z2srblep'].GetXaxis().SetLabelSize(0.035)
+      allGr['z2srblep'].GetXaxis().SetNdivisions(10)
+      allGr['z2srblep'].GetYaxis().SetNdivisions(5)
       allGr['data'].Draw('p')
    except KeyError:
       print "WARNING: No data or Z2*LEP rb to plot"
       pass
 
-   CMS_lumi(canvas,2,10)
+   label=ROOT.TLatex()
+   label.SetNDC()
+   label.SetTextFont(42)
+   label.SetTextSize(0.05)
+   label.SetTextAlign(32)
+   label.DrawLatex(0.25,0.92,'#bf{CMS}')         
    if opt.Tag:
-      tl = ROOT.TLatex()
-      tl.SetNDC()
-      tl.SetTextFont(43)
-      tl.SetTextSize(18)
-      tl.SetTextAlign(32)
-      tl.DrawLatex(0.93, 0.92, TAGS[opt.Tag])
+      label.DrawLatex(0.92,0.86,'#scale[0.8]{#it{%s}}'%TAGS[opt.Tag])
+   label.DrawLatex(0.92,0.92,'#scale[0.8]{19.7 fb^{-1} (8 TeV)}')
 
-   insetPad = ROOT.TPad('inset','inset',0.55,0.55,0.95,0.85)
-   if 'chfrac' in opt.Dist : insetPad = ROOT.TPad('inset','inset',0.15,0.55,0.55,0.85)
-   insetPad.SetTopMargin(0.05)
-   insetPad.SetLeftMargin(0.1)
-   insetPad.SetRightMargin(0.4)
-   insetPad.SetBottomMargin(0.2)
-   insetPad.SetFillStyle(0)
-   insetPad.Draw()
-   insetPad.cd()
-   insetPad.Clear()
+   p2.cd()
+   p2.Clear()
    frame,dataRef=ROOT.TGraph(),None
-   if opt.showMean:
-      mu0, avg, avgErr, mu2 = computeFirstMoments(allGr['data'])
-      rms = ROOT.TMath.Sqrt(mu2-avg*avg)
-      frame.SetTitle('frame')
-      frame.SetMarkerStyle(1)
-      frame.SetLineColor(1)
-      frame.SetPoint(0,avg-rms,-0.5)
-      frame.SetPoint(1,avg-rms,len(INPUTS)+0.5)            
-      frame.SetPoint(2,avg+rms,len(INPUTS)+0.5)
-      frame.SetPoint(3,avg+rms,-0.5)
-      frame.SetPoint(4,avg-rms,-0.5)
+   mu0, avg, avgErr, mu2 = computeFirstMoments(allGr['data'])
+   rms = ROOT.TMath.Sqrt(mu2-avg*avg)
+   frame.SetTitle('frame')
+   frame.SetMarkerStyle(1)
+   frame.SetLineColor(1)
+   frame.SetPoint(0,0,avg-0.5*rms)
+   frame.SetPoint(1,len(fragToUse),avg-0.5*rms)
+   frame.SetPoint(2,len(fragToUse),avg+0.5*rms)
+   frame.SetPoint(3,0,avg+0.5*rms)
+   frame.SetPoint(4,0,avg-0.5*rms)
 
-      dataRef=ROOT.TGraph()
-      dataRef.SetTitle('dataref')
-      dataRef.SetPoint(0,avg-avgErr,-0.5)
-      dataRef.SetPoint(1,avg-avgErr,len(INPUTS)+0.5)
-      dataRef.SetPoint(2,avg+avgErr,len(INPUTS)+0.5)
-      dataRef.SetPoint(3,avg+avgErr,-0.5)
-      dataRef.SetPoint(4,avg-avgErr,-0.5)
-
-   else:
-      frame.SetTitle('frame')
-      frame.SetMarkerStyle(1)
-      frame.SetLineColor(1)
-      frame.SetPoint(0,allGr['data'].GetHistogram().GetXaxis().GetXmin(),-5.1)
-      frame.SetPoint(1,allGr['data'].GetHistogram().GetXaxis().GetXmin(),5.1)
-      frame.SetPoint(2,allGr['data'].GetHistogram().GetXaxis().GetXmax(),5.1)
-      frame.SetPoint(3,allGr['data'].GetHistogram().GetXaxis().GetXmax(),-5.1)
-      frame.SetPoint(4,allGr['data'].GetHistogram().GetXaxis().GetXmin(),-5.1)      
+   dataRef=ROOT.TGraph()
+   dataRef.SetTitle('dataref')
+   dataRef.SetFillStyle(3001)
+   dataRef.SetFillColor(ROOT.kGray)
+   dataRef.SetLineColor(ROOT.kGray)
+   dataRef.SetLineWidth(2)
+   dataRef.SetPoint(0,0,avg-avgErr)
+   dataRef.SetPoint(1,len(fragToUse)+1.0,avg-avgErr)
+   dataRef.SetPoint(2,len(fragToUse)+1.0,avg+avgErr)
+   dataRef.SetPoint(3,0,avg+avgErr)
+   dataRef.SetPoint(4,0,avg-avgErr)
+   print avg,avgErr
       
-   frame.Draw('ap')
-   frameXtitle,frameYtitle='','Pull'
+   frame.Draw('ap')   
+   frame.GetXaxis().SetNdivisions(0)
    frame.GetYaxis().SetNdivisions(5)
-   frame.GetXaxis().SetNdivisions(5)
-   if opt.showMean :
-      frameXtitle,frameYtitle='Average',''
-      frame.GetYaxis().SetNdivisions(0)
+   frameXtitle,frameYtitle='','Average'
+   frame.GetXaxis().SetNdivisions(0)
    frame.GetYaxis().SetTitle(frameYtitle)
    frame.GetXaxis().SetTitle(frameXtitle)
-   frame.GetXaxis().SetTitleSize(0.08)
-   frame.GetXaxis().SetLabelSize(0.08)
-   frame.GetYaxis().SetTitleOffset(0.5)
-   frame.GetXaxis().SetTitleOffset(1.0)
-   frame.GetYaxis().SetTitleSize(0.08)
-   frame.GetYaxis().SetLabelSize(0.08)
+   frame.GetXaxis().SetTitleSize(0.0)
+   frame.GetXaxis().SetLabelSize(0.0)
+   frame.GetYaxis().SetTitleOffset(0.25)
+   frame.GetXaxis().SetTitleOffset(1.8)
+   frame.GetYaxis().SetTitleSize(0.2)
+   frame.GetYaxis().SetLabelSize(0.2)
 
    #inset legend
-   inleg=ROOT.TLegend(0.62,0.3,0.95,0.9)
-   inleg.SetBorderSize(0)
-   inleg.SetFillColor(0)
-   inleg.SetTextFont(42)
-   inleg.SetTextSize(0.07)         
+   fraglabel=ROOT.TLatex()
+   fraglabel.SetNDC()
+   fraglabel.SetTextFont(42)
+   fraglabel.SetTextSize(0.15)        
+   #fraglabel.SetTextAlign(12)
    if dataRef : 
-      dataRef.Draw('l')
-      inleg.AddEntry(dataRef,'data','l')
-   for tag,_,_,_ in INPUTS:
-      if tag=='data' : continue
-      if opt.showMean:
-         compGrs[tag].Draw('p')
-         inleg.AddEntry(compGrs[tag],compGrs[tag].GetTitle(),'p')
+      dataRef.Draw('lf')
+   grCtr=0
+   statGrs,totalGrs={},{}
+   for wtitle,iwList,wcolor in fragToUse:        
+      tag=iwList[0]
+
+      totalGrs[wtitle]=ROOT.TGraphAsymmErrors()
+      totalGrs[wtitle].SetMarkerColor(wcolor)
+      totalGrs[wtitle].SetLineColor(wcolor)
+      totalGrs[wtitle].SetLineWidth(2)
+      totalGrs[wtitle].SetMarkerStyle(20+grCtr)
+      totalGrs[wtitle].SetPoint(0,grCtr+1,compGrs[wtitle][0])
+ 
+      diff1=ROOT.TMath.Min(compGrs[wtitle][2],compGrs[wtitle][2])
+      diff2=ROOT.TMath.Max(compGrs[wtitle][2],compGrs[wtitle][3])      
+      statunc=compGrs[wtitle][1]      
+      if diff1*diff2<0:
+         totalGrs[wtitle].SetPointError(0,0,0,
+                                        ROOT.TMath.Sqrt(statunc**2+diff1**2),
+                                        ROOT.TMath.Sqrt(statunc**2+diff2**2))
       else:
-         compGrs[tag].Draw('3')
-         inleg.AddEntry(compGrs[tag],compGrs[tag].GetTitle(),'l')
-   inleg.Draw()
-
-
-   postfix='_mean' if opt.showMean else ''
+         maxDiff=ROOT.TMath.Max(ROOT.TMath.Abs(diff1),ROOT.TMath.Abs(diff2))
+         totalGrs[wtitle].SetPointError(0,0,0,
+                                        ROOT.TMath.Sqrt(statunc**2+maxDiff**2),
+                                        ROOT.TMath.Sqrt(statunc**2+maxDiff**2))
+      
+      statGrs[wtitle]=ROOT.TGraphAsymmErrors()
+      statGrs[wtitle].SetMarkerColor(wcolor)
+      statGrs[wtitle].SetLineColor(wcolor)
+      statGrs[wtitle].SetLineWidth(1)
+      statGrs[wtitle].SetMarkerStyle(20+grCtr)
+      statGrs[wtitle].SetPoint(0,grCtr+1,compGrs[wtitle][0])
+      statGrs[wtitle].SetPointError(0,0,0,statunc,statunc)
+      
+      if wtitle==nominalFragWgt : 
+         totalGrs[wtitle].SetMarkerSize(0.5)
+         statGrs[wtitle].SetMarkerSize(0.5)
+         totalGrs[wtitle].Draw('p')          
+         statGrs[wtitle].Draw('p')          
+      else:
+         statGrs[wtitle].Draw('pX')          
+      xlabel=0.09+0.68*float(grCtr+1)/float(len(fragToUse))
+      fraglabel.DrawLatex(xlabel,0.8,'#it{%s}'%wtitle)
+      grCtr+=1
+      
    os.system('mkdir -p %s' % opt.outDir)
    for ext in ['.pdf', '.png', '.C']:
-   #for ext in ['.pdf', '.png']:
-      canvas.SaveAs(os.path.join(opt.outDir,'%s%s%s'%(opt.Dist,postfix,ext)))
-
-   insetPad.Delete()
+      canvas.SaveAs(os.path.join(opt.outDir,'%s%s'%(opt.Dist,ext)))
+   p1.Delete()
+   p2.Delete()
 
 """
 for execution from another script

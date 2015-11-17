@@ -101,18 +101,33 @@ def runDataFits(wsfile,pefile,options):
                                         dataHisto)
         # Create likelihood
         # Store it in the appropriate categories for posterior combination
-        for nllMapKey in [('comb',0),('comb',trk),('comb%s'%chsel,0)]:
+        nll = allPdfs[key].createNLL(data, ROOT.RooFit.Extended())
+        chType=''
+        if chsel in ['em','mm','ee']   : chType='ll'
+        if chsel in ['e','m']          : chType='lj'
+        if chsel in ['eplus','mplus']  : chType='lplus'
+        if chsel in ['eminus','mminus'] : chType='lminus'
+        nllMapKeys=[('comb%s'%chsel,0),('comb%s'%chType,trk),('comb%s'%chType,0)]
+        if chType!='lplus' and chType!='lminus' and chType!='':
+            nllMapKeys.insert(0,('comb',trk))
+            nllMapKeys.insert(0,('comb',0))
+        for nllMapKey in nllMapKeys:
             if not (nllMapKey in nllMap):
                 nllMap[nllMapKey]=[]
-            if nllMapKey[0]=='comb' and nllMapKey[1]==0:
-                nllMap[nllMapKey].append( allPdfs[key].createNLL(data, ROOT.RooFit.Extended()) )
-            else:
-                nllMap[nllMapKey].append( nllMap[('comb',0)][-1] )
+            nllMap[nllMapKey].append( nll )                
+
+        #for nllMapKey in [('comb',0),('comb',trk),('comb%s'%chsel,0)]:
+        #    if not (nllMapKey in nllMap):
+        #        nllMap[nllMapKey]=[]
+        #    if nllMapKey[0]=='comb' and nllMapKey[1]==0:
+        #        nllMap[nllMapKey].append( allPdfs[key].createNLL(data, ROOT.RooFit.Extended()) )
+        #    else:
+        #        nllMap[nllMapKey].append( nllMap[('comb',0)][-1] )
 
         if options.verbose>3:
             sys.stdout.write(' [running Minuit]')
             sys.stdout.flush()
-        minuit=ROOT.RooMinuit(nllMap[('comb',0)][-1])
+        minuit=ROOT.RooMinuit(nll) #nllMap[('comb',0)][-1])
         minuit.setErrorLevel(0.5)
         minuit.migrad()
         minuit.hesse()
@@ -123,7 +138,8 @@ def runDataFits(wsfile,pefile,options):
 
         #show, if required
         selstring = options.selection if options.selection else 'inclusive'
-        pll=nllMap[('comb',0)][-1].createProfile(poi)
+        #pll=nllMap[('comb',0)][-1].createProfile(poi)
+        pll=nll.createProfile(poi)
 
         chTitle=str(chsel.split('_',1)[0])
         chTitle=chTitle.replace('m','#mu')
@@ -161,17 +177,21 @@ def runDataFits(wsfile,pefile,options):
 
         #add the log likelihoods and minimize
         llSet = ROOT.RooArgSet()
-        for ll in nllMap[key]: llSet.add(ll)
+        for ll in nllMap[key]: 
+            llSet.add(ll)
+        print key
         combll = ROOT.RooAddition("combll","combll",llSet)
+        print combll
         minuit=ROOT.RooMinuit(combll)
         minuit.setErrorLevel(0.5)
         minuit.migrad()
         minuit.hesse()
         minuit.minos(poi)
+        print '???'
         summary.addFitResult(key=key,ws=ws)
 
-        combll.Delete()
-
+        #combll.Delete()
+        print'here?'
         if options.verbose>3:
             try: catlabel = CATTOLABEL[('%s_%d'%key)]
             except KeyError: catlabel = CATTOLABEL[('%s_%d'%key).replace('_%s'%options.selection, '')]
@@ -184,6 +204,7 @@ def runDataFits(wsfile,pefile,options):
                 resultstring = bcolors.BOLD + resultstring + bcolors.ENDC
             sys.stdout.write(resultstring)
             sys.stdout.flush()
+        print 'or here?'
     print 80*'-'
 
     summary.saveResults()

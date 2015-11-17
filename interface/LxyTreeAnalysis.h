@@ -73,8 +73,6 @@ public:
     virtual void Begin(TFile*);
     virtual void End(TFile*);
     virtual void Loop();
-    virtual void BookDileptonTree();
-    virtual void ResetDileptonTree();
     virtual void BookHistos();
     virtual void BookCharmHistos();
     virtual void BookSVLHistos();
@@ -187,6 +185,7 @@ public:
     Float_t fTHardTkPt, fTSoftTkPt;
     Float_t fTCandPtRel, fTCandDeltaR;
     Float_t fTJetPt, fTJetEta, fTSumPtCharged, fTJetPz, fTSumPzCharged;
+    Float_t fTFJPt, fTFJEta;
 
     // Lepton Secondary Vertex:
     TH1D *fHNJets, *fHNJets_e, *fHNJets_m, *fHNJets_ee, *fHNJets_mm, *fHNJets_em;
@@ -207,10 +206,10 @@ public:
     Int_t fTEvent, fTRun, fTLumi, fTNPVtx, fTNCombs, fTEvCat;
     Int_t fTNJets, fTNBTags;
     Float_t fTMET,fTMT;
-    Float_t fTWeight[11], fTJESWeight[5], fTMETWeight[3], fTBtagWeight[3], fTXSWeight, fTSVMassWeight,fTMCFMWeight;
+    Float_t fTWeight[11], fTJESWeight[5], fTMETWeight[3], fTBtagWeight[3], fTXSWeight, fTSVMassWeight,fTMCFMWeight[2];
     Float_t fTSVLMass, fTSVLMass_sf[2], fTSVLDeltaR, fTSVLMass_rot, fTSVLDeltaR_rot;
+    Float_t fTJLMass,fTJLDeltaR;
     Float_t fTLPt, fTSVMass, fTSVPt, fTSVLxy, fTSVLxySig, fTJPt, fTJEta, fMjj,fTSVPtChFrac, fTSVPzChFrac,fTSVProjFrac,fTSVPtRel;
-    Float_t fTFJPt, fTFJEta;
     Float_t fTSVBfragWeight[6];
     Float_t fPDFWeight[100];
     Int_t fTBHadNeutrino,fTBHadId;
@@ -218,11 +217,6 @@ public:
     Int_t fTSVNtrk, fTCombCat, fTCombInfo;
     Int_t fTJFlav;
     Float_t fTGenMlb, fTGenTopPt;
-
-    //Dilepton specific
-    TTree *fDileptonInfoTree;
-    Float_t fLpPt,fLmPt,fLpEta,fLmEta,fLpPhi,fLmPhi,fLmId,fLpId;
-    Float_t fGenLpPt,fGenLmPt,fGenLpEta,fGenLmEta,fGenLpPhi,fGenLmPhi,fGenLpId,fGenLmId;
 
     TRandom2 rndGen_;
     BTagSFUtil btsfutil_;

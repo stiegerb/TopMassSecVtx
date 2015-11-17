@@ -241,9 +241,8 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     print "... processing", key
     pName = key.replace('/','')
     newPlot = Plot(pName)
-    newPlot.plotformats = ['pdf', 'png']
-    newPlot.ratiorange = (0.7,1.2)
-    # newPlot.ratiorange = (0.4,2.3)
+    newPlot.plotformats = ['pdf', 'png','C']
+    newPlot.ratiorange = (0.74,1.26)
     try:
         ratiolo,ratiohi = tuple([float(x) for x in options.ratioRange.split(',')])
         newPlot.ratiorange =  (ratiolo, ratiohi)
@@ -348,7 +347,10 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                             fixExtremities(ihist,False,False)
 
                         ## Apply xsec weights
-                        if xsecweights : ihist.Scale(xsecweights[str(dtag)])
+                        try:
+                            if xsecweights : ihist.Scale(xsecweights[str(dtag)])
+                        except:
+                            print 'no weights found for ',dtag
 
                         ## Apply external scale factor
                         if (key,str(title)) in scaleFactors:
@@ -500,7 +502,7 @@ def makeXSecWeights(inDir, jsonfiles, options):
 
                         ngen_seg,_ = getNormalization(rootFile)
                         if not isData: ngen += ngen_seg
-
+                        
                         rootFile.Close()
 
                     tot_ngen[procKey] = ngen
@@ -563,12 +565,12 @@ def runPlotter(inDir, options, scaleFactors={}):
 
     # Input is a single root file with all histograms
     if inDir.endswith('.root'):
-        baseRootFile = TFile.Open(inDir)
+        baseRootFile = TFile.Open(inDir)        
         plots = getAllPlotsFrom(tdir=baseRootFile,
                                 chopPrefix=True,
                                 tagsToFilter=tagsToFilter,
                                 filterByProcsFromJSON=options.json)
-
+        
     # Input is a directory with files for each process containing histograms
     else:
         for proc_tag in procList:

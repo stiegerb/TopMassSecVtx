@@ -68,10 +68,7 @@ SYSTSFROMFILES = [
 	 ['tot']),
 	('powpyth', 'Powheg/PYTHIA Z2*',
 	 ['MC8TeV_TT_Z2star_powheg_pythia.root'],
-	 ['tot','cor','wro','unm']),
-	# ('powpythmcfmnloproddec', 'Powheg/PYTHIA Z2* (MCFM NLO prod+dec)',
-	#  ['MC8TeV_TT_Z2star_powheg_pythia.root'],
-	#  ['tot','cor','wro','unm']),
+	 ['tot','cor','wro','unm']),	
 	]
 
 SYSTTOPROCNAME = dict([(k,[v.replace('.root','') for v in vlist]) for k,_,vlist,_ in SYSTSFROMFILES])
@@ -104,16 +101,20 @@ SYSTSFROMWEIGHTS = [
 	('bhadcomp',    'B hadron composition',
 	 '(1.05125*(abs(BHadId)>=510&&abs(BHadId)<520)+1.06429*(abs(BHadId)>=520&&abs(BHadId)<530)+0.753548*(abs(BHadId)>=530&&abs(BHadId)<540)+0.807828*(abs(BHadId)>=540)+(BHadId==0))',
 	 ['tot']),
+
+	('ttHFup',      'Extra heavy flavour up', '((CombInfo<0 && abs(BHadId)!=0)*1.66+((CombInfo<0 && abs(BHadId)==0) || CombInfo>=0)*1.0)*1.0', ['tot']),
+	('ttHFdn',    'Extra heavy flavour down', '((CombInfo<0 && abs(BHadId)!=0)*0.60+((CombInfo<0 && abs(BHadId)==0) || CombInfo>=0)*1.0)*1.0', ['tot']),
 	('bfnuup',      'B hadron semi-lep BF up',
 	 '((BHadNeutrino==0)*0.984+(BHadNeutrino==1)*1.048+(BHadNeutrino==-1))', ['tot']),
 	('bfnudn',   'B hadron semi-lep BF down',
 	 '((BHadNeutrino==0)*1.012+(BHadNeutrino==1)*0.988+(BHadNeutrino==-1))', ['tot']),
 	('svmass',      'SV mass reweighting',       'SVMassWeight',           ['tot']),
-	# ('mgmcfmnloproddec', 'NLO in decay',        'MCFMWeight',   ['tot','cor','wro','unm']),
+	('mgmcfmnloprod',    'NLO decay',        'MCFMWeight[0]',   ['tot','cor','wro','unm']),
+	('mgmcfmnloproddec', 'NLO prod+decay',   'MCFMWeight[1]',   ['tot','cor','wro','unm']),
 	]
 
 #fun...
-#for i in xrange(1,53): SYSTSFROMWEIGHTS.append( ('pdf%d'%i, 'PDF variation %d'%i,'PDFWeight[%d]'%i, ['tot']) )
+for i in xrange(1,53): SYSTSFROMWEIGHTS.append( ('pdf%d'%i, 'PDF variation %d'%i,'PDFWeight[%d]'%i, ['tot']) )
 
 ALLSYSTS = SYSTSFROMFILES + SYSTSFROMWEIGHTS
 
@@ -130,90 +131,89 @@ COMBNAMES = {
 }
 
 SYSTPLOTS = [
-#	('toppt', 'Top p_{T} reweighting',
-#	 ['nominal', 'toppt', 'topptup'],
-#	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'tot'),
-#
-#	('toppt', 'Top p_{T} reweighting',
-#	 ['nominal', 'toppt', 'topptup'],
-#	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'cor'),
-#
-#	('toppt', 'Top p_{T} reweighting',
-#	 ['nominal', 'toppt', 'topptup'],
-#	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'wro'),
-#
-#	('scale', 'Q^{2} Scale',
-#	 ['nominal', 'scaleup', 'scaledown'],
-#	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
-#
-#	('matching', 'ME/PS matching scale',
-#	 ['nominal', 'matchingup', 'matchingdown'],
-#	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
-#
-#	('width', 'Top quark width',
-#	 ['nominal', 'width'],
-#	 [ROOT.kBlack, ROOT.kGreen+1], 'tot'),
-#
-#	('uecr', 'Underlying event / Color reconnection',
-#	 ['p11', 'p11tev', 'p11mpihi', 'p11nocr', 'nominal'],
-#	 [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
-#	  ROOT.kViolet+2, ROOT.kBlack],'tot'),
-#
-#	('bfrag', 'b fragmentation',
-#	 ['nominal', 'bfragz2s', 'bfragup', 'bfragdn', 'bfragp11',
-#	  'bfraglund', 'bfragpete'],
-#	 [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
-#	  ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-#
-#	('jes', 'Jet energy scale',
-#	 ['nominal', 'jesup', 'jesdn'],
-#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-#
-#	('jer', 'Jet energy resolution',
-#	 ['nominal', 'jerup', 'jerdn'],
-#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-#
-#	('btag', 'b-tag efficiency',
-#	 ['nominal', 'btagup', 'btagdn'],
-#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-#
-#	('les', 'Lepton energy scale',
-#	 ['nominal', 'lesup', 'lesdn'],
-#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-#
-#	('umet', 'Unclustered MET',
-#	 ['nominal', 'umetup', 'umetdn'],
-#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-#
-#	('lepsel', 'Lepton selection efficiency',
-#	 ['nominal', 'lepselup', 'lepseldn'],
-#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-#
-#	('pu', 'Pileup',
-#	 ['nominal', 'puup', 'pudn'],
-#	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
-#
-#	('bfnu', 'B-hadron branching fractions',
-#	 ['nominal', 'bfnuup', 'bfnudn'],
-#	 [ROOT.kBlack, ROOT.kYellow-3, ROOT.kYellow+3],'tot'),
-#
-#	('svmass', 'SV Mass reweighting',
-#	 ['nominal', 'svmass'],
-#	 [ROOT.kBlack, ROOT.kMagenta-9],'tot'),
+	('toppt', 'Top p_{T} reweighting',
+	 ['nominal', 'toppt', 'topptup'],
+	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'tot'),
 
-	# ('nlo', 'NLO',
-	#  ['nominal', 'powpyth', 'mgmcfmnloproddec','powpythmcfmnloproddec'],
-	#  [ROOT.kBlack, ROOT.kMagenta-9, ROOT.kRed,ROOT.kYellow-3],'tot'),
+	('toppt', 'Top p_{T} reweighting',
+	 ['nominal', 'toppt', 'topptup'],
+	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'cor'),
 
+	('toppt', 'Top p_{T} reweighting',
+	 ['nominal', 'toppt', 'topptup'],
+	 [ROOT.kBlack, ROOT.kRed, ROOT.kRed-6],'wro'),
+
+	('scale', 'Q^{2} Scale',
+	 ['nominal', 'scaleup', 'scaledown'],
+	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
+
+	('matching', 'ME/PS matching scale',
+	 ['nominal', 'matchingup', 'matchingdown'],
+	 [ROOT.kBlack, ROOT.kGreen+1, ROOT.kRed+1],'tot'),
+
+	('width', 'Top quark width',
+	 ['nominal', 'width'],
+	 [ROOT.kBlack, ROOT.kGreen+1], 'tot'),
+
+	('uecr', 'Underlying event / Color reconnection',
+	 ['p11', 'p11tev', 'p11mpihi', 'p11nocr', 'nominal'],
+	 [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
+	  ROOT.kViolet+2, ROOT.kBlack],'tot'),
+
+	('bfrag', 'b fragmentation',
+	 ['nominal', 'bfragz2s', 'bfragup', 'bfragdn', 'bfragp11',
+	  'bfraglund', 'bfragpete'],
+	 [ROOT.kBlack, ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
+	  ROOT.kRed+1,ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('jes', 'Jet energy scale',
+	 ['nominal', 'jesup', 'jesdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('jer', 'Jet energy resolution',
+	 ['nominal', 'jerup', 'jerdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('btag', 'b-tag efficiency',
+	 ['nominal', 'btagup', 'btagdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('les', 'Lepton energy scale',
+	 ['nominal', 'lesup', 'lesdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('umet', 'Unclustered MET',
+	 ['nominal', 'umetup', 'umetdn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('lepsel', 'Lepton selection efficiency',
+	 ['nominal', 'lepselup', 'lepseldn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('pu', 'Pileup',
+	 ['nominal', 'puup', 'pudn'],
+	 [ROOT.kBlack, ROOT.kAzure+7, ROOT.kBlue-7],'tot'),
+
+	('bfnu', 'B-hadron branching fractions',
+	 ['nominal', 'bfnuup', 'bfnudn'],
+	 [ROOT.kBlack, ROOT.kYellow-3, ROOT.kYellow+3],'tot'),
+
+	('ttHF', 'Extra heavy flavor in t#bar{t}',
+	 ['nominal', 'ttHFup','ttHFdn'],
+	 [ROOT.kBlack, ROOT.kYellow-3],'tot'),
+
+	('svmass', 'SV Mass reweighting',
+	 ['nominal', 'svmass'],
+	 [ROOT.kBlack, ROOT.kMagenta-9],'tot'),
 ]
 
 
 #fun...
-#PDFPLOTDESC=('pdf', 'PDF variations',	 ['nominal'], [ROOT.kBlack], 'tot')
-#for i in xrange(1,53):
-#	PDFPLOTDESC[2].append('pdf%d'%i)
-#	PDFPLOTDESC[3].append(ROOT.kGray)
-#SYSTPLOTS.append(PDFPLOTDESC)
+PDFPLOTDESC=('pdf', 'PDF variations',	 ['nominal'], [ROOT.kBlack], 'tot')
+for i in xrange(1,53):
+	PDFPLOTDESC[2].append('pdf%d'%i)
+	PDFPLOTDESC[3].append(ROOT.kGray)
+SYSTPLOTS.append(PDFPLOTDESC)
 
 
 def makeControlPlot(systhistos, syst, tag, seltag, opt):
@@ -305,13 +305,9 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 			finalsel = finalsel.replace('Weight[4]*','')
 
 		## Remove the BR weight for the POWHEG samples
-		if (syst in ['powherw', 'powpyth', 'mcatnlohw',
-			         'powpythmcfmnloproddec']
-			or 'p11' in syst):
+		if (syst in ['powherw', 'powpyth', 'mcatnlohw']	or 'p11' in syst):
 			# Remove 'Weight[0]*', but not 'XXWeight[0]*'
 			finalsel = re.sub('(^|\*)Weight\[0\]\*', '', finalsel)
-			if syst=='powpythmcfmnloproddec':
-				finalsel = 'MCFMWeight*' + finalsel
 
 		#add scale factor
 		svlmassVar='SVLMass'
@@ -339,13 +335,9 @@ def makeSystTask(tag, sel, syst, hname_to_keys, weight='1',combs=['tot']):
 
 
 			## Remove the BR weight for the POWHEG samples
-			if (syst in ['powherw', 'powpyth', 'mcatnlohw',
-				         'powpythmcfmnloproddec']
-				or 'p11' in syst):
+			if (syst in ['powherw', 'powpyth', 'mcatnlohw'] or 'p11' in syst):
 				# Remove 'Weight[0]*', but not 'XXWeight[0]*'
 				finalsel = re.sub('(^|\*)Weight\[0\]\*', '', finalsel)
-				if syst=='powpythmcfmnloproddec':
-					finalsel = 'MCFMWeight*' + finalsel
 
 			#add scale factor
 			svlmassVar='SVLMass'
@@ -371,7 +363,7 @@ def gatherHistosFromFiles(tasklist, files, dirname, hname_to_keys):
 	for ifilen in os.listdir(dirname):
 		if not os.path.splitext(ifilen)[1] == '.root': continue
 		ifile = ROOT.TFile.Open(os.path.join(dirname,ifilen), 'READ')
-
+		print ifilen
 		for hname in hnames:
 			keys = hname_to_keys[hname]
 			syst = keys[1]

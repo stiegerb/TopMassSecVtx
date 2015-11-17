@@ -14,15 +14,23 @@ COLORS = [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9,
           ROOT.kViolet+2, ROOT.kAzure+7, ROOT.kBlue-7, ROOT.kYellow-3]
 
 CATTOLABEL = {
-    'comb_0'   : 'Combined',
-    'comb_3'   : '=3 trks',
-    'comb_4'   : '=4 trks',
-    'comb_5'   : '=5 trks',
-    'combe_0'  : 'e+jets',
-    'combee_0' : 'ee',
-    'combem_0' : 'emu',
-    'combm_0'  : 'mu+jets',
-    'combmm_0' : 'mumu',
+    'comb_0'       : 'Combined',
+    'comb_3'       : '=3 trks',
+    'comb_4'       : '=4 trks',
+    'comb_5'       : '=5 trks',
+    'comblj_0'      : 'l+jets',
+    'combll_0'      : 'll',
+    'comblplus_0'  : 'l^{+}+jets',
+    'comblminus_0' : 'l^{-}+jets',
+    'combmplus_0'  : 'mu^{+}+jets',
+    'combmminus_0' : 'mu^{-}+jets',
+    'combeplus_0'  : 'e^{+}+jets',
+    'combeminus_0' : 'e^{-}+jets',
+    'combe_0'      : 'e+jets',
+    'combee_0'     : 'ee',
+    'combem_0'     : 'emu',
+    'combm_0'      : 'mu+jets',
+    'combmm_0'     : 'mumu',
 }
 
 CATTOFLABEL = {
@@ -30,6 +38,14 @@ CATTOFLABEL = {
     'comb_3'   : '3 trk.',
     'comb_4'   : '4 trk.',
     'comb_5'   : '5 trk.',
+    'comblj_0'      : 'l+jets',
+    'combll_0'      : 'll',
+    'comblplus_0'  : 'l^{+}+jets',
+    'comblminus_0' : 'l^{-}+jets',
+    'combmplus_0'  : '#mu^{+}+jets',
+    'combmminus_0' : '#mu^{-}+jets',
+    'combeplus_0'  : 'e^{+}+jets',
+    'combeminus_0' : 'e^{-}+jets',
     'combe_0'  : 'e+jets',
     'combee_0' : 'ee',
     'combem_0' : 'e#mu',
@@ -74,7 +90,10 @@ def parsePEInputs(url,selection='',rebin=4):
         tag='dy'       if 'dy'       in experimentTag else tag
         tag='ntkmult'  if 'ntkmult'  in experimentTag else tag
         tag='svmass'   if 'svmass'   in experimentTag else tag
-
+        tag ='ttHF'    if 'ttHF'     in experimentTag else tag
+        tag='nlodec'   if 'mgmcfmnloproddec' in experimentTag else tag
+        tag='nloprod'  if 'mgmcfmnloprod' in experimentTag and not 'dec' in experimentTag else tag
+        #tag='fullnlofrompw' if 'powpythmcfmnloproddec' in experimentTag else tag
         if len(tag)==0 :
             continue
         if not (tag in ensemblesMap) : ensemblesMap[tag]={}
@@ -96,6 +115,9 @@ def parsePEInputs(url,selection='',rebin=4):
         refTag='p11_172v5'     if 'p11'      in tag else refTag
         refTag='nominal_172v5' if 'powheg'   in tag else refTag
         refTag='nominal_172v5' if 'mcatnlo'   in tag else refTag
+        refTag='nominal_172v5' if 'ttHF' in tag   else refTag 
+        refTag='powpyth' if 'nlodec' in tag or 'nloprod' in tag  else refTag
+        #refTag='nominal_172v5' if 'fullnlofrompw' in tag   else refTag
         if len(refTag)==0 : continue
 
         #parse mtop
@@ -149,7 +171,11 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
 
     # read the tree
     peinfo = fIn.Get('%s/peinfo_%s'%(key,key)) ## TTree
-
+    try:
+        print peinfo.GetEntriesFast(),' p.e. for',key
+    except:
+        return None
+    
     # define the histograms
     # careful with the binning: if something is outside the range it gives trouble
     mtopbiasH    = ROOT.TH1D('mtopbias_%s'%key,
@@ -310,6 +336,8 @@ def parsePEResultsFromDir(url,verbose=False, doPlots=False, isData=False):
                 PEsummary = analyzePEresults(key=keyName, fIn=fIn,
                                        outDir=url,doPlots=(doPlots and useForCalib),
                                        syst=syst)
+                if PEsummary is None:
+                    continue
             else:
                 PEsummary = analyzeDataResults(key=keyName, fIn=fIn)
 
@@ -591,6 +619,9 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
         ('toppt'     , ['toppt']                        , 'Top quark \\pt'                       , '172.5' , True )  ,
         ('p11mpihi'  , ['p11mpihi', 'p11tev']           , 'Underlying event'                     , 'p11'   , True ) ,
         ('p11nocr'   , ['p11nocr']                      , 'Color reconnection'                   , 'p11'   , True )  ,
+        ('ttHF',       ['ttHFup','ttHFdn'],             '\\ttbar+HF',                              '172.5', True),
+        ('nlodec',     ['mgmcfmnloproddec','mgmcfmnloprod'],            'NLO (decay)',             'powpyth', False),
+        #('fullnlofrompw', ['powpythmcfmnloproddec'],    'NLO (decay)',     '172.5', False),
     ]
 
     expsysts = [
@@ -627,12 +658,17 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
                         diffErr = math.sqrt( results[(cat,sel)][var][1]**2+results[(cat,sel)][difftag][1]**2 )
 
                         if 'pdf' in syst:
-                            diff    *= 1.64485
-                            diffErr *= 1.64485
+                            diff    /= 1.64485
+                            diffErr /= 1.64485
                         if 'width' in syst:
                             diff    *= 0.1/5.0
                             diffErr *= 0.1/5.0
-
+                        #according to TOP-13-010 data/Madgraph is 0.022/0.016 = 1.375 for ttbb/ttjj
+                        #the variation was by a factor of 2 => rescale by 0.6875 
+                        #if 'ttHF' in syst:
+                        #    diff    *= 0.6875
+                        #    diffErr *= 0.6875
+                        
                         if diff > 0:
                             diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (diff, diffErr)
                             if insum: ups.append((diff,diffErr))
@@ -692,6 +728,12 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
             if 'combe_0' in filterCats:
                 of.write('\multirow{2}{*}{Source} & \multicolumn{6}{c}{$\Delta$\mtop [\GeV]} \\\\\n')
                 of.write(30*' '+' & Combined & \ejets & \ee & \emu & \mujets & \mumu \\\\\n')
+            elif 'comblj_0' in filterCats:
+                of.write('\multirow{2}{*}{Source} & \multicolumn{3}{c}{$\Delta$\mtop [\GeV]} \\\\\n')
+                of.write(30*' '+' & Combined & \\ell\ell & \\ell+jets \\\\\n')
+            elif 'comblplus_0' in filterCats:
+                of.write('\multirow{2}{*}{Source} & \multicolumn{3}{c}{$\Delta$\mtop [\GeV]} \\\\\n')
+                of.write(30*' '+' & \\ell^{+}+jets & \\mu^{+}+jets & \\e^{+}+jets & \\ell^{-}+jets & \\mu^{-}+jets & \\e^{-}+jets \\\\\n')
             else:
                 of.write('\multirow{2}{*}{Source} & \multicolumn{4}{c}{$\Delta$\mtop [\GeV]} \\\\\n')
                 of.write(30*' '+' & Combined & $=~3$ Tracks & $=~4$ Tracks & $=~5$ Tracks \\\\\n')
@@ -1209,7 +1251,7 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     pt.SetFillStyle(0)
     pt.SetTextAlign(12)
     pt.SetTextSize(24)
-    pt.AddText('#bf{CMS} #it{Simulation}')
+    pt.AddText('#bf{CMS}') # #it{preliminary}')
     pt.Draw()
 
     tmt = ROOT.TLatex()
@@ -1422,6 +1464,9 @@ def main():
         catsByChan =   ['comb_0','combe_0','combee_0',
                         'combem_0','combm_0','combmm_0']
         catsByTracks = ['comb_0','comb_3','comb_4','comb_5']
+        catsByCharge = ['comblplus_0', 'combmplus_0', 'combeplus_0',
+                        'comblminus_0', 'combmminus_0', 'combeminus_0']
+        catsByType = ['comb_0','combll_0','comblj_0']
         allCats = ['comb_0','combe_0','combee_0','combem_0',
                    'combm_0','combmm_0', 'comb_3','comb_4','comb_5']
         # showSystematicsTable(results=peresults, filterCats=catsByChan)
@@ -1430,8 +1475,12 @@ def main():
         systfile = os.path.join(os.path.dirname(opt.syst),'systematics_%s.tex')
         writeSystematicsTable(results=peresults, filterCats=catsByChan,
                              ofile=systfile%'bychan',printout=True,options=opt)
-        # writeSystematicsTable(results=peresults, filterCats=catsByTracks,
-        #                      ofile=systfile%'bytracks',options=opt)
+        writeSystematicsTable(results=peresults, filterCats=catsByCharge,
+                             ofile=systfile%'bycharge',printout=True,options=opt)
+        writeSystematicsTable(results=peresults, filterCats=catsByType,
+                             ofile=systfile%'bytype',printout=True,options=opt)
+        writeSystematicsTable(results=peresults, filterCats=catsByTracks,
+                              ofile=systfile%'bytracks',options=opt)
         totup, totdn = writeSystematicsTable(results=peresults,
                                              filterCats=allCats,
                                              ofile=systfile%'all',

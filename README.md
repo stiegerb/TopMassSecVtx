@@ -153,8 +153,8 @@ Will printout the "final" systematics table
 ---------------------------------------------------
 ### Control region analysis
 ```
-./scripts/fitSecVtxProperties.py -i treedir/z_control      -o outDir/z_control/plots/      --doScales --weightPt --vetoCentral --filter 23 --showMean
-./scripts/fitSecVtxProperties.py -i treedir/               -o outDir/control/plots/        --filter -143,-121,-169 --showMean
+./scripts/fitSecVtxProperties.py -i treedir/z_control      -o outDir/z_control/plots/      --doScales --weightPt --vetoCentral --filter 23
+./scripts/fitSecVtxProperties.py -i treedir/               -o outDir/control/plots/        --filter -143,-121,-169 
 ```
 After creating the workspace you can use it directly by using -w workspace.root instead of -i ntuple_dir
 

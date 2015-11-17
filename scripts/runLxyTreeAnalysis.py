@@ -352,7 +352,7 @@ if __name__ == "__main__":
                        "actually valid.")
                 print ("     Make sure you check yourself! "
                        "E.g. with runPlotter.py -c")
-            raw_input("Press any key to run on %d files..."%len(tasks))
+            #raw_input("Press any key to run on %d files..."%len(tasks))
 
         if opt.jobs == 0:
             for name, url in tasks:

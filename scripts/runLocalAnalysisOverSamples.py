@@ -119,7 +119,7 @@ for proc in procList :
                 if len(opt.onlytag)>0 and len(splits_to_process)>0:
                     if not segment in splits_to_process: continue
 
-                if(eventsFile.find('/store/')==0)  : eventsFile = commands.getstatusoutput('cmsPfn ' + eventsFile)[1]
+                if(eventsFile.find('/store/')==0)  : eventsFile = 'root://eoscms//eos/cms/'+eventsFile
 
                 #create the cfg file
                 sedcmd = 'sed \"s%@input%' + eventsFile +'%;s%@outdir%' + opt.outdir +'%;s%@isMC%' + str(not isdata) + '%;s%@mctruthmode%'+str(mctruthmode)+'%;s%@xsec%'+str(xsec)+'%;'
@@ -145,6 +145,7 @@ for proc in procList :
                     cfgfile=opt.outdir +'/'+ dtag + suffix + '_cfg.py'
                 else:
                     cfgfile=opt.outdir +'/'+ dtag + suffix + '_' + str(segment) + '_cfg.py'
+                
                 os.system('cat ' + opt.cfg_file + ' | ' + sedcmd + ' > ' + cfgfile)
 
                 #run the job

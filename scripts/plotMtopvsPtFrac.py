@@ -40,7 +40,7 @@ def makeSVMassPlots(histodict):
 	ratplot.ratiorange = (0.5,1.5)
 	ratplot.legpos = (0.65, 0.60)
 	ratplot.ratiotitle = 'Data/MC'
-	ratplot.extratext = 'Work in Progress'
+	ratplot.extratext = '' #Work in Progress'
 	ratplot.tag = "Inclusive"
 	# ratplot.tag = "e#mu channel"
 	ratplot.tagpos = (0.80,0.55)

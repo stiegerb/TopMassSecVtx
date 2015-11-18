@@ -11,6 +11,18 @@ def configureTTGenerator(process,tune):
   #UE
   if tune=='Z2star':
     pythiaUESettingsBlock=pythiaUESettings_Z2starBlock.clone()
+  if tune=='Z2starrbLEP':
+    pythiaUESettingsBlock=pythiaUESettings_Z2starBlock.clone()
+    pythiaUESettingsBlock.pythiaUESettings.append('MSTJ(11)  = 5   ! Bowler')
+    pythiaUESettingsBlock.pythiaUESettings.append('PARJ(47)  = 0.591   ! rb in FF')
+  if tune=='Z2starrbLEPhard':
+    pythiaUESettingsBlock=pythiaUESettings_Z2starBlock.clone()
+    pythiaUESettingsBlock.pythiaUESettings.append('MSTJ(11)  = 5   ! Bowler')
+    pythiaUESettingsBlock.pythiaUESettings.append('PARJ(47)  = 0.807   ! rb in FF')
+  if tune=='Z2starrbLEPsoft':
+    pythiaUESettingsBlock=pythiaUESettings_Z2starBlock.clone()
+    pythiaUESettingsBlock.pythiaUESettings.append('MSTJ(11)  = 5   ! Bowler')
+    pythiaUESettingsBlock.pythiaUESettings.append('PARJ(47)  = 0.316   ! rb in FF')
   if 'Z2starLEP' in tune:
       pythiaUESettingsBlock=pythiaUESettings_Z2starLEPBlock.clone()
   if 'P11' in tune:
@@ -86,7 +98,6 @@ def configureTTGenerator(process,tune):
   if 'soft' in tune:
     pythiaUESettingsBlock.pythiaUESettings.append('PARJ(41)  = 0.9   ! a in FF')
     pythiaUESettingsBlock.pythiaUESettings.append('PARJ(42)  = 0.5   ! b in FF')
- 
   
   return pythiaUESettingsBlock
   

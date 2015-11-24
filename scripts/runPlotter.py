@@ -408,7 +408,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
         newPlot.normToData()
 
     if not options.silent :
-        if 'flow' in newPlot.name:
+        if 'flow' in newPlot.name or options.logy:
             newPlot.savelog = True
         newPlot.show(options.outDir)
         if options.debug or 'flow' in newPlot.name:
@@ -502,7 +502,7 @@ def makeXSecWeights(inDir, jsonfiles, options):
 
                         ngen_seg,_ = getNormalization(rootFile)
                         if not isData: ngen += ngen_seg
-                        
+
                         rootFile.Close()
 
                     tot_ngen[procKey] = ngen
@@ -565,12 +565,12 @@ def runPlotter(inDir, options, scaleFactors={}):
 
     # Input is a single root file with all histograms
     if inDir.endswith('.root'):
-        baseRootFile = TFile.Open(inDir)        
+        baseRootFile = TFile.Open(inDir)
         plots = getAllPlotsFrom(tdir=baseRootFile,
                                 chopPrefix=True,
                                 tagsToFilter=tagsToFilter,
                                 filterByProcsFromJSON=options.json)
-        
+
     # Input is a directory with files for each process containing histograms
     else:
         for proc_tag in procList:
@@ -672,6 +672,8 @@ def addPlotterOptions(parser):
     parser.add_option('-x', '--excludeProcesses', dest='excludeProcesses',
                       default="",
                       help='csv list of processes to exclude')
+    parser.add_option('--logy', dest='logy', action="store_true",
+                      help='make y axis in log scale')
     parser.add_option('-v', '--verbose', dest='verbose', action="store",
                       type='int', default=0,
                       help='Verbose mode [default: %default (semi-quiet)]')

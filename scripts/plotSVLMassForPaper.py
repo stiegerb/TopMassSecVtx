@@ -37,14 +37,22 @@ def makeMassPlot(histos, outname, tag='', subtag=''):
 	ratplot.add(histos['data'], 'Data')
 	####################################################
 
+	# histos[MASSESTOPLOT[0]].SetLineStyle(2)
+	# histos[MASSESTOPLOT[-1]].SetLineStyle(3)
+
+
 	for mass in MASSESTOPLOT:
-		legentry = 'MC (m_{top} = %5.1f GeV)' % mass
+		legentry = 'm_{top} = %5.1f GeV' % mass
 		try:
 			histo = histos[mass]
 			ratplot.add(histo, legentry, includeInRatio=(mass != 172.5))
 		except KeyError: pass
 
-	ratplot.colors = [ROOT.kBlack, ROOT.kAzure-4, ROOT.kAzure+1, ROOT.kAzure-6]
+	# ratplot.colors = [ROOT.kBlack, ROOT.kAzure-4, ROOT.kAzure+1, ROOT.kAzure-6]
+
+	# ratplot.colors = [ROOT.kBlack, ROOT.kAzure-2, ROOT.kGray, ROOT.kOrange+9]
+	ratplot.colors = [ROOT.kBlack, ROOT.kSpring-8, ROOT.kGray, ROOT.kOrange+9]
+
 	# ratplot.colors = [ROOT.kBlack, ROOT.kOrange-4, ROOT.kOrange-3, ROOT.kOrange+9]
 
 	ratplot.drawoptions = ['PE', 'hist', 'hist', 'hist']

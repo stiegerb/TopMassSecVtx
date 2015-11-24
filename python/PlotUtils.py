@@ -84,6 +84,25 @@ def setMaximums(histos, margin=1.1, setminimum=None):
     if setminimum is not None:
         for hist in histos: hist.SetMinimum(setminimum)
 
+def setYTitle(histo):
+    if "GeV" in histo.GetXaxis().GetTitle():
+        if histo.GetBinWidth(1) > 0.1:
+            ytit = "Events / %3.1f GeV" %histo.GetBinWidth(1)
+        elif histo.GetBinWidth(1) > 0.001:
+            ytit = "Events / %.0f MeV" % (histo.GetBinWidth(1)*1000)
+        else:
+            ytit = "Events / %.0f keV" % (histo.GetBinWidth(1)*1000000)
+    elif "cm" in histo.GetXaxis().GetTitle():
+        if histo.GetBinWidth(1) > 0.1:
+            ytit = "Events / %3.1f cm" %histo.GetBinWidth(1)
+        elif histo.GetBinWidth(1) > 0.01:
+            ytit = "Events / %.1f mm" % (histo.GetBinWidth(1)*10)
+    else:
+        ytit = "Events / %3.1f" % h.GetBinWidth(1)
+    histo.GetYaxis().SetTitle(ytit)
+    return True
+
+
 def customChi2(hist1, hist2):
     if hist1.GetNbinsX() != hist2.GetNbinsX():
         print "customChi2::Error ==> Histograms not compatible"
@@ -336,16 +355,7 @@ class RatioPlot(object):
             if self.normalized:
                 mainframe.GetYaxis().SetTitle('a.u.')
             else:
-                if "GeV" in mainframe.GetXaxis().GetTitle():
-                    if mainframe.GetBinWidth(1) > 0.1:
-                        ytit = "Events / %3.1f GeV" %mainframe.GetBinWidth(1)
-                    elif mainframe.GetBinWidth(1) > 0.001:
-                        ytit = "Events / %.0f MeV" % (mainframe.GetBinWidth(1)*1000)
-                    else:
-                        ytit = "Events / %.0f keV" % (mainframe.GetBinWidth(1)*1000000)
-                else:
-                    ytit = "Events / %3.1f" % h.GetBinWidth(1)
-                mainframe.GetYaxis().SetTitle(ytit)
+                setYTitle(mainframe)
         else:
             mainframe.GetYaxis().SetTitle(self.titley)
         mainframe.GetYaxis().SetLabelSize(22)
@@ -502,18 +512,7 @@ class Plot(object):
     def add(self, h, title, color, isData):
         self._garbageList.append(h)
         h.SetTitle(title)
-
-        if "GeV" in h.GetXaxis().GetTitle():
-            if h.GetBinWidth(1) > 0.1:
-                h.GetYaxis().SetTitle("Events / %3.1f GeV" %h.GetBinWidth(1))
-            elif h.GetBinWidth(1) > 0.001:
-                h.GetYaxis().SetTitle("Events / %.0f MeV" %
-                                                 (h.GetBinWidth(1)*1000))
-            else:
-                h.GetYaxis().SetTitle("Events / %.0f keV" %
-                                                 (h.GetBinWidth(1)*1000000))
-        else:
-            h.GetYaxis().SetTitle("Events / %3.1f" % h.GetBinWidth(1))
+        setYTitle(h)
 
         if isData:
             h.SetMarkerStyle(20)
@@ -723,7 +722,7 @@ class Plot(object):
 
         # leg.SetNColumns(nlegCols)
         leg.Draw()
-        redrawBorder(t1)
+        # redrawBorder(t1)
 
 
         ## Draw CMS Preliminary label
@@ -802,7 +801,7 @@ class Plot(object):
                 bkgUncGr.SetPointError(np,dx,bkgCts_err/bkgCts)
             bkgUncGr.Draw('2')
             gr.Draw('p')
-            redrawBorder(t2)
+            # redrawBorder(t2)
 
 
         canvas.cd()
@@ -815,7 +814,8 @@ class Plot(object):
         if self.savelog:
             t1.cd()
             t1.SetLogy()
-            frame.GetYaxis().SetRangeUser(1000,10*maxY)
+            frame.GetYaxis().SetRangeUser(70,2*maxY)
+            # frame.GetYaxis().SetRangeUser(1000,10*maxY)
             canvas.cd()
             for ext in self.plotformats : canvas.SaveAs(os.path.join(outDir, self.name+'_log.'+ext))
 

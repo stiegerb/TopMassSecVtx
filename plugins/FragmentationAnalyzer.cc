@@ -58,6 +58,8 @@ FragmentationAnalyzer::FragmentationAnalyzer(const edm::ParameterSet& cfg) :
     }
   hists["genBHadronNuDecay"]     = fs->make<TH1F>("genBHadronNuDecay",    "genBHadronNuDecay", 2, 0, 2);
   hists["genBHadronPtFraction"]  = fs->make<TH1F>("genBHadronPtFraction", "genBHadronPtFraction", 100, 0, 2);
+  hists["genBHadronPtFractionNu"]  = fs->make<TH1F>("genBHadronPtFractionNu", "genBHadronPtFractionNu", 100, 0, 2);
+  hists["genBHadronPtFractionNoNu"]  = fs->make<TH1F>("genBHadronPtFractionNoNu", "genBHadronPtFractionNoNu", 100, 0, 2);
   for(std::map<std::string, TH1F*>::iterator it=hists.begin(); it != hists.end(); it++) it->second->Sumw2();
   
   //summary tree
@@ -150,6 +152,8 @@ void FragmentationAnalyzer::analyze(const edm::Event& evt, const edm::EventSetup
 	    {
 	      double xb = p.pt()/ijet->pt();
 	      hists.find("genBHadronPtFraction")->second->Fill(xb);	      
+	      if(hasNuDaughter) hists.find("genBHadronPtFractionNu")->second->Fill(xb);	      
+	      else hists.find("genBHadronPtFractionNoNu")->second->Fill(xb);	      
 	      break;
 	    }
 	}

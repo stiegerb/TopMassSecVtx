@@ -27,14 +27,14 @@ OBSERVABLES=[(0, 'O^{1} p_{T}(ll) [GeV]',             'ptllo1'),
              (3, 'O^{1} p_{T}(+)+p_{T}(-) [GeV]',     'ptsumo1'),
              (4, 'O^{2} p_{T}(+)+p_{T}(-) [GeV^{2}]', 'ptsumo2'),
              #(5, 'O^{3} p_{T}(+)+p_{T}(-) [GeV^{3}]', 'ptsumo3'),
-             #(6, 'O^{1} E(+)+E(-) [GeV]',             'ensumo1'),
-             #(7, 'O^{2} E(+)+E(-) [GeV^{2}]',         'ensumo2'),
+             (6, 'O^{1} E(+)+E(-) [GeV]',             'ensumo1'),
+             (7, 'O^{2} E(+)+E(-) [GeV^{2}]',         'ensumo2'),
              #(8, 'O^{3} E(+)+E(-) [GeV^{3}]',         'ensumo3'),
-             #(9, 'O^{1} M(ll) [GeV]',                 'mllo1'),
-             #(10,'O^{2} M(ll) [GeV^{2}]',             'mllo2'),
+             (9, 'O^{1} M(ll) [GeV]',                 'mllo1'),
+             (10,'O^{2} M(ll) [GeV^{2}]',             'mllo2'),
              #(11,'O^{3} M(ll) [GeV^{3}]',             'mllo3'),
-             #(12,'O^{1} p_{T}(+) [GeV]',              'ptposo1'),
-             #(13,'O^{2} p_{T}(+) [GeV^{2}]',          'ptposo2'),
+             (12,'O^{1} p_{T}(+) [GeV]',              'ptposo1'),
+             (13,'O^{2} p_{T}(+) [GeV^{2}]',          'ptposo2'),
              #(14,'O^{3} p_{T}(+) [GeV^{3}]',          'ptposo3')
              ]
 
@@ -177,6 +177,16 @@ def prepareCalibration(opt):
                                cXY=momentCalibration[mass][4],
                                mtopCalib=mtopCalib,
                                outDir=opt.output)
+        if mass!=172.5 : continue
+        printMomentTable(mass=mass,
+                         avgX=momentCalibration[mass][0],
+                         uncX=momentCalibration[mass][1],
+                         modelUncs=modelUncs,
+                         cXY=momentCalibration[mass][4],
+                         mtopCalib=mtopCalib,
+                         outDir=opt.output)
+
+
 
 """
 Build a combination datacard in the format required by BlueFin
@@ -303,43 +313,56 @@ def runCombinationDataCard(mass,avgX,uncX,modelUncs,cXY,mtopCalib,outDir):
 #        avgX=momentCalibration[172.5][0]
 #        uncX=momentCalibration[172.5][1]
 #
-#        statUnc=100*uncX['Stat.'][0][idx]/avgX[idx]
-#        title=title.replace('[GeV]','] (\\%)')
-#        title=title.replace('O^{1}','\\delta[')
-#        title=title.replace(' ','')
-#        if len(table)==0 : 
-#            table.append('Source & $%s$ &'%title)
-#            table.append('MC statistics & %3.1f &'%statUnc)
-#        else:
-#            table[0]+= ' %s &'%name
-#            table[1]+='%3.1f &'%statUnc
-#
-#        irow=2
-#        for systVar in uncX:
-#            if systVar=='Stat.': continue
-#            for diff in uncX[systVar]:
-#                relDiff=100*diff[idx]/avgX[idx]
-#                if len(table)<=irow:
-#                    table.append('%s & %3.2f/'%(systVar,relDiff))
-#                else:
-#                    table[irow]+='%3.2f/'%relDiff
-#            table[irow]=table[irow][:-1]
-#            table[irow]+=' & '
-#            irow+=1
-#
-#        for systVar in modelUncs:
-#            for relDiff in modelUncs[systVar]:
-#                if len(table)<=irow:
-#                    table.append('%s & %3.2f/'%(systVar,relDiff[idx]))
-#                else:
-#                    table[irow]+='%3.2f/'%relDiff[idx]
-#            table[irow]=table[irow][:-1]
-#            table[irow]+=' & '
-#            irow+=1
-#
-#    for irow in table:
-#        print irow[:-2]+'\\\\'
-#
+
+"""
+Prints the results for the measurement of the moments
+"""
+def printMomentTable(mass,avgX,uncX,modelUncs,cXY,mtopCalib,outDir):
+
+    momentTable=[]
+    for idx,title,name in OBSERVABLES:
+        statUnc=100*uncX['Stat.'][0][idx]/avgX[idx]
+        if len(momentTable)==0 : 
+            momentTable.append('Variable & $%s$ &'%name)
+            momentTable.append('MC statistics & %3.1f &'%statUnc)
+        else:
+            momentTable[0]+= ' %s &'%name
+            momentTable[1]+='%3.1f &'%statUnc
+
+        irow=2
+        for systVar in uncX:
+            if systVar=='Stat.': continue
+
+            for diff in uncX[systVar]:
+                relDiff=100*diff[idx]/avgX[idx]
+                if len(momentTable)<=irow:
+                    momentTable.append('%s & %3.2f/'%(systVar,relDiff))
+                else:
+                    momentTable[irow]+='%3.2f/'%relDiff
+            momentTable[irow]=momentTable[irow][:-1]
+            momentTable[irow]+=' & '
+            irow+=1
+
+        for systVar in modelUncs:
+            for diff in modelUncs[systVar]:
+                relDiff=100*diff[idx]/avgX[idx]
+                if len(momentTable)<=irow:
+                    momentTable.append('%s & %3.2f/'%(systVar,relDiff))
+                else:
+                    momentTable[irow]+='%3.2f/'%relDiff
+            momentTable[irow]=momentTable[irow][:-1]
+            momentTable[irow]+=' & '
+            irow+=1
+
+
+    #dump the table to a file
+    card=open('%s/mellinmomentunc.dat'%(outDir),'w')
+    for line in momentTable:
+        card.write(line[:-2]+'\\\\\n')
+    card.write('# '+'='*50 +'\n')
+    card.close()
+
+
 
 
 

@@ -109,6 +109,9 @@ namespace utils
 
     // cf. AN-14-145
     Float_t getElectronEnergyScale(float pt, float eta);
+
+    // cf. AN-14-170 (table 8)
+    Float_t getMuonEnergyScale(float pt, float eta);
     
     // Single muon trigger efficiency
     void getSingleMuTrigEff(const double&, const double&, double& );

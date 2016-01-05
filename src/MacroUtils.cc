@@ -23,6 +23,21 @@ namespace utils
 	}
       return fabs(par0 * TMath::Exp(par1 * pt) + par2);
     }
+
+
+    Float_t getMuonEnergyScale(float pt, float eta)
+    {
+      if(pt<45)
+	{
+	  if(fabs(eta)<1.5) return 0.05e-2;
+	  else return 0.2e-2;
+	}
+      else
+	{
+	  if(fabs(eta)<2.0) return 0.3e-2;
+	  else return 0.5e-2;
+	}
+    }
     
     //
     FactorizedJetCorrector *getJetCorrector(TString baseDir, bool isMC)

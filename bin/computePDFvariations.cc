@@ -99,9 +99,14 @@ int main(int argc, char* argv[])
   TTree *t=(TTree *)file->Get("dataAnalyzer/lxy");
   if(t==0)
     {
-      cout << "No tree has been found...quitting" << endl;
-      file->Close();
-      return -1;
+      cout << "No lxy tree has been found, trying dataAnalyzer/data" << endl;
+      t=(TTree *)file->Get("dataAnalyzer/data");
+      if(t==0)
+	{
+	  cout << "No data  tree has been found, quitting..." << endl;
+	  file->Close();
+	  return -1;
+	}
     }
   stPDFval valForPDF;
   t->SetBranchAddress("qscale",&valForPDF.qscale);

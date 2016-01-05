@@ -29,6 +29,8 @@
 #include "RecoBTag/PerformanceDB/interface/BtagPerformance.h"
 #include "PhysicsTools/FWLite/interface/CommandLineParser.h"
 
+#include "UserCode/TopMassSecVtx/interface/PDFInfo.h"
+
 #include "TRandom2.h"
 #include "TVectorD.h"
 #include "TSystem.h"
@@ -62,6 +64,9 @@ Float_t fLpPt,fLmPt,fLpEta,fLmEta,fLpPhi,fLmPhi,fLpScale,fLmScale;
 Int_t fLmId,fLpId;
 Float_t fGenLpPt,fGenLmPt,fGenLpEta,fGenLmEta,fGenLpPhi,fGenLmPhi;
 Int_t fGenLpId,fGenLmId;
+Int_t fnPDFs; 
+Float_t fPDFWeights[100];
+PDFInfo *fPDFInfo;
 
 
 using namespace std;
@@ -170,6 +175,8 @@ void BookDileptonTree()
     fDileptonInfoTree->Branch("Run",       &fTRun,       "Run/I");
     fDileptonInfoTree->Branch("Lumi",      &fTLumi,      "Lumi/I");
     fDileptonInfoTree->Branch("EvCat",     &fTEvCat,     "EvCat/I");
+    fDileptonInfoTree->Branch("nPDFs",     &fnPDFs,      "nPDFs/I");
+    fDileptonInfoTree->Branch("PDFWeights", fPDFWeights,  "PDFWeights[nPDFs]/F");
     fDileptonInfoTree->Branch("Weight",     fTWeight,    "Weight[11]/F");
     fDileptonInfoTree->Branch("JESWeight",  fTJESWeight, "JESWeight[5]/F");
     fDileptonInfoTree->Branch("BtagWeight",  fTBtagWeight, "BtagWeight[5]/F");
@@ -307,6 +314,30 @@ int main(int argc, char* argv[])
     bool isMuEGPD     (!isMC && url.Contains("MuEG"));
     bool isSingleElePD(!isMC && url.Contains("SingleEle"));
     bool isSingleMuPD (!isMC && url.Contains("SingleMu"));
+    
+    //add PDF information, if relevant
+    fPDFInfo=0;
+    fnPDFs=0;
+    if(url.Contains("/MC") && !url.Contains("syst/") && !url.Contains("mass_scan/")) {
+      TString pdfFileName=url;
+      pdfFileName=pdfFileName.ReplaceAll("/MC","/pdf/MC");
+      pdfFileName=pdfFileName.ReplaceAll(".root","_pdf.root");
+      fPDFInfo=new PDFInfo(pdfFileName,"CT10");
+      fnPDFs=fPDFInfo->numberPDFs();
+      if(fnPDFs>0) {
+	std::cout << "Read "
+		  << fnPDFs
+		  << " PDF variations from "
+		  << pdfFileName
+		  << " (have fun with those)"
+		  << std::endl;
+      }
+      else {
+	delete fPDFInfo;
+	fPDFInfo=0;
+      }
+    }
+
 
     //
     // pileup reweighter
@@ -413,6 +444,17 @@ int main(int argc, char* argv[])
         DataEventSummary &ev = evSummary.getEvent();
 	ResetDileptonTree();
 
+	//pdf information
+        if( fPDFInfo )
+	  {
+            const std::vector<float> &wgts=fPDFInfo->getWeights(inum);
+            for(size_t i=0; i<wgts.size(); i++) fPDFWeights[i]=wgts[i];
+	  }
+        else
+	  {
+            for (int i=0; i<100; i++) fPDFWeights[i]    = 1.0;
+	  }
+	
         //
         // OBJECT SELECTION
         //
@@ -703,7 +745,7 @@ int main(int argc, char* argv[])
 		fLmEta=box.leptons[ilep]->eta();
 		fLmPhi=box.leptons[ilep]->phi();
 		fLmId=(-1)*lepcharge*abs(lepid);
-		fLmScale=abs(fLmId)==11 ? utils::cmssw::getElectronEnergyScale(fLmPt,fabs(fLmEta)): 0.002;
+		fLmScale=abs(fLmId)==11 ? utils::cmssw::getElectronEnergyScale(fLmPt,fabs(fLmEta)) : utils::cmssw::getMuonEnergyScale(fLmPt,fabs(fLmEta));
 		fGenLmPt=glpt;
 		fGenLmEta=gleta;
 		fGenLmPhi=glphi;
@@ -715,7 +757,7 @@ int main(int argc, char* argv[])
 		fLpEta=box.leptons[ilep]->eta();
 		fLpPhi=box.leptons[ilep]->phi();
 		fLpId=(-1)*lepcharge*abs(lepid);
-		fLpScale=abs(fLpId)==11 ? utils::cmssw::getElectronEnergyScale(fLpPt,fabs(fLpEta)): 0.002;
+		fLpScale=abs(fLpId)==11 ? utils::cmssw::getElectronEnergyScale(fLpPt,fabs(fLpEta)) : utils::cmssw::getMuonEnergyScale(fLmPt,fabs(fLmEta));
 		fGenLpPt=glpt;
 		fGenLpEta=gleta;
 		fGenLpPhi=glphi;

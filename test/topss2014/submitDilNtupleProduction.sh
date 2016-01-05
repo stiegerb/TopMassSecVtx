@@ -29,7 +29,5 @@ if [ "$step" == "mass" ]; then
 fi
 
 if [ "${step}" == "pdf" ]; then
-    MCTREEDIR=/store/cmst3/group/top/summer2015/${hash};
-    echo "WARNING: Using MC trees stored at ${MCTREEDIR}";
-    runLocalAnalysisOverSamples.py -e computePDFvariations -j ${outdir}/samples.json -o ${outdir}/summary/${hash} -d ${MCTREEDIR} -c ${cfg} -t MC -s 2nw;
+    runLocalAnalysisOverSamples.py -e computePDFvariations -j ${outdir}/samples.json -o ${outdir}/summary/${hash} -d ${indir} -c ${cfg} -t MC -s 2nw;
 fi

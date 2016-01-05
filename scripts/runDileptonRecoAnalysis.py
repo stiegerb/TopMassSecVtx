@@ -20,8 +20,8 @@ def runRecoAnalysis(fileName,outFileName):
     isData = True if 'Data' in outFileName else False
     print '...analysing ',fileName,' file names isData=',isData,' output in',outFileName
 
-    observables_rec={'ptpos':0,'ptll':0,'mll':0,'EposEm':0,'ptposptm':0}
-    observables_gen={'ptpos':0,'ptll':0,'mll':0,'EposEm':0,'ptposptm':0}
+    observables_rec={'ptpos':0,'enpos':0,'ptll':0,'mll':0,'EposEm':0,'ptposptm':0}
+    observables_gen={'ptpos':0,'enpos':0,'ptll':0,'mll':0,'EposEm':0,'ptposptm':0}
     obsMoments_rec,obsMoments_gen={},{}
     for var in ['nominal',
                 'puup','pudn',
@@ -37,6 +37,7 @@ def runRecoAnalysis(fileName,outFileName):
     jetMultH.SetDirectory(0)
     jetMultH.Sumw2()
     observablesH={'ptpos':    ROOT.TH1F('ptpos',';Lepton transverse momentum [GeV];Events',100,0,200),
+                  'enpos':    ROOT.TH1F('enpos',';Lepton energy [GeV];Events',100,0,200),
                   'ptll':     ROOT.TH1F('ptll',';Dilepton transverse momentum [GeV];Events',100,0,200),
                   'mll':      ROOT.TH1F('mll',';Invariant mass [GeV];Events',100,0,400),
                   'EposEm':   ROOT.TH1F('EposEm',';Energy sum [GeV];Events',100,40,500),
@@ -115,10 +116,20 @@ def runRecoAnalysis(fileName,outFileName):
             gll = glp + glm
 
             observables_rec['ptpos']=lp.Pt()
+            observables_rec['enpos']=lp.E()
             observables_rec['ptll']=ll.Pt()
             observables_rec['mll']=ll.M()
             observables_rec['EposEm']=lp.E()+lm.E()
             observables_rec['ptposptm']=lp.Pt()+lm.Pt()
+
+            #apply upper cuts
+            if observables_rec['ptpos']>150 : continue
+            if observables_rec['enpos']>200 : continue
+            if observables_rec['ptll']>150 : continue
+            if observables_rec['mll']>300 : continue
+            if observables_rec['EposEm']>400: continue
+            if observables_rec['ptposptm']>200: continue
+
             obsMoments_rec[var].measure(observables_rec,weight)
             if var=='nominal':
                 jetMultH.Fill(tree.NJets,weight)
@@ -126,6 +137,7 @@ def runRecoAnalysis(fileName,outFileName):
                     observablesH[obsName].Fill(observables_rec[obsName],weight)
 
             observables_gen['ptpos']=glp.Pt()
+            observables_gen['enpos']=glp.E()
             observables_gen['ptll']=gll.Pt()
             observables_gen['mll']=gll.M()
             observables_gen['EposEm']=glp.E()+glm.E()

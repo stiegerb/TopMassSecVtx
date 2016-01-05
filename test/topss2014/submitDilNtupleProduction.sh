@@ -10,8 +10,13 @@ hash=bbbcb36
 #prepare output directories
 mkdir -p ${outdir}/summary/
 
+if [ "${step}" == "pdf" ]; then
+    runLocalAnalysisOverSamples.py -e computePDFvariations -j ${outdir}/samples.json -o ${outdir}/summary/${hash} -d ${indir} -c ${cfg} -t MC -s 2nw;
+fi
+
 if [ "$step" == "presel" ]; then
     echo "Submitting sample pre-selection"
+    echo "Assuming PDF variations are found in ${indir}/pdf, otherwise empty PDF weights will be retrieved"
     runLocalAnalysisOverSamples.py -e runDileptonAnalysis -j ${outdir}/samples.json  -d ${indir} -o ${outdir}/summary/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
     echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
 fi
@@ -26,8 +31,4 @@ if [ "$step" == "mass" ]; then
     echo "Submitting mass scan samples"
     runLocalAnalysisOverSamples.py -e runDileptonAnalysis -j ${outdir}/mass_scan_samples.json  -d ${indir} -o ${outdir}/mass_scan/ -c ${cfg} -p "@saveSummaryTree=True @weightsFile='data/weights/'" -s ${queue} -f ${hash};
     echo "You can find a summary with the selected events @ ${outdir} after all jobs have finished"
-fi
-
-if [ "${step}" == "pdf" ]; then
-    runLocalAnalysisOverSamples.py -e computePDFvariations -j ${outdir}/samples.json -o ${outdir}/summary/${hash} -d ${indir} -c ${cfg} -t MC -s 2nw;
 fi

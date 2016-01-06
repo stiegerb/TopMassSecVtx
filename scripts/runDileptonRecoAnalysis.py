@@ -131,13 +131,10 @@ def runRecoAnalysis(fileName,outFileName):
             observables_rec['EposEm']=lp.E()+lm.E()
             observables_rec['ptposptm']=lp.Pt()+lm.Pt()
 
-            #apply upper cuts
-            if observables_rec['ptpos']>150 : continue
-            if observables_rec['enpos']>200 : continue
-            if observables_rec['ptll']>150 : continue
-            if observables_rec['mll']>300 : continue
-            if observables_rec['EposEm']>400: continue
-            if observables_rec['ptposptm']>200: continue
+            #apply fiducial cuts
+            failPtPosRange = True if ( observables_rec['ptpos']>195 or observables_rec['ptpos']<25 ) else False
+            failPtllRange  = True if ( observables_rec['ptll']>125  or observables_rec['ptll']<10)   else False
+            if failPtPosRange or failPtllRange: continue
 
             obsMoments_rec[var].measure(observables_rec,weight)
             if var=='nominal':

@@ -23,12 +23,26 @@ def runRecoAnalysis(fileName,outFileName):
     observables_rec={'ptpos':0,'enpos':0,'ptll':0,'mll':0,'EposEm':0,'ptposptm':0}
     observables_gen={'ptpos':0,'enpos':0,'ptll':0,'mll':0,'EposEm':0,'ptposptm':0}
     obsMoments_rec,obsMoments_gen={},{}
-    for var in ['nominal',
-                'puup','pudn',
-                'lepselup','lepseldn', 'lesup','lesdn',
-                'toppt',
-                'jesup', 'jesdn',  'jerup',    'jerdn',
-                'btagup','btagdn', 'mistagup', 'mistagdn']:
+
+    #create list of systematic variations
+    systVars=['nominal']
+
+    #include other uncertainties for signal only
+    pdfIdx={}
+    if 'MC8TeV_TTJets_MSDecays_172v5' in fileName:
+        
+        systVars += ['puup','pudn',
+                     'lepselup','lepseldn', 'lesup','lesdn',
+                     'toppt',
+                     'jesup', 'jesdn',  'jerup',    'jerdn',
+                     'btagup','btagdn', 'mistagup', 'mistagdn']
+
+        for idx in xrange(0,52) : 
+            key='pdf%d'%idx
+            systVars.append(key)
+            pdfIdx[key]=idx
+
+    for var in systVars:
         if isData and var != 'nominal': continue
         obsMoments_rec[var]=KinematicsMoments(observables=observables_rec,name=var,       maxMoment=3)
         obsMoments_gen[var]=KinematicsMoments(observables=observables_gen,name=var+'_gen',maxMoment=3)
@@ -64,14 +78,8 @@ def runRecoAnalysis(fileName,outFileName):
         if not isData: 
            if tree.GenLpPt == 0 or tree.GenLmPt == 0: continue
 
-        for var in ['nominal',
-                    'puup','pudn',
-                    'lepselup','lepseldn', 'lesup','lesdn',
-                    'toppt',
-                    'jesup', 'jesdn',  'jerup',    'jerdn',
-                    'btagup','btagdn', 'mistagup', 'mistagdn']:
+        for var in systVars:
             if isData and var!='nominal' : continue
-
 
             #base weight: BR fix for ttbar x pileup x lepton selection x xsec weight
             weight = 1.0
@@ -91,8 +99,9 @@ def runRecoAnalysis(fileName,outFileName):
                 elif var=='mistagup': weight = tree.Weight[0]*tree.Weight[1]*tree.Weight[4]*tree.BtagWeight[3]*tree.JESWeight[0]
                 elif var=='mistagdn': weight = tree.Weight[0]*tree.Weight[1]*tree.Weight[4]*tree.BtagWeight[4]*tree.JESWeight[0]
                 elif var=='toppt'   : weight = tree.Weight[0]*tree.Weight[1]*tree.Weight[4]*tree.BtagWeight[0]*tree.JESWeight[0]*tree.Weight[10]
-            
-        
+                elif 'pdf' in var :   
+                    weight = tree.Weight[0]*tree.Weight[1]*tree.Weight[4]*tree.BtagWeight[0]*tree.JESWeight[0]*tree.PDFWeights[ pdfIdx[var] ]
+                
             #positive lepton
             lp=ROOT.TLorentzVector()
             lp.SetPtEtaPhiM(tree.LpPt,tree.LpEta,tree.LpPhi,0.)

@@ -191,6 +191,18 @@
         { "dtag":"MC8TeV_SingleTbar_tW_scaleup"   , "split":1, "xsec":11.1      , "br":[ 0.1061456 ] , "dset":"/TBarToDilepton_tW-channel-DR_scaleup_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
         { "dtag":"MC8TeV_SingleT_tW_scaleup"   , "split":1, "xsec":11.1      , "br":[ 0.1061456 ]    , "dset":"/TToDilepton_tW-channel-DR_scaleup_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"}
       ]
+    },
+    {
+      "tag":"tWDS",
+      "isdata":false,
+      "spimpose":true,
+      "color":8,
+      "lcolor":1,
+      "isinvisible":true,
+      "data":[
+        { "dtag":"MC8TeV_SingleTbar_tW_DS", "split":1, "xsec":11.1, "br":[ 0.1061456 ], "dset":"/TBarToDilepton_tW-channel-DS_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"},
+        { "dtag":"MC8TeV_SingleT_tW_DS"   , "split":1, "xsec":11.1, "br":[ 0.1061456 ], "dset":"/TToDilepton_tW-channel-DS_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM"}
+      ]
     }
   ]
 }

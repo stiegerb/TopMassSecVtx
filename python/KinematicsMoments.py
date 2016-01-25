@@ -73,56 +73,55 @@ class KinematicsMoments:
         self.ObsCorrHisto.Write()
         outF.cd()
 
+"""
+define bins of interest
+"""
+def defineBinsOfInterest(ObsCorrHisto,OBSERVABLES):
+    binsOfInterest=[]
+    for _,obs in OBSERVABLES:
+        obsname,order=obs[:-2],'O^{%s}'%obs[-1]        
+        for xbin in xrange(1,ObsCorrHisto.GetNbinsX()+1):
+            label=ObsCorrHisto.GetXaxis().GetBinLabel(xbin)
+            if obsname in label and order in label:
+                binsOfInterest.append( (xbin,xbin+int(obs[-1])) )
+                print label,ObsCorrHisto.GetXaxis().GetBinLabel(xbin+int(obs[-1]))
+    return binsOfInterest
+            
+
                         
 """
 analyze correlation histogram
 """
-def analyzeCorrelationOfMoments(ObsCorrHisto,nObs,maxMomentToReport,report=False):
+def analyzeCorrelationOfMoments(ObsCorrHisto,binsOfInterest,report=False):
 
     avgX0=ObsCorrHisto.GetBinContent(1,1)
-
+    
     if avgX0==0: return
 
     #book the vectors/matrices to store the final results
-    avgX=ROOT.TVectorT('float')(maxMomentToReport*nObs)
-    sigmaX=ROOT.TVectorT('float')(maxMomentToReport*nObs)
-    avgXY=ROOT.TMatrixT('float')(maxMomentToReport*nObs,maxMomentToReport*nObs)
-    cXY=ROOT.TMatrixT('float')(maxMomentToReport*nObs,maxMomentToReport*nObs)
+    avgX=ROOT.TVectorT('float')(len(binsOfInterest))
+    sigmaX=ROOT.TVectorT('float')(len(binsOfInterest))
+    avgXY=ROOT.TMatrixT('float')(len(binsOfInterest),len(binsOfInterest))
+    cXY=ROOT.TMatrixT('float')(len(binsOfInterest),len(binsOfInterest))
 
-    maxMoment=ObsCorrHisto.GetNbinsX()/nObs
-    for iobs in xrange(0,nObs):
+    for ix in xrange(0,len(binsOfInterest)):
+        xbin,xxbin=binsOfInterest[ix]
 
-        baseXbin=iobs*maxMoment+1
+        #print ObsCorrHisto.GetXaxis().GetBinLabel(xbin),ObsCorrHisto.GetXaxis().GetBinLabel(xbin+1)
+        avgX[ix]=ObsCorrHisto.GetBinContent(xbin,xbin-1)/avgX0
+        avgXX=ObsCorrHisto.GetBinContent(xxbin,xbin-1)/avgX0
+        sigma2=avgXX-avgX[ix]**2
+        sigmaX[ix]=ROOT.TMath.Sqrt(sigma2) if sigma2>0 else -ROOT.TMath.Sqrt(-sigma2)
             
-        for xbin in xrange(2,maxMoment+1):
+        #compute the cross average and correlations between observables
+        for iy in xrange(ix+1,len(binsOfInterest)):
+            ybin,_=binsOfInterest[iy]
 
-            #compute average and standard deviation for each observable
-            xmomOrder=xbin-1
-            if xmomOrder>maxMomentToReport: continue
-            xxbin=2*xbin-1
-            idx=iobs*maxMomentToReport+(xbin-2)
-
-            avgX[idx]=ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseXbin)/avgX0
-            avgXX=ObsCorrHisto.GetBinContent(baseXbin+xxbin-1,baseXbin)/avgX0
-            sigma2=avgXX-avgX[idx]**2
-            sigmaX[idx]=ROOT.TMath.Sqrt(sigma2) if sigma2>0 else -ROOT.TMath.Sqrt(-sigma2)
-            
-            #compute the cross average and correlations between observables
-            for jobs in xrange(0,nObs):
-                baseYbin=jobs*maxMoment+1
-                for ybin in xrange(2,maxMoment+1):
-                    ymomOrder=ybin-1
-                    if ymomOrder>maxMomentToReport: continue
-
-                    #xlab=ObsCorrHisto.GetXaxis().GetBinLabel(baseXbin+xbin-1)
-                    #ylab=ObsCorrHisto.GetYaxis().GetBinLabel(baseYbin+ybin-1)
-                        
-                    idy=jobs*maxMomentToReport+(ybin-2)
-                    avgXY[idx][idy]=ObsCorrHisto.GetBinContent(baseXbin+xbin-1,baseYbin+ybin-1)/avgX0
-                        
-                    diff=avgXY[idx][idy]-avgX[idx]*avgX[idy]
-                    sxsy=sigmaX[idx]*sigmaX[idy]
-                    cXY[idx][idy]=diff/sxsy if sxsy!=0 else 0
+            #print ObsCorrHisto.GetXaxis().GetBinLabel(xbin),ObsCorrHisto.GetXaxis().GetBinLabel(ybin)
+            avgXY[ix][iy]=ObsCorrHisto.GetBinContent(xbin,ybin)/avgX0
+            diff=avgXY[ix][iy]-avgX[ix]*avgX[iy]
+            sxsy=sigmaX[ix]*sigmaX[iy]
+            cXY[ix][iy]=diff/sxsy if sxsy!=0 else 0
 
     if report is True:
         print '[Average for observables]'

@@ -2,40 +2,43 @@
 import ROOT
 import os,sys
 import optparse
-from UserCode.TopMassSecVtx.KinematicsMoments import analyzeCorrelationOfMoments
+from UserCode.TopMassSecVtx.KinematicsMoments import defineBinsOfInterest,analyzeCorrelationOfMoments
 from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
 from UserCode.TopMassSecVtx.rounding import *
 
-WGTSYSTS=[ ('Pileup',                ['puup','pudn'],          'nominal', 'pu'),
-           ('Lepton selection',      ['lepselup','lepseldn'],  'nominal', 'lepsel'),
-           ('Lepton energy scale',   ['lesup','lesdn'],        'nominal', 'lepscale'),
-           ('Jet energy scale',      ['jesup','jesdn'],        'nominal', 'jes'),
-           ('Jet energy resolution', ['jerup','jerdn'],        'nominal', 'jer'),
-           ('B-tag efficiency',      ['btagup','btagdn'],      'nominal', 'beff'),
-           ('Mistag rate',           ['mistagup', 'mistagdn'], 'nominal', 'mistag'),
-           ('Top p_{t}',             ['toppt'],                'nominal', 'toppt')
+WGTSYSTS=[ #('Pileup',                ['puup','pudn'],          'nominal', 'pu'),
+           #('Lepton selection',      ['lepselup','lepseldn'],  'nominal', 'lepsel'),
+           #('Lepton energy scale',   ['lesup','lesdn'],        'nominal', 'lepscale'),
+           #('Jet energy scale',      ['jesup','jesdn'],        'nominal', 'jes'),
+           #('Jet energy resolution', ['jerup','jerdn'],        'nominal', 'jer'),
+           #('B-tag efficiency',      ['btagup','btagdn'],      'nominal', 'beff'),
+           #('Mistag rate',           ['mistagup', 'mistagdn'], 'nominal', 'mistag'),
+           #('Top p_{t}',             ['toppt'],                'nominal', 'toppt')
            ]
-FILESYSTS=[('ME-PS', ['matchingdown','matchingup'], 'nominal', 'meps'),
-           ('Q^{2}', ['scaledown',   'scaleup'],    'nominal', 'qcdscale'),
-           ('UE',    ['p11tev',      'p11mpihi'],   'p11',     'ue'),
-           ('CR',    ['p11nocr'],                   'p11',     'cr'),
-           ('NLO',   ['powpyth'],                   'nominal', 'nlo')      
+FILESYSTS=[#('ME-PS', ['matchingdown','matchingup'], 'nominal', 'meps'),
+           #('Q^{2}', ['scaledown',   'scaleup'],    'nominal', 'qcdscale'),
+           #('UE',    ['p11tev',      'p11mpihi'],   'p11',     'ue'),
+           #('CR',    ['p11nocr'],                   'p11',     'cr'),
+           #('NLO',   ['powpyth'],                   'nominal', 'nlo')      
            ]
-OBSERVABLES=[(0, 'O^{1} p_{T}(ll) [GeV]',             'ptllo1'),
-             (1, 'O^{2} p_{T}(ll) [GeV^{2}]',         'ptllo2'),
-             #(2, 'O^{3} p_{T}(ll) [GeV^{3}]',         'ptllo3'),
-             (3, 'O^{1} p_{T}(+)+p_{T}(-) [GeV]',     'ptsumo1'),
-             (4, 'O^{2} p_{T}(+)+p_{T}(-) [GeV^{2}]', 'ptsumo2'),
-             #(5, 'O^{3} p_{T}(+)+p_{T}(-) [GeV^{3}]', 'ptsumo3'),
-             (6, 'O^{1} E(+)+E(-) [GeV]',             'ensumo1'),
-             (7, 'O^{2} E(+)+E(-) [GeV^{2}]',         'ensumo2'),
-             #(8, 'O^{3} E(+)+E(-) [GeV^{3}]',         'ensumo3'),
-             (9, 'O^{1} M(ll) [GeV]',                 'mllo1'),
-             (10,'O^{2} M(ll) [GeV^{2}]',             'mllo2'),
-             #(11,'O^{3} M(ll) [GeV^{3}]',             'mllo3'),
-             (12,'O^{1} p_{T}(+) [GeV]',              'ptposo1'),
-             (13,'O^{2} p_{T}(+) [GeV^{2}]',          'ptposo2'),
-             #(14,'O^{3} p_{T}(+) [GeV^{3}]',          'ptposo3')
+OBSERVABLES=[('O^{1} p_{T}(ll) [GeV]',             'ptllo1'),
+             ('O^{2} p_{T}(ll) [GeV^{2}]',         'ptllo2'),
+             ('O^{3} p_{T}(ll) [GeV^{3}]',         'ptllo3'),
+             # ('O^{1} p_{T}(+)+p_{T}(-) [GeV]',     'ptsumo1'),
+             #('O^{2} p_{T}(+)+p_{T}(-) [GeV^{2}]', 'ptsumo2'),
+             #('O^{3} p_{T}(+)+p_{T}(-) [GeV^{3}]', 'ptsumo3'),
+             #('O^{1} E(+)+E(-) [GeV]',             'ensumo1'),
+             #('O^{2} E(+)+E(-) [GeV^{2}]',         'ensumo2'),
+             #('O^{3} E(+)+E(-) [GeV^{3}]',         'ensumo3'),
+             #('O^{1} M(ll) [GeV]',                 'mllo1'),
+             #('O^{2} M(ll) [GeV^{2}]',             'mllo2'),
+             #('O^{3} M(ll) [GeV^{3}]',             'mllo3'),
+             #('O^{1} p_{T}(+) [GeV]',              'ptposo1'),
+             #('O^{2} p_{T}(+) [GeV^{2}]',          'ptposo2'),
+             #('O^{3} p_{T}(+) [GeV^{3}]',          'ptposo3')
+             #('O^{1} E(+) [GeV]',              'enposo1'),
+             #('O^{2} E(+) [GeV]',              'enposo2'),
+             #('O^{3} E(+) [GeV]',              'enposo3'),
              ]
 
 """
@@ -45,19 +48,21 @@ def prepareCalibration(opt):
 
     file_list=os.listdir(opt.input)
 
+    binsOfInterest=[]
 
     #ttbar model variations
     avgXmodelVars={}
     for syst,tag in [('matchingdown','MSDecays_matchingdown'),
                      ('matchingup',  'MSDecays_matchingup'),
-                     ('p11',         'TuneP11_'),
+                     ('p11',         'TuneP11'),
                      ('p11nocr',     'TuneP11noCR'),
                      ('p11tev',      'TuneP11TeV'),
                      ('p11mpihi',    'TuneP11mpiHi'),
                      ('scaledown',   'MSDecays_scaledown'),
                      ('scaleup',     'MSDecays_scaleup'),
                      ('powpyth',     'TT_Z2star_powheg_pythia'),
-                     ('powhw',       'TT_AUET2_powheg_herwig')]:
+                     ('powhw',       'TT_AUET2_powheg_herwig')
+        ]:
 
         #sum up correlation histograms are RECO levels
         ObsCorrHistos={}
@@ -74,21 +79,25 @@ def prepareCalibration(opt):
                 else:
                     ObsCorrHistos[varName].Add(obj)
             fIn.Close()        
-        avgX,sigmaX,cXY,avgX0=analyzeCorrelationOfMoments(ObsCorrHistos['nominal'],5,3,False)
+
+        #check which are the relevant bins
+        if len(binsOfInterest)==0 : binsOfInterest=defineBinsOfInterest(ObsCorrHistos['nominal'],OBSERVABLES)
+        avgX,sigmaX,cXY,avgX0=analyzeCorrelationOfMoments(ObsCorrHistos['nominal'],binsOfInterest,False)
+        raw_input()
         avgXmodelVars[syst]=avgX
 
     
     #mass scan
     momentCalibration={}
     for mass,tag in [
-                     (166.5,'TTJets_MSDecays_166v5'),
-                     (169.5,'TTJets_MSDecays_169v5'),
-                     (171.5,'TTJets_MSDecays_171v5'),
-                     (172.5,'TTJets_MSDecays_172v5'),
-                     (173.5,'TTJets_MSDecays_173v5'),
-                     (175.5,'TTJets_MSDecays_175v5'),
-                     (178.5,'TTJets_MSDecays_178v5')
-                     ]:
+        (166.5,'TTJets_MSDecays_166v5'),
+        (169.5,'TTJets_MSDecays_169v5'),
+        (171.5,'TTJets_MSDecays_171v5'),
+        (172.5,'TTJets_MSDecays_172v5'),
+        (173.5,'TTJets_MSDecays_173v5'),
+        (175.5,'TTJets_MSDecays_175v5'),
+        (178.5,'TTJets_MSDecays_178v5')
+        ]:
 
         #sum up correlation histograms are RECO and GEN levels
         ObsCorrHistos={}
@@ -107,8 +116,8 @@ def prepareCalibration(opt):
             fIn.Close()
 
         #analyze correlations
-        avgX,sigmaX,cXY,avgX0=analyzeCorrelationOfMoments(ObsCorrHistos['nominal'],5,3,False)
-        avgX_gen,sigmaX_gen,cXY_gen,avgX0_gen=analyzeCorrelationOfMoments(ObsCorrHistos['nominal_gen'],5,3,False)
+        avgX,sigmaX,cXY,avgX0=analyzeCorrelationOfMoments(ObsCorrHistos['nominal'],binsOfInterest,False)
+        avgX_gen,sigmaX_gen,cXY_gen,avgX0_gen=analyzeCorrelationOfMoments(ObsCorrHistos['nominal_gen'],binsOfInterest,False)
         
         #statistical uncertainty
         uncX,uncX_gen={},{}
@@ -129,7 +138,11 @@ def prepareCalibration(opt):
             uncX[title]=[]
             cXYstab[title]=[]
             for systVar in subsources:
-                avgX_i, _, cXY_i, _ = analyzeCorrelationOfMoments(ObsCorrHistos[systVar],5,3,False)
+
+                #only for 172.5 GeV these are filled
+                if not (systVar in ObsCorrHistos) : continue
+
+                avgX_i, _, cXY_i, _ = analyzeCorrelationOfMoments(ObsCorrHistos[systVar],binsOfInterest,False)
                 for i in xrange(0,avgX_i.GetNoElements()):
                     avgX_i[i]=avgX_i[i]-avgX[i]
                     for j in xrange(0,avgX_i.GetNoElements()):
@@ -144,9 +157,11 @@ def prepareCalibration(opt):
     #calibrate individually the measurements 
     #(only stat unc taken into account, total experimental uncertainties will be shown for reference)
     mtopCalib={}
-    for idx,title,name in OBSERVABLES:
+    idx=0
+    for title,name in OBSERVABLES:
         offset,slope=showMomentCalibration(momentCalibration,idx,title,opt.output)
         mtopCalib[idx]=(offset,slope)
+        idx+=1
     
     #add theory uncertainties (only available for 172.5 GeV, assume it holds for other mass points)
     modelUncs={}
@@ -198,7 +213,8 @@ def runCombinationDataCard(mass,avgX,uncX,modelUncs,cXY,mtopCalib,outDir):
 
     #iterate over the observables
     uncList=[]
-    for idx,title,name in OBSERVABLES:
+    idx=0
+    for title,name in OBSERVABLES:
         offset,slope=mtopCalib[idx]
         mtopMeas=(avgX[idx]-offset)/slope
         statUnc=uncX['Stat.'][0][idx]/slope
@@ -263,13 +279,19 @@ def runCombinationDataCard(mass,avgX,uncX,modelUncs,cXY,mtopCalib,outDir):
                 bluefinCard[4+isyst] +='%12s'%('%3.3f'%systUnc)            
             isyst+=1
 
+        idx+=1
+
     bluefinCard.append( '%10s %10s %12s'%('CMEA1','CMEA2','stat') )
     for systVarName in uncList: bluefinCard[-1] += '%12s'%systVarName
-    for idx,_,iname in OBSERVABLES:
-        for jdx,_,jname in OBSERVABLES:
+    idx=0
+    for _,iname in OBSERVABLES:
+        jdx=0
+        for _,jname in OBSERVABLES:
             if jdx<=idx : continue
             bluefinCard.append('%10s %10s %12s'%(iname,jname,'%3.3f'%cXY[jdx][idx]))
             for systVarName in uncList: bluefinCard[-1] += '%12s'%'1'
+            jdx+=1
+        idx+=1
 
     #dump the datacard to a file
     card=open('%s/bluefin_%3.1f.bfin'%(outDir,mass),'w')
@@ -320,7 +342,8 @@ Prints the results for the measurement of the moments
 def printMomentTable(mass,avgX,uncX,modelUncs,cXY,mtopCalib,outDir):
 
     momentTable=[]
-    for idx,title,name in OBSERVABLES:
+    idx=0
+    for title,name in OBSERVABLES:
         statUnc=100*uncX['Stat.'][0][idx]/avgX[idx]
         if len(momentTable)==0 : 
             momentTable.append('Variable & $%s$ &'%name)
@@ -353,7 +376,7 @@ def printMomentTable(mass,avgX,uncX,modelUncs,cXY,mtopCalib,outDir):
             momentTable[irow]=momentTable[irow][:-1]
             momentTable[irow]+=' & '
             irow+=1
-
+        idx+=1
 
     #dump the table to a file
     card=open('%s/mellinmomentunc.dat'%(outDir),'w')

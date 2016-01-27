@@ -399,13 +399,19 @@ def main(args, opt):
 	# (tag, chan, mass, comb, ntk) -> histo
 	cachefile.close()
 
+	## Signal only (tt+t+tW) shapes
+	signalonly = {}
+
 	ofi = ROOT.TFile.Open(osp.join(opt.outDir,'pe_inputs.root'),'RECREATE')
 	ofi.cd()
 
 	#####################################################
 	## Central mass point and syst samples
-	for syst in ([s for s,_,_,_ in ALLSYSTS] +
-	             ['dyup','dydown','qcdup','qcddown','ntkmult']):
+	to_be_processed = ([s for s,_,_,_ in ALLSYSTS] +
+	             ['dyup','dydown','qcdup','qcddown','ntkmult'])
+	if opt.skip_systs: to_be_processed = ['nominal']
+
+	for syst in to_be_processed:
 		odir = ofi.mkdir(syst + '_172v5')
 		odir.cd()
 		for tag,_,_ in SELECTIONS:
@@ -454,6 +460,12 @@ def main(args, opt):
 					hsinglet.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(st, 172.5)]])
 					hfinal.Add(hsinglet)
 
+				## Save signal only shapes
+				if syst == 'nominal':
+					signalonly[(tag, 172.5, ntk)] = hfinal.Clone('%s_sigonly'%hname)
+					signalonly[(tag, 172.5, ntk)].Scale(ntkWeights['inclusive'][ntk])
+					if opt.rebin>0:
+						signalonly[(tag, 172.5, ntk)].Rebin(opt.rebin)
 
 				## Add the backgrounds
 				if not syst in ['dyup','dydown','qcdup','qcddown']:
@@ -522,6 +534,12 @@ def main(args, opt):
 						hsingletW.Scale(LUMI*xsecweights[CHANMASSTOPROCNAME[(st, mass)]])
 					hfinal.Add(hsingletW)
 
+				## Save signal only shapes
+				signalonly[(tag, mass, ntk)] = hfinal.Clone('%s_sigonly'%hname)
+				signalonly[(tag, mass, ntk)].Scale(ntkWeights['inclusive'][ntk])
+				if opt.rebin>0:
+					signalonly[(tag, mass, ntk)].Rebin(opt.rebin)
+
 				## Add the combined backgrounds
 				hfinal.Add(bghistos_added[(tag,ntk)])
 
@@ -535,6 +553,13 @@ def main(args, opt):
 				## Write out to file
 				hfinal.Write(hname, ROOT.TObject.kOverwrite)
 
+
+	## Save the signal only shapes (tt+t+tW) as input for the combined plot
+	cachefile = open(".svlsignalshapes.pck", 'w')
+	pickle.dump(signalonly, cachefile, pickle.HIGHEST_PROTOCOL)
+	print '>>> Dumped signal only shapes to cache (.svlsignalshapes.pck)'
+	cachefile.close()
+
 	## Write also data histos
 	ofi.cd()
 	odir = ofi.mkdir('data')
@@ -543,7 +568,6 @@ def main(args, opt):
 		for ntk,_ in NTRKBINS:
 			hname = "SVLMass_%s_data_%s" % (tag,ntk)
 			datahistos_added[(tag,ntk)].Write(hname, ROOT.TObject.kOverwrite)
-
 
 	print ('>>> Wrote pseudo experiment inputs to file (%s)' %
 		                      osp.join(opt.outDir,'pe_inputs.root'))
@@ -579,6 +603,9 @@ if __name__ == "__main__":
 					  help='Output directory [default: %default]')
 	parser.add_option('-c', '--cache', dest='cache', action="store_true",
 					  help='Read from cache')
+	parser.add_option('-s', '--skip_systs', dest='skip_systs',
+		              action="store_true",
+					  help='Skip the systematics')
 	(opt, args) = parser.parse_args()
 
 	exit(main(args, opt))

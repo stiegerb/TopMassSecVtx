@@ -69,7 +69,17 @@ def main(args, opt):
 	# Construct histograms
 	peInputFile = ROOT.TFile.Open(args[0], 'READ')
 
-	for selection in ['inclusive', 'optmrank']:
+	cachefile = open(".svlsignalshapes.pck", 'r')
+	signalshapes = pickle.load(cachefile) # (tag, mass, ntk) -> histo
+	cachefile.close()
+	print '>>> Read signal shapes from cache (.svlsignalshapes.pck)'
+
+	cachefile = open(".svlbgtemplates.pck", 'r')
+	bghistos = pickle.load(cachefile) # (tag, ntk) -> histo
+	cachefile.close()
+	print '>>> Read background shapes from cache (.svlbgtemplates.pck)'
+
+	for selection in ['inclusive']:#, 'optmrank']:
 		seltag = '' if not selection == 'optmrank' else '_optmrank'
 		masshistos = {}
 		masshistosntk = {}
@@ -83,7 +93,16 @@ def main(args, opt):
 				masstag = 'nominal_'+str(mass).replace('.','v')
 
 			for trk,_ in NTRKBINS:
-				ihist = peInputFile.Get('%s/SVLMass_inclusive%s_%s_%d'%(masstag,seltag,masstag,trk))
+				if mass == 'data':
+					ihist = peInputFile.Get('%s/SVLMass_inclusive%s_%s_%d'%(masstag,seltag,masstag,trk))
+				else:
+					ihist = signalshapes[('inclusive', mass, trk)]
+					ihist.Add(bghistos[('inclusive', trk)])
+
+				#########################################
+				## TODO: Scale signal to fit the data!
+				#########################################
+
 				masshistosntk[trk][mass] = ihist.Clone('%s_%d'%(masstag, trk))
 				try:
 					masshist.Add(ihist)

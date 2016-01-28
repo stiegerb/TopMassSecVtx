@@ -57,11 +57,11 @@ def openTFile(url):
     from ROOT import TFile
     ## File on eos
     if url.startswith('/store/'):
-        cmsf = cmsFile(url, 'rfio')
-        if not cmsf.isfile(): ## check existence
-            return None
-        url = cmsf.pfn
-
+        #cmsf = cmsFile(url, 'rfio')
+        #if not cmsf.isfile(): ## check existence
+        #    return None
+        #url = cmsf.pfn
+        url='root://eoscms//eos/cms'+url        
     elif not os.path.exists(url): ## check existence
         return None
 
@@ -461,6 +461,7 @@ def makeXSecWeights(inDir, jsonfiles, options):
         if 'qcd'       in jfname: dirname = os.path.join(inDir,'qcd_control')
         if 'z_s'       in jfname: dirname = os.path.join(inDir,'z_control')
         if 'photon_samples' in jfname: dirname = os.path.join(inDir,'photon_control')
+
         jsonFile = open(jfname,'r')
         procList = json.load(jsonFile,encoding = 'utf-8').items()
 
@@ -495,7 +496,7 @@ def makeXSecWeights(inDir, jsonfiles, options):
                         if mctruthmode:
                             eventsFile += '_filt%d' % mctruthmode
                         rootFileUrl = dirname+'/'+eventsFile+'.root'
-                        rootFile = openTFile(rootFileUrl)
+                        rootFile = openTFile(rootFileUrl)                        
                         if rootFile is None:
                             missing_files.append(eventsFile+'.root')
                             continue

@@ -11,9 +11,9 @@ from makeSVLMassHistos import COMMONWEIGHT, LUMI
 
 
 SELECTIONS += [ 
-	('nonisol', '((abs(EvCat)==1300||abs(EvCat)==1100) && NJets>=4)','non isolated lepton'),
-	('l', '((abs(EvCat)==13||abs(EvCat)==11) && NJets>=4)','l+jets'),
-	('ll', '((EvCat==-121||EvCat==-143||EvCat==-169) && NJets>=2)','dileptons'),
+	#('nonisol', '((abs(EvCat)==1300||abs(EvCat)==1100) && NJets>=4)','non isolated lepton'),
+	#('l', '((abs(EvCat)==13||abs(EvCat)==11) && NJets>=4)','l+jets'),
+	#('ll', '((EvCat==-121||EvCat==-143||EvCat==-169) && NJets>=2)','dileptons'),
 	]
 
 

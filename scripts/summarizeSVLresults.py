@@ -80,6 +80,7 @@ def parsePEInputs(url,selection='',rebin=4):
         tag='scale'    if 'scale'    in experimentTag else tag
         tag='tchscale' if 'tchscale' in experimentTag else tag
         tag='twchscale' if 'twchscale' in experimentTag else tag
+        tag='twDS'     if 'twDS' in experimentTag else tag
         tag='width'    if 'width'    in experimentTag else tag
         tag='matching' if 'matching' in experimentTag else tag
         tag='p11'      if 'p11'      in experimentTag else tag
@@ -131,6 +132,8 @@ def parsePEInputs(url,selection='',rebin=4):
         for chsel in ['em','mm','ee','m','e','inclusive']:
             if len(selection)>0 : chsel += '_' + selection
             for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
+                print (experimentTag,chsel,experimentTag,ntrk)
+                print (refTag,chsel,refTag,ntrk)
                 ihist   = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,ntrk)).Clone()
                 refHist = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(refTag,chsel,refTag,ntrk)).Clone()
                 ihist.Rebin(rebin)
@@ -604,6 +607,7 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
         ('scale'     , ['scaleup', 'scaledown']         , '$\\mu_R/\\mu_F$ scales \\ttbar'       , '172.5'  , True ) ,
         ('tchscale'  , ['tchscaleup', 'tchscaledown']   , '\\qquad\\qquad t-channel'             , '172.5'  , True ) ,
         ('twchscale' , ['twchscaleup', 'twchscaledown'] , '\\qquad\\qquad tW-channel'            , '172.5'  , True ) ,
+        ('twDS' ,      ['twDS'] ,                         '\\qquad\\qquad tW-channel DS'            , '172.5'  , True ) ,
         ('matching'  , ['matchingup', 'matchingdown']   , 'ME-PS scale'                          , '172.5'  , True ) ,
         ('width'     , ['width']                        , 'Width'                                , '172.5'  , True )  ,
         # ('hadmod'   , ['hadmod']     , 'Hadronization model'                                     , '172.5'  , True )  ,

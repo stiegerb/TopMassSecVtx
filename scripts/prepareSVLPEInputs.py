@@ -22,17 +22,17 @@ TWXSECS = {
 }
 
 QCDTEMPLATESTOADD = {
-#	'inclusive'          : ('',       ['e', 'm']),
+	'inclusive'          : ('',       ['e', 'm']),
 #	'inclusive_mrank1'   : ('_mrank1',['e', 'm']),
 #	'inclusive_mrank1dr' : ('_mrank1dr',['e', 'm']),
 #	'inclusive_drrank1dr': ('_drrank1dr',['e', 'm']),
 #	'inclusive_optmrank' : ('_optmrank',['e', 'm']),
 	'e'                  : ('',       ['e']),
 	'm'                  : ('',       ['m']),
-	'eplus'              : ('',       ['eplus']),
-	'mplus'              : ('',       ['mplus']),
-	'eminus'             : ('',       ['eminus']),
-	'mminus'             : ('',       ['mminus']),
+#	'eplus'              : ('',       ['eplus']),
+#	'mplus'              : ('',       ['mplus']),
+#	'eminus'             : ('',       ['eminus']),
+#	'mminus'             : ('',       ['mminus']),
 #	'e_mrank1'           : ('_mrank1',['e']),
 #	'm_mrank1'           : ('_mrank1',['m']),
 #	'e_mrank1dr'         : ('_mrank1dr',['e']),
@@ -413,14 +413,16 @@ def main(args, opt):
 				hname = "SVLMass_%s_%s_%s" % (tag,syst+'_172v5',ntk)
 				if not syst in ['dyup','dydown','qcdup','qcddown','ntkmult',
 				                'tchscaleup','tchscaledown',
-				                'twchscaleup','twchscaledown']:
+				                'twchscaleup','twchscaledown',
+						'twchDS']:
 					hfinal = systhistos[(tag,syst,'tot',ntk)].Clone(hname)
 				else:
 					hfinal = systhistos[(tag,'nominal','tot',ntk)].Clone(hname)
 				try:
 					## Systs from separate samples
 					if syst in ['tchscaleup','tchscaledown',
-					            'twchscaleup','twchscaledown']:
+					            'twchscaleup','twchscaledown',
+						    'twchDS']:
 						scale = LUMI*xsecweights[CHANMASSTOPROCNAME[('tt', 172.5)]]
 					else:
 						scale = LUMI*xsecweights[SYSTTOPROCNAME[syst][0]]
@@ -442,7 +444,7 @@ def main(args, opt):
 				if 'tchscale' in syst:
 					stProcs=['tW', 'tbarW']
 					stSystProcs=['t', 'tbar']
-				if 'twchscale' in syst:
+				if 'twchscale' in syst or 'twchDS' in syst:
 					stProcs=['t', 'tbar']
 					stSystProcs=['tW', 'tbarW']
 				for st in stProcs:

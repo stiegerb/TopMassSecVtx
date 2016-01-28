@@ -80,13 +80,13 @@ def parsePEInputs(url,selection='',rebin=4):
         tag='scale'    if 'scale'    in experimentTag else tag
         tag='tchscale' if 'tchscale' in experimentTag else tag
         tag='twchscale' if 'twchscale' in experimentTag else tag
-        tag='twDS'     if 'twDS' in experimentTag else tag
+        tag='twchDS'   if 'twchDS' in experimentTag else tag
         tag='width'    if 'width'    in experimentTag else tag
         tag='matching' if 'matching' in experimentTag else tag
         tag='p11'      if 'p11'      in experimentTag else tag
         tag='mcatnlo'  if 'mcatnlo'  in experimentTag else tag
-        tag='powheg'   if 'powpyth'  in experimentTag else tag
-        tag='powheg'   if 'powherw'  in experimentTag else tag
+        tag='powpyth'   if 'powpyth'  in experimentTag else tag
+        tag='powpyth'   if 'powherw'  in experimentTag else tag
         tag='qcd'      if 'qcd'      in experimentTag else tag
         tag='dy'       if 'dy'       in experimentTag else tag
         tag='ntkmult'  if 'ntkmult'  in experimentTag else tag
@@ -114,10 +114,11 @@ def parsePEInputs(url,selection='',rebin=4):
         refTag='nominal_172v5' if 'bhadcomp' in tag else refTag
         refTag='nominal_172v5' if 'bfn'      in tag else refTag
         refTag='p11_172v5'     if 'p11'      in tag else refTag
-        refTag='nominal_172v5' if 'powheg'   in tag else refTag
+        refTag='nominal_172v5' if 'powpyth'   in tag else refTag
         refTag='nominal_172v5' if 'mcatnlo'   in tag else refTag
         refTag='nominal_172v5' if 'ttHF' in tag   else refTag 
-        refTag='powpyth' if 'nlodec' in tag or 'nloprod' in tag  else refTag
+        if ('nlodec' in tag or 'nloprod' in tag) : refTag='powpyth_172v5'
+
         #refTag='nominal_172v5' if 'fullnlofrompw' in tag   else refTag
         if len(refTag)==0 : continue
 
@@ -131,10 +132,10 @@ def parsePEInputs(url,selection='',rebin=4):
 
         for chsel in ['em','mm','ee','m','e','inclusive']:
             if len(selection)>0 : chsel += '_' + selection
-            for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]
+            for ntrk in [tklow for tklow,_ in NTRKBINS]: # [2,3,4]                
                 print (experimentTag,chsel,experimentTag,ntrk)
-                print (refTag,chsel,refTag,ntrk)
                 ihist   = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(experimentTag,chsel,experimentTag,ntrk)).Clone()
+                print (refTag,chsel,refTag,ntrk)
                 refHist = peInputFile.Get('%s/SVLMass_%s_%s_%d'%(refTag,chsel,refTag,ntrk)).Clone()
                 ihist.Rebin(rebin)
                 refHist.Rebin(rebin)
@@ -607,7 +608,7 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
         ('scale'     , ['scaleup', 'scaledown']         , '$\\mu_R/\\mu_F$ scales \\ttbar'       , '172.5'  , True ) ,
         ('tchscale'  , ['tchscaleup', 'tchscaledown']   , '\\qquad\\qquad t-channel'             , '172.5'  , True ) ,
         ('twchscale' , ['twchscaleup', 'twchscaledown'] , '\\qquad\\qquad tW-channel'            , '172.5'  , True ) ,
-        ('twDS' ,      ['twDS'] ,                         '\\qquad\\qquad tW-channel DS'            , '172.5'  , True ) ,
+        ('twchDS' ,      ['twchDS'] ,                         '\\qquad\\qquad tW-channel DS'            , '172.5'  , True ) ,
         ('matching'  , ['matchingup', 'matchingdown']   , 'ME-PS scale'                          , '172.5'  , True ) ,
         ('width'     , ['width']                        , 'Width'                                , '172.5'  , True )  ,
         # ('hadmod'   , ['hadmod']     , 'Hadronization model'                                     , '172.5'  , True )  ,
@@ -624,7 +625,7 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
         ('p11mpihi'  , ['p11mpihi', 'p11tev']           , 'Underlying event'                     , 'p11'   , True ) ,
         ('p11nocr'   , ['p11nocr']                      , 'Color reconnection'                   , 'p11'   , True )  ,
         ('ttHF',       ['ttHFup','ttHFdn'],             '\\ttbar+HF',                              '172.5', True),
-        ('nlodec',     ['mgmcfmnloproddec','mgmcfmnloprod'],            'NLO (decay)',             'powpyth', False),
+        #('nlodec',     ['mgmcfmnloproddec','mgmcfmnloprod'],            'NLO (decay)',             'powpyth', False),
         #('fullnlofrompw', ['powpythmcfmnloproddec'],    'NLO (decay)',     '172.5', False),
     ]
 
@@ -1503,7 +1504,7 @@ def main():
     #compare inputs for pseudo-experiments
     if opt.peInput:
         outDir=os.path.dirname(opt.peInput)+'/pe_plots'
-        for sel in ['optmrank']:
+        for sel in ['']: #optmrank']:
             ensemblesMap=parsePEInputs(url=opt.peInput,
                                        selection=sel,
                                        rebin=opt.rebin)

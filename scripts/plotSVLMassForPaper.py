@@ -42,7 +42,7 @@ def makeMassPlot(histos, outname, tag='', subtag=''):
 
 
 	for mass in MASSESTOPLOT:
-		legentry = 'm_{top} = %5.1f GeV' % mass
+		legentry = 'm_{t} = %5.1f GeV' % mass
 		try:
 			histo = histos[mass]
 			ratplot.add(histo, legentry, includeInRatio=(mass != 172.5))

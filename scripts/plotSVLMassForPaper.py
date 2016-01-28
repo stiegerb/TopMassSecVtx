@@ -86,33 +86,52 @@ def main(args, opt):
 		masshistosntk[3] = {}
 		masshistosntk[4] = {}
 		masshistosntk[5] = {}
-		for mass in ALLMASSES+['data']:
+
+		# get the data first (so we can scale the signal to it later)
+		datahist = None
+		for trk,_ in NTRKBINS:
+			ihist = peInputFile.Get('data/SVLMass_inclusive%s_data_%d'%(seltag,trk))
+			masshistosntk[trk]['data'] = ihist.Clone('data_%d'%(trk))
+
+			# add up the trk bins
+			if not datahist: datahist = ihist.Clone('data')
+			else:            datahist.Add(ihist)
+
+		masshistos['data'] = datahist
+
+		# now get the MC for the different masses
+		for mass in ALLMASSES:
 			masshist = None
-			masstag = mass
-			if type(mass) == float:
-				masstag = 'nominal_'+str(mass).replace('.','v')
+			masstag = 'nominal_'+str(mass).replace('.','v')
 
 			for trk,_ in NTRKBINS:
-				if mass == 'data':
-					ihist = peInputFile.Get('%s/SVLMass_inclusive%s_%s_%d'%(masstag,seltag,masstag,trk))
-				else:
-					ihist = signalshapes[('inclusive', mass, trk)]
-					ihist.Add(bghistos[('inclusive', trk)])
+				ihist = signalshapes[('inclusive', mass, trk)]
 
-				#########################################
-				## TODO: Scale signal to fit the data!
-				#########################################
+				if opt.scaleSignal:
+					sigintegral  = signalshapes[('inclusive', mass, trk)].Integral()
+					bgintegral   = bghistos[('inclusive', trk)].Integral()
+					dataintegral = masshistosntk[trk]['data'].Integral()
+
+					# now scale signal such that the overall integral matches the data
+					sigscale = (dataintegral - bgintegral)/sigintegral
+					ihist.Scale(sigscale)
+
+				# check if bg needs to be rebinned:
+				rebin = bghistos[('inclusive', trk)].GetNbinsX()/ihist.GetNbinsX()
+				if rebin != 1:
+					bghistos[('inclusive', trk)].Rebin(rebin)
+
+				# add the backgrounds
+				ihist.Add(bghistos[('inclusive', trk)])
 
 				masshistosntk[trk][mass] = ihist.Clone('%s_%d'%(masstag, trk))
-				try:
-					masshist.Add(ihist)
-				except AttributeError:
-					try:
-						masshist = ihist.Clone(masstag)
-					except ReferenceError:
-						print "Histogram not found: %s/SVLMass_inclusive%s_%s_%d"%(masstag,seltag,masstag,trk)
-						continue
+				if not masshist: masshist = ihist.Clone(masstag)
+				else:            masshist.Add(ihist)
+
 			masshistos[mass] = masshist
+
+
+
 		makeMassPlot(histos=masshistos, outname=selection)
 		makeMassPlot(histos=masshistosntk[3], outname='%s_3'%selection, tag='N_{tracks} = 3')
 		makeMassPlot(histos=masshistosntk[4], outname='%s_4'%selection, tag='N_{tracks} = 4')
@@ -129,6 +148,8 @@ if __name__ == "__main__":
 	parser = OptionParser(usage=usage)
 	parser.add_option('-o', '--outDir', dest='outDir', default='svlplots',
 					  help='Output directory [default: %default]')
+	parser.add_option('-s', '--scaleSignal', dest='scaleSignal',
+		              action="store_true", help='Scale the signals to match the data')
 	(opt, args) = parser.parse_args()
 
 

@@ -11,7 +11,8 @@ from makeSVLMassHistos import NTRKBINS
 from summarizeSVLresults import CATTOLABEL
 from myRootFunctions import checkKeyInFile
 
-from runSVLPseudoExperiments import PseudoExperimentResults, showFinalFitResult
+from runSVLPseudoExperiments import PseudoExperimentResults
+from runSVLPseudoExperiments import showFinalFitResult
 from runSVLPseudoExperiments import buildPDFs
 
 """
@@ -24,7 +25,8 @@ def runDataFits(wsfile,pefile,options):
     inputDistsF = ROOT.TFile.Open(pefile, 'READ')
     print prepend+'Reading data histos from %s with' % (pefile)
     if not checkKeyInFile('data', inputDistsF, doraise=False):
-        print prepend+"ERROR: data histos not found in input file %s" %(pefile)
+        print prepend+"ERROR: data histos not found in input file %s" %(
+                                         pefile)
         sys.exit(-1)
 
     wsInputFile = ROOT.TFile.Open(wsfile, 'READ')
@@ -47,7 +49,9 @@ def runDataFits(wsfile,pefile,options):
     selTag=''
     if len(options.selection)>0 : selTag='_%s'%options.selection
     summary=PseudoExperimentResults(genMtop=genMtop,
-                                    outFileUrl=osp.join(options.outDir,'data%s_results.root'%(selTag)),
+                                    outFileUrl=osp.join(
+                                         options.outDir,
+                                         'data%s_results.root'%(selTag)),
                                     selection=options.selection)
 
     #load the model parameters and set all to constant
@@ -57,9 +61,8 @@ def runDataFits(wsfile,pefile,options):
     var = varIter.Next()
     varCtr=0
     while var :
-        varName=var.GetName()
+        varName = var.GetName()
         if not varName in ['mtop', 'SVLMass', 'mu']:
-        # if not varName in ['mtop', 'SVLMass']:
             ws.var(varName).setConstant(True)
             varCtr+=1
         var = varIter.Next()
@@ -70,18 +73,20 @@ def runDataFits(wsfile,pefile,options):
 
     #build the relevant PDFs
     print prepend+"Building pdfs"
+    channels = ['em','mm','ee','m','e']
     allPdfs = buildPDFs(ws=ws, options=options,
+                        channels=channels,
                         calibMap=calibMap,
                         prepend=prepend)
 
     poi = ROOT.RooArgSet( ws.var('mtop') )
 
-    # Iterate over available categories to build the set of likelihoods to combine
+    # Iterate over available categories to build
+    # the set of likelihoods to combine
     nllMap={}
 
     for key in sorted(allPdfs):
         chsel, trk = key
-        mukey=(chsel+'_mu',trk)
 
         if options.verbose>3:
             sys.stdout.write(prepend+'(%-12s, %d):' % (chsel, trk))
@@ -96,59 +101,50 @@ def runDataFits(wsfile,pefile,options):
         dataHisto, data = None,None
         dataHisto = ihist.Clone('eh')
         data  = ROOT.RooDataHist('Data_data_%s_%d'%(chsel,trk),
-                                       'Data_data_%s_%d'%(chsel,trk),
-                                        ROOT.RooArgList(ws.var('SVLMass')),
-                                        dataHisto)
+                                 'Data_data_%s_%d'%(chsel,trk),
+                                  ROOT.RooArgList(ws.var('SVLMass')),
+                                  dataHisto)
         # Create likelihood
         # Store it in the appropriate categories for posterior combination
         nll = allPdfs[key].createNLL(data, ROOT.RooFit.Extended())
         chType=''
-        if chsel in ['em','mm','ee']   : chType='ll'
-        if chsel in ['e','m']          : chType='lj'
-        if chsel in ['eplus','mplus']  : chType='lplus'
-        if chsel in ['eminus','mminus'] : chType='lminus'
-        nllMapKeys=[('comb%s'%chsel,0),('comb%s'%chType,trk),('comb%s'%chType,0)]
-        if chType!='lplus' and chType!='lminus' and chType!='':
+        if chsel in ['em','mm','ee']    : chType = 'll'
+        if chsel in ['e','m']           : chType = 'lj'
+        if chsel in ['eplus','mplus']   : chType = 'lplus'
+        if chsel in ['eminus','mminus'] : chType = 'lminus'
+
+        nllMapKeys = [('comb%s'%chsel,0),
+                      ('comb%s'%chType,trk),
+                      ('comb%s'%chType,0)]
+        if not chType in ['lplus', 'lminus', '']:
             nllMapKeys.insert(0,('comb',trk))
             nllMapKeys.insert(0,('comb',0))
-        for nllMapKey in nllMapKeys:
-            if not (nllMapKey in nllMap):
-                nllMap[nllMapKey]=[]
-            nllMap[nllMapKey].append( nll )                
 
-        #for nllMapKey in [('comb',0),('comb',trk),('comb%s'%chsel,0)]:
-        #    if not (nllMapKey in nllMap):
-        #        nllMap[nllMapKey]=[]
-        #    if nllMapKey[0]=='comb' and nllMapKey[1]==0:
-        #        nllMap[nllMapKey].append( allPdfs[key].createNLL(data, ROOT.RooFit.Extended()) )
-        #    else:
-        #        nllMap[nllMapKey].append( nllMap[('comb',0)][-1] )
+        for nllMapKey in nllMapKeys:
+            nllMap.setdefault(nllMapKey, []).append(nll)
 
         if options.verbose>3:
             sys.stdout.write(' [running Minuit]')
             sys.stdout.flush()
-        minuit=ROOT.RooMinuit(nll) #nllMap[('comb',0)][-1])
+        minuit=ROOT.RooMinuit(nll)
         minuit.setErrorLevel(0.5)
         minuit.migrad()
         minuit.hesse()
         minuit.minos(poi)
 
-        #save fit results
+        # Save fit results
         summary.addFitResult(key=key, ws=ws)
 
-        #show, if required
+        # Show, if required
         selstring = options.selection if options.selection else 'inclusive'
-        #pll=nllMap[('comb',0)][-1].createProfile(poi)
         pll=nll.createProfile(poi)
 
         chTitle=str(chsel.split('_',1)[0])
         chTitle=chTitle.replace('m','#mu')
-        showFinalFitResult(data=data,pdf=allPdfs[key], 
-                           #nll=[pll,nllMap[('comb',0)][-1]],
+        showFinalFitResult(data=data,pdf=allPdfs[key],
                            nll=[pll],
                            SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
                            outDir=options.outDir,
-                           #tag=[selstring,"%s channel, =%s tracks"%(str(chsel.split('_',1)[0]),str(trk))])
                            tag=["%s channel, =%s tracks"%(chTitle,str(trk))])
 
         if options.verbose>3:
@@ -156,55 +152,60 @@ def runDataFits(wsfile,pefile,options):
                              '(mt: %6.2f+-%4.2f GeV, '
                               'mu: %4.2f+-%4.2f'%
                             (bcolors.OKGREEN, bcolors.ENDC,
-                             ws.var('mtop').getVal(), ws.var('mtop').getError(),
-                             ws.var('mu').getVal(), ws.var('mu').getError()))
+                             ws.var('mtop').getVal(),
+                             ws.var('mtop').getError(),
+                             ws.var('mu').getVal(),
+                             ws.var('mu').getError()))
             if options.floatCorrFrac:
                 sys.stdout.write(' corfrac: %4.2f+-%4.2f)'% (
-                                 ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getVal()+1.0,
-                                 ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getError()))
+                     ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getVal()+1.0,
+                     ws.var('ttcorfracshift_%s_%d'%(chsel,trk)).getError()) )
             sys.stdout.write('\n')
             sys.stdout.flush()
 
-    #combined likelihoods
+    # Combined likelihoods
     if options.verbose>3:
         print '%s------ Combining channels and categories'%(prepend)
 
     for key in sorted(nllMap.keys()):
 
-        #reset to central values
+        # Reset to central values
         ws.var('mtop').setVal(172.5)
         ws.var('mu').setVal(1.0)
 
-        #add the log likelihoods and minimize
+        # Add the log likelihoods and minimize
         llSet = ROOT.RooArgSet()
-        for ll in nllMap[key]: 
+        for ll in nllMap[key]:
             llSet.add(ll)
-        print key
+
         combll = ROOT.RooAddition("combll","combll",llSet)
-        print combll
         minuit=ROOT.RooMinuit(combll)
         minuit.setErrorLevel(0.5)
         minuit.migrad()
         minuit.hesse()
         minuit.minos(poi)
-        print '???'
         summary.addFitResult(key=key,ws=ws)
 
-        #combll.Delete()
-        print'here?'
         if options.verbose>3:
-            try: catlabel = CATTOLABEL[('%s_%d'%key)]
-            except KeyError: catlabel = CATTOLABEL[('%s_%d'%key).replace('_%s'%options.selection, '')]
+
+            catlabel = CATTOLABEL.get('%s_%d'%key, None)
+            if not catlabel:
+                catlabel = CATTOLABEL.get(
+                               ('%s_%d'%key).replace(
+                                    '_%s'%options.selection, ''),
+                                         '%s_%d'%key)
+
             sys.stdout.write(prepend)
-            sys.stdout.write('%8s (%2d cats): ' % (catlabel,len(nllMap[key])))
+            sys.stdout.write('%8s (%2d cats): ' %(catlabel,len(nllMap[key])))
             resultstring = ('mt: %6.2f+-%4.2f GeV, mu: %5.3f+-%5.3f \n' % (
-                               ws.var('mtop').getVal(), ws.var('mtop').getError(),
-                               ws.var('mu').getVal(), ws.var('mu').getError()) )
+                               ws.var('mtop').getVal(),
+                               ws.var('mtop').getError(),
+                               ws.var('mu').getVal(),
+                               ws.var('mu').getError()) )
             if key == ('comb', 0):
                 resultstring = bcolors.BOLD + resultstring + bcolors.ENDC
             sys.stdout.write(resultstring)
             sys.stdout.flush()
-        print 'or here?'
     print 80*'-'
 
     summary.saveResults()
@@ -225,11 +226,13 @@ def main():
                        help='selection type')
     parser.add_option('-c', '--calib', dest='calib', default='',
                        help='calibration file')
-    parser.add_option('-o', '--outDir', dest='outDir', default='svlfits/pexp',
+    parser.add_option('-o', '--outDir', dest='outDir',
+                       default='svlfits/pexp',
                        help='Output directory [default: %default]')
     parser.add_option('--floatCorrFrac', dest='floatCorrFrac', default=False,
                        action='store_true',
-                       help='Let the fraction of correct pairings float in the fit')
+                       help=('Let the fraction of correct pairings '
+                             'float in the fit'))
 
     (opt, args) = parser.parse_args()
 

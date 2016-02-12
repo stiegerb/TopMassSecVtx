@@ -139,8 +139,10 @@ Show PE fit result
 """
 def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     #init canvas
-    canvas=ROOT.TCanvas('c','c',500,500)
-    print data,pdf,nll,SVLMass,mtop,outDir,tag
+    canvas = ROOT.TCanvas('c','c',500,500)
+    ROOT.SetOwnership(canvas, False)
+
+    # print data,pdf,nll,SVLMass,mtop,outDir,tag
     p1 = ROOT.TPad('p1','p1',0.0,0.85,1.0,0.0)
     p1.SetRightMargin(0.05)
     p1.SetLeftMargin(0.12)
@@ -155,7 +157,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     pdf.plotOn(frame,
                ROOT.RooFit.Name('totalexp'),
                ROOT.RooFit.ProjWData(data),
-               ROOT.RooFit.LineColor(ROOT.kBlue),               
+               ROOT.RooFit.LineColor(ROOT.kBlue),
                ROOT.RooFit.LineWidth(2),
                ROOT.RooFit.FillStyle(1001),
                ROOT.RooFit.FillColor(0),
@@ -270,9 +272,9 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
 """
 build the fit model
 """
-def buildPDFs(ws, options, calibMap=None, prepend=''):
+def buildPDFs(ws, options, channels, calibMap=None, prepend=''):
     allPdfs = {}
-    for ch in ['em','mm','ee','m','e','eplus','mplus','eminus','mminus']:
+    for ch in channels:
         chsel = ch
         if len(options.selection) > 0: chsel += '_%s'%options.selection
 
@@ -408,7 +410,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
     #build the relevant PDFs
     print prepend+"Building pdfs"
+    channels = ['em','mm','ee','m','e','eplus','mplus','eminus','mminus']
     allPdfs = buildPDFs(ws=ws, options=options,
+                        channels=channels,
                         calibMap=calibMap,
                         prepend=prepend)
 
@@ -503,10 +507,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 if not (nllMapKey in nllMap):
                     nllMap[nllMapKey]=[]
                 if nllMapKey[0]=='comb' and nllMapKey[1]==0:
-                    nllMap[nllMapKey].append( nll )                
+                    nllMap[nllMapKey].append( nll )
                 else:
                     nllMap[nllMapKey].append( nll )
-            
+
             if options.verbose>3:
                 sys.stdout.write(' [running Minuit]')
                 sys.stdout.flush()
@@ -516,7 +520,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             minuit.migrad()
             minuit.hesse()
             minuit.minos(poi)
-            
+
 
             #save fit results
             summary.addFitResult(key=key,ws=ws)

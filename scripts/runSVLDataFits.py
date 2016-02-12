@@ -163,6 +163,8 @@ def runDataFits(wsfile,pefile,options):
             sys.stdout.write('\n')
             sys.stdout.flush()
 
+    if options.plotOnly: return 0
+
     # Combined likelihoods
     if options.verbose>3:
         print '%s------ Combining channels and categories'%(prepend)
@@ -233,6 +235,9 @@ def main():
                        action='store_true',
                        help=('Let the fraction of correct pairings '
                              'float in the fit'))
+    parser.add_option('--plotOnly', dest='plotOnly', default=False,
+                       action='store_true',
+                       help='Only do the plots. I.e. skip the combinations')
 
     (opt, args) = parser.parse_args()
 

@@ -279,7 +279,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     frame2.GetXaxis().SetRangeUser(165,180)
     frame2.GetYaxis().SetNdivisions(3)
     frame2.GetXaxis().SetNdivisions(3)
-    frame2.GetXaxis().SetTitle('m_{top} [GeV]')
+    frame2.GetXaxis().SetTitle('m_{t} [GeV]')
     frame2.GetYaxis().SetTitle('-2#DeltalogL')
 
     frame2.GetYaxis().SetTitleOffset(2.5)

@@ -345,7 +345,9 @@ def buildPDFs(ws, options, channels, calibMap=None, prepend=''):
             Ntt        = ws.factory("RooFormulaVar::Ntt_%s_%d('@0*@1',{mu,%s})"%(chsel,ntrk,ttexp))
 
             tShapePDF  = ws.factory("SUM::tshape_%s_%d(%s*%s,%s)"%(chsel,ntrk,tcor,tcorPDF,twrounmPDF))
-            Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2',{mu,%s,%s})"%(chsel,ntrk,ttexp,tfrac))
+            t_scaling  = ws.factory('tscale[0.8]')
+            ws.var(t_scaling.GetName()).setConstant(True)
+            Nt         = ws.factory("RooFormulaVar::Nt_%s_%d('@0*@1*@2*@3',{mu,%s,%s,%s})"%(chsel,ntrk,ttexp,tfrac,t_scaling.GetName()))
 
             bkgConstPDF = ws.factory('Gaussian::bgprior_%s_%d(bg0_%s_%d[0,-10,10],bg_nuis_%s_%d[0,-10,10],1.0)'%(chsel,ntrk,chsel,ntrk,chsel,ntrk))
             ws.var('bg0_%s_%d'%(chsel,ntrk)).setVal(0.0)

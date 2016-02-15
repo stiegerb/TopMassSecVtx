@@ -145,7 +145,7 @@ def runDataFits(wsfile,pefile,options):
                            nll=[pll],
                            SVLMass=ws.var('SVLMass'),mtop=ws.var('mtop'),
                            outDir=options.outDir,
-                           tag=["%s channel, =%s tracks"%(chTitle,str(trk))])
+                           tag=["%s channel, %s tracks"%(chTitle,str(trk))])
 
         if options.verbose>3:
             sys.stdout.write('%s DONE %s'

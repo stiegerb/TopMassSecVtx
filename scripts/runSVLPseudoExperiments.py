@@ -10,6 +10,7 @@ from UserCode.TopMassSecVtx.PlotUtils import printProgress, bcolors
 from makeSVLMassHistos import NTRKBINS
 from summarizeSVLresults import CATTOLABEL
 from myRootFunctions import checkKeyInFile
+from runPlotter import COLORPALETTE
 
 """
 Wrapper to contain the histograms with the results of the pseudo-experiments
@@ -156,39 +157,44 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     pdf.plotOn(frame,
                ROOT.RooFit.Name('totalexp'),
                ROOT.RooFit.ProjWData(data),
-               ROOT.RooFit.LineColor(ROOT.kBlue),
-               ROOT.RooFit.LineWidth(2),
+               ROOT.RooFit.LineColor(ROOT.kGray+2),
+               ROOT.RooFit.LineWidth(1),
                ROOT.RooFit.FillStyle(1001),
                ROOT.RooFit.FillColor(0),
                ROOT.RooFit.MoveToBack())
+    bgk_color = COLORPALETTE.get('W+Jets', ROOT.kOrange-3)
+    pdf.plotOn(frame,
+               ROOT.RooFit.Name('bkg'),
+               ROOT.RooFit.ProjWData(data),
+               ROOT.RooFit.Components('*_unm_bg*'),
+               ROOT.RooFit.FillColor(bgk_color),
+               ROOT.RooFit.LineColor(bgk_color),
+               ROOT.RooFit.LineWidth(1),
+               ROOT.RooFit.DrawOption('f'),
+               ROOT.RooFit.FillStyle(1001),
+               ROOT.RooFit.MoveToBack())
+    st_color = COLORPALETTE.get('Single top', ROOT.kAzure+5)
     pdf.plotOn(frame,
                ROOT.RooFit.Name('singlet'),
                ROOT.RooFit.ProjWData(data),
-               ROOT.RooFit.Components('tshape_*'),
-               ROOT.RooFit.FillColor(ROOT.kOrange+2),
-               ROOT.RooFit.LineColor(ROOT.kOrange+2),
-               ROOT.RooFit.FillStyle(1001),
+               ROOT.RooFit.Components('tshape_*,*_unm_bg*'),
+               ROOT.RooFit.FillColor(st_color),
+               ROOT.RooFit.LineColor(st_color),
+               ROOT.RooFit.LineWidth(1),
                ROOT.RooFit.DrawOption('f'),
+               ROOT.RooFit.FillStyle(1001),
                ROOT.RooFit.MoveToBack())
+    tt_color = COLORPALETTE.get('t#bar{t}', ROOT.kGray)
     pdf.plotOn(frame,
                ROOT.RooFit.Name('tt'),
                ROOT.RooFit.ProjWData(data),
-               ROOT.RooFit.Components('ttshape_*,tshape_*'),
-               #ROOT.RooFit.Components('*_ttcor_*'),
-               ROOT.RooFit.FillColor(ROOT.kOrange),
-               ROOT.RooFit.LineColor(ROOT.kOrange),
+               ROOT.RooFit.Components('ttshape_*,tshape_*,*_unm_bg*'),
+               ROOT.RooFit.FillColor(tt_color),
+               ROOT.RooFit.LineColor(tt_color),
+               ROOT.RooFit.LineWidth(1),
                ROOT.RooFit.DrawOption('f'),
                ROOT.RooFit.FillStyle(1001),
                ROOT.RooFit.MoveToBack())
-    # pdf.plotOn(frame,
-    #            ROOT.RooFit.Name('bgk'),
-    #            ROOT.RooFit.ProjWData(data),
-    #            ROOT.RooFit.Components('bgprior_*'),
-    #            ROOT.RooFit.FillColor(ROOT.kRed),
-    #            ROOT.RooFit.LineColor(ROOT.kRed),
-    #            ROOT.RooFit.DrawOption('f'),
-    #            ROOT.RooFit.FillStyle(1001),
-    #            ROOT.RooFit.MoveToBack())
     frame.Draw()
     frame.GetYaxis().SetTitleOffset(1.5)
     frame.GetYaxis().SetRangeUser(0,1.2*frame.GetMaximum())
@@ -217,7 +223,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     leg.AddEntry('data',       'Data',         'p')
     leg.AddEntry('tt',         't#bar{t}',     'f')
     leg.AddEntry('singlet',    'Single top',   'f')
-    leg.AddEntry('totalexp',   'Background',   'f')
+    leg.AddEntry('bkg',        'Background',   'f')
     leg.SetFillStyle(0)
     leg.SetTextFont(43)
     leg.SetTextSize(20)

@@ -222,7 +222,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     leg = ROOT.TLegend(0.65,0.32,0.95,0.53)
     leg.AddEntry('data',       'Data',         'p')
     leg.AddEntry('tt',         't#bar{t}',     'f')
-    leg.AddEntry('singlet',    'Single top',   'f')
+    leg.AddEntry('singlet',    'Single t',     'f')
     leg.AddEntry('bkg',        'Background',   'f')
     leg.SetFillStyle(0)
     leg.SetTextFont(43)

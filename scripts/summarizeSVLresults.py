@@ -115,7 +115,7 @@ def parsePEInputs(url,selection='',rebin=4):
         refTag='p11_172v5'     if 'p11'      in tag else refTag
         refTag='nominal_172v5' if 'powheg'   in tag else refTag
         refTag='nominal_172v5' if 'mcatnlo'   in tag else refTag
-        refTag='nominal_172v5' if 'ttHF' in tag   else refTag 
+        refTag='nominal_172v5' if 'ttHF' in tag   else refTag
         refTag='powpyth' if 'nlodec' in tag or 'nloprod' in tag  else refTag
         #refTag='nominal_172v5' if 'fullnlofrompw' in tag   else refTag
         if len(refTag)==0 : continue
@@ -175,7 +175,7 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
         print peinfo.GetEntriesFast(),' p.e. for',key
     except:
         return None
-    
+
     # define the histograms
     # careful with the binning: if something is outside the range it gives trouble
     mtopbiasH    = ROOT.TH1D('mtopbias_%s'%key,
@@ -598,30 +598,35 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
 
     theosysts = [
     ##   systname   ,variations [up, down],          title,       variation to compare with, included in sum?
-        ('powpyth'   , ['powpyth']                      , 'Signal model'                         , '172.5'  , True )  ,
-        ('powherw'   , ['powherw']                      , 'POWHEG+(Pythia vs Herwig)'            , 'powpyth', False ) ,
-        ('mcatnlohw' , ['mcatnlohw']                    , 'MCatNLO vs POWHEG (Herwig)'           , 'powherw', False ) ,
-        ('scale'     , ['scaleup', 'scaledown']         , '$\\mu_R/\\mu_F$ scales \\ttbar'       , '172.5'  , True ) ,
-        ('tchscale'  , ['tchscaleup', 'tchscaledown']   , '\\qquad\\qquad t-channel'             , '172.5'  , True ) ,
-        ('twchscale' , ['twchscaleup', 'twchscaledown'] , '\\qquad\\qquad tW-channel'            , '172.5'  , True ) ,
-        ('matching'  , ['matchingup', 'matchingdown']   , 'ME-PS scale'                          , '172.5'  , True ) ,
-        ('width'     , ['width']                        , 'Width'                                , '172.5'  , True )  ,
+        ('powpyth'   , ['powpyth']                      , 'Signal model'                         , '172.5' , True )  ,
+        # ('powherw'   , ['powherw']                      , 'POWHEG+(Pythia vs Herwig)'            , 'powpyth', False ) ,
+        # ('mcatnlohw' , ['mcatnlohw']                    , 'MCatNLO vs POWHEG (Herwig)'           , 'powherw', False ) ,
+        ('scale'     , ['scaleup', 'scaledown']         , '$\\mu_R/\\mu_F$ scales \\ttbar'       , '172.5' , True ) ,
+        ('tchscale'  , ['tchscaleup', 'tchscaledown']   , '\\qquad\\qquad t-channel'             , '172.5' , True ) ,
+        ('twchscale' , ['twchscaleup', 'twchscaledown'] , '\\qquad\\qquad tW-channel'            , '172.5' , True ) ,
+        ('matching'  , ['matchingup', 'matchingdown']   , 'ME-PS scale'                          , '172.5' , True ) ,
+        ('width'     , ['width']                        , 'Width'                                , '172.5' , True )  ,
         # ('hadmod'   , ['hadmod']     , 'Hadronization model'                                     , '172.5'  , True )  ,
         ('bfnu'      , ['bfnuup', 'bfnudn']             , 'Semi-lep. B decays'                   , '172.5' , True ) ,
-        ('bhadcomp'  , ['bhadcomp']                     , 'B-hadron composition \ztwostar\ LEP ' , '172.5' , True )  ,
+        ('bhadcomp'  , ['bhadcomp']                     , 'B-hadron comp. \ztwostar\ LEP '       , '172.5' , True )  ,
         ('bfragrbLEP', ['bfragdn','bfragup']            , '\ztwostar\ rb LEP (soft/hard)'        , '172.5' , True ) ,
         # ('bfragdn'   , ['bfragdn']                      , '\ztwostar\ rb LEP soft'               , '172.5' , False ) ,
-        ('bfragz2s'  , ['bfragz2s']                     , 'Fragmentation \ztwostar\\'            , '172.5' , False )  ,
+        # ('bfragz2s'  , ['bfragz2s']                     , 'Fragmentation \ztwostar\\'            , '172.5' , False )  ,
         # ('bfragup'   , ['bfragup']                      , '\ztwostar\ rb LEP hard'               , '172.5' , False ) ,
-        ('bfragp11'  , ['bfragp11']                     , 'P11'                                  , '172.5' , False ) ,
-        ('bfragpete' , ['bfragpete']                    , '\ztwostar\ Peterson'                  , '172.5' , False ) ,
-        ('bfraglund' , ['bfraglund']                    , '\ztwostar\ Lund'                      , '172.5' , False ) ,
+        # ('bfragp11'  , ['bfragp11']                     , 'P11'                                  , '172.5' , False ) ,
+        # ('bfragpete' , ['bfragpete']                    , '\ztwostar\ Peterson'                  , '172.5' , False ) ,
+        # ('bfraglund' , ['bfraglund']                    , '\ztwostar\ Lund'                      , '172.5' , False ) ,
         ('toppt'     , ['toppt']                        , 'Top quark \\pt'                       , '172.5' , True )  ,
         ('p11mpihi'  , ['p11mpihi', 'p11tev']           , 'Underlying event'                     , 'p11'   , True ) ,
         ('p11nocr'   , ['p11nocr']                      , 'Color reconnection'                   , 'p11'   , True )  ,
-        ('ttHF',       ['ttHFup','ttHFdn'],             '\\ttbar+HF',                              '172.5', True),
-        ('nlodec',     ['mgmcfmnloproddec','mgmcfmnloprod'],            'NLO (decay)',             'powpyth', False),
+        ('ttHF',       ['ttHFup','ttHFdn'],             '\\ttbar+HF',                              '172.5' , True),
+        # ('nlodec',     ['mgmcfmnloproddec','mgmcfmnloprod'],            'NLO (decay)',             'powpyth', False),
         #('fullnlofrompw', ['powpythmcfmnloproddec'],    'NLO (decay)',     '172.5', False),
+
+        # Hardcoded ones (only for total):
+        ('pdfs'      , [-0.06,+0.04]                    , 'Parton density functions', None, True),
+        ('tfrac'     , [+0.07,-0.07]                    , 'Single top fraction',      None, True),
+        ('tinter'    , [-0.24]                          , 'Single top interference',  None, True),
     ]
 
     expsysts = [
@@ -629,7 +634,7 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
         ('jerup'     , ['jerup',    'jerdn'],    'Jet energy resolution',      '172.5', True) ,
         ('umetup'    , ['umetup',   'umetdn'],   'Unclustered energy',         '172.5', True) ,
         #('umetup'    , ['umetup'],   'Unclustered energy',         '172.5', True) ,
-        ('lesup'     , ['lesup',    'lesdn'],    'Lepton energy scale',        '172.5', True) ,
+        # ('lesup'     , ['lesup',    'lesdn'],    'Lepton energy scale',        '172.5', True) ,
         ('puup'      , ['puup',     'pudn'],     'Pileup',                     '172.5', True) ,
         ('btagup'    , ['btagup',   'btagdn'],   '\\cPqb-tagging',             '172.5', True) ,
         ('qcdup'     , ['qcdup',    'qcddown'],  'QCD normalization',          '172.5', True) ,
@@ -637,6 +642,9 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
         ('lepselup'  , ['lepselup', 'lepseldn'], 'Lepton selection',           '172.5', True) ,
         ('ntkmult'   , ['ntkmult'],              'Track multiplicity',         '172.5', True) ,
         ('svmass'    , ['svmass'],               'Sec. Vtx. Mass modeling',    '172.5', True) ,
+
+        # Hardcoded ones (only for total):
+        ('les'       , [+0.26, -0.22],           'Lepton energy scale',        None, True) ,
     ]
 
     def writeSection(systs,sel,ofile,name=''):
@@ -664,11 +672,11 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
                             diff    *= 0.1/5.0
                             diffErr *= 0.1/5.0
                         #according to TOP-13-010 data/Madgraph is 0.022/0.016 = 1.375 for ttbb/ttjj
-                        #the variation was by a factor of 2 => rescale by 0.6875 
+                        #the variation was by a factor of 2 => rescale by 0.6875
                         #if 'ttHF' in syst:
                         #    diff    *= 0.6875
                         #    diffErr *= 0.6875
-                        
+
                         if diff > 0:
                             diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (diff, diffErr)
                             if insum: ups.append((diff,diffErr))
@@ -676,13 +684,29 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
                             diffstr = '$ %5.2f \\pm %4.2f $ & ' % (diff, diffErr)
                             if insum: dns.append((diff,diffErr))
 
+                        # If only one variation, count both up and down (except toppt)
                         if insum and len(variations) == 1 and syst != 'toppt':
                             if diff > 0: dns.append((-1.0*diff, -1.0*diffErr))
                             else:        ups.append((-1.0*diff, -1.0*diffErr))
 
                     except KeyError:
-                        ## Syst not defined, write empty entry
-                        diffstr = '$ %14s $ & ' % (' ')
+                        try: # Hardcoded systs:
+                            diff = float(var)
+                            # if cat != 'comb_0': raise ValueError # Go to empty entry
+                            if diff > 0:
+                                diffstr = '$ +%4.2f          $ & ' % (diff)
+                                if insum: ups.append((diff, 0.00))
+                            else:
+                                diffstr = '$ %5.2f          $ & ' % (diff)
+                                if insum: dns.append((diff, 0.00))
+                            # If only one variation, count both up and down (except toppt)
+                            if insum and len(variations) == 1 and syst != 'toppt':
+                                if diff > 0: dns.append((-1.0*diff, -1.0*diffErr))
+                                else:        ups.append((-1.0*diff, -1.0*diffErr))
+
+                        except ValueError:
+                            ## Syst not defined, write empty entry
+                            diffstr = '$ %14s $ & ' % (' ')
 
                     ## Remove trailing &
                     if cat == filterCats[-1]: diffstr = diffstr[:-2]
@@ -765,7 +789,7 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
                 totupE[sel][cat] = math.sqrt(totupE_th[cat]**2 + totupE_ex[cat]**2)
                 totdnE[sel][cat] = math.sqrt(totdnE_th[cat]**2 + totdnE_ex[cat]**2)
 
-            of.write('Total uncertainty  FIXME       & ')
+            of.write('Total uncertainty              & ')
             for icat,cat in enumerate(filterCats, 1):
                 diffstr = '$ +%4.2f          $ & ' % (totup[sel][cat])
                 if cat == filterCats[-1]: diffstr = diffstr[:-2]
@@ -1452,7 +1476,7 @@ def main():
         print 'Wrote %s with calibration constants and peresults'%calibFile
         return 0
 
-    #show systematics table
+    #show systematics tables
     if opt.syst:
         cachefile = open(opt.syst, 'r')
         calibMap  = pickle.load(cachefile)
@@ -1462,29 +1486,32 @@ def main():
         # for key in sorted(peresults.keys()): print key
 
         catsByChan =   ['comb_0','combe_0','combee_0',
-                        'combem_0','combm_0','combmm_0']
+                       'combem_0','combm_0','combmm_0']
         catsByTracks = ['comb_0','comb_3','comb_4','comb_5']
         catsByCharge = ['comblplus_0', 'combmplus_0', 'combeplus_0',
                         'comblminus_0', 'combmminus_0', 'combeminus_0']
-        catsByType = ['comb_0','combll_0','comblj_0']
-        allCats = ['comb_0','combe_0','combee_0','combem_0',
-                   'combm_0','combmm_0', 'comb_3','comb_4','comb_5']
+        catsByType =   ['comb_0','combll_0','comblj_0']
+
+        allCats =      ['comb_0','combe_0','combee_0','combem_0',
+                        'combm_0','combmm_0', 'comb_3','comb_4','comb_5']
+
         # showSystematicsTable(results=peresults, filterCats=catsByChan)
         # showSystematicsTable(results=peresults, filterCats=catsByTracks)
 
         systfile = os.path.join(os.path.dirname(opt.syst),'systematics_%s.tex')
         writeSystematicsTable(results=peresults, filterCats=catsByChan,
                              ofile=systfile%'bychan',printout=True,options=opt)
-        writeSystematicsTable(results=peresults, filterCats=catsByCharge,
-                             ofile=systfile%'bycharge',printout=True,options=opt)
-        writeSystematicsTable(results=peresults, filterCats=catsByType,
-                             ofile=systfile%'bytype',printout=True,options=opt)
-        writeSystematicsTable(results=peresults, filterCats=catsByTracks,
-                              ofile=systfile%'bytracks',options=opt)
+        # writeSystematicsTable(results=peresults, filterCats=catsByCharge,
+        #                      ofile=systfile%'bycharge',printout=True,options=opt)
+        # writeSystematicsTable(results=peresults, filterCats=catsByType,
+        #                      ofile=systfile%'bytype',printout=True,options=opt)
+        # writeSystematicsTable(results=peresults, filterCats=catsByTracks,
+        #                       ofile=systfile%'bytracks',options=opt)
         totup, totdn = writeSystematicsTable(results=peresults,
                                              filterCats=allCats,
                                              ofile=systfile%'all',
                                              options=opt)
+
         makeSystPlot(peresults, totup, totdn, options=opt)
         if opt.dataresults:
             print 80*'-'

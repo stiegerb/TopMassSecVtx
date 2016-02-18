@@ -151,10 +151,25 @@ Will run the calibrated pseudo-experiments
 Will printout the "final" systematics table
 
 ---------------------------------------------------
+### Unblinding
+
+Run the fits on the data to produce the fitting plots and print the final mass results. This also produces a `data_results.root` file that contains the numbers in PE format for the other scripts to read.
+
+```
+./scripts/runSVLDataFits.py svlfits/Oct13/SVLWorkspace.root svlplots/Oct13/pe_inputs.root -v 5 -o svlplots/Feb18/ -c svlPEJobs/inclusive/Oct13/.svlcalib.pck
+```
+
+Add the `--dataresults` option to `summarizeSVLresults.py` to make the final summary plot. Note that this also includes the correct statistical uncertainty from the data.
+
+```
+./scripts/summarizeSVLresults.py --syst svlPEJobs_calib/inclusive/Oct13/.svlcalib.pck -o svlplots/Feb18/ --dataresults svlplots/Feb18/
+```
+
+---------------------------------------------------
 ### Control region analysis
 ```
 ./scripts/fitSecVtxProperties.py -i treedir/z_control      -o outDir/z_control/plots/      --doScales --weightPt --vetoCentral --filter 23
-./scripts/fitSecVtxProperties.py -i treedir/               -o outDir/control/plots/        --filter -143,-121,-169 
+./scripts/fitSecVtxProperties.py -i treedir/               -o outDir/control/plots/        --filter -143,-121,-169
 ```
 After creating the workspace you can use it directly by using -w workspace.root instead of -i ntuple_dir
 

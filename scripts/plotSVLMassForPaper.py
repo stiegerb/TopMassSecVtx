@@ -51,7 +51,7 @@ def makeMassPlot(histos, outname, tag='', subtag=''):
 	# ratplot.colors = [ROOT.kBlack, ROOT.kAzure-4, ROOT.kAzure+1, ROOT.kAzure-6]
 
 	# ratplot.colors = [ROOT.kBlack, ROOT.kAzure-2, ROOT.kGray, ROOT.kOrange+9]
-	ratplot.colors = [ROOT.kBlack, ROOT.kSpring-8, ROOT.kGray, ROOT.kOrange+9]
+	ratplot.colors = [ROOT.kBlack, ROOT.kSpring-8, ROOT.kGray+1, ROOT.kOrange+9]
 
 	# ratplot.colors = [ROOT.kBlack, ROOT.kOrange-4, ROOT.kOrange-3, ROOT.kOrange+9]
 

@@ -665,6 +665,10 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
                         diff =               results[(cat,sel)][var][0]  - results[(cat,sel)][difftag][0]
                         diffErr = math.sqrt( results[(cat,sel)][var][1]**2+results[(cat,sel)][difftag][1]**2 )
 
+                        # Flip all differences to get the actual
+                        # uncertainties
+                        diff *= -1
+
                         if 'pdf' in syst:
                             diff    /= 1.64485
                             diffErr /= 1.64485
@@ -691,7 +695,8 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
 
                     except KeyError:
                         try: # Hardcoded systs:
-                            diff = float(var)
+                            diff = float(var)*-1
+
                             # if cat != 'comb_0': raise ValueError # Go to empty entry
                             if diff > 0:
                                 diffstr = '$ +%4.2f          $ & ' % (diff)
@@ -1039,7 +1044,7 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         haxis.GetYaxis().SetLabelFont(43)
         haxis.GetYaxis().SetLabelSize(12)
         haxis.GetYaxis().SetLabelColor(ROOT.kGray+2)
-        haxis.GetYaxis().SetTitle('m_{top} [GeV]')
+        haxis.GetYaxis().SetTitle('m_{t} [GeV]')
         haxis.GetYaxis().SetTitleOffset(0.5)
         haxis.GetYaxis().SetTitleColor(ROOT.kGray+2)
         haxis.GetYaxis().SetTitleFont(43)
@@ -1059,13 +1064,13 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         label=ROOT.TLatex()
         label.SetNDC(0)
         label.SetTextFont(43)
-        label.SetTextSize(16)
+        label.SetTextSize(18)
         label.SetTextAlign(22)
         label.SetTextColor(graph_comb.GetLineColor())
         # label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
         # label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
         label.DrawLatex(-2.2, mt_comb,
-                        "m_{top}^{comb.} = %5.2f  "
+                        "m_{t} = %5.2f  "
                         "#pm %4.2f ^{+%4.2f}_{-%4.2f} GeV" %
                         (mt_comb, staterr_comb,
                          totup[sel]['comb_0'],

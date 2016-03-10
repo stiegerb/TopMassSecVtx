@@ -844,11 +844,11 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
     statUnc.Write()
     outF.Close()
 
-    # for sel in selections:
-    #     for cat in filterCats:
-    #         plotFragmentationVersusMtop(fitResults=results[(cat,sel)],
-    #                                     outName=cat+sel,ref='172.5',
-    #                                     options=options)
+    for sel in selections:
+        for cat in filterCats:
+            plotFragmentationVersusMtop(fitResults=results[(cat,sel)],
+                                        outName=cat+sel,ref='172.5',
+                                        options=options)
 
     return totup, totdn
 
@@ -923,9 +923,9 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         staterr_comb = results[('comb_0',sel)]['stat']
         toterrup = math.sqrt(staterr_comb**2 + totup[sel]['comb_0']**2)
         toterrdn = math.sqrt(staterr_comb**2 + totdn[sel]['comb_0']**2)
-        graph_comb.SetPoint(0, 0.5, mt_comb)
+        graph_comb.SetPoint(0, 0.75, mt_comb)
         graph_comb.SetPointError(0, 0., 0., toterrdn, toterrup)
-        graph_comb_stat.SetPoint(0, 0.5, mt_comb)
+        graph_comb_stat.SetPoint(0, 0.75, mt_comb)
         graph_comb_stat.SetPointError(0, 0., 0., staterr_comb, staterr_comb)
 
         gband = ROOT.TGraphErrors(2)
@@ -939,7 +939,7 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
             gband.SetPointError(n,0.0,errrange)
 
         gband.SetLineWidth(1)
-        gband.SetLineColor(ROOT.kAzure-8)
+        gband.SetLineColor(ROOT.kAzure-4)
         gband.SetFillColor(gband.GetLineColor())
         gband.SetFillStyle(3005)
         bandline0 = ROOT.TLine(0.0,mt_comb, MAXX, mt_comb)
@@ -948,10 +948,8 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         bandline0.SetLineStyle(3)
         for l in [bandline0, bandline1, bandline2]:
             l.SetLineColor(gband.GetLineColor())
-        divline1 = ROOT.TLine(1.0,mtmin, 1.0, mtmax)
+        divline1 = ROOT.TLine(1.5,mtmin, 1.5, mtmax)
         divline2 = ROOT.TLine(6.0,mtmin, 6.0, mtmax)
-        for l in [divline1, divline2]:
-            l.SetLineColor(ROOT.kGray+2)
         divline1.SetLineStyle(2)
         divline2.SetLineStyle(2)
 
@@ -967,7 +965,8 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
 
         ############################
         chancats = ['combem_0','combee_0','combmm_0','combe_0','combm_0']
-        chanxpos = [1.5,2.5,3.5,4.5,5.5]
+        # chanxpos = [1.5,2.5,3.5,4.5,5.5]
+        chanxpos = [1.95,1.95+0.9,1.95+2*0.9,1.95+3*0.9,1.95+4*0.9]
         graph_chan = ROOT.TGraphAsymmErrors(len(chancats))
         graph_chan.SetName("systs_chan_%s"%sel)
         graph_chan_stat = ROOT.TGraphAsymmErrors(len(chancats))
@@ -982,8 +981,8 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
             graph_chan_stat.SetPointError(n, 0., 0., staterr, staterr)
 
         graph_chan.SetLineWidth(1)
-        graph_chan.SetLineColor(ROOT.kGray+2)
-        graph_chan.SetMarkerStyle(20)
+        graph_chan.SetLineColor(1)
+        graph_chan.SetMarkerStyle(24)
         graph_chan.SetMarkerSize(1.0)
         graph_chan.SetMarkerColor(graph_chan.GetLineColor())
 
@@ -1007,48 +1006,42 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
             graph_ntrk_stat.SetPointError(n, 0., 0., staterr, staterr)
 
         graph_ntrk.SetLineWidth(1)
-        graph_ntrk.SetLineColor(ROOT.kGray+2)
-        graph_ntrk.SetMarkerStyle(20)
-        graph_ntrk.SetMarkerSize(1.0)
+        graph_ntrk.SetLineColor(1)
+        graph_ntrk.SetMarkerStyle(25)
+        graph_ntrk.SetMarkerSize(0.9)
         graph_ntrk.SetMarkerColor(graph_ntrk.GetLineColor())
 
         graph_ntrk_stat.SetLineWidth(2)
-        graph_ntrk_stat.SetLineColor(ROOT.kGray+2)
+        graph_ntrk_stat.SetLineColor(graph_ntrk.GetLineColor())
 
         ############################
-        canv = ROOT.TCanvas('c','c',800,300)
+        canv = ROOT.TCanvas('c','c',680,300)
 
-        p2 = ROOT.TPad("pad2","pad2",0.77,0.0,1.0,1.0);
+        p2 = ROOT.TPad("pad2","pad2",0.7,0.0,1.0,1.0);
         p2.SetLeftMargin(0.01)
-        p2.SetRightMargin(0.15)
-        p2.SetFrameLineColor(ROOT.kGray+2)
+        p2.SetRightMargin(0.20)
         p2.SetFillStyle(0)
         p2.SetTicks(0,1)
         p2.Draw()
 
-        p1 = ROOT.TPad("pad1","pad1",0.0,0.0,0.77,1.0);
-        p1.SetLeftMargin(0.40)
+        p1 = ROOT.TPad("pad1","pad1",0.0,0.0,0.7,1.0);
+        p1.SetLeftMargin(0.10)
         p1.SetRightMargin(0.01)
         p1.SetTopMargin(p2.GetTopMargin())
         p1.SetBottomMargin(p2.GetBottomMargin())
-        p1.SetFrameLineColor(ROOT.kGray+2)
         p1.SetTicks(0,1)
         p1.Draw()
         p1.cd()
 
-        haxis.GetYaxis().SetAxisColor(ROOT.kGray+2)
-        haxis.GetXaxis().SetAxisColor(ROOT.kGray+2)
         haxis.Draw('axis')
         haxis.GetYaxis().SetTickLength(0.01)
         # haxis.GetYaxis().SetLabelOffset(0.01)
         haxis.GetYaxis().SetLabelFont(43)
-        haxis.GetYaxis().SetLabelSize(12)
-        haxis.GetYaxis().SetLabelColor(ROOT.kGray+2)
+        haxis.GetYaxis().SetLabelSize(16)
         haxis.GetYaxis().SetTitle('m_{t} [GeV]')
-        haxis.GetYaxis().SetTitleOffset(0.5)
-        haxis.GetYaxis().SetTitleColor(ROOT.kGray+2)
+        haxis.GetYaxis().SetTitleOffset(0.65)
         haxis.GetYaxis().SetTitleFont(43)
-        haxis.GetYaxis().SetTitleSize(16)
+        haxis.GetYaxis().SetTitleSize(20)
         haxis.GetXaxis().SetTickLength(0)
         haxis.GetXaxis().SetLabelSize(0)
 
@@ -1067,27 +1060,29 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         label.SetTextSize(18)
         label.SetTextAlign(22)
         label.SetTextColor(graph_comb.GetLineColor())
-        # label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
-        # label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
-        label.DrawLatex(-2.2, mt_comb,
-                        "m_{t} = %5.2f  "
-                        "#pm %4.2f ^{+%4.2f}_{-%4.2f} GeV" %
-                        (mt_comb, staterr_comb,
-                         totup[sel]['comb_0'],
-                         totdn[sel]['comb_0']))
+        # # label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
+        # # label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
+        # label.DrawLatex(-2.2, mt_comb,
+        #                 "m_{t} = %5.2f  "
+        #                 "#pm %4.2f ^{+%4.2f}_{-%4.2f} GeV" %
+        #                 (mt_comb, staterr_comb,
+        #                  totup[sel]['comb_0'],
+        #                  totdn[sel]['comb_0']))
 
-        label.SetTextColor(ROOT.kGray+2)
         label.SetTextSize(14)
-        label.DrawLatex(0.55,mtmin+0.6+0.1,CATTOFLABEL['comb_0'])
-        label.DrawLatex(1.5, mtmin+0.6+0.05,CATTOFLABEL['combem_0'])
-        label.DrawLatex(2.5, mtmin+0.6+0.05,CATTOFLABEL['combee_0'])
-        label.DrawLatex(3.5, mtmin+0.6+0.05,CATTOFLABEL['combmm_0'])
-        label.DrawLatex(4.5, mtmin+0.6+0.05,CATTOFLABEL['combe_0'])
-        label.DrawLatex(5.5, mtmin+0.6+0.05,CATTOFLABEL['combm_0'])
+        label.SetTextFont(43)
+        label.DrawLatex(0.75,mtmin+0.6+0.1,'Combination')
+        label.SetTextColor(1)
+        label.DrawLatex(chanxpos[0], mtmin+0.6+0.05,CATTOFLABEL['combem_0'])
+        label.DrawLatex(chanxpos[1], mtmin+0.6+0.05,CATTOFLABEL['combee_0'])
+        label.DrawLatex(chanxpos[2], mtmin+0.6+0.05,CATTOFLABEL['combmm_0'])
+        label.DrawLatex(chanxpos[3], mtmin+0.6+0.05,CATTOFLABEL['combe_0'])
+        label.DrawLatex(chanxpos[4], mtmin+0.6+0.05,CATTOFLABEL['combm_0'])
 
 
+        label.SetTextColor(1)
         label.SetTextFont(63)
-        label.SetTextSize(20)
+        label.SetTextSize(22)
         label.SetTextAlign(11)
         label.DrawLatex(0.1,mtmax+0.15,'CMS')
         label.SetTextFont(53)
@@ -1107,17 +1102,13 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         padscale = 3.8
 
         haxis2 = ROOT.TH2D("axes2","axes2", 1, MAXX, 9.0, 1, mtmin, mtmax)
-        haxis2.GetYaxis().SetAxisColor(ROOT.kGray+2)
-        haxis2.GetXaxis().SetAxisColor(ROOT.kGray+2)
         haxis2.Draw('Y+')
-        haxis2.GetYaxis().SetTickLength(0.01*padscale)
+        haxis2.GetYaxis().SetTickLength(0.0068*padscale)
         haxis2.GetYaxis().SetLabelOffset(0.01)
         haxis2.GetYaxis().SetLabelFont(43)
-        haxis2.GetYaxis().SetLabelSize(12)
-        haxis2.GetYaxis().SetLabelColor(ROOT.kGray+2)
+        haxis2.GetYaxis().SetLabelSize(16)
         haxis2.GetYaxis().SetTitle("")
         # haxis2.GetYaxis().SetTitleOffset(0.5)
-        # haxis2.GetYaxis().SetTitleColor(ROOT.kGray+2)
         # haxis2.GetYaxis().SetTitleFont(43)
         # haxis2.GetYaxis().SetTitleSize(16)
         haxis2.GetXaxis().SetTickLength(0)
@@ -1160,6 +1151,7 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         label.SetTextFont(43)
         label.SetTextSize(16)
         label.SetTextAlign(31)
+        label.SetTextColor(1)
         label.DrawLatex(8.9,mtmax+0.15,'19.6 fb^{-1} (8 TeV)')
 
         p2.RedrawAxis()
@@ -1174,12 +1166,12 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
 
 def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     #hardcoded values, from simulation
-    fragModels={'172.5'    :("Z2* LEP r_{b}",      ROOT.kBlue,      20, 1.2, 0.7616,  0.0002),
-                'bfragdn'  :("Z2* LEP r_{b} soft", ROOT.kGray,      24, 1.2, 0.7481,  0.0003),
-                'bfragup'  :("Z2* LEP r_{b} hard", ROOT.kGray,      24, 1.2, 0.7729,  0.0003),
-                'bfragpete':("Z2* LEP Peterson",   ROOT.kRed+1,     32, 1.2, 0.7189,  0.0007),
-                'bfraglund':("Z2* LEP Lund",       ROOT.kAzure+7,   26, 1.2, 0.7670,  0.0007),
-                'bfragz2s' :('Z2* nominal',        ROOT.kOrange+7,  25, 1.2, 0.73278, 0.00009),
+    fragModels={'172.5'    :("Z2* LEP r_{b}",      ROOT.kBlue,      20, 1.5, 0.7616,  0.0002),
+                'bfragdn'  :("Z2* LEP r_{b} soft", ROOT.kGray,      24, 1.5, 0.7481,  0.0003),
+                'bfragup'  :("Z2* LEP r_{b} hard", ROOT.kGray,      24, 1.5, 0.7729,  0.0003),
+                'bfragpete':("Z2* LEP Peterson",   ROOT.kRed+1,     32, 1.5, 0.7189,  0.0007),
+                'bfraglund':("Z2* LEP Lund",       ROOT.kAzure+7,   26, 1.5, 0.7670,  0.0007),
+                'bfragz2s' :('Z2* nominal',        ROOT.kOrange+7,  25, 1.5, 0.73278, 0.00009),
     }
 
     #get the fitted values
@@ -1216,15 +1208,6 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
         haxis = ROOT.TH2D("axes","axes", 1, 0.69, 0.81, 1, -3.15, 1.95)
     else:
         haxis = ROOT.TH2D("axes","axes", 1, 0.69, 0.81, 1, -3.5, 1.95)
-
-    # Gray out axes and frame:
-    c.SetFrameLineColor(ROOT.kGray+2)
-    haxis.GetYaxis().SetAxisColor(ROOT.kGray+2)
-    haxis.GetXaxis().SetAxisColor(ROOT.kGray+2)
-    haxis.GetYaxis().SetLabelColor(ROOT.kGray+2)
-    haxis.GetYaxis().SetTitleColor(ROOT.kGray+2)
-    haxis.GetXaxis().SetLabelColor(ROOT.kGray+2)
-    haxis.GetXaxis().SetTitleColor(ROOT.kGray+2)
 
     haxis.Draw('axis')
     haxis.GetXaxis().SetTitle('#LTp_{T}(B)/p_{T}(b)#GT')

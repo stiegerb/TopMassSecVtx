@@ -1166,12 +1166,12 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
 
 def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     #hardcoded values, from simulation
-    fragModels={'172.5'    :("Z2* LEP r_{b}",      ROOT.kBlue,      20, 1.5, 0.7616,  0.0002),
-                'bfragdn'  :("Z2* LEP r_{b} soft", ROOT.kGray,      24, 1.5, 0.7481,  0.0003),
-                'bfragup'  :("Z2* LEP r_{b} hard", ROOT.kGray,      24, 1.5, 0.7729,  0.0003),
-                'bfragpete':("Z2* LEP Peterson",   ROOT.kRed+1,     32, 1.5, 0.7189,  0.0007),
-                'bfraglund':("Z2* LEP Lund",       ROOT.kAzure+7,   26, 1.5, 0.7670,  0.0007),
-                'bfragz2s' :('Z2* nominal',        ROOT.kOrange+7,  25, 1.5, 0.73278, 0.00009),
+    fragModels={'172.5'    :("Z2* LEP #it{r}_{b}",       ROOT.kBlue,      20, 1.5, 0.7616,  0.0002),
+                'bfragdn'  :("Z2* LEP #it{r}_{b}^{#pm}", ROOT.kGray+1,    20, 1.5, 0.7481,  0.0003),
+                'bfragup'  :("Z2* LEP #it{r}_{b} hard",  ROOT.kGray+1,    20, 1.5, 0.7729,  0.0003),
+                'bfragpete':("Z2* LEP Peterson",   ROOT.kRed+1,     23, 1.5, 0.7189,  0.0007),
+                'bfraglund':("Z2* LEP Lund",       ROOT.kAzure+7,   22, 1.5, 0.7670,  0.0007),
+                'bfragz2s' :('Z2* nominal',        ROOT.kOrange+7,  21, 1.5, 0.73278, 0.00009),
     }
 
     #get the fitted values
@@ -1200,8 +1200,9 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
         graphs[key] = gr
 
     c=ROOT.TCanvas('c','c',500,500)
-    c.SetTopMargin(0.05)
+    c.SetTopMargin(0.065)
     c.SetRightMargin(0.05)
+    c.SetBottomMargin(0.11)
 
     # haxis = ROOT.TH2D("axes","axes", 1, 0.71, 0.78, 1, -3.15, 1.05)
     if 'optmrank' in outName:
@@ -1211,9 +1212,19 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
 
     haxis.Draw('axis')
     haxis.GetXaxis().SetTitle('#LTp_{T}(B)/p_{T}(b)#GT')
-    haxis.GetYaxis().SetTitle('#Deltam_{top} [GeV]')
-    haxis.GetXaxis().SetTitleOffset(1.2)
-    haxis.GetYaxis().SetTitleOffset(1.2)
+    haxis.GetYaxis().SetTitle('#Deltam_{t} [GeV]')
+    haxis.GetXaxis().SetTitleFont(43)
+    haxis.GetYaxis().SetTitleFont(43)
+    haxis.GetXaxis().SetTitleSize(24)
+    haxis.GetYaxis().SetTitleSize(24)
+    haxis.GetXaxis().SetTitleOffset(0.9)
+    haxis.GetYaxis().SetTitleOffset(0.7)
+    haxis.GetXaxis().SetLabelFont(43)
+    haxis.GetYaxis().SetLabelFont(43)
+    haxis.GetXaxis().SetLabelSize(18)
+    haxis.GetYaxis().SetLabelSize(18)
+    haxis.GetXaxis().SetLabelOffset(0.005)
+    haxis.GetYaxis().SetLabelOffset(0.005)
 
     mg.Draw('p')
 
@@ -1231,8 +1242,7 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     for n in range(2): gband.SetPointError(n,0.0,errrange)
 
     gband.SetLineWidth(1)
-    gband.SetLineColor(ROOT.kGray)
-    # gband.SetLineColor(ROOT.kMagenta-8)
+    gband.SetLineColor(ROOT.kGray+1)
     gband.SetFillColor(gband.GetLineColor())
     gband.SetFillStyle(3005)
     gband.Draw('3')
@@ -1254,62 +1264,42 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     pol1.SetLineWidth(2)
     pol1.SetLineStyle(1)
     pol1.SetLineColor(ROOT.kGray)
+    pol1.SetRange(0.708, 0.786)
     pol1.Draw("same")
     pol1.Print('v')
 
-    pt=ROOT.TPaveText(0.12,0.85,0.6,0.94,'brNDC')
+    pt=ROOT.TPaveText(0.0,0.94,0.6,0.99,'brNDC')
     pt.SetBorderSize(0)
     pt.SetTextFont(43)
     pt.SetFillStyle(0)
-    pt.SetTextAlign(12)
-    pt.SetTextSize(24)
-    pt.AddText('#bf{CMS}') # #it{preliminary}')
+    # pt.SetTextAlign(12)
+    pt.SetTextSize(26)
+    pt.AddText('#bf{CMS}  #it{Simulation}')
     pt.Draw()
 
     tmt = ROOT.TLatex()
     tmt.SetTextFont(43)
     tmt.SetNDC(1)
-    tmt.SetTextSize(14)
-    tmt.DrawLatex(0.15, 0.83, '#Deltam_{t} = (%0.2f GeV / 1%%) #times '
+    tmt.SetTextSize(18)
+    tmt.DrawLatex(0.13, 0.89, '#Deltam_{t} = (%0.2f GeV / 1%%) #times '
                               '#Delta#LTp_{T}(B)/p_{T}(b)#GT '
                               '#lower[0.1]{#void8} #scale[0.7]{'
-                              '#lower[0.7]{Z2*LEP rb}}'%(pol1.GetParameter(1)/100.))
+                              '#lower[0.7]{Z2*LEP #it{r}_{b}}}'%(pol1.GetParameter(1)/100.))
 
-    tmt.SetTextSize(18)
-    tmt.DrawLatex(0.55, 0.88, '(8 TeV)')
-    # tmt.DrawLatex(0.55, 0.88, '19.6 fb^{-1} (8 TeV)')
 
-    # # Draw the data result (dummy for now)
-    # data_dm = -0.5
-    # data_dx = (data_dm-pol1.GetParameter(0))/pol1.GetParameter(1)
-    # gr_data = ROOT.TGraphErrors()
-    # gr_data.SetLineColor(ROOT.kBlack)
-    # gr_data.SetLineWidth(2)
-    # gr_data.SetMarkerColor(gr_data.GetLineColor())
-    # gr_data.SetMarkerStyle(34)
-    # gr_data.SetMarkerSize(1.2)
-    # gr_data.SetName('gr_Data_%s'%outName)
-    # gr_data.SetTitle('Data')
-    # gr_data.SetPoint(0, data_dx, data_dm)
-
-    # line.SetLineColor(ROOT.kGray+2)
-    # line.SetLineStyle(2)
-    # line.SetLineWidth(1)
-    # line.DrawLine(haxis.GetXaxis().GetXmin(),data_dm,haxis.GetXaxis().GetXmax(),data_dm)
-    # line.DrawLine(data_dx,haxis.GetYaxis().GetXmin(),data_dx,data_dm)
-    # gr_data.Draw('P')
-
-    # leg = ROOT.TLegend(0.12,0.55,0.4,0.80)
-    # leg = ROOT.TLegend(0.65,0.15,0.88,0.42)
-    leg = ROOT.TLegend(0.65,0.15,0.88,0.33)
+    tlat = ROOT.TLatex()
+    tlat.SetTextFont(43)
+    tlat.SetNDC(1)
+    tlat.SetTextSize(18)
+    tlat.SetTextSize(26)
+    tlat.DrawLatex(0.80, 0.945, '8 TeV')
+    leg = ROOT.TLegend(0.65,0.15,0.88,0.375)
     leg.SetFillStyle(1001)
     leg.SetBorderSize(0)
     leg.SetFillColor(ROOT.kWhite)
     leg.SetTextFont(43)
     leg.SetTextSize(14)
-    # leg.AddEntry(gr_data, 'Data (placeholder)', 'P')
-    # for key in ['172.5', 'bfragdn', 'bfragup', 'bfragz2s', 'bfraglund', 'bfragpete']:
-    for key in ['172.5', 'bfragz2s', 'bfraglund', 'bfragpete']:
+    for key in ['172.5', 'bfragdn', 'bfragz2s', 'bfraglund', 'bfragpete']:
         leg.AddEntry(graphs[key], fragModels[key][0], 'P')
     leg.Draw()
 

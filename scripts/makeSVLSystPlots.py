@@ -552,12 +552,17 @@ def main(args, opt):
 		# Make top pt plot with both correct and wrong
 		plot = RatioPlot('toppt_paper_cor_wro')
 		plot.canvassize = (600,600)
-		plot.tag = 'Top p_{T} mis-modeling'
+		plot.tag = 'Top quark p_{T} mismodeling'
 		plot.rebin = 2
 		plot.subtag = 'Inclusive channels'
+		plot.tagpos = (0.92,0.85)
+		plot.subtagpos = (0.92,0.78)
+		plot.titlex = 'm_{svl} [GeV]'
 		plot.ratiotitle = '1 / Nominal'
-		plot.ratiorange = (0.85, 1.15)
-		plot.legpos = (0.55, 0.30)
+		# plot.ratiorange = (0.85, 1.15)
+		plot.ratiorange = (0.92, 1.08)
+		plot.legpos = (0.55, 0.38)
+		plot.ratioydivisions = 405
 		plot.colors = [ROOT.kGreen+2, ROOT.kGreen-6, ROOT.kRed+2, ROOT.kRed-6]
 		plot.add(systhistos[(tag,'nominal','cor')], 'Nominal (correct)',      includeInRatio=False)
 		plot.add(systhistos[(tag,'toppt','cor')], 'p_{T} weighted (correct)', includeInRatio=True)
@@ -572,15 +577,20 @@ def main(args, opt):
 		plot = RatioPlot('bfrag_paper')
 		plot.canvassize = (600,600)
 		plot.tag = 'b fragmentation'
+		plot.titlex = 'm_{svl} [GeV]'
 		plot.rebin = 2
 		plot.subtag = 'Inclusive channels'
-		plot.ratiotitle = '1 / Z2* rb LEP'
-		plot.ratiorange = (0.85, 1.15)
-		plot.legpos = (0.65, 0.15)
+		plot.tagpos = (0.92,0.85)
+		plot.subtagpos = (0.92,0.78)
+		plot.ratiotitle = '1 / Z2* #it{r}_{b} LEP'
+		# plot.ratiorange = (0.85, 1.15)
+		plot.ratiorange = (0.92, 1.08)
+		plot.legpos = (0.65, 0.20)
+		plot.ratioydivisions = 405
 		plot.colors = [ROOT.kMagenta, ROOT.kMagenta+2, ROOT.kMagenta-9, ROOT.kAzure+7]
-		plot.add(systhistos[(tag,'nominal', 'tot')], 'Z2* rb LEP', includeInRatio=False)
-		plot.add(systhistos[(tag,'bfragdn', 'tot')], 'Z2* rb LEP soft')
-		plot.add(systhistos[(tag,'bfragup', 'tot')], 'Z2* rb LEP hard')
+		plot.add(systhistos[(tag,'nominal', 'tot')], 'Z2* #it{r}_{b} LEP', includeInRatio=False)
+		plot.add(systhistos[(tag,'bfragdn', 'tot')], 'Z2* #it{r}_{b} LEP soft')
+		plot.add(systhistos[(tag,'bfragup', 'tot')], 'Z2* #it{r}_{b} LEP hard')
 		plot.add(systhistos[(tag,'bfragz2s','tot')], 'Z2* nominal')
 		plot.reference = [systhistos[(tag,'nominal','tot')]]
 		plot.show('bfrag_paper_%s'%tag, os.path.join(opt.outDir,'syst_plots'))

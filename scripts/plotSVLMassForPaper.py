@@ -18,9 +18,17 @@ def makeMassPlot(histos, outname, tag='', subtag=''):
 	ratplot.extratext = ''
 	ratplot.tag = tag
 	ratplot.subtag = subtag
-	ratplot.rebin = 1
-	ratplot.legpos = (0.65, 0.15)
+	ratplot.legpos = (0.65, 0.62)
 	ratplot.ratiorange = (0.7, 1.3)
+	ratplot.titlex = 'm_{svl} [GeV]'
+	ratplot.xlabelsize = 28
+	ratplot.xtitlesize = 34
+	ratplot.ylabelsize = 28
+	ratplot.ytitlesize = 34
+	ratplot.ytitleoffset = 1.8
+	ratplot.xtitleoffset = 3
+	ratplot.legendtextsize = 28
+	ratplot.legendrowsize = 0.08
 	ratplot.reference = [histos[172.5]]
         ratplot.titley = "Combinations / %3.1f GeV" %histos['data'].GetXaxis().GetBinWidth(1)
 
@@ -58,6 +66,7 @@ def makeMassPlot(histos, outname, tag='', subtag=''):
 	ratplot.drawoptions = ['PE', 'hist', 'hist', 'hist']
 	ratplot.markerstyles = [20,1,1,1]
 	ratplot.markersizes =  [1.5,1,1,1]
+	ratplot.ratioydivisions = 405
 	ratplot.show("massscan_paper_%s"%outname, opt.outDir)
 
 def main(args, opt):
@@ -152,6 +161,8 @@ if __name__ == "__main__":
 		              action="store_true", help='Scale the signals to match the data')
 	(opt, args) = parser.parse_args()
 
+	# Just so I don't forget...
+	opt.scaleSignal = True
 
 	exit(main(args, opt))
 

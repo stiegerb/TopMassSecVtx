@@ -146,7 +146,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     p1 = ROOT.TPad('p1','p1',0.0,0.85,1.0,0.0)
     p1.SetRightMargin(0.05)
     p1.SetLeftMargin(0.18)
-    p1.SetTopMargin(0.01)
+    p1.SetTopMargin(0.02)
     p1.SetBottomMargin(0.15)
     p1.Draw()
 
@@ -283,8 +283,8 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     frame2.Draw()
     frame2.GetYaxis().SetRangeUser(0,12)
     frame2.GetXaxis().SetRangeUser(165,180)
-    frame2.GetYaxis().SetNdivisions(3)
-    frame2.GetXaxis().SetNdivisions(3)
+    frame2.GetYaxis().SetNdivisions(405)
+    frame2.GetXaxis().SetNdivisions(405)
     frame2.GetXaxis().SetTitle('m_{t} [GeV]')
     frame2.GetYaxis().SetTitle('-2#DeltalogL')
 
@@ -294,6 +294,7 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     frame2.GetXaxis().SetTitleFont(43)
     frame2.GetYaxis().SetLabelFont(43)
     frame2.GetXaxis().SetLabelFont(43)
+    frame2.GetXaxis().SetLabelOffset(0.025)
 
     frame2.GetXaxis().SetTitleSize(20)
     frame2.GetXaxis().SetLabelSize(16)

@@ -1169,9 +1169,9 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     fragModels={'172.5'    :("Z2* LEP #it{r}_{b}",       ROOT.kBlue,      20, 1.5, 0.7616,  0.0002),
                 'bfragdn'  :("Z2* LEP #it{r}_{b}^{#pm}", ROOT.kGray+1,    20, 1.5, 0.7481,  0.0003),
                 'bfragup'  :("Z2* LEP #it{r}_{b} hard",  ROOT.kGray+1,    20, 1.5, 0.7729,  0.0003),
-                'bfragpete':("Z2* LEP Peterson",   ROOT.kRed+1,     23, 1.5, 0.7189,  0.0007),
-                'bfraglund':("Z2* LEP Lund",       ROOT.kAzure+7,   22, 1.5, 0.7670,  0.0007),
-                'bfragz2s' :('Z2* nominal',        ROOT.kOrange+7,  21, 1.5, 0.73278, 0.00009),
+                'bfragpete':("Z2* Peterson",             ROOT.kRed+1,     23, 1.5, 0.7189,  0.0007),
+                'bfraglund':("Z2* Lund",                 ROOT.kAzure+7,   22, 1.5, 0.7670,  0.0007),
+                'bfragz2s' :('Z2* nominal',              ROOT.kOrange+7,  21, 1.5, 0.73278, 0.00009),
     }
 
     #get the fitted values

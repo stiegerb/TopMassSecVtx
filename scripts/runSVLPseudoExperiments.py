@@ -272,7 +272,7 @@ build the fit model
 """
 def buildPDFs(ws, options, calibMap=None, prepend=''):
     allPdfs = {}
-    for ch in ['em','mm','ee','m','e','eplus','mplus','eminus','mminus']:
+    for ch in ['em','mm','ee','m','e']: #,'eplus','mplus','eminus','mminus']:
         chsel = ch
         if len(options.selection) > 0: chsel += '_%s'%options.selection
 

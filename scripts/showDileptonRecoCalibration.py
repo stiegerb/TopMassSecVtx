@@ -1,206 +1,369 @@
 #! /usr/bin/env python
 import ROOT
 import os,sys
+import pickle
 import optparse
 from UserCode.TopMassSecVtx.KinematicsMoments import defineBinsOfInterest,analyzeCorrelationOfMoments
 from UserCode.TopMassSecVtx.PlotUtils import setTDRStyle
 from UserCode.TopMassSecVtx.rounding import *
+import numpy
+import math
+import scipy.optimize as optimization
 
-WGTSYSTS=[ #('Pileup',                ['puup','pudn'],          'nominal', 'pu'),
-           #('Lepton selection',      ['lepselup','lepseldn'],  'nominal', 'lepsel'),
-           #('Lepton energy scale',   ['lesup','lesdn'],        'nominal', 'lepscale'),
-           #('Jet energy scale',      ['jesup','jesdn'],        'nominal', 'jes'),
-           #('Jet energy resolution', ['jerup','jerdn'],        'nominal', 'jer'),
-           #('B-tag efficiency',      ['btagup','btagdn'],      'nominal', 'beff'),
-           #('Mistag rate',           ['mistagup', 'mistagdn'], 'nominal', 'mistag'),
-           #('Top p_{t}',             ['toppt'],                'nominal', 'toppt')
-           ]
-FILESYSTS=[#('ME-PS', ['matchingdown','matchingup'], 'nominal', 'meps'),
-           #('Q^{2}', ['scaledown',   'scaleup'],    'nominal', 'qcdscale'),
-           #('UE',    ['p11tev',      'p11mpihi'],   'p11',     'ue'),
-           #('CR',    ['p11nocr'],                   'p11',     'cr'),
-           #('NLO',   ['powpyth'],                   'nominal', 'nlo')      
-           ]
-OBSERVABLES=[('O^{1} p_{T}(ll) [GeV]',             'ptllo1'),
-             ('O^{2} p_{T}(ll) [GeV^{2}]',         'ptllo2'),
-             ('O^{3} p_{T}(ll) [GeV^{3}]',         'ptllo3'),
-             # ('O^{1} p_{T}(+)+p_{T}(-) [GeV]',     'ptsumo1'),
-             #('O^{2} p_{T}(+)+p_{T}(-) [GeV^{2}]', 'ptsumo2'),
-             #('O^{3} p_{T}(+)+p_{T}(-) [GeV^{3}]', 'ptsumo3'),
-             #('O^{1} E(+)+E(-) [GeV]',             'ensumo1'),
-             #('O^{2} E(+)+E(-) [GeV^{2}]',         'ensumo2'),
-             #('O^{3} E(+)+E(-) [GeV^{3}]',         'ensumo3'),
-             #('O^{1} M(ll) [GeV]',                 'mllo1'),
-             #('O^{2} M(ll) [GeV^{2}]',             'mllo2'),
-             #('O^{3} M(ll) [GeV^{3}]',             'mllo3'),
-             #('O^{1} p_{T}(+) [GeV]',              'ptposo1'),
-             #('O^{2} p_{T}(+) [GeV^{2}]',          'ptposo2'),
-             #('O^{3} p_{T}(+) [GeV^{3}]',          'ptposo3')
-             #('O^{1} E(+) [GeV]',              'enposo1'),
-             #('O^{2} E(+) [GeV]',              'enposo2'),
-             #('O^{3} E(+) [GeV]',              'enposo3'),
-             ]
+def linearFunc(x, offset, slope) : return offset + slope*x
+
+SYSTS=[ 
+    ['Pileup',                ['ttbar_puup',     'ttbar_pudn'],         'calib'],
+    ['Lepton selection',      ['ttbar_lepselup', 'ttbar_lepseldn'],     'calib'],
+    ['Lepton energy scale',   ['ttbar_lesup',    'ttbar_lesdn'],        'calib'],
+    ['Jet energy scale',      ['ttbar_jesup',    'ttbar_jesdn'],        'calib'],
+    ['Jet energy resolution', ['ttbar_jerup',    'ttbar_jerdn'],        'calib'],
+    ['B-tag efficiency',      ['ttbar_btagup',   'ttbar_btagdn'],       'calib'],
+    ['Mistag rate',           ['ttbar_mistagup', 'ttbar_mistagdn'],     'calib'],
+    ['Top p_{t}',             ['ttbar_toppt'],                          'calib'],
+    ['ME-PS',                 ['ttbar_mepsdn',     'ttbar_mepsup'],     'calib'],
+    ['t#bar{t} Q^{2}',        ['ttbar_qcdscaledn', 'ttbar_qcdscaleup'], 'calib'],
+    ['tW Q^{2}',              ['tW_qcdscaledn',    'tW_qcdscaleup'],    'calib'],
+    ['UE',                    ['ttbar_p11tev',     'ttbar_p11mpihi'],   'ttbar_p11'],
+    ['CR',                    ['ttbar_p11nocr'],                        'ttbar_p11'],
+    ['NLO',                   ['ttbar_nlo'],                            'calib'],
+    ['tW DS',                 ['tW_int'],                               'calib'],
+    ['tW norm',               ['tW_up','tW_dn'],                        'calib'],
+    ['Bkg. norm',             ['otherbg_up','otherbg_dn'],              'calib'],
+    ['PDF',                   [],                                       'calib'],
+    ]
+for i in xrange(1,52): SYSTS[-1][1].append('ttbar_pdf%d'%i)
+
+OBSERVABLES=[ 
+ #   ['O^{1} p_{T}(+)',          ('#splitline{#scale[0.6]{ptpos}}{O^{1}}',    '#splitline{#scale[0.6]{ptpos}}{O^{2}}',    '#splitline{#scale[0.6]{ptpos}}{O^{0}}')],
+ #   ['O^{2} p_{T}(+)',          ('#splitline{#scale[0.6]{ptpos}}{O^{2}}',    '#splitline{#scale[0.6]{ptpos}}{O^{4}}',    '#splitline{#scale[0.6]{ptpos}}{O^{0}}')],
+ #   ['O^{1} E(+)',              ('#splitline{#scale[0.6]{enpos}}{O^{1}}',    '#splitline{#scale[0.6]{enpos}}{O^{2}}',    '#splitline{#scale[0.6]{enpos}}{O^{0}}')],
+#    ['O^{2} E(+)',              ('#splitline{#scale[0.6]{enpos}}{O^{2}}',    '#splitline{#scale[0.6]{enpos}}{O^{4}}',    '#splitline{#scale[0.6]{enpos}}{O^{0}}')],
+#    ['O^{1} p_{T}(+)+p_{T}(-)', ('#splitline{#scale[0.6]{ptposptm}}{O^{1}}', '#splitline{#scale[0.6]{ptposptm}}{O^{2}}', '#splitline{#scale[0.6]{ptposptm}}{O^{0}}')],
+#    ['O^{2} p_{T}(+)+p_{T}(-)', ('#splitline{#scale[0.6]{ptposptm}}{O^{2}}', '#splitline{#scale[0.6]{ptposptm}}{O^{4}}', '#splitline{#scale[0.6]{ptposptm}}{O^{0}}')],
+    ['O^{1} p_{T}(ll)',         ('#splitline{#scale[0.6]{ptll}}{O^{1}}',     '#splitline{#scale[0.6]{ptll}}{O^{2}}',     '#splitline{#scale[0.6]{ptll}}{O^{0}}')],
+    ['O^{2} p_{T}(ll)',         ('#splitline{#scale[0.6]{ptll}}{O^{2}}',     '#splitline{#scale[0.6]{ptll}}{O^{4}}',     '#splitline{#scale[0.6]{ptll}}{O^{0}}')],
+#    ['O^{1} M(ll)',             ('#splitline{#scale[0.6]{mll}}{O^{1}}',      '#splitline{#scale[0.6]{mll}}{O^{2}}',      '#splitline{#scale[0.6]{mll}}{O^{0}}')],
+#    ['O^{2} M(ll)',             ('#splitline{#scale[0.6]{mll}}{O^{2}}',      '#splitline{#scale[0.6]{mll}}{O^{4}}',      '#splitline{#scale[0.6]{mll}}{O^{0}}')],
+#    ['O^{1} E(+)+E(-)',         ('#splitline{#scale[0.6]{EposEm}}{O^{1}}',   '#splitline{#scale[0.6]{EposEm}}{O^{2}}',   '#splitline{#scale[0.6]{EposEm}}{O^{0}}')],
+#    ['O^{2} E(+)+E(-)',         ('#splitline{#scale[0.6]{EposEm}}{O^{2}}',   '#splitline{#scale[0.6]{EposEm}}{O^{4}}',   '#splitline{#scale[0.6]{EposEm}}{O^{0}}')],
+    ]
 
 """
 show calibration curves
 """
-def prepareCalibration(opt):
-
-    file_list=os.listdir(opt.input)
-
+def prepareCalibration(opt,file_list):
+    
     binsOfInterest=[]
 
-    #ttbar model variations
-    avgXmodelVars={}
-    for syst,tag in [('matchingdown','MSDecays_matchingdown'),
-                     ('matchingup',  'MSDecays_matchingup'),
-                     ('p11',         'TuneP11'),
-                     ('p11nocr',     'TuneP11noCR'),
-                     ('p11tev',      'TuneP11TeV'),
-                     ('p11mpihi',    'TuneP11mpiHi'),
-                     ('scaledown',   'MSDecays_scaledown'),
-                     ('scaleup',     'MSDecays_scaleup'),
-                     ('powpyth',     'TT_Z2star_powheg_pythia'),
-                     ('powhw',       'TT_AUET2_powheg_herwig')
+    #
+    # MASS SCAN
+    #
+
+    #tW 
+    tW_MassScan={}
+    for mass,tagList in [
+        [166.5,('MC8TeV_SingleTbar_tW_166v5', 'MC8TeV_SingleT_tW_166v5')],
+        [172.5,('MC8TeV_SingleTbar_tW',       'MC8TeV_SingleT_tW')],
+        [178.5,('MC8TeV_SingleTbar_tW_178v5', 'MC8TeV_SingleT_tW_178v5')],
         ]:
-
-        #sum up correlation histograms are RECO levels
-        ObsCorrHistos={}
-        for f in file_list:
-            if not tag in f : continue
-            fIn=ROOT.TFile.Open(os.path.join(opt.input,f))
+        tW_Corr={}
+        for tag in tagList:
+            url,xsecWgt=file_list[tag]
+            fIn=ROOT.TFile.Open(url)
             for key in fIn.GetListOfKeys():
-                varName=key.GetName()
-                obj=fIn.Get('%s/obscorr%s'%(varName,varName))
+                varName=key.GetName().replace(opt.tier,'')
+                obj=fIn.Get('%s%s/obscorr%s%s'%(varName,opt.tier,varName,opt.tier))
                 if not obj: continue
-                if not varName in ObsCorrHistos:
-                    ObsCorrHistos[varName]=obj.Clone()
-                    ObsCorrHistos[varName].SetDirectory(0)
+                obj.Scale(xsecWgt)
+                if not varName in tW_Corr:
+                    tW_Corr[varName]=obj.Clone()
+                    tW_Corr[varName].SetDirectory(0)
                 else:
-                    ObsCorrHistos[varName].Add(obj)
-            fIn.Close()        
-
-        #check which are the relevant bins
-        if len(binsOfInterest)==0 : binsOfInterest=defineBinsOfInterest(ObsCorrHistos['nominal'],OBSERVABLES)
-        avgX,sigmaX,cXY,avgX0=analyzeCorrelationOfMoments(ObsCorrHistos['nominal'],binsOfInterest,False)
-        raw_input()
-        avgXmodelVars[syst]=avgX
-
-    
-    #mass scan
-    momentCalibration={}
-    for mass,tag in [
-        (166.5,'TTJets_MSDecays_166v5'),
-        (169.5,'TTJets_MSDecays_169v5'),
-        (171.5,'TTJets_MSDecays_171v5'),
-        (172.5,'TTJets_MSDecays_172v5'),
-        (173.5,'TTJets_MSDecays_173v5'),
-        (175.5,'TTJets_MSDecays_175v5'),
-        (178.5,'TTJets_MSDecays_178v5')
-        ]:
-
-        #sum up correlation histograms are RECO and GEN levels
-        ObsCorrHistos={}
-        for f in file_list:
-            if not tag in f : continue
-            fIn=ROOT.TFile.Open(os.path.join(opt.input,f))
-            for key in fIn.GetListOfKeys():
-                varName=key.GetName()
-                obj=fIn.Get('%s/obscorr%s'%(varName,varName))
-                if not obj: continue
-                if not varName in ObsCorrHistos:
-                    ObsCorrHistos[varName]=obj.Clone()
-                    ObsCorrHistos[varName].SetDirectory(0)
-                else:
-                    ObsCorrHistos[varName].Add(obj)
+                    tW_Corr[varName].Add(obj)
             fIn.Close()
-
-        #analyze correlations
-        avgX,sigmaX,cXY,avgX0=analyzeCorrelationOfMoments(ObsCorrHistos['nominal'],binsOfInterest,False)
-        avgX_gen,sigmaX_gen,cXY_gen,avgX0_gen=analyzeCorrelationOfMoments(ObsCorrHistos['nominal_gen'],binsOfInterest,False)
+        if len(binsOfInterest)==0 : binsOfInterest=defineBinsOfInterest(tW_Corr['nominal'],OBSERVABLES)
+        tW_MassScan[mass]=tW_Corr
+    print binsOfInterest
+    #ttbar
+    ttbar_MassScan={}
+    for mass,tagList in [                 
+        [166.5,('MC8TeV_TTJets_MSDecays_166v5',)],
+        [169.5,('MC8TeV_TTJets_MSDecays_169v5',)],
+        [171.5,('MC8TeV_TTJets_MSDecays_171v5',)],
+        [172.5,('MC8TeV_TTJets_MSDecays_172v5',)], 
+        [173.5,('MC8TeV_TTJets_MSDecays_173v5',)],
+        [175.5,('MC8TeV_TTJets_MSDecays_175v5',)],
+        [178.5,('MC8TeV_TTJets_MSDecays_178v5',)]
+        ]:
         
-        #statistical uncertainty
-        uncX,uncX_gen={},{}
-        for i in xrange(0,sigmaX.GetNoElements()): 
-            sigmaX[i]=sigmaX[i]/ROOT.TMath.Sqrt(avgX0)
-            sigmaX_gen[i]=sigmaX_gen[i]/ROOT.TMath.Sqrt(avgX0_gen)
-        uncX['Stat.']=[sigmaX]
-        uncX_gen['Stat.']=[sigmaX_gen]
+        ttbarCorr={}
+        for tag in tagList:
+            url,xsecWgt=file_list[tag]
+            fIn=ROOT.TFile.Open(url)
+            for key in fIn.GetListOfKeys():
+                varName=key.GetName().replace(opt.tier,'')
+                obj=fIn.Get('%s%s/obscorr%s%s'%(varName,opt.tier,varName,opt.tier))
+                if not obj: continue
+                obj.Scale(xsecWgt)
+                if not varName in ttbarCorr:
+                    ttbarCorr[varName]=obj.Clone()
+                    ttbarCorr[varName].SetDirectory(0)
+                else:
+                    ttbarCorr[varName].Add(obj)
+            fIn.Close()
+        ttbar_MassScan[mass]=ttbarCorr
 
-        #experimental uncertainties 
-        cXYstab={}
-        for syst in WGTSYSTS:
-
-            title=syst[0]
-            subsources=syst[1]
-            name=syst[3]
-
-            uncX[title]=[]
-            cXYstab[title]=[]
-            for systVar in subsources:
-
-                #only for 172.5 GeV these are filled
-                if not (systVar in ObsCorrHistos) : continue
-
-                avgX_i, _, cXY_i, _ = analyzeCorrelationOfMoments(ObsCorrHistos[systVar],binsOfInterest,False)
-                for i in xrange(0,avgX_i.GetNoElements()):
-                    avgX_i[i]=avgX_i[i]-avgX[i]
-                    for j in xrange(0,avgX_i.GetNoElements()):
-                        if cXY[i][j]==0 : continue
-                        cXY_i[i][j]=cXY_i[i][j]-cXY[i][j]
-                uncX[title].append(avgX_i)
-                cXYstab[title].append(cXY_i)
-
-        #save for calibration
-        momentCalibration[mass]=(avgX,uncX,avgX_gen,uncX_gen,cXY,cXYstab)
-
-    #calibrate individually the measurements 
-    #(only stat unc taken into account, total experimental uncertainties will be shown for reference)
+    #derive calibration curves
     mtopCalib={}
-    idx=0
-    for title,name in OBSERVABLES:
-        offset,slope=showMomentCalibration(momentCalibration,idx,title,opt.output)
-        mtopCalib[idx]=(offset,slope)
-        idx+=1
-    
-    #add theory uncertainties (only available for 172.5 GeV, assume it holds for other mass points)
-    modelUncs={}
-    for syst in FILESYSTS:
-        title=syst[0]
-        subsources=syst[1]
-        reference=syst[2]
-        name=syst[3]
+    for obsTitle,muBin,stdBin,ctrBin in binsOfInterest:
 
-        modelUncs[title]=[]
-        for systVar in subsources:
-            avgX_i = avgXmodelVars[systVar]
-            referenceX=momentCalibration[172.5][0]
-            if reference!='nominal': referenceX=avgXmodelVars[reference]
+        #interpolate the tW simulations
+        x_tW, yn_tW, yobs_tW, sigman_tW,sigmaobs_tW=[],[],[],[],[]
+        for mass in tW_MassScan:
+            n=tW_MassScan[mass]['nominal'].GetBinContent(ctrBin,ctrBin)
+            nerr=tW_MassScan[mass]['nominal'].GetBinError(ctrBin,ctrBin)
+            mu=tW_MassScan[mass]['nominal'].GetBinContent(ctrBin,muBin)/n
+            std=math.sqrt(tW_MassScan[mass]['nominal'].GetBinContent(ctrBin,stdBin)/n-mu**2)/(n/nerr)
+            x_tW.append( mass )
+            yn_tW.append( n )
+            sigman_tW.append( nerr )
+            yobs_tW.append( mu )
+            sigmaobs_tW.append( std )
+        tWobsParam = numpy.array([0.0,0.0])
+        tWobsParam = optimization.curve_fit(linearFunc, numpy.array(x_tW), numpy.array(yobs_tW), tWobsParam, numpy.array(sigmaobs_tW))[0]
+        tWnParam   = numpy.array([0.0,0.0])
+        tWnParam   = optimization.curve_fit(linearFunc, numpy.array(x_tW), numpy.array(yn_tW),   tWnParam,   numpy.array(sigman_tW))[0]
 
-            #take the difference to the reference
-            for i in xrange(0,avgX_i.GetNoElements()): avgX_i[i]=avgX_i[i]-referenceX[i]
+        #interpolate the ttbar simulations
+        x_ttbar, yn_ttbar, yobs_ttbar, sigman_ttbar,sigmaobs_ttbar=[],[],[],[],[]
+        for mass in ttbar_MassScan:
+            n=ttbar_MassScan[mass]['nominal'].GetBinContent(ctrBin,ctrBin)
+            nerr=ttbar_MassScan[mass]['nominal'].GetBinError(ctrBin,ctrBin)
+            mu=ttbar_MassScan[mass]['nominal'].GetBinContent(ctrBin,muBin)/n
+            std=math.sqrt(ttbar_MassScan[mass]['nominal'].GetBinContent(ctrBin,stdBin)/n-mu**2)/(n/nerr)
+            x_ttbar.append( mass )
+            yn_ttbar.append( n )
+            sigman_ttbar.append( nerr )
+            yobs_ttbar.append( mu )
+            sigmaobs_ttbar.append( std )
+        ttbarobsParam = numpy.array([0.0,0.0])
+        ttbarobsParam = optimization.curve_fit(linearFunc, numpy.array(x_ttbar), numpy.array(yobs_ttbar), ttbarobsParam, numpy.array(sigmaobs_ttbar))[0]
+        ttbarnParam   = numpy.array([0.0,0.0])
+        ttbarnParam   = optimization.curve_fit(linearFunc, numpy.array(x_ttbar), numpy.array(yn_ttbar),   ttbarnParam,   numpy.array(sigman_ttbar))[0]
 
-            modelUncs[title].append(avgX_i)
+        #get calibration
+        mtopCalib[obsTitle]=showMomentCalibration(
+            tW     = [x_tW,    yobs_tW,    sigmaobs_tW,    tWobsParam,    tWnParam],
+            ttbar  = [x_ttbar, yobs_ttbar, sigmaobs_ttbar, ttbarobsParam, ttbarnParam],
+            title  = obsTitle,
+            outDir = opt.output
+            )
+
+    #build syst scan
+    systScan={}
+    systVariationsToUse = [ ['calib',              ()],
+                            ['ttbar_puup',         ()],
+                            ['ttbar_pudn',         ()],
+                            ['ttbar_lepselup',     ()],
+                            ['ttbar_lepseldn',     ()],
+                            ['ttbar_lesup',        ()],
+                            ['ttbar_lesdn',        ()],
+                            ['ttbar_jesup',        ()],
+                            ['ttbar_jesdn',        ()],  
+                            ['ttbar_jerup',        ()],
+                            ['ttbar_jerdn',        ()], 
+                            ['ttbar_btagup',       ()],
+                            ['ttbar_btagdn',       ()],
+                            ['ttbar_mistagup',     ()],
+                            ['ttbar_mistagdn',     ()],
+                            ['ttbar_toppt',        ()],
+                            ['ttbar_mepsup',       ('MC8TeV_TTJets_MSDecays_matchingup',)],
+                            ['ttbar_mepsdn',       ('MC8TeV_TTJets_MSDecays_matchingdown','MC8TeV_TTJets_MSDecays_matchingdown_v2')],
+                            ['ttbar_qcdscaleup',   ('MC8TeV_TTJets_MSDecays_scaleup',)],
+                            ['ttbar_qcdscaledn',   ('MC8TeV_TTJets_MSDecays_scaledown',)],        
+                            ['ttbar_p11',          ('MC8TeV_TTJets_TuneP11',)],
+                            ['ttbar_p11tev',       ('MC8TeV_TTJets_TuneP11TeV',)],
+                            ['ttbar_p11mpihi',     ('MC8TeV_TTJets_TuneP11mpiHi',)],
+                            ['ttbar_p11nocr',      ('MC8TeV_TTJets_TuneP11noCR',)],
+                            ['ttbar_nlo',          ('MC8TeV_TT_Z2star_powheg_pythia',)],
+                            ['tW_qcdscaleup',      ('MC8TeV_SingleTbar_tW_scaleup','MC8TeV_SingleT_tW_scaleup',)],
+                            ['tW_qcdscaledn',    ('MC8TeV_SingleTbar_tW_scaledown','MC8TeV_SingleT_tW_scaledown',)],
+                            ['tW_int',             ('MC8TeV_SingleTbar_tW_DS','MC8TeV_SingleT_tW_DS',)],
+                            ['tW_up',              ()],
+                            ['tW_dn',            ()],
+                            ['otherbg_up',         ('MC8TeV_DY1JetsToLL_50toInf',  'MC8TeV_DY3JetsToLL_50toInf',  'MC8TeV_DYJetsToLL_10to50', 'MC8TeV_DY2JetsToLL_50toInf', 'MC8TeV_DY4JetsToLL_50toInf',  'MC8TeV_DYJetsToLL_50toInf')],
+                            ['otherbg_dn',         ('MC8TeV_DY1JetsToLL_50toInf',  'MC8TeV_DY3JetsToLL_50toInf',  'MC8TeV_DYJetsToLL_10to50', 'MC8TeV_DY2JetsToLL_50toInf', 'MC8TeV_DY4JetsToLL_50toInf',  'MC8TeV_DYJetsToLL_50toInf')],
+                            ]
+    for i in xrange(1,52): systVariationsToUse.append( ['ttbar_pdf%d'%i,()] )
+
+    for syst,tagList in systVariationsToUse:
+
+        icorr={}
+        for tag in tagList:
+            url,xsecWgt=file_list[tag]
+            fIn=ROOT.TFile.Open(url)         
+            for key in fIn.GetListOfKeys():
+                varName=key.GetName().replace(opt.tier,'')
+                obj=fIn.Get('%s%s/obscorr%s%s'%(varName,opt.tier,varName,opt.tier))
+                if not obj: continue
+                obj.Scale(xsecWgt)
+                if not varName in icorr:
+                    icorr[varName]=obj.Clone()
+                    icorr[varName].SetDirectory(0)
+                else:
+                    icorr[varName].Add(obj)
+            fIn.Close()
+            
+        #init with ttbar
+        ttbarH = ttbar_MassScan[172.5]['nominal']
+        if 'ttbar_' in syst:
+            systName=syst.split('_')[1]
+            if systName in ttbar_MassScan[172.5]:
+                ttbarH=ttbar_MassScan[172.5][systName]
+            elif 'nominal' in icorr:                
+                ttbarH=icorr['nominal']
+        totalH = ttbarH.Clone('total_%s'%syst)
+        
+        #add tW
+        tWH = tW_MassScan[172.5]['nominal']    
+        if 'tW_up' == syst     : 
+            totalH.Add(tWH,1.07)
+        elif 'tW_dn' == syst : 
+            totalH.Add(tWH,0.93)
+        elif 'tW_' in syst     :             
+            tWH=icorr['nominal']
+            totalH.Add(tWH)
+        else:
+            totalH.Add(tWH)
+        
+        #background variations
+        if 'otherbg_up'==syst:
+            totalH.Add(icorr['nominal'],0.2)
+        elif 'otherbg_dn'==syst:
+            totalH.Add(icorr['nominal'],-0.2)
+
+        #save
+        totalH.SetDirectory(0)
+        systScan[syst]=totalH
+
+    systsTable=[]
+    for obsTitle,muBin,stdBin,ctrBin in binsOfInterest:
+
+        systsTable.append( [obsTitle, [] ] )
+        for systTitle,systVars,refVar in SYSTS:
+            
+            refMu,mtopRef=0,172.5
+            if refVar in systScan :
+                refMu=systScan[refVar].GetBinContent(ctrBin,muBin)/systScan[refVar].GetBinContent(ctrBin,ctrBin)
+                mtopRef=mtopCalib[obsTitle].GetX(refMu)
+
+            if systTitle=='PDF':
+                
+                refMu=systScan['ttbar_pdf1'].GetBinContent(ctrBin,muBin)/systScan['ttbar_pdf1'].GetBinContent(ctrBin,ctrBin)
+                mtopRef=mtopCalib[obsTitle].GetX(refMu)
+
+                #cf http://www.hep.ucl.ac.uk/pdf4lhc/PDF4LHC_practical_guide.pdf#2
+                upVar,dnVar=0,0
+                for i in xrange(0,len(systVars)/2):
+
+                    systUp=systVars[2*i+1]
+                    mtopUp=mtopCalib[obsTitle].GetX( systScan[systUp].GetBinContent(ctrBin,muBin)/systScan[systUp].GetBinContent(ctrBin,ctrBin) )
+                    systDn=systVars[2*i+2]
+                    mtopDn=mtopCalib[obsTitle].GetX( systScan[systDn].GetBinContent(ctrBin,muBin)/systScan[systDn].GetBinContent(ctrBin,ctrBin) )
+                    
+                    #upVar += ROOT.TMath.Max(mtopUp-mtopRef,mtopDn-mtopRef)**2
+                    #dnVar += ROOT.TMath.Max(mtopRef-mtopUp,mtopRef-mtopDn)**2
+                    
+                    upVar += (mtopUp-mtopDn)**2
+                    dnVar += (mtopUp-mtopDn)**2
 
 
-    #calibrate combination
-    for mass in momentCalibration:
-        runCombinationDataCard(mass=mass,
-                               avgX=momentCalibration[mass][0],
-                               uncX=momentCalibration[mass][1],
-                               modelUncs=modelUncs,
-                               cXY=momentCalibration[mass][4],
-                               mtopCalib=mtopCalib,
-                               outDir=opt.output)
-        if mass!=172.5 : continue
-        printMomentTable(mass=mass,
-                         avgX=momentCalibration[mass][0],
-                         uncX=momentCalibration[mass][1],
-                         modelUncs=modelUncs,
-                         cXY=momentCalibration[mass][4],
-                         mtopCalib=mtopCalib,
-                         outDir=opt.output)
+                c90=1.64485
+                upVar=0.5*ROOT.TMath.Sqrt(upVar)/c90
+                dnVar=0.5*ROOT.TMath.Sqrt(dnVar)/c90
+                systsTable[-1][1].append( (systTitle,upVar,-dnVar) )
+            else:
+                upVar,dnVar=0,0
+                systCtr=0
+                for syst in systVars:
+                    systCtr+=1
+                    diffVal=systScan[syst].GetBinContent(ctrBin,muBin)/systScan[syst].GetBinContent(ctrBin,ctrBin)
+                    diffMtop=mtopCalib[obsTitle].GetX(diffVal)-mtopRef
+                    if systCtr==1 : upVar = diffMtop
+                    else : dnVar=diffMtop
 
+                systsTable[-1][1].append( (systTitle,upVar,dnVar) )
+    printSystsTable(systsTable,outDir=opt.output)
+
+
+    if not opt.unblind : return
+    print 'Results in data'
+   
+    #build the background to subtract
+    bgList=('MC8TeV_DYJetsToLL_50toInf', 'MC8TeV_DY1JetsToLL_50toInf', 'MC8TeV_DY2JetsToLL_50toInf', 'MC8TeV_DY3JetsToLL_50toInf', 'MC8TeV_DY4JetsToLL_50toInf','MC8TeV_DYJetsToLL_10to50',
+            'MC8TeV_SingleT_s', 'MC8TeV_SingleTbar_s',
+            'MC8TeV_SingleT_t', 'MC8TeV_SingleTbar_t',
+            'MC8TeV_WJets', 'MC8TeV_W1Jets', 'MC8TeV_W2Jets', 'MC8TeV_W3Jets', 'MC8TeV_W4Jets',
+            'MC8TeV_WW', 'MC8TeV_WZ', 'MC8TeV_ZZ',
+            'MC8TeV_TTWJets', 'MC8TeV_TTZJets'
+            )
+    bgH=None
+    for tag in bgList:
+        url,xsecWgt=file_list[tag]
+        fIn=ROOT.TFile.Open(url)         
+        obj=fIn.Get('nominal%s/obscorrnominal%s'%(opt.tier,opt.tier))
+        obj.Scale(xsecWgt)
+        if bgH is None:
+            bgH=obj.Clone('bg')
+            bgH.SetDirectory(0)
+        else:
+            bgH.Add(obj)
+        fIn.Close()
+    bgH.Scale(opt.lumi)
+
+    #build the data histograms
+    dataList=('Data8TeV_MuEG2012A','Data8TeV_MuEG2012B','Data8TeV_MuEG2012C','Data8TeV_MuEG2012D')
+    dataH=None
+    for tag in dataList:
+        url,_=file_list[tag]
+        fIn=ROOT.TFile.Open(url)
+        obj=fIn.Get('nominal/obscorrnominal')
+        if dataH is None:
+            dataH=obj.Clone('data')
+            dataH.SetDirectory(0)
+        else:
+            dataH.Add(obj)
+        fIn.Close()
+    dataSubH=dataH.Clone('datasub')
+    dataSubH.SetDirectory(0)
+    dataSubH.Add(bgH,-1)
+    for obsTitle,muBin,stdBin,ctrBin in binsOfInterest:
+        
+        calibMuOffset=systScan['calib'].GetBinContent(ctrBin,muBin)/systScan['calib'].GetBinContent(ctrBin,ctrBin)
+        calibMtopOffset=172.5-mtopCalib[obsTitle].GetX(calibMuOffset)
+
+        dataN       = dataH.GetBinContent(ctrBin,ctrBin)
+        dataMu      = dataH.GetBinContent(ctrBin,muBin)/dataN
+        dataMuUnc   = math.sqrt(dataH.GetBinContent(ctrBin,stdBin)/dataN-dataMu**2)/math.sqrt(dataN)
+        dataMtop    = mtopCalib[obsTitle].GetX(dataMu)+calibMtopOffset
+        dataMtopUnc = mtopCalib[obsTitle].GetX(dataMu+dataMuUnc)-dataMtop
+
+        dataSubN     = dataSubH.GetBinContent(ctrBin,ctrBin)
+        dataSubMu    = dataSubH.GetBinContent(ctrBin,muBin)/dataSubN
+        dataSubMuUnc = math.sqrt( dataSubH.GetBinContent(ctrBin,stdBin)/dataSubN-dataSubMu**2)/math.sqrt(dataSubN)
+        dataSubMtop  = mtopCalib[obsTitle].GetX(dataSubMu)+calibMtopOffset
+        dataSubMtopUnc = mtopCalib[obsTitle].GetX(dataSubMu+dataSubMuUnc)-dataSubMtop
+
+        print '%15s & %d & %15s & %15s & %15s & %3.2f $\\pm$ %3.2f\\\\'%(obsTitle,
+                                                                         dataN,
+                                                                         toLatexRounded(dataMu,dataMuUnc),
+                                                                         toLatexRounded(dataSubMu,dataSubMuUnc),
+                                                                         toLatexRounded(dataMtop,dataMtopUnc),
+                                                                         dataSubMtop,dataSubMtopUnc
+                                                                         )
+        
+        #
 
 
 """
@@ -339,6 +502,36 @@ def runCombinationDataCard(mass,avgX,uncX,modelUncs,cXY,mtopCalib,outDir):
 """
 Prints the results for the measurement of the moments
 """
+def printSystsTable(systsTable,outDir):
+
+    finalTable=[]
+    finalTable.append('%25s &'%'Variable')
+    for obs, _ in systsTable:
+        finalTable[-1] += '%25s &'%obs
+    finalTable[-1]=finalTable[-1][:-1]
+    
+    for i in xrange(0,len(systsTable[0][1])):
+
+        systName,_,_=systsTable[0][1][i]
+        finalTable.append( '%25s &'%systName )
+        for j in xrange(0,len(systsTable)):
+            _,varUp,varDn = systsTable[j][1][i]
+            finalTable[-1] += '%25s &'% (' %3.2f/%3.2f' % (varUp,varDn))
+        finalTable[-1]=finalTable[-1][:-1]
+
+
+    #dump the table to a file
+    card=open('%s/systs.dat'%(outDir),'w')
+    for line in finalTable:
+        card.write(line+'\\\\\n')
+        print line
+    card.close()
+
+
+
+"""
+Prints the results for the measurement of the moments
+"""
 def printMomentTable(mass,avgX,uncX,modelUncs,cXY,mtopCalib,outDir):
 
     momentTable=[]
@@ -389,6 +582,7 @@ def printMomentTable(mass,avgX,uncX,modelUncs,cXY,mtopCalib,outDir):
 
 
 
+
 def showCorrelation(cXY,cXYstab,outDir):
 
     cXYH=ROOT.TH2F('cxyh','cxy',cXY.GetNcols(),0,cXY.GetNcols(),cXY.GetNrows(),0,cXY.GetNrows())
@@ -430,80 +624,88 @@ def showCorrelation(cXY,cXYstab,outDir):
 
         c.Modified()
         c.Update()
-        for ext in ['png','pdf']:
+        for ext in ['png','pdf','C']:
             c.SaveAs('%s/%s.%s'%(outDir,name,ext))
 
 
 
 """
 """
-def showMomentCalibration(momentCalibration,idx,title,outDir):
+def showMomentCalibration(tW,ttbar,title,outDir):
     c=ROOT.TCanvas('c','c',500,500)
-    grStat=ROOT.TGraphErrors()
-    grStat.SetName('stat')
-    grStat.SetMarkerStyle(20)
-    grTotal=ROOT.TGraphErrors()
-    grTotal.SetName('total')
-    grTotal.SetMarkerStyle(1)
-    grGen=ROOT.TGraphErrors()
-    grGen.SetMarkerStyle(24)
-    grGen.SetMarkerColor(ROOT.kGray)
-    grGen.SetLineColor(ROOT.kGray)
-    for mass in momentCalibration:
-        np=grStat.GetN()
 
-        grGen.SetPoint(np,mass,momentCalibration[mass][2][idx])
-        grGen.SetPointError(np,0,momentCalibration[mass][3]['Stat.'][0][idx])
+    leg=ROOT.TLegend(0.45,0.93,0.65,0.99)
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    #leg.SetNColumns(2)
+    leg.SetTextFont(42)
+    leg.SetTextSize(0.025)
 
-        avgX=momentCalibration[mass][0][idx]
-        uncX=momentCalibration[mass][1]
-        grStat.SetPoint(np,mass,avgX)
-        grStat.SetPointError(np,0,uncX['Stat.'][0][idx])
+    allGr,allFunc=[],[]
+    minY,maxY=9e+20,-9e+20
+    for data in [ttbar,tW]:
+        x,y,sigma,obsParam,nParam=data
+        i=len(allGr)
+        allGr.append( ROOT.TGraphErrors() )
+        allGr[-1].SetMarkerStyle(20+i)
+        allGr[-1].SetMarkerColor(1+i)
+        allGr[-1].SetLineColor(1+i)
+        grTitle='t#bar{t}' if i==0 else 'tW'
+        allGr[-1].SetTitle(grTitle)
+        
+        for np in xrange(0,len(x)):
+            allGr[-1].SetPoint(np,x[np],y[np])
+            allGr[-1].SetPointError(np,0,sigma[np])            
+            minY=ROOT.TMath.Min(minY,y[np])
+            maxY=ROOT.TMath.Max(maxY,y[np])
+        allGr[-1].Sort()
+        drawOpt='ap' if i==0 else 'p'
+        allGr[-1].Draw(drawOpt)
+        allGr[-1].Fit('pol1','MQ+')
+        pol=allGr[-1].GetFunction('pol1')
+        slope,slopeUnc=pol.GetParameter(1),pol.GetParError(1)
+        offset,offsetUnc=pol.GetParameter(0),pol.GetParError(0)
+        allGr[-1].GetXaxis().SetTitle('Mass [GeV]')
+        allGr[-1].GetYaxis().SetTitle(title)
+        leg.AddEntry(allGr[-1],'%s offset=%3.0f#pm%3.0f slope=%3.3f#pm%3.3f'%(allGr[-1].GetTitle(),offset,offsetUnc,slope,slopeUnc),'p')
 
-        grTotal.SetPoint(np,mass,avgX)
-        totalUnc=0.
-        for systVar in uncX:
-            if systVar=='Top p_{t}': continue
-            maxDiff=0
-            for diff in uncX[systVar]:
-                diffVal=diff[idx]
-                maxDiff=ROOT.TMath.Max(maxDiff,diffVal)
-            totalUnc+=maxDiff**2
-        grTotal.SetPointError(np,0,ROOT.TMath.Sqrt(totalUnc))
+    allGr[0].GetYaxis().SetRangeUser(minY*0.97,maxY*1.03)
+    leg.Draw()
 
-
-    grTotal.Draw('a5')
-    grTotal.GetXaxis().SetTitle('Mass [GeV]')
-    grTotal.GetYaxis().SetTitle(title)
-
-    grGen.Draw('p')
-    grGen.Fit('pol1','MQ+','same')
-    pol1_gen=grGen.GetFunction('pol1')
-    pol1_gen.SetLineColor(ROOT.kGray)
-
-    grStat.Draw('p')
-    grStat.Fit('pol1','MQ+','same')
-    pol1=grStat.GetFunction('pol1')
+    #calibration function
+    #obstop = [nst(mtop) x obsttbar(mtop) + nttbar(ntop) x obsttbar(mtop) ] / [nst(mtop)+nttbar(mtop)]
+    calibFunc=ROOT.TF1('calibfunc',
+                       '(([0]*x+[1])*([2]*x+[3])+([4]*x+[5])*([6]*x+[7]))/(([0]+[4])*x+([1]+[5]))',
+                       100,200)
+    calibFunc.SetParameter(0,tW[4][1])
+    calibFunc.SetParameter(1,tW[4][0])
+    calibFunc.SetParameter(2,tW[3][1])
+    calibFunc.SetParameter(3,tW[3][0])
+    calibFunc.SetParameter(4,ttbar[4][1])
+    calibFunc.SetParameter(5,ttbar[4][0])
+    calibFunc.SetParameter(6,ttbar[3][1])
+    calibFunc.SetParameter(7,ttbar[3][0])
+    calibFunc.SetLineColor(ROOT.kBlue)
+    calibFunc.Draw('same')
 
     txt=ROOT.TLatex()
     txt.SetNDC(True)
     txt.SetTextFont(42)
     txt.SetTextSize(0.035)
     txt.SetTextAlign(12)
-    txt.DrawLatex(0.18,0.95,'#bf{CMS} #it{preliminary}')
-    txt.DrawLatex(0.75,0.95,'19.7 fb^{-1} (8 TeV)')
-    offset,slope=pol1.GetParameter(0),pol1.GetParameter(1)
-    txt.DrawLatex(0.2,0.85,'#scale[0.8]{Rec. (%s) + (%s) x m_{top}}'%(toROOTRounded(pol1.GetParameter(0),pol1.GetParError(0)),
-                                                                      toROOTRounded(pol1.GetParameter(1),pol1.GetParError(1))))
-    txt.DrawLatex(0.2,0.8,'#scale[0.8]{Gen. (%s) + (%s) x m_{top}}'%(toROOTRounded(pol1_gen.GetParameter(0),pol1_gen.GetParError(0)),
-                                                                     toROOTRounded(pol1_gen.GetParameter(1),pol1_gen.GetParError(1))))
+    txt.DrawLatex(0.18,0.95,'#bf{CMS} #it{simulation}')
     
     c.Modified()
     c.Update()
-    for ext in ['png','pdf']:
-        c.SaveAs('%s/momcalib_%d.%s'%(outDir,idx,ext))
+    outTitle=title
+    for rep in [' ','{','}','#','^','[','(',')',']']:
+        outTitle=outTitle.replace(rep,'')
+    outTitle=outTitle.replace('+','pos')
+    outTitle=outTitle.replace('+','neg')
+    for ext in ['png','pdf','C']:
+        c.SaveAs('%s/momcalib_%s.%s'%(outDir,outTitle,ext))
 
-    return offset,slope
+    return calibFunc
         
 
 """
@@ -514,14 +716,32 @@ def main():
 	parser = optparse.OptionParser(usage)
 	parser.add_option('-i', '--input',
                           dest='input',   
-                          default='unfoldResults/moments',
+                          default='dileptonMoments-new/',
                           help='input directory with the files [default: %default]')
+	parser.add_option('-l', '--lumi',
+                          dest='lumi',   
+                          default=19701,
+                          help='luminosity, for background subtraction in data [default: %default]')
+	parser.add_option('-u', '--unblind',
+                          dest='unblind',
+                          default=False,
+                          action='store_true',
+                          help='if you are really sure, take a look at the data [default: %default]')
+	parser.add_option('-t', '--tier',
+                          dest='tier',
+                          default='',
+                          help='if nothing is passed use reco/ _gen=use gen [default: %default]')
 	parser.add_option('-o', '--output',
                           dest='output', 
-                          default='unfoldResults/plots',
+                          default='dileptonMoments-new/plots',
+                          help='Output directory [default: %default]')
+	parser.add_option('-c', '--cache',
+                          dest='cache', 
+                          default='.xsecweights.pck',
                           help='Output directory [default: %default]')
 	(opt, args) = parser.parse_args()
 
+        #ROOT config
         ROOT.gSystem.Load("libUserCodeTopMassSecVtx")
 	ROOT.AutoLibraryLoader.enable()
         setTDRStyle()
@@ -531,9 +751,27 @@ def main():
         ROOT.gStyle.SetOptFit(0)
         ROOT.gStyle.SetPalette(1)
         ROOT.gStyle.SetPaintTextFormat('4.2f') 
+
+        #prepare output
 	os.system('mkdir -p %s' % opt.output)
 
-        prepareCalibration(opt)
+        #create file list
+        file_list={}
+
+        #read normalization
+        cachefile = open(opt.cache, 'r')
+        xsecWeights = pickle.load(cachefile)
+        cachefile.close()
+
+        #read files in the directory and assign normalization
+        allFiles=os.listdir(opt.input)
+        for f in allFiles:
+            tag=os.path.splitext(f)[0]
+            if not tag in xsecWeights : continue
+            file_list[ tag ]=( os.path.join(opt.input,f), xsecWeights[tag] )
+
+        #run the analysis
+        prepareCalibration(opt,file_list)
         
 
 if __name__ == "__main__":

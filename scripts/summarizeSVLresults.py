@@ -118,7 +118,6 @@ def parsePEInputs(url,selection='',rebin=4):
         refTag='nominal_172v5' if 'mcatnlo'   in tag else refTag
         refTag='nominal_172v5' if 'ttHF' in tag   else refTag 
         if ('nlodec' in tag or 'nloprod' in tag) : refTag='powpyth_172v5'
-
         #refTag='nominal_172v5' if 'fullnlofrompw' in tag   else refTag
         if len(refTag)==0 : continue
 
@@ -625,7 +624,7 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
         ('p11mpihi'  , ['p11mpihi', 'p11tev']           , 'Underlying event'                     , 'p11'   , True ) ,
         ('p11nocr'   , ['p11nocr']                      , 'Color reconnection'                   , 'p11'   , True )  ,
         ('ttHF',       ['ttHFup','ttHFdn'],             '\\ttbar+HF',                              '172.5', True),
-        #('nlodec',     ['mgmcfmnloproddec','mgmcfmnloprod'],            'NLO (decay)',             'powpyth', False),
+        ('nlodec',     ['mgmcfmnloproddec','mgmcfmnloprod'],            'NLO (decay)',             '172.5', False),        
         #('fullnlofrompw', ['powpythmcfmnloproddec'],    'NLO (decay)',     '172.5', False),
     ]
 
@@ -1480,10 +1479,10 @@ def main():
         systfile = os.path.join(os.path.dirname(opt.syst),'systematics_%s.tex')
         writeSystematicsTable(results=peresults, filterCats=catsByChan,
                              ofile=systfile%'bychan',printout=True,options=opt)
-        writeSystematicsTable(results=peresults, filterCats=catsByCharge,
-                             ofile=systfile%'bycharge',printout=True,options=opt)
-        writeSystematicsTable(results=peresults, filterCats=catsByType,
-                             ofile=systfile%'bytype',printout=True,options=opt)
+        #writeSystematicsTable(results=peresults, filterCats=catsByCharge,
+        #                     ofile=systfile%'bycharge',printout=True,options=opt)
+        #writeSystematicsTable(results=peresults, filterCats=catsByType,
+        #                     ofile=systfile%'bytype',printout=True,options=opt)
         writeSystematicsTable(results=peresults, filterCats=catsByTracks,
                               ofile=systfile%'bytracks',options=opt)
         totup, totdn = writeSystematicsTable(results=peresults,

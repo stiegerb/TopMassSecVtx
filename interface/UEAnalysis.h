@@ -3,6 +3,7 @@
 
 #include "UserCode/TopMassSecVtx/interface/SmartSelectionMonitor.h"
 #include "UserCode/TopMassSecVtx/interface/DataEventSummaryHandler.h"
+#include "UserCode/TopMassSecVtx/interface/UEAnalysisSummary.h"
 
 #include <vector>
 
@@ -23,18 +24,18 @@ public:
 	       int nvtx,
 	       float weight);
 
-  void fillSummaryTuple(float evWeight) { summaryTupleVars_[2]=evWeight; summaryTuple_->Fill(summaryTupleVars_); }
+  void fillSummaryTuple(float evWeight) { ue_.normWeight=evWeight; summaryTuple_->Fill(); }
   void attachToDir(TDirectory *outDir);
-  TNtuple *getSummaryTuple()            { return summaryTuple_; }
+  TTree *getSummaryTuple()            { return summaryTuple_; }
 
-  ~UEAnalysis() { delete summaryTupleVars_; }
+  ~UEAnalysis() { }
   
 private:
 
+  UEAnalysisSummary_t ue_;
   SmartSelectionMonitor *mon_;
   std::vector<TString> ueReg_;
-  TNtuple *summaryTuple_;
-  Float_t *summaryTupleVars_;
+  TTree *summaryTuple_;
 };
 
 #endif

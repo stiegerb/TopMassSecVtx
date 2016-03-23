@@ -43,10 +43,11 @@ class KinematicsMoments:
             
             val_i=observables[obs_i]
             ctr_i+=1
+
             for xbin in xrange(1,self.maxMoment+1):
 
                 baseXbin=(ctr_i-1)*(self.maxMoment)
-                ok_i=wgt*ROOT.TMath.Power(val_i,xbin-1)
+                ok_i=wgt*ROOT.TMath.Power(val_i,xbin-1) if val_i else None
 
                 ctr_j=0
                 for obs_j in observables:
@@ -54,11 +55,13 @@ class KinematicsMoments:
                     val_j=observables[obs_j]
                     ctr_j+=1
                     if ctr_j<ctr_i: continue
-                    
+
                     for ybin in xrange(1,self.maxMoment+1):
 
                         baseYbin=(ctr_j-1)*(self.maxMoment)
-                        ok_j=wgt*ROOT.TMath.Power(val_j,ybin-1)
+                        ok_j=wgt*ROOT.TMath.Power(val_j,ybin-1) if val_j else None
+
+                        if ok_i is None or ok_j is None : continue
 
                         #symmetric matrix
                         self.ObsCorrHisto.Fill(baseXbin+xbin-1,baseYbin+ybin-1,ok_i*ok_j)
@@ -74,17 +77,22 @@ class KinematicsMoments:
         outF.cd()
 
 """
-define bins of interest
+define bins of interest returning a list of pairs [bin_for_mean,bin_for_std]
 """
 def defineBinsOfInterest(ObsCorrHisto,OBSERVABLES):
+
     binsOfInterest=[]
-    for _,obs in OBSERVABLES:
-        obsname,order=obs[:-2],'O^{%s}'%obs[-1]        
+
+    for obsTitle,obsLabels in OBSERVABLES:             
+        obsBins=[obsTitle,0,0,0]
         for xbin in xrange(1,ObsCorrHisto.GetNbinsX()+1):
             label=ObsCorrHisto.GetXaxis().GetBinLabel(xbin)
-            if obsname in label and order in label:
-                binsOfInterest.append( (xbin,xbin+int(obs[-1])) )
-                print label,ObsCorrHisto.GetXaxis().GetBinLabel(xbin+int(obs[-1]))
+            if label==obsLabels[0] : obsBins[1]=xbin
+            if label==obsLabels[1] : obsBins[2]=xbin
+            if label==obsLabels[2] : obsBins[3]=xbin
+        if obsBins[1]==0 or obsBins[2]==0 or obsBins[3]==0 : continue
+        binsOfInterest.append(obsBins)
+
     return binsOfInterest
             
 

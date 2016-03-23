@@ -15,7 +15,7 @@ Loop over a tree and fill histograms you declared before
 If q is True, you get the quantiles from your histograms returned in an array, q_gen or q_rec depending on your histogram
 It could also work to return the quantiles from just one of the histograms - see commented lines
 """
-def runRecoAnalysis(fileName,outFileName):
+def runRecoAnalysis(fileName,outFileName,mode):
     
     isData = True if 'Data' in outFileName else False
     print '...analysing ',fileName,' file names isData=',isData,' output in',outFileName
@@ -76,7 +76,24 @@ def runRecoAnalysis(fileName,outFileName):
         #select only emu events
         if tree.EvCat != -11*13 : continue
         if not isData: 
-           if tree.GenLpPt == 0 or tree.GenLmPt == 0: continue
+           if tree.GenLpPt == 0 or tree.GenLmPt == 0: continue        
+        
+        #central leptons
+        if mode==4:
+            if ROOT.TMath.Abs(tree.LpEta)<2.1 : continue
+        if mode==5:
+            if ROOT.TMath.Abs(tree.LpEta)<2.1 : continue
+            if ROOT.TMath.Abs(tree.LmEta)<2.1 : continue
+
+        #up to 2 jets all b-tagged
+        if mode==2:
+            if tree.NJets>2 : continue
+            if tree.NJets!=tree.NbJets : continue
+
+        #=2jets,=2-btags
+        if mode==3:
+            if tree.NJets!=2 : continue
+            if tree.NbJets!=2: continue
 
         for var in systVars:
             if isData and var!='nominal' : continue
@@ -124,7 +141,7 @@ def runRecoAnalysis(fileName,outFileName):
             gll=ROOT.TLorentzVector()
             gll = glp + glm
 
-            observables_rec['ptpos']=lp.Pt()
+            observables_rec['ptpos']=lp.Pt() 
             observables_rec['enpos']=lp.E()
             observables_rec['ptll']=ll.Pt()
             observables_rec['mll']=ll.M()
@@ -132,22 +149,27 @@ def runRecoAnalysis(fileName,outFileName):
             observables_rec['ptposptm']=lp.Pt()+lm.Pt()
 
             #apply fiducial cuts
-            failPtPosRange = True if ( observables_rec['ptpos']>195 or observables_rec['ptpos']<25 ) else False
-            failPtllRange  = True if ( observables_rec['ptll']>125  or observables_rec['ptll']<10)   else False
-            if failPtPosRange or failPtllRange: continue
+            if mode>0:
+                if ( observables_rec['ptpos']>115    or observables_rec['ptpos']<25 )   : observables_rec['ptpos']=None
+                if ( observables_rec['enpos']>185    or observables_rec['enpos']<25 )   : observables_rec['enpos']=None
+                if ( observables_rec['ptll']>125     or observables_rec['ptll']<10)     : observables_rec['ptll']=None
+                if ( observables_rec['mll']>205      or observables_rec['mll']<25)      : observables_rec['mll']=None
+                if ( observables_rec['EposEm']>270   or observables_rec['EposEm']<70)   : observables_rec['EposEm']=None
+                if ( observables_rec['ptposptm']>195 or observables_rec['ptposptm']<50) : observables_rec['ptposptm']=None
 
             obsMoments_rec[var].measure(observables_rec,weight)
             if var=='nominal':
                 jetMultH.Fill(tree.NJets,weight)
                 for obsName in observables_rec:
+                    if observables_rec[obsName] is None : continue
                     observablesH[obsName].Fill(observables_rec[obsName],weight)
 
-            observables_gen['ptpos']=glp.Pt()
-            observables_gen['enpos']=glp.E()
-            observables_gen['ptll']=gll.Pt()
-            observables_gen['mll']=gll.M()
-            observables_gen['EposEm']=glp.E()+glm.E()
-            observables_gen['ptposptm']=glp.Pt()+glm.Pt()
+            observables_gen['ptpos']    = glp.Pt()          if observables_rec['ptpos'] else None
+            observables_gen['enpos']    = glp.E()           if observables_rec['enpos'] else None
+            observables_gen['ptll']     = gll.Pt()          if observables_rec['ptll'] else None
+            observables_gen['mll']      = gll.M()           if observables_rec['mll'] else None
+            observables_gen['EposEm']   = glp.E()+glm.E()   if observables_rec['EposEm'] else None
+            observables_gen['ptposptm'] = glp.Pt()+glm.Pt() if observables_rec['ptposptm'] else None
             obsMoments_gen[var].measure(observables_gen,weight)
 
     #save results
@@ -166,8 +188,8 @@ Also creates histograms, get quantiles from just one file and re run histograms
 """
 def runRecoAnalysisPacked(args):
     try:
-        fileNames,outFileName=args
-        runRecoAnalysis(fileNames,outFileName)
+        fileNames,outFileName,mode=args
+        runRecoAnalysis(fileNames,outFileName,mode)
     except : # ReferenceError:
         print 50*'<'
         print "  Problem with", name, "continuing without"
@@ -211,17 +233,17 @@ def createRecoAnalysisTasks(opt):
                 if filtTag in tag:
                     processThis=True
             if not processThis : continue
-        tasklist.append((filename,'%s/%s'%(opt.output,baseFileName)))
+        tasklist.append((filename,'%s/%s'%(opt.output,baseFileName),opt.mode))
 
     #loop over tasks
-    if opt.jobs>0:
+    if opt.jobs>1:
         print ' Submitting jobs in %d threads' % opt.jobs
         import multiprocessing as MP
         pool = MP.Pool(opt.jobs)
         pool.map(runRecoAnalysisPacked,tasklist)
     else:
-        for fileNames,outFileName in tasklist:
-            runRecoAnalysis(fileNames,outFileName)
+        for fileNames,outFileName,mode in tasklist:
+            runRecoAnalysis(fileNames,outFileName,mode)
 
 """
 steer
@@ -231,7 +253,7 @@ def main():
 	parser = optparse.OptionParser(usage)
 	parser.add_option('-i', '--input',
                           dest='input',   
-                          default='~psilva/public/Dileptons2012',
+                          default='/afs/cern.ch/user/p/psilva/public/Dileptons2012',
                           help='input directory with the files [default: %default]')
 	parser.add_option('--jobs',
                           dest='jobs', 
@@ -247,6 +269,11 @@ def main():
                           dest='output', 
                           default='dileptonMoments',
                           help='Output directory [default: %default]')
+	parser.add_option('-m', '--mode',
+                          dest='mode', 
+                          default=0,
+                          type=int,
+                          help='Mode: 0-no cuts 1-fid.cuts 2-up to two jets all b-tagged 3-2jets2b-tags [default: %default]')
 	(opt, args) = parser.parse_args()
 
         ROOT.gSystem.Load("libUserCodeTopMassSecVtx")

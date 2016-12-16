@@ -12,34 +12,35 @@ FITRANGE = (20., 140.)
 MASSXAXISTITLE = 'm(SV,lepton) [GeV]'
 LUMI = 19701.0
 
-# NTRKBINS = [(2,3), (3,4), (4,5), (5,6) ,(6,7), (7,1000)]
-# NTRKBINS = [(2,3), (3,4), (4,1000)]
 NTRKBINS = [(3,4), (4,5), (5,6)]
+
 # BR fix x PU x Lep Sel x JES
 COMMONWEIGHT = "Weight[0]*Weight[1]*Weight[4]*METWeight[0]*BtagWeight[0]*JESWeight[0]*SVBfragWeight[0]"
 LUMIWEIGHT = "XSWeight*%f"%LUMI  # x XS weight
 TREENAME = 'SVLInfo'
-MSEL   = '(abs(EvCat)==13 && NJets>=4)'
-ESEL   = '(abs(EvCat)==11 && NJets>=4)'
-MplusSEL   = '(EvCat==13 && NJets>=4)'
-EplusSEL   = '(EvCat==11 && NJets>=4)'
-MminusSEL   = '(EvCat==-13 && NJets>=4)'
-EminusSEL   = '(EvCat==-11 && NJets>=4)'
-EESEL  = '(EvCat==-121 && NJets>=2)'
-EMSEL  = '(EvCat==-143 && NJets>=2)'
-MMSEL  = '(EvCat==-169 && NJets>=2)'
-INCSEL = '(%s || %s || %s || %s || %s)' % (MSEL, ESEL, EESEL , EMSEL, MMSEL)
+
+MSEL      = '(abs(EvCat)==13 && NJets>=4)'
+ESEL      = '(abs(EvCat)==11 && NJets>=4)'
+MplusSEL  = '(EvCat==13 && NJets>=4)'
+EplusSEL  = '(EvCat==11 && NJets>=4)'
+MminusSEL = '(EvCat==-13 && NJets>=4)'
+EminusSEL = '(EvCat==-11 && NJets>=4)'
+EESEL     = '(EvCat==-121 && NJets>=2)'
+EMSEL     = '(EvCat==-143 && NJets>=2)'
+MMSEL     = '(EvCat==-169 && NJets>=2)'
+INCSEL    = '(%s || %s || %s || %s || %s)' % (MSEL, ESEL, EESEL , EMSEL, MMSEL)
+
 SELECTIONS = [
-	 ('inclusive', ''+INCSEL, '#geq 1 lepton'),
-	 ('ee',        ''+EESEL,  'ee'),
-	 ('em',        ''+EMSEL,  'e#mu'),
-	 ('mm',        ''+MMSEL,  '#mu#mu'),
-	 ('e',         ''+ESEL,   'e'),
-	 ('m',         ''+MSEL,   '#mu'),
-#	 ('eplus',         ''+EplusSEL,   'e+'),
-#	 ('mplus',         ''+MplusSEL,   '#mu+'),
-#	 ('eminus',         ''+EminusSEL,   'e-'),
-#	 ('mminus',         ''+MminusSEL,   '#mu-'),
+	('inclusive', ''+INCSEL, '#geq 1 lepton'),
+	('ee',        ''+EESEL,  'ee'),
+	('em',        ''+EMSEL,  'e#mu'),
+	('mm',        ''+MMSEL,  '#mu#mu'),
+	('e',         ''+ESEL,   'e'),
+	('m',         ''+MSEL,   '#mu'),
+	# ('eplus',         ''+EplusSEL,   'e+'),
+	# ('mplus',         ''+MplusSEL,   '#mu+'),
+	# ('eminus',         ''+EminusSEL,   'e-'),
+	# ('mminus',         ''+MminusSEL,   '#mu-'),
 
 	# ('inclusive_mrank1', 'SVLMassRank==1&&CombCat%2!=0&&'+INCSEL, '#geq 1 lepton'),
 	# ('ee_mrank1',        'SVLMassRank==1&&CombCat%2!=0&&'+EESEL,  'ee'),
@@ -62,17 +63,22 @@ SELECTIONS = [
 	# ('e_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+ESEL,   'e'),
 	# ('m_drrank1dr',         'SVLDeltaRRank==1&&SVLDeltaR<2.0&&CombCat%2!=0&&'+MSEL,   '#mu'),
 
-#	('inclusive_optmrank', 'SVLCombRank>0 && '+INCSEL, '#geq 1 lepton'),
-#	('ee_optmrank',        'SVLCombRank>0 && '+EESEL,  'ee'),
-#	('em_optmrank',        'SVLCombRank>0 && '+EMSEL,  'e#mu'),
-#	('mm_optmrank',        'SVLCombRank>0 && '+MMSEL,  '#mu#mu'),
-#	('e_optmrank',         'SVLCombRank>0 && '+ESEL,   'e'),
-#	('m_optmrank',         'SVLCombRank>0 && '+MSEL,   '#mu'),
+	# ('inclusive_optmrank', 'SVLCombRank>0 && '+INCSEL, '#geq 1 lepton'),
+	# ('ee_optmrank',        'SVLCombRank>0 && '+EESEL,  'ee'),
+	# ('em_optmrank',        'SVLCombRank>0 && '+EMSEL,  'e#mu'),
+	# ('mm_optmrank',        'SVLCombRank>0 && '+MMSEL,  '#mu#mu'),
+	# ('e_optmrank',         'SVLCombRank>0 && '+ESEL,   'e'),
+	# ('m_optmrank',         'SVLCombRank>0 && '+MSEL,   '#mu'),
 
-#	('eplus_optmrank',         'SVLCombRank>0 && '+EplusSEL,   'e+'),
-#	('mplus_optmrank',         'SVLCombRank>0 && '+MplusSEL,   '#mu+'),
-#	('eminus_optmrank',         'SVLCombRank>0 && '+EminusSEL,   'e-'),
-#	('mminus_optmrank',         'SVLCombRank>0 && '+MminusSEL,   '#mu-'),
+	# ('eplus_optmrank',         'SVLCombRank>0 && '+EplusSEL,   'e+'),
+	# ('mplus_optmrank',         'SVLCombRank>0 && '+MplusSEL,   '#mu+'),
+	# ('eminus_optmrank',         'SVLCombRank>0 && '+EminusSEL,   'e-'),
+	# ('mminus_optmrank',         'SVLCombRank>0 && '+MminusSEL,   '#mu-'),
+
+	# ('nonisol', '((abs(EvCat)==1300||abs(EvCat)==1100) && NJets>=4)','non isolated lepton'),
+	# ('l', '((abs(EvCat)==13||abs(EvCat)==11) && NJets>=4)','l+jets'),
+	# ('ll', '((EvCat==-121||EvCat==-143||EvCat==-169) && NJets>=2)','dileptons'),
+
 ]
 
 COMBINATIONS = {
@@ -447,7 +453,7 @@ def main(args, opt):
 			chanTitle=chanTitle.replace('tbar','#bar{t}')
 			if chan in ['t','tbar'] and ('ee' in tag or 'mm' in tag or 'em' in tag):
 				continue
-			if chan in ['tW','tbarW'] and tag in ['e', 'm', 
+			if chan in ['tW','tbarW'] and tag in ['e', 'm',
 							      'eplus','eminus', 'mplus','mminus',
 							      'e_optmrank', 'm_optmrank',
 							      'eplus_optmrank','eminus_optmrank', 'mplus_optmrank','mminus_optmrank']:

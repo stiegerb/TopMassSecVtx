@@ -178,7 +178,7 @@ def analyzePEresults(key,fIn,outDir,doPlots=True,syst=''):
         print peinfo.GetEntriesFast(),' p.e. for',key
     except:
         return None
-    
+
     # define the histograms
     # careful with the binning: if something is outside the range it gives trouble
     mtopbiasH    = ROOT.TH1D('mtopbias_%s'%key,
@@ -601,31 +601,35 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
 
     theosysts = [
     ##   systname   ,variations [up, down],          title,       variation to compare with, included in sum?
-        ('powpyth'   , ['powpyth']                      , 'Signal model'                         , '172.5'  , True )  ,
-        ('powherw'   , ['powherw']                      , 'POWHEG+(Pythia vs Herwig)'            , 'powpyth', False ) ,
-        ('mcatnlohw' , ['mcatnlohw']                    , 'MCatNLO vs POWHEG (Herwig)'           , 'powherw', False ) ,
-        ('scale'     , ['scaleup', 'scaledown']         , '$\\mu_R/\\mu_F$ scales \\ttbar'       , '172.5'  , True ) ,
-        ('tchscale'  , ['tchscaleup', 'tchscaledown']   , '\\qquad\\qquad t-channel'             , '172.5'  , True ) ,
-        ('twchscale' , ['twchscaleup', 'twchscaledown'] , '\\qquad\\qquad tW-channel'            , '172.5'  , True ) ,
-        ('twchDS' ,      ['twchDS'] ,                         '\\qquad\\qquad tW-channel DS'            , '172.5'  , True ) ,
-        ('matching'  , ['matchingup', 'matchingdown']   , 'ME-PS scale'                          , '172.5'  , True ) ,
-        ('width'     , ['width']                        , 'Width'                                , '172.5'  , True )  ,
+        ('powpyth'   , ['powpyth']                      , 'Signal model'                         , '172.5' , True )  ,
+        # ('powherw'   , ['powherw']                      , 'POWHEG+(Pythia vs Herwig)'            , 'powpyth', False ) ,
+        # ('mcatnlohw' , ['mcatnlohw']                    , 'MCatNLO vs POWHEG (Herwig)'           , 'powherw', False ) ,
+        ('scale'     , ['scaleup', 'scaledown']         , '$\\mu_R/\\mu_F$ scales \\ttbar'       , '172.5' , True ) ,
+        ('tchscale'  , ['tchscaleup', 'tchscaledown']   , '\\qquad\\qquad t-channel'             , '172.5' , True ) ,
+        ('twchscale' , ['twchscaleup', 'twchscaledown'] , '\\qquad\\qquad tW-channel'            , '172.5' , True ) ,
+        ('matching'  , ['matchingup', 'matchingdown']   , 'ME-PS scale'                          , '172.5' , True ) ,
+        ('width'     , ['width']                        , 'Width'                                , '172.5' , True )  ,
         # ('hadmod'   , ['hadmod']     , 'Hadronization model'                                     , '172.5'  , True )  ,
         ('bfnu'      , ['bfnuup', 'bfnudn']             , 'Semi-lep. B decays'                   , '172.5' , True ) ,
-        ('bhadcomp'  , ['bhadcomp']                     , 'B-hadron composition \ztwostar\ LEP ' , '172.5' , True )  ,
+        ('bhadcomp'  , ['bhadcomp']                     , 'B-hadron comp. \ztwostar\ LEP '       , '172.5' , True )  ,
         ('bfragrbLEP', ['bfragdn','bfragup']            , '\ztwostar\ rb LEP (soft/hard)'        , '172.5' , True ) ,
         # ('bfragdn'   , ['bfragdn']                      , '\ztwostar\ rb LEP soft'               , '172.5' , False ) ,
-        ('bfragz2s'  , ['bfragz2s']                     , 'Fragmentation \ztwostar\\'            , '172.5' , False )  ,
+        # ('bfragz2s'  , ['bfragz2s']                     , 'Fragmentation \ztwostar\\'            , '172.5' , False )  ,
         # ('bfragup'   , ['bfragup']                      , '\ztwostar\ rb LEP hard'               , '172.5' , False ) ,
-        ('bfragp11'  , ['bfragp11']                     , 'P11'                                  , '172.5' , False ) ,
-        ('bfragpete' , ['bfragpete']                    , '\ztwostar\ Peterson'                  , '172.5' , False ) ,
-        ('bfraglund' , ['bfraglund']                    , '\ztwostar\ Lund'                      , '172.5' , False ) ,
+        # ('bfragp11'  , ['bfragp11']                     , 'P11'                                  , '172.5' , False ) ,
+        # ('bfragpete' , ['bfragpete']                    , '\ztwostar\ Peterson'                  , '172.5' , False ) ,
+        # ('bfraglund' , ['bfraglund']                    , '\ztwostar\ Lund'                      , '172.5' , False ) ,
         ('toppt'     , ['toppt']                        , 'Top quark \\pt'                       , '172.5' , True )  ,
         ('p11mpihi'  , ['p11mpihi', 'p11tev']           , 'Underlying event'                     , 'p11'   , True ) ,
         ('p11nocr'   , ['p11nocr']                      , 'Color reconnection'                   , 'p11'   , True )  ,
-        ('ttHF',       ['ttHFup','ttHFdn'],             '\\ttbar+HF',                              '172.5', True),
-        ('nlodec',     ['mgmcfmnloproddec','mgmcfmnloprod'],            'NLO (decay)',             '172.5', False),        
+        ('ttHF',       ['ttHFup','ttHFdn'],             '\\ttbar+HF',                              '172.5' , True),
+        # ('nlodec',     ['mgmcfmnloproddec','mgmcfmnloprod'],            'NLO (decay)',             'powpyth', False),
         #('fullnlofrompw', ['powpythmcfmnloproddec'],    'NLO (decay)',     '172.5', False),
+
+        # Hardcoded ones (only for total):
+        ('pdfs'      , [-0.06,+0.04]                    , 'Parton density functions', None, True),
+        ('tfrac'     , [+0.07,-0.07]                    , 'Single top fraction',      None, True),
+        ('tinter'    , [-0.24]                          , 'Single top interference',  None, True),
     ]
 
     expsysts = [
@@ -633,7 +637,7 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
         ('jerup'     , ['jerup',    'jerdn'],    'Jet energy resolution',      '172.5', True) ,
         ('umetup'    , ['umetup',   'umetdn'],   'Unclustered energy',         '172.5', True) ,
         #('umetup'    , ['umetup'],   'Unclustered energy',         '172.5', True) ,
-        ('lesup'     , ['lesup',    'lesdn'],    'Lepton energy scale',        '172.5', True) ,
+        # ('lesup'     , ['lesup',    'lesdn'],    'Lepton energy scale',        '172.5', True) ,
         ('puup'      , ['puup',     'pudn'],     'Pileup',                     '172.5', True) ,
         ('btagup'    , ['btagup',   'btagdn'],   '\\cPqb-tagging',             '172.5', True) ,
         ('qcdup'     , ['qcdup',    'qcddown'],  'QCD normalization',          '172.5', True) ,
@@ -641,6 +645,9 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
         ('lepselup'  , ['lepselup', 'lepseldn'], 'Lepton selection',           '172.5', True) ,
         ('ntkmult'   , ['ntkmult'],              'Track multiplicity',         '172.5', True) ,
         ('svmass'    , ['svmass'],               'Sec. Vtx. Mass modeling',    '172.5', True) ,
+
+        # Hardcoded ones (only for total):
+        ('les'       , [+0.26, -0.22],           'Lepton energy scale',        None, True) ,
     ]
 
     def writeSection(systs,sel,ofile,name=''):
@@ -661,6 +668,10 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
                         diff =               results[(cat,sel)][var][0]  - results[(cat,sel)][difftag][0]
                         diffErr = math.sqrt( results[(cat,sel)][var][1]**2+results[(cat,sel)][difftag][1]**2 )
 
+                        # Flip all differences to get the actual
+                        # uncertainties
+                        diff *= -1
+
                         if 'pdf' in syst:
                             diff    /= 1.64485
                             diffErr /= 1.64485
@@ -668,11 +679,11 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
                             diff    *= 0.1/5.0
                             diffErr *= 0.1/5.0
                         #according to TOP-13-010 data/Madgraph is 0.022/0.016 = 1.375 for ttbb/ttjj
-                        #the variation was by a factor of 2 => rescale by 0.6875 
+                        #the variation was by a factor of 2 => rescale by 0.6875
                         #if 'ttHF' in syst:
                         #    diff    *= 0.6875
                         #    diffErr *= 0.6875
-                        
+
                         if diff > 0:
                             diffstr = '$ +%4.2f \\pm %4.2f $ & ' % (diff, diffErr)
                             if insum: ups.append((diff,diffErr))
@@ -680,13 +691,30 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
                             diffstr = '$ %5.2f \\pm %4.2f $ & ' % (diff, diffErr)
                             if insum: dns.append((diff,diffErr))
 
+                        # If only one variation, count both up and down (except toppt)
                         if insum and len(variations) == 1 and syst != 'toppt':
                             if diff > 0: dns.append((-1.0*diff, -1.0*diffErr))
                             else:        ups.append((-1.0*diff, -1.0*diffErr))
 
                     except KeyError:
-                        ## Syst not defined, write empty entry
-                        diffstr = '$ %14s $ & ' % (' ')
+                        try: # Hardcoded systs:
+                            diff = float(var)*-1
+
+                            # if cat != 'comb_0': raise ValueError # Go to empty entry
+                            if diff > 0:
+                                diffstr = '$ +%4.2f          $ & ' % (diff)
+                                if insum: ups.append((diff, 0.00))
+                            else:
+                                diffstr = '$ %5.2f          $ & ' % (diff)
+                                if insum: dns.append((diff, 0.00))
+                            # If only one variation, count both up and down (except toppt)
+                            if insum and len(variations) == 1 and syst != 'toppt':
+                                if diff > 0: dns.append((-1.0*diff, -1.0*diffErr))
+                                else:        ups.append((-1.0*diff, -1.0*diffErr))
+
+                        except ValueError:
+                            ## Syst not defined, write empty entry
+                            diffstr = '$ %14s $ & ' % (' ')
 
                     ## Remove trailing &
                     if cat == filterCats[-1]: diffstr = diffstr[:-2]
@@ -769,7 +797,7 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
                 totupE[sel][cat] = math.sqrt(totupE_th[cat]**2 + totupE_ex[cat]**2)
                 totdnE[sel][cat] = math.sqrt(totdnE_th[cat]**2 + totdnE_ex[cat]**2)
 
-            of.write('Total uncertainty  FIXME       & ')
+            of.write('Total uncertainty              & ')
             for icat,cat in enumerate(filterCats, 1):
                 diffstr = '$ +%4.2f          $ & ' % (totup[sel][cat])
                 if cat == filterCats[-1]: diffstr = diffstr[:-2]
@@ -819,11 +847,11 @@ def writeSystematicsTable(results,filterCats,ofile,options=None,printout=False):
     statUnc.Write()
     outF.Close()
 
-    # for sel in selections:
-    #     for cat in filterCats:
-    #         plotFragmentationVersusMtop(fitResults=results[(cat,sel)],
-    #                                     outName=cat+sel,ref='172.5',
-    #                                     options=options)
+    for sel in selections:
+        for cat in filterCats:
+            plotFragmentationVersusMtop(fitResults=results[(cat,sel)],
+                                        outName=cat+sel,ref='172.5',
+                                        options=options)
 
     return totup, totdn
 
@@ -898,9 +926,9 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         staterr_comb = results[('comb_0',sel)]['stat']
         toterrup = math.sqrt(staterr_comb**2 + totup[sel]['comb_0']**2)
         toterrdn = math.sqrt(staterr_comb**2 + totdn[sel]['comb_0']**2)
-        graph_comb.SetPoint(0, 0.5, mt_comb)
+        graph_comb.SetPoint(0, 0.75, mt_comb)
         graph_comb.SetPointError(0, 0., 0., toterrdn, toterrup)
-        graph_comb_stat.SetPoint(0, 0.5, mt_comb)
+        graph_comb_stat.SetPoint(0, 0.75, mt_comb)
         graph_comb_stat.SetPointError(0, 0., 0., staterr_comb, staterr_comb)
 
         gband = ROOT.TGraphErrors(2)
@@ -914,7 +942,7 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
             gband.SetPointError(n,0.0,errrange)
 
         gband.SetLineWidth(1)
-        gband.SetLineColor(ROOT.kAzure-8)
+        gband.SetLineColor(ROOT.kAzure-4)
         gband.SetFillColor(gband.GetLineColor())
         gband.SetFillStyle(3005)
         bandline0 = ROOT.TLine(0.0,mt_comb, MAXX, mt_comb)
@@ -923,10 +951,8 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         bandline0.SetLineStyle(3)
         for l in [bandline0, bandline1, bandline2]:
             l.SetLineColor(gband.GetLineColor())
-        divline1 = ROOT.TLine(1.0,mtmin, 1.0, mtmax)
+        divline1 = ROOT.TLine(1.5,mtmin, 1.5, mtmax)
         divline2 = ROOT.TLine(6.0,mtmin, 6.0, mtmax)
-        for l in [divline1, divline2]:
-            l.SetLineColor(ROOT.kGray+2)
         divline1.SetLineStyle(2)
         divline2.SetLineStyle(2)
 
@@ -942,7 +968,8 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
 
         ############################
         chancats = ['combem_0','combee_0','combmm_0','combe_0','combm_0']
-        chanxpos = [1.5,2.5,3.5,4.5,5.5]
+        # chanxpos = [1.5,2.5,3.5,4.5,5.5]
+        chanxpos = [1.95,1.95+0.9,1.95+2*0.9,1.95+3*0.9,1.95+4*0.9]
         graph_chan = ROOT.TGraphAsymmErrors(len(chancats))
         graph_chan.SetName("systs_chan_%s"%sel)
         graph_chan_stat = ROOT.TGraphAsymmErrors(len(chancats))
@@ -957,8 +984,8 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
             graph_chan_stat.SetPointError(n, 0., 0., staterr, staterr)
 
         graph_chan.SetLineWidth(1)
-        graph_chan.SetLineColor(ROOT.kGray+2)
-        graph_chan.SetMarkerStyle(20)
+        graph_chan.SetLineColor(1)
+        graph_chan.SetMarkerStyle(24)
         graph_chan.SetMarkerSize(1.0)
         graph_chan.SetMarkerColor(graph_chan.GetLineColor())
 
@@ -982,48 +1009,42 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
             graph_ntrk_stat.SetPointError(n, 0., 0., staterr, staterr)
 
         graph_ntrk.SetLineWidth(1)
-        graph_ntrk.SetLineColor(ROOT.kGray+2)
-        graph_ntrk.SetMarkerStyle(20)
-        graph_ntrk.SetMarkerSize(1.0)
+        graph_ntrk.SetLineColor(1)
+        graph_ntrk.SetMarkerStyle(25)
+        graph_ntrk.SetMarkerSize(0.9)
         graph_ntrk.SetMarkerColor(graph_ntrk.GetLineColor())
 
         graph_ntrk_stat.SetLineWidth(2)
-        graph_ntrk_stat.SetLineColor(ROOT.kGray+2)
+        graph_ntrk_stat.SetLineColor(graph_ntrk.GetLineColor())
 
         ############################
-        canv = ROOT.TCanvas('c','c',800,300)
+        canv = ROOT.TCanvas('c','c',680,300)
 
-        p2 = ROOT.TPad("pad2","pad2",0.77,0.0,1.0,1.0);
+        p2 = ROOT.TPad("pad2","pad2",0.7,0.0,1.0,1.0);
         p2.SetLeftMargin(0.01)
-        p2.SetRightMargin(0.15)
-        p2.SetFrameLineColor(ROOT.kGray+2)
+        p2.SetRightMargin(0.20)
         p2.SetFillStyle(0)
         p2.SetTicks(0,1)
         p2.Draw()
 
-        p1 = ROOT.TPad("pad1","pad1",0.0,0.0,0.77,1.0);
-        p1.SetLeftMargin(0.40)
+        p1 = ROOT.TPad("pad1","pad1",0.0,0.0,0.7,1.0);
+        p1.SetLeftMargin(0.10)
         p1.SetRightMargin(0.01)
         p1.SetTopMargin(p2.GetTopMargin())
         p1.SetBottomMargin(p2.GetBottomMargin())
-        p1.SetFrameLineColor(ROOT.kGray+2)
         p1.SetTicks(0,1)
         p1.Draw()
         p1.cd()
 
-        haxis.GetYaxis().SetAxisColor(ROOT.kGray+2)
-        haxis.GetXaxis().SetAxisColor(ROOT.kGray+2)
         haxis.Draw('axis')
         haxis.GetYaxis().SetTickLength(0.01)
         # haxis.GetYaxis().SetLabelOffset(0.01)
         haxis.GetYaxis().SetLabelFont(43)
-        haxis.GetYaxis().SetLabelSize(12)
-        haxis.GetYaxis().SetLabelColor(ROOT.kGray+2)
-        haxis.GetYaxis().SetTitle('m_{top} [GeV]')
-        haxis.GetYaxis().SetTitleOffset(0.5)
-        haxis.GetYaxis().SetTitleColor(ROOT.kGray+2)
+        haxis.GetYaxis().SetLabelSize(16)
+        haxis.GetYaxis().SetTitle('m_{t} [GeV]')
+        haxis.GetYaxis().SetTitleOffset(0.65)
         haxis.GetYaxis().SetTitleFont(43)
-        haxis.GetYaxis().SetTitleSize(16)
+        haxis.GetYaxis().SetTitleSize(20)
         haxis.GetXaxis().SetTickLength(0)
         haxis.GetXaxis().SetLabelSize(0)
 
@@ -1039,30 +1060,32 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         label=ROOT.TLatex()
         label.SetNDC(0)
         label.SetTextFont(43)
-        label.SetTextSize(16)
+        label.SetTextSize(18)
         label.SetTextAlign(22)
         label.SetTextColor(graph_comb.GetLineColor())
-        # label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
-        # label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
-        label.DrawLatex(-2.2, mt_comb,
-                        "m_{top}^{comb.} = %5.2f  "
-                        "#pm %4.2f ^{+%4.2f}_{-%4.2f} GeV" %
-                        (mt_comb, staterr_comb,
-                         totup[sel]['comb_0'],
-                         totdn[sel]['comb_0']))
+        # # label.DrawLatex(0.34,0.25,CATTOFLABEL['comb_0'])
+        # # label.DrawLatex(0.15,0.50,"m_{top}^{comb.} = %5.2f^{+%4.2f}_{-%4.2f} GeV" % (mt_comb, totdn[sel]['comb_0'], totup[sel]['comb_0']))
+        # label.DrawLatex(-2.2, mt_comb,
+        #                 "m_{t} = %5.2f  "
+        #                 "#pm %4.2f ^{+%4.2f}_{-%4.2f} GeV" %
+        #                 (mt_comb, staterr_comb,
+        #                  totup[sel]['comb_0'],
+        #                  totdn[sel]['comb_0']))
 
-        label.SetTextColor(ROOT.kGray+2)
         label.SetTextSize(14)
-        label.DrawLatex(0.55,mtmin+0.6+0.1,CATTOFLABEL['comb_0'])
-        label.DrawLatex(1.5, mtmin+0.6+0.05,CATTOFLABEL['combem_0'])
-        label.DrawLatex(2.5, mtmin+0.6+0.05,CATTOFLABEL['combee_0'])
-        label.DrawLatex(3.5, mtmin+0.6+0.05,CATTOFLABEL['combmm_0'])
-        label.DrawLatex(4.5, mtmin+0.6+0.05,CATTOFLABEL['combe_0'])
-        label.DrawLatex(5.5, mtmin+0.6+0.05,CATTOFLABEL['combm_0'])
+        label.SetTextFont(43)
+        label.DrawLatex(0.75,mtmin+0.6+0.1,'Combination')
+        label.SetTextColor(1)
+        label.DrawLatex(chanxpos[0], mtmin+0.6+0.05,CATTOFLABEL['combem_0'])
+        label.DrawLatex(chanxpos[1], mtmin+0.6+0.05,CATTOFLABEL['combee_0'])
+        label.DrawLatex(chanxpos[2], mtmin+0.6+0.05,CATTOFLABEL['combmm_0'])
+        label.DrawLatex(chanxpos[3], mtmin+0.6+0.05,CATTOFLABEL['combe_0'])
+        label.DrawLatex(chanxpos[4], mtmin+0.6+0.05,CATTOFLABEL['combm_0'])
 
 
+        label.SetTextColor(1)
         label.SetTextFont(63)
-        label.SetTextSize(20)
+        label.SetTextSize(22)
         label.SetTextAlign(11)
         label.DrawLatex(0.1,mtmax+0.15,'CMS')
         label.SetTextFont(53)
@@ -1082,17 +1105,13 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         padscale = 3.8
 
         haxis2 = ROOT.TH2D("axes2","axes2", 1, MAXX, 9.0, 1, mtmin, mtmax)
-        haxis2.GetYaxis().SetAxisColor(ROOT.kGray+2)
-        haxis2.GetXaxis().SetAxisColor(ROOT.kGray+2)
         haxis2.Draw('Y+')
-        haxis2.GetYaxis().SetTickLength(0.01*padscale)
+        haxis2.GetYaxis().SetTickLength(0.0068*padscale)
         haxis2.GetYaxis().SetLabelOffset(0.01)
         haxis2.GetYaxis().SetLabelFont(43)
-        haxis2.GetYaxis().SetLabelSize(12)
-        haxis2.GetYaxis().SetLabelColor(ROOT.kGray+2)
+        haxis2.GetYaxis().SetLabelSize(16)
         haxis2.GetYaxis().SetTitle("")
         # haxis2.GetYaxis().SetTitleOffset(0.5)
-        # haxis2.GetYaxis().SetTitleColor(ROOT.kGray+2)
         # haxis2.GetYaxis().SetTitleFont(43)
         # haxis2.GetYaxis().SetTitleSize(16)
         haxis2.GetXaxis().SetTickLength(0)
@@ -1135,6 +1154,7 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
         label.SetTextFont(43)
         label.SetTextSize(16)
         label.SetTextAlign(31)
+        label.SetTextColor(1)
         label.DrawLatex(8.9,mtmax+0.15,'19.6 fb^{-1} (8 TeV)')
 
         p2.RedrawAxis()
@@ -1149,12 +1169,12 @@ def makeSystPlot(results, totup, totdn, options, dataresults=None):
 
 def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     #hardcoded values, from simulation
-    fragModels={'172.5'    :("Z2* LEP r_{b}",      ROOT.kBlue,      20, 1.2, 0.7616,  0.0002),
-                'bfragdn'  :("Z2* LEP r_{b} soft", ROOT.kGray,      24, 1.2, 0.7481,  0.0003),
-                'bfragup'  :("Z2* LEP r_{b} hard", ROOT.kGray,      24, 1.2, 0.7729,  0.0003),
-                'bfragpete':("Z2* LEP Peterson",   ROOT.kRed+1,     32, 1.2, 0.7189,  0.0007),
-                'bfraglund':("Z2* LEP Lund",       ROOT.kAzure+7,   26, 1.2, 0.7670,  0.0007),
-                'bfragz2s' :('Z2* nominal',        ROOT.kOrange+7,  25, 1.2, 0.73278, 0.00009),
+    fragModels={'172.5'    :("Z2* LEP #it{r}_{b}",       ROOT.kBlue,      20, 1.5, 0.7616,  0.0002),
+                'bfragdn'  :("Z2* LEP #it{r}_{b}^{#pm}", ROOT.kGray+1,    20, 1.5, 0.7481,  0.0003),
+                'bfragup'  :("Z2* LEP #it{r}_{b} hard",  ROOT.kGray+1,    20, 1.5, 0.7729,  0.0003),
+                'bfragpete':("Z2* Peterson",             ROOT.kRed+1,     23, 1.5, 0.7189,  0.0007),
+                'bfraglund':("Z2* Lund",                 ROOT.kAzure+7,   22, 1.5, 0.7670,  0.0007),
+                'bfragz2s' :('Z2* nominal',              ROOT.kOrange+7,  21, 1.5, 0.73278, 0.00009),
     }
 
     #get the fitted values
@@ -1183,8 +1203,9 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
         graphs[key] = gr
 
     c=ROOT.TCanvas('c','c',500,500)
-    c.SetTopMargin(0.05)
+    c.SetTopMargin(0.065)
     c.SetRightMargin(0.05)
+    c.SetBottomMargin(0.11)
 
     # haxis = ROOT.TH2D("axes","axes", 1, 0.71, 0.78, 1, -3.15, 1.05)
     if 'optmrank' in outName:
@@ -1192,20 +1213,21 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     else:
         haxis = ROOT.TH2D("axes","axes", 1, 0.69, 0.81, 1, -3.5, 1.95)
 
-    # Gray out axes and frame:
-    c.SetFrameLineColor(ROOT.kGray+2)
-    haxis.GetYaxis().SetAxisColor(ROOT.kGray+2)
-    haxis.GetXaxis().SetAxisColor(ROOT.kGray+2)
-    haxis.GetYaxis().SetLabelColor(ROOT.kGray+2)
-    haxis.GetYaxis().SetTitleColor(ROOT.kGray+2)
-    haxis.GetXaxis().SetLabelColor(ROOT.kGray+2)
-    haxis.GetXaxis().SetTitleColor(ROOT.kGray+2)
-
     haxis.Draw('axis')
     haxis.GetXaxis().SetTitle('#LTp_{T}(B)/p_{T}(b)#GT')
-    haxis.GetYaxis().SetTitle('#Deltam_{top} [GeV]')
-    haxis.GetXaxis().SetTitleOffset(1.2)
-    haxis.GetYaxis().SetTitleOffset(1.2)
+    haxis.GetYaxis().SetTitle('#Deltam_{t} [GeV]')
+    haxis.GetXaxis().SetTitleFont(43)
+    haxis.GetYaxis().SetTitleFont(43)
+    haxis.GetXaxis().SetTitleSize(24)
+    haxis.GetYaxis().SetTitleSize(24)
+    haxis.GetXaxis().SetTitleOffset(0.9)
+    haxis.GetYaxis().SetTitleOffset(0.7)
+    haxis.GetXaxis().SetLabelFont(43)
+    haxis.GetYaxis().SetLabelFont(43)
+    haxis.GetXaxis().SetLabelSize(18)
+    haxis.GetYaxis().SetLabelSize(18)
+    haxis.GetXaxis().SetLabelOffset(0.005)
+    haxis.GetYaxis().SetLabelOffset(0.005)
 
     mg.Draw('p')
 
@@ -1223,8 +1245,7 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     for n in range(2): gband.SetPointError(n,0.0,errrange)
 
     gband.SetLineWidth(1)
-    gband.SetLineColor(ROOT.kGray)
-    # gband.SetLineColor(ROOT.kMagenta-8)
+    gband.SetLineColor(ROOT.kGray+1)
     gband.SetFillColor(gband.GetLineColor())
     gband.SetFillStyle(3005)
     gband.Draw('3')
@@ -1246,62 +1267,42 @@ def plotFragmentationVersusMtop(fitResults,outName,options,ref='172.5'):
     pol1.SetLineWidth(2)
     pol1.SetLineStyle(1)
     pol1.SetLineColor(ROOT.kGray)
+    pol1.SetRange(0.708, 0.786)
     pol1.Draw("same")
     pol1.Print('v')
 
-    pt=ROOT.TPaveText(0.12,0.85,0.6,0.94,'brNDC')
+    pt=ROOT.TPaveText(0.0,0.94,0.6,0.99,'brNDC')
     pt.SetBorderSize(0)
     pt.SetTextFont(43)
     pt.SetFillStyle(0)
-    pt.SetTextAlign(12)
-    pt.SetTextSize(24)
-    pt.AddText('#bf{CMS}') # #it{preliminary}')
+    # pt.SetTextAlign(12)
+    pt.SetTextSize(26)
+    pt.AddText('#bf{CMS}  #it{Simulation}')
     pt.Draw()
 
     tmt = ROOT.TLatex()
     tmt.SetTextFont(43)
     tmt.SetNDC(1)
-    tmt.SetTextSize(14)
-    tmt.DrawLatex(0.15, 0.83, '#Deltam_{t} = (%0.2f GeV / 1%%) #times '
+    tmt.SetTextSize(18)
+    tmt.DrawLatex(0.13, 0.89, '#Deltam_{t} = (%0.2f GeV / 1%%) #times '
                               '#Delta#LTp_{T}(B)/p_{T}(b)#GT '
                               '#lower[0.1]{#void8} #scale[0.7]{'
-                              '#lower[0.7]{Z2*LEP rb}}'%(pol1.GetParameter(1)/100.))
+                              '#lower[0.7]{Z2*LEP #it{r}_{b}}}'%(pol1.GetParameter(1)/100.))
 
-    tmt.SetTextSize(18)
-    tmt.DrawLatex(0.55, 0.88, '(8 TeV)')
-    # tmt.DrawLatex(0.55, 0.88, '19.6 fb^{-1} (8 TeV)')
 
-    # # Draw the data result (dummy for now)
-    # data_dm = -0.5
-    # data_dx = (data_dm-pol1.GetParameter(0))/pol1.GetParameter(1)
-    # gr_data = ROOT.TGraphErrors()
-    # gr_data.SetLineColor(ROOT.kBlack)
-    # gr_data.SetLineWidth(2)
-    # gr_data.SetMarkerColor(gr_data.GetLineColor())
-    # gr_data.SetMarkerStyle(34)
-    # gr_data.SetMarkerSize(1.2)
-    # gr_data.SetName('gr_Data_%s'%outName)
-    # gr_data.SetTitle('Data')
-    # gr_data.SetPoint(0, data_dx, data_dm)
-
-    # line.SetLineColor(ROOT.kGray+2)
-    # line.SetLineStyle(2)
-    # line.SetLineWidth(1)
-    # line.DrawLine(haxis.GetXaxis().GetXmin(),data_dm,haxis.GetXaxis().GetXmax(),data_dm)
-    # line.DrawLine(data_dx,haxis.GetYaxis().GetXmin(),data_dx,data_dm)
-    # gr_data.Draw('P')
-
-    # leg = ROOT.TLegend(0.12,0.55,0.4,0.80)
-    # leg = ROOT.TLegend(0.65,0.15,0.88,0.42)
-    leg = ROOT.TLegend(0.65,0.15,0.88,0.33)
+    tlat = ROOT.TLatex()
+    tlat.SetTextFont(43)
+    tlat.SetNDC(1)
+    tlat.SetTextSize(18)
+    tlat.SetTextSize(26)
+    tlat.DrawLatex(0.80, 0.945, '8 TeV')
+    leg = ROOT.TLegend(0.65,0.15,0.88,0.375)
     leg.SetFillStyle(1001)
     leg.SetBorderSize(0)
     leg.SetFillColor(ROOT.kWhite)
     leg.SetTextFont(43)
     leg.SetTextSize(14)
-    # leg.AddEntry(gr_data, 'Data (placeholder)', 'P')
-    # for key in ['172.5', 'bfragdn', 'bfragup', 'bfragz2s', 'bfraglund', 'bfragpete']:
-    for key in ['172.5', 'bfragz2s', 'bfraglund', 'bfragpete']:
+    for key in ['172.5', 'bfragdn', 'bfragz2s', 'bfraglund', 'bfragpete']:
         leg.AddEntry(graphs[key], fragModels[key][0], 'P')
     leg.Draw()
 
@@ -1456,7 +1457,7 @@ def main():
         print 'Wrote %s with calibration constants and peresults'%calibFile
         return 0
 
-    #show systematics table
+    #show systematics tables
     if opt.syst:
         cachefile = open(opt.syst, 'r')
         calibMap  = pickle.load(cachefile)
@@ -1466,29 +1467,32 @@ def main():
         # for key in sorted(peresults.keys()): print key
 
         catsByChan =   ['comb_0','combe_0','combee_0',
-                        'combem_0','combm_0','combmm_0']
+                       'combem_0','combm_0','combmm_0']
         catsByTracks = ['comb_0','comb_3','comb_4','comb_5']
         catsByCharge = ['comblplus_0', 'combmplus_0', 'combeplus_0',
                         'comblminus_0', 'combmminus_0', 'combeminus_0']
-        catsByType = ['comb_0','combll_0','comblj_0']
-        allCats = ['comb_0','combe_0','combee_0','combem_0',
-                   'combm_0','combmm_0', 'comb_3','comb_4','comb_5']
+        catsByType =   ['comb_0','combll_0','comblj_0']
+
+        allCats =      ['comb_0','combe_0','combee_0','combem_0',
+                        'combm_0','combmm_0', 'comb_3','comb_4','comb_5']
+
         # showSystematicsTable(results=peresults, filterCats=catsByChan)
         # showSystematicsTable(results=peresults, filterCats=catsByTracks)
 
         systfile = os.path.join(os.path.dirname(opt.syst),'systematics_%s.tex')
         writeSystematicsTable(results=peresults, filterCats=catsByChan,
                              ofile=systfile%'bychan',printout=True,options=opt)
-        #writeSystematicsTable(results=peresults, filterCats=catsByCharge,
-        #                     ofile=systfile%'bycharge',printout=True,options=opt)
-        #writeSystematicsTable(results=peresults, filterCats=catsByType,
-        #                     ofile=systfile%'bytype',printout=True,options=opt)
-        writeSystematicsTable(results=peresults, filterCats=catsByTracks,
-                              ofile=systfile%'bytracks',options=opt)
+        # writeSystematicsTable(results=peresults, filterCats=catsByCharge,
+        #                      ofile=systfile%'bycharge',printout=True,options=opt)
+        # writeSystematicsTable(results=peresults, filterCats=catsByType,
+        #                      ofile=systfile%'bytype',printout=True,options=opt)
+        # writeSystematicsTable(results=peresults, filterCats=catsByTracks,
+        #                       ofile=systfile%'bytracks',options=opt)
         totup, totdn = writeSystematicsTable(results=peresults,
                                              filterCats=allCats,
                                              ofile=systfile%'all',
                                              options=opt)
+
         makeSystPlot(peresults, totup, totdn, options=opt)
         if opt.dataresults:
             print 80*'-'

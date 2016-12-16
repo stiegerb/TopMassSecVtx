@@ -10,6 +10,7 @@ from UserCode.TopMassSecVtx.PlotUtils import printProgress, bcolors
 from makeSVLMassHistos import NTRKBINS
 from summarizeSVLresults import CATTOLABEL
 from myRootFunctions import checkKeyInFile
+from runPlotter import COLORPALETTE
 
 """
 Wrapper to contain the histograms with the results of the pseudo-experiments
@@ -139,13 +140,14 @@ Show PE fit result
 """
 def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     #init canvas
-    canvas=ROOT.TCanvas('c','c',500,500)
-    print data,pdf,nll,SVLMass,mtop,outDir,tag
+    canvas = ROOT.TCanvas('c','c',500,500)
+    ROOT.SetOwnership(canvas, False)
+
     p1 = ROOT.TPad('p1','p1',0.0,0.85,1.0,0.0)
     p1.SetRightMargin(0.05)
-    p1.SetLeftMargin(0.12)
-    p1.SetTopMargin(0.01)
-    p1.SetBottomMargin(0.1)
+    p1.SetLeftMargin(0.18)
+    p1.SetTopMargin(0.02)
+    p1.SetBottomMargin(0.15)
     p1.Draw()
 
     #fit results
@@ -155,48 +157,76 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     pdf.plotOn(frame,
                ROOT.RooFit.Name('totalexp'),
                ROOT.RooFit.ProjWData(data),
-               ROOT.RooFit.LineColor(ROOT.kBlue),               
-               ROOT.RooFit.LineWidth(2),
+               ROOT.RooFit.LineColor(ROOT.kGray+2),
+               ROOT.RooFit.LineWidth(1),
                ROOT.RooFit.FillStyle(1001),
                ROOT.RooFit.FillColor(0),
                ROOT.RooFit.MoveToBack())
+    bgk_color = COLORPALETTE.get('W+Jets', ROOT.kOrange-3)
+    pdf.plotOn(frame,
+               ROOT.RooFit.Name('bkg'),
+               ROOT.RooFit.ProjWData(data),
+               ROOT.RooFit.Components('*_unm_bg*'),
+               ROOT.RooFit.FillColor(bgk_color),
+               ROOT.RooFit.LineColor(bgk_color),
+               ROOT.RooFit.LineWidth(1),
+               ROOT.RooFit.DrawOption('f'),
+               ROOT.RooFit.FillStyle(1001),
+               ROOT.RooFit.MoveToBack())
+    st_color = COLORPALETTE.get('Single top', ROOT.kAzure+5)
     pdf.plotOn(frame,
                ROOT.RooFit.Name('singlet'),
                ROOT.RooFit.ProjWData(data),
-               ROOT.RooFit.Components('tshape_*'),
-               ROOT.RooFit.FillColor(ROOT.kOrange+2),
-               ROOT.RooFit.LineColor(ROOT.kOrange+2),
-               ROOT.RooFit.FillStyle(1001),
+               ROOT.RooFit.Components('tshape_*,*_unm_bg*'),
+               ROOT.RooFit.FillColor(st_color),
+               ROOT.RooFit.LineColor(st_color),
+               ROOT.RooFit.LineWidth(1),
                ROOT.RooFit.DrawOption('f'),
+               ROOT.RooFit.FillStyle(1001),
                ROOT.RooFit.MoveToBack())
+    tt_color = COLORPALETTE.get('t#bar{t}', ROOT.kGray)
     pdf.plotOn(frame,
                ROOT.RooFit.Name('tt'),
                ROOT.RooFit.ProjWData(data),
-               ROOT.RooFit.Components('ttshape_*,tshape_*'),
-               #ROOT.RooFit.Components('*_ttcor_*'),
-               ROOT.RooFit.FillColor(ROOT.kOrange),
-               ROOT.RooFit.LineColor(ROOT.kOrange),
+               ROOT.RooFit.Components('ttshape_*,tshape_*,*_unm_bg*'),
+               ROOT.RooFit.FillColor(tt_color),
+               ROOT.RooFit.LineColor(tt_color),
+               ROOT.RooFit.LineWidth(1),
                ROOT.RooFit.DrawOption('f'),
                ROOT.RooFit.FillStyle(1001),
                ROOT.RooFit.MoveToBack())
     frame.Draw()
     frame.GetYaxis().SetTitleOffset(1.5)
     frame.GetYaxis().SetRangeUser(0,1.2*frame.GetMaximum())
-    frame.GetXaxis().SetTitle("m(SV,lepton) [GeV]")
-    label=ROOT.TLatex()
+    frame.GetXaxis().SetTitle("m_{svl} [GeV]")
+    frame.GetXaxis().SetLabelFont(43)
+    frame.GetXaxis().SetTitleFont(43)
+    frame.GetXaxis().SetTitleSize(30)
+    frame.GetXaxis().SetLabelSize(24)
+    frame.GetYaxis().SetLabelFont(43)
+    frame.GetYaxis().SetTitleFont(43)
+    frame.GetYaxis().SetTitleSize(30)
+    frame.GetYaxis().SetLabelSize(24)
+
+    # FIXME: this should not be hardcoded!
+    frame.GetYaxis().SetTitle("Events / 3.9 GeV")
+
+    label = ROOT.TLatex()
     label.SetNDC()
-    label.SetTextFont(42)
-    label.SetTextSize(0.04)
-    label.DrawLatex(0.18,0.94,'#bf{CMS}') # #it{simulation}')
-    label.DrawLatex(0.18,0.9,'#scale[0.9]{19.7 fb^{-1} (8 TeV)}') # #it{simulation}')
-    leg=ROOT.TLegend(0.65,0.35,0.95,0.52)
+    label.SetTextFont(43)
+    label.SetTextSize(28)
+    label.DrawLatex(0.21,0.92,'#bf{CMS}')
+    label.SetTextSize(20)
+    label.DrawLatex(0.34,0.92,'19.7 fb^{-1} (8 TeV)')
+
+    leg = ROOT.TLegend(0.65,0.32,0.95,0.53)
     leg.AddEntry('data',       'Data',         'p')
     leg.AddEntry('tt',         't#bar{t}',     'f')
-    leg.AddEntry('singlet',    'Single top',   'f')
-    leg.AddEntry('totalexp',   'Background',   'f')
+    leg.AddEntry('singlet',    'Single t',     'f')
+    leg.AddEntry('bkg',        'Background',   'f')
     leg.SetFillStyle(0)
     leg.SetTextFont(43)
-    leg.SetTextSize(14)
+    leg.SetTextSize(20)
     leg.SetBorderSize(0)
     leg.Draw()
     ROOT.SetOwnership(leg,0)
@@ -206,20 +236,20 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
         tlat.SetTextFont(43)
         tlat.SetNDC(1)
         tlat.SetTextAlign(13)
-        tlat.SetTextSize(14)
+        tlat.SetTextSize(21)
         if type(tag) == str:
             tlat.DrawLatex(0.65, 0.32, tag)
         else:
-            ystart = 0.86
+            ystart = 0.91
             yinc = 0.05
             for n,text in enumerate(tag):
-                tlat.DrawLatex(0.18, ystart-n*yinc, text)
+                tlat.DrawLatex(0.22, ystart-n*yinc, text)
 
     canvas.cd()
     p2 = ROOT.TPad('p2','p2',0.0,0.86,1.0,1.0)
     p2.SetBottomMargin(0.05)
     p2.SetRightMargin(0.05)
-    p2.SetLeftMargin(0.12)
+    p2.SetLeftMargin(0.18)
     p2.SetTopMargin(0.05)
     p2.Draw()
     p2.cd()
@@ -228,21 +258,24 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     pullFrame.addPlotable(hpull,"P") ;
     pullFrame.Draw()
     pullFrame.GetYaxis().SetTitle("Pull")
-    pullFrame.GetYaxis().SetTitleSize(0.2)
-    pullFrame.GetYaxis().SetLabelSize(0.2)
-    pullFrame.GetXaxis().SetTitleSize(0)
-    pullFrame.GetXaxis().SetLabelSize(0)
-    pullFrame.GetYaxis().SetTitleOffset(0.15)
+    pullFrame.GetYaxis().SetTitleFont(43)
+    pullFrame.GetYaxis().SetTitleSize(30)
+    pullFrame.GetYaxis().SetLabelFont(43)
+    pullFrame.GetYaxis().SetLabelSize(24)
+    pullFrame.GetYaxis().SetTitleOffset(1.5)
     pullFrame.GetYaxis().SetNdivisions(4)
     pullFrame.GetYaxis().SetRangeUser(-3.1,3.1)
+
+    pullFrame.GetXaxis().SetTitleSize(0)
+    pullFrame.GetXaxis().SetLabelSize(0)
     pullFrame.GetXaxis().SetTitleOffset(0.8)
 
     canvas.cd()
-    p3 = ROOT.TPad('p3','p3',0.6,0.47,0.95,0.82)
+    p3 = ROOT.TPad('p3','p3',0.61,0.45,0.94,0.82)
     p3.SetRightMargin(0.05)
-    p3.SetLeftMargin(0.12)
+    p3.SetLeftMargin(0.24)
     p3.SetTopMargin(0.008)
-    p3.SetBottomMargin(0.2)
+    p3.SetBottomMargin(0.24)
     p3.Draw()
     p3.cd()
     frame2=mtop.frame()
@@ -250,15 +283,23 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
     frame2.Draw()
     frame2.GetYaxis().SetRangeUser(0,12)
     frame2.GetXaxis().SetRangeUser(165,180)
-    frame2.GetYaxis().SetNdivisions(3)
-    frame2.GetXaxis().SetNdivisions(3)
-    frame2.GetXaxis().SetTitle('Top mass [GeV]')
+    frame2.GetYaxis().SetNdivisions(405)
+    frame2.GetXaxis().SetNdivisions(405)
+    frame2.GetXaxis().SetTitle('m_{t} [GeV]')
     frame2.GetYaxis().SetTitle('-2#DeltalogL')
-    frame2.GetYaxis().SetTitleOffset(1.5)
-    frame2.GetXaxis().SetTitleSize(0.08)
-    frame2.GetXaxis().SetLabelSize(0.08)
-    frame2.GetYaxis().SetTitleSize(0.08)
-    frame2.GetYaxis().SetLabelSize(0.08)
+
+    frame2.GetYaxis().SetTitleOffset(2.5)
+    frame2.GetXaxis().SetTitleOffset(2.4)
+    frame2.GetYaxis().SetTitleFont(43)
+    frame2.GetXaxis().SetTitleFont(43)
+    frame2.GetYaxis().SetLabelFont(43)
+    frame2.GetXaxis().SetLabelFont(43)
+    frame2.GetXaxis().SetLabelOffset(0.025)
+
+    frame2.GetXaxis().SetTitleSize(20)
+    frame2.GetXaxis().SetLabelSize(16)
+    frame2.GetYaxis().SetTitleSize(20)
+    frame2.GetYaxis().SetLabelSize(16)
 
     canvas.Modified()
     canvas.Update()
@@ -270,9 +311,9 @@ def showFinalFitResult(data,pdf,nll,SVLMass,mtop,outDir,tag=None):
 """
 build the fit model
 """
-def buildPDFs(ws, options, calibMap=None, prepend=''):
+def buildPDFs(ws, options, channels, calibMap=None, prepend=''):
     allPdfs = {}
-    for ch in ['em','mm','ee','m','e']: #,'eplus','mplus','eminus','mminus']:
+    for ch in channels:
         chsel = ch
         if len(options.selection) > 0: chsel += '_%s'%options.selection
 
@@ -408,7 +449,9 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
 
     #build the relevant PDFs
     print prepend+"Building pdfs"
+    channels = ['em','mm','ee','m','e','eplus','mplus','eminus','mminus']
     allPdfs = buildPDFs(ws=ws, options=options,
+                        channels=channels,
                         calibMap=calibMap,
                         prepend=prepend)
 
@@ -503,10 +546,10 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
                 if not (nllMapKey in nllMap):
                     nllMap[nllMapKey]=[]
                 if nllMapKey[0]=='comb' and nllMapKey[1]==0:
-                    nllMap[nllMapKey].append( nll )                
+                    nllMap[nllMapKey].append( nll )
                 else:
                     nllMap[nllMapKey].append( nll )
-            
+
             if options.verbose>3:
                 sys.stdout.write(' [running Minuit]')
                 sys.stdout.flush()
@@ -516,7 +559,7 @@ def runPseudoExperiments(wsfile,pefile,experimentTag,options):
             minuit.migrad()
             minuit.hesse()
             minuit.minos(poi)
-            
+
 
             #save fit results
             summary.addFitResult(key=key,ws=ws)

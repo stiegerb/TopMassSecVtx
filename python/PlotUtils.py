@@ -121,6 +121,8 @@ def redrawBorder(pad):
     l = ROOT.TLine()
     l.DrawLine(pad.GetUxmin(), pad.GetUymax(), pad.GetUxmax(), pad.GetUymax())
     l.DrawLine(pad.GetUxmax(), pad.GetUymin(), pad.GetUxmax(), pad.GetUymax())
+    l.DrawLine(pad.GetUxmin(), pad.GetUymin(), pad.GetUxmax(), pad.GetUymin())
+    l.DrawLine(pad.GetUxmin(), pad.GetUymax(), pad.GetUxmax(), pad.GetUymax())
 
 
 class RatioPlot(object):
@@ -136,11 +138,21 @@ class RatioPlot(object):
         self.drawoptions = None
         self.markerstyles = []
         self.markersizes = []
+        self.canvassize = (800, 800) # default is 800,800, don't go below 600
         self.titlex = None
         self.titley = None
+        self.ylabelsize = 22
+        self.xlabelsize = 22
+        self.ytitlesize = 26
+        self.xtitlesize = 26
+        self.ytitleoffset = 2.0/(800./self.canvassize[0])
+        self.xtitleoffset = 1.5/(800./self.canvassize[1])
+        self.legendtextsize = 20
+        self.legendrowsize = 0.042 # automatize this
         self.reference = []
         self.normalized = True
         self.ratiotitle = None
+        self.ratioydivisions = 5
         self._garbageList = []
         self.tag = None
         self.subtag = None
@@ -149,7 +161,6 @@ class RatioPlot(object):
         self.legpos = (0.60, 0.15)
         self.extratext = 'Simulation'
         self.plotformats = ['.pdf', '.png','.C']
-        self.canvassize = (800, 800) # default is 800,800, don't go below 600
         self.colors1 = [ ## rainbow ('gay flag')
             ROOT.kViolet-6,
             ROOT.kBlue+2,
@@ -274,10 +285,6 @@ class RatioPlot(object):
         if not os.path.isdir(outdir):
             os.system('mkdir -p %s' % outdir)
 
-        # Scaling with canvas size
-        canv_scalex = 800./self.canvassize[0]
-        canv_scaley = 800./self.canvassize[1]
-
         # Automatic coloring
         colors = self.colors1
         if len(self.histos) <= 6:
@@ -311,39 +318,41 @@ class RatioPlot(object):
         # self._garbageList.append(tc)
         tc.cd()
         tc.SetCanvasSize(self.canvassize[0], self.canvassize[1])
-        p2 = ROOT.TPad("pad2","pad2",0,0,1,0.31);
-        self._garbageList.append(p2)
-        p2.SetTopMargin(0);
-        p2.SetBottomMargin(0.3);
-        p2.SetLeftMargin(0.15)
-        p2.SetRightMargin(0.03)
-        p2.SetFillStyle(0);
-        p2.Draw();
-        p1 = ROOT.TPad("pad1","pad1",0,0.31,1,1);
+        p1 = ROOT.TPad("pad1","pad1",0,0.31,1,1)
         self._garbageList.append(p1)
-        p1.SetBottomMargin(0);
-        p1.SetLeftMargin(p2.GetLeftMargin())
-        p1.SetRightMargin(p2.GetRightMargin())
-        p1.Draw();
-        p1.cd();
+        p1.SetBottomMargin(0.02)
+        p1.SetLeftMargin(0.15)
+        p1.SetRightMargin(0.03)
+        p1.Draw()
+        p2 = ROOT.TPad("pad2","pad2",0,0,1,0.31)
+        self._garbageList.append(p2)
+        p2.SetTopMargin(0)
+        p2.SetBottomMargin(0.3)
+        p2.SetLeftMargin(p1.GetLeftMargin())
+        p2.SetRightMargin(p1.GetRightMargin())
+        p2.SetFillStyle(0)
+        p2.Draw()
+        p1.cd()
 
         # tl = ROOT.TLegend(0.66, 0.75-0.040*max(len(self.histos)-3,0), .89, .89)
         # tl = ROOT.TLegend(0.66, 0.15, .89, .30+0.040*max(len(self.histos)-3,0))
         tleg = ROOT.TLegend(self.legpos[0], self.legpos[1],
                             min(self.legpos[0]+0.30,0.89),
-                            min(self.legpos[1]+0.15+canv_scaley*0.042*max(len(self.histos)-3,0), 0.89))
+                            min(self.legpos[1]+0.15+(800./self.canvassize[1])*self.legendrowsize*max(len(self.histos)-3,0), 0.89))
         self._garbageList.append(tleg)
         tleg.SetBorderSize(0)
         tleg.SetFillColor(0)
         tleg.SetFillStyle(0)
         tleg.SetShadowColor(0)
         tleg.SetTextFont(43)
-        tleg.SetTextSize(20)
+        tleg.SetTextSize(self.legendtextsize)
         if len(self.histos)>30 :
             tleg.SetTextSize(10)
             tleg.SetNColumns(3)
 
         mainframe = self.histos[0].Clone('mainframe')
+        mainframe.SetLineColor(ROOT.kBlack)
+        mainframe.SetLineWidth(0)
         self._garbageList.append(mainframe)
         mainframe.Reset('ICE')
         mainframe.GetXaxis().SetTitleFont(43)
@@ -358,14 +367,14 @@ class RatioPlot(object):
                 setYTitle(mainframe)
         else:
             mainframe.GetYaxis().SetTitle(self.titley)
-        mainframe.GetYaxis().SetLabelSize(22)
-        mainframe.GetYaxis().SetTitleSize(26)
-        mainframe.GetYaxis().SetTitleOffset(2.0/canv_scalex)
+        mainframe.GetYaxis().SetLabelSize(self.ylabelsize)
+        mainframe.GetYaxis().SetTitleSize(self.ytitlesize)
+        mainframe.GetYaxis().SetTitleOffset(self.ytitleoffset)
 
         mainframe.GetXaxis().SetTitle('')
         mainframe.GetXaxis().SetLabelSize(0)
         mainframe.GetXaxis().SetTitleSize(0)
-        mainframe.GetXaxis().SetTitleOffset(1.5/canv_scaley)
+        mainframe.GetXaxis().SetTitleOffset(self.xtitleoffset)
         mainframe.GetYaxis().SetNoExponent()
         mainframe.Draw()
 
@@ -378,6 +387,11 @@ class RatioPlot(object):
                 tleg.AddEntry(hist, legentry, 'p')
         for hist,dopt in reversed(zip(self.histos,self.drawoptions)):
             hist.Draw("%s same"%dopt)
+
+        ghost = mainframe.Clone("ghost")
+        ghost.Reset("ICE")
+        ghost.SetLineColor(ROOT.kBlack)
+        ghost.Draw("same hist")
 
         tleg.Draw()
 
@@ -441,12 +455,13 @@ class RatioPlot(object):
             ratioframe.GetXaxis().SetTitle(self.histos[0].GetXaxis().GetTitle())
         else:
             ratioframe.GetXaxis().SetTitle(self.titlex)
-        ratioframe.GetXaxis().SetLabelSize(22)
-        ratioframe.GetXaxis().SetTitleSize(26)
-        ratioframe.GetYaxis().SetNdivisions(5)
+        ratioframe.GetXaxis().SetLabelSize(self.xlabelsize)
+        ratioframe.GetXaxis().SetTitleSize(self.xtitlesize)
+        ratioframe.GetYaxis().SetNdivisions(self.ratioydivisions)
         ratioframe.GetYaxis().SetNoExponent()
         ratioframe.GetYaxis().SetTitleOffset(mainframe.GetYaxis().GetTitleOffset())
         ratioframe.GetXaxis().SetTitleOffset(3.0)
+        ratioframe.GetXaxis().SetTickLength(2*mainframe.GetXaxis().GetTickLength())
         ratioframe.Draw()
 
         ## Calculate Ratios
@@ -478,7 +493,7 @@ class RatioPlot(object):
         for ratio,dopt in reversed(zip(self.ratios,self.drawoptions)):
             ratio.Draw("%s same"%dopt)
 
-        redrawBorder(p2)
+        # redrawBorder(p2)
 
         tc.cd()
         tc.Modified()

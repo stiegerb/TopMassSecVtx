@@ -98,7 +98,7 @@ def setYTitle(histo):
         elif histo.GetBinWidth(1) > 0.01:
             ytit = "Events / %.1f mm" % (histo.GetBinWidth(1)*10)
     else:
-        ytit = "Events / %3.1f" % h.GetBinWidth(1)
+        ytit = "Events / %3.1f" % histo.GetBinWidth(1)
     histo.GetYaxis().SetTitle(ytit)
     return True
 
@@ -508,7 +508,7 @@ class Plot(object):
     A wrapper to store data and MC histograms for comparison
     """
 
-    def __init__(self,name,usePoissonStatsForData=True):
+    def __init__(self,name,usePoissonStatsForData=True,onlyData=True):
         self.name = name
         self.usePoissonStatsForData=usePoissonStatsForData
         self.mc = []
@@ -519,6 +519,7 @@ class Plot(object):
         self.plotformats = ['pdf','png','C']
         self.savelog = False
         self.ratiorange = (0.62, 1.36)
+        self.onlyData=onlyData
 
     def info(self):
         print self.name
@@ -734,6 +735,10 @@ class Plot(object):
             self.data.Draw('P')
         elif self.dataH is not None:
             self.dataH.Draw('e1same')
+        elif self.onlyData:
+            print 'No data found for',self.name
+            return
+            
 
         # leg.SetNColumns(nlegCols)
         leg.Draw()
@@ -807,11 +812,13 @@ class Plot(object):
                 bkgCts       = totalMC.GetBinContent(xbin);
                 bkgCts_err   = totalMC.GetBinError(xbin);
                 if bkgCts==0 : continue
-                errLo=math.sqrt(math.pow(data_err_low*bkgCts,2) + math.pow(dataCts*bkgCts_err,2))/math.pow(bkgCts,2)
-                errHi=math.sqrt(math.pow(data_err_up*bkgCts,2)  + math.pow(dataCts*bkgCts_err,2))/math.pow(bkgCts,2)
                 np=gr.GetN()
+                errLo=data_err_low/bkgCts;
+                errHi=data_err_up/bkgCts;
                 gr.SetPoint(np,x,dataCts/bkgCts)
                 gr.SetPointError(np,0,0,errLo,errHi)
+                errLo=math.sqrt(math.pow(data_err_low*bkgCts,2) + math.pow(dataCts*bkgCts_err,2))/math.pow(bkgCts,2)
+                errHi=math.sqrt(math.pow(data_err_up*bkgCts,2)  + math.pow(dataCts*bkgCts_err,2))/math.pow(bkgCts,2)
                 bkgUncGr.SetPoint(np,x,1)
                 bkgUncGr.SetPointError(np,dx,bkgCts_err/bkgCts)
             bkgUncGr.Draw('2')

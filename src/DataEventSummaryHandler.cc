@@ -842,7 +842,6 @@ LorentzVector utils::cmssw::updateJEC(data::PhysicsObjectCollection_t &jets, Fac
                 altName += iunc;
                 jets[ijet].setVal(altName+"_up",    altPt[0] );
                 jets[ijet].setVal(altName+"_down",  altPt[1] );
-
             }
         }
 

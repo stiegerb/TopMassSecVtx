@@ -12,7 +12,7 @@ namespace top
 //
 
 //sets the selection flags on the electron
-data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,float rho)
+data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,float rho,bool useAntiID=false)
 {
     // Kinematic cuts
     float sceta = ele.getVal("sceta");
@@ -41,14 +41,18 @@ data::PhysicsObject_t getTopSelectionTaggedElectron(data::PhysicsObject_t ele,fl
     float relIsoDeltaBeta = (TMath::Max(Float_t(nhIso+gIso-0.5*puchIso),Float_t(0.))+chIso)/ele.pt();
     bool passLJiso( relIsoDeltaBeta < 0.1 );
     bool passLJvetoiso( relIsoDeltaBeta < 0.15 );
-    bool passLAntiIso(  relIsoDeltaBeta > 0.20 );
+    bool passLAntiIso(  relIsoDeltaBeta > 0.20 && relIsoDeltaBeta<1.0 );
 
     //set the flags
     ele.setVal("reliso",relIso);
     ele.setFlag("passLL",      (passLLkin     && passLLid     && passLLiso));
     ele.setFlag("passLJ",      (passLJkin     && passLJid     && passLJiso));
     ele.setFlag("passLJveto",  (passLJvetokin && passLJvetoid && passLJvetoiso));
-    ele.setFlag("passLAntiIso",(passLLkin     && passLLid     && passLAntiIso));
+    if(useAntiID)
+      ele.setFlag("passLAntiIso",(passLLkin     && !passLLid     && passLLiso));
+    else
+      ele.setFlag("passLAntiIso",(passLLkin     && passLLid     && passLAntiIso));
+    
     return ele;
 }
 
@@ -85,7 +89,7 @@ data::PhysicsObject_t getTopSelectionTaggedMuon(data::PhysicsObject_t mu, MuScle
     bool passLLiso(     relIso < 0.12 );
     bool passLJiso(     relIso < 0.12 );
     bool passLJvetoiso( relIso < 0.12 );
-    bool passLAntiIso(  relIso > 0.20 );
+    bool passLAntiIso(  relIso > 0.20 && relIso<1.0);
 
     //set the flags
     mu.setVal("reliso",relIso);

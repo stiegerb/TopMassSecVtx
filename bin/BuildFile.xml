@@ -10,6 +10,7 @@
   <bin name="runDileptonAnalysis"  file="runDileptonAnalysis.cc"></bin>
   <bin name="computePDFvariations" file="computePDFvariations.cc"></bin>
   <bin name="runControlAnalysis"   file="runControlAnalysis.cc"></bin>
+  <bin name="runLJppReferenceAnalysis" file="runLJppReferenceAnalysis.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>

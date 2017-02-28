@@ -15,6 +15,7 @@ COLORPALETTE = { # title -> color
     'W+Jets'         : ROOT.kOrange-3,
     'DY+Jets'        : ROOT.kOrange+9,
     'QCD Multijets'  : ROOT.kGray+2,
+    'QCD Multijets (data)'  : ROOT.kGray+2,
     'Multiboson'     : ROOT.kSpring-5,
     'other t#bar{t}' : ROOT.kBlue+2,
     ## Original
@@ -49,8 +50,12 @@ def getNormalization(tfile):
     try:
         nevents, xsec = int(constVals[0]), float(constVals[1])
     except:
-        print '\033[91m Unable to retrieve const vals \033[0m - check run for............ %s'%tfile.GetName()
-        nevents, xsec = 0, 0
+        try:
+            norm=tfile.Get('norm')
+            nevents,xsec = norm.GetBinContent(1),norm.GetBinContent(2)
+        except:
+            print '\033[91m Unable to retrieve const vals \033[0m - check run for............ %s'%tfile.GetName()
+            nevents, xsec = 0, 0
     return nevents, xsec
 
 def openTFile(url):
@@ -396,7 +401,7 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
                         hist.Add(ihist)
 
             if hist is None: continue
-            if not isData:
+            if not isData and not 'data' in title:
                 hist.Scale(options.lumi)
             if options.verbose > 0:
                 print ("  adding %s (Integral: %s) (Color %d) (Isdata %d)" %
@@ -416,15 +421,15 @@ def makePlot((key, inDir, procList, xsecweights, options, scaleFactors)):
     newPlot.appendTo(os.path.join(options.outDir, options.outFile))
     newPlot.reset()
 
-def readXSecWeights(jsonfile=None):
+def readXSecWeights(jsonfile=None,inDir='./'):
     """
     read the pre-stored xsecweights dictionary
     """
     try:
-        cachefile = open(".xsecweights.pck", 'r')
+        cachefile = open("%s/.xsecweights.pck"%inDir, 'r')
         xsecweights = pickle.load(cachefile)
         cachefile.close()
-        print '>>> Reading xsec weights from cache (.xsecweights.pck)'
+        print '>>> Reading xsec weights from cache (%s/.xsecweights.pck)'%inDir
         return xsecweights
     except IOError:
         print '>>> Failed to read .xsecweights.pck file'
@@ -475,11 +480,12 @@ def makeXSecWeights(inDir, jsonfiles, options):
                     dtag = process.get('dtag','')
                     procKey=dtag
                     if mctruthmode : procKey += '_filt'+str(mctruthmode)
-                    print "... processing %s"%procKey
+                    print "... processing %s"%procKey,
 
                     if isData:
                         xsecweights[procKey] = 1.0
                         tot_ngen[procKey]    = 0
+                        print 'is data'
                         continue
 
                     split = process.get('split',1)
@@ -507,6 +513,7 @@ def makeXSecWeights(inDir, jsonfiles, options):
                         rootFile.Close()
 
                     tot_ngen[procKey] = ngen
+                    print 'total events:',ngen
 
                 # Calculate weights:
                 for process in data:
@@ -535,10 +542,10 @@ def makeXSecWeights(inDir, jsonfiles, options):
             print filename
         print 20*'-'
 
-    cachefile = open(".xsecweights.pck", 'w')
+    cachefile = open("%s/.xsecweights.pck"%inDir, 'w')
     pickle.dump(xsecweights, cachefile, pickle.HIGHEST_PROTOCOL)
     cachefile.close()
-    print '>>> Produced xsec weights and wrote to cache (.xsecweights.pck)'
+    print '>>> Produced xsec weights and wrote to cache (%s/.xsecweights.pck)'%inDir
     return 0
 
 def runPlotter(inDir, options, scaleFactors={}):
@@ -556,7 +563,7 @@ def runPlotter(inDir, options, scaleFactors={}):
     # Read the xsection weights (from cache or from the input files)
     xsecweights = None
     try :
-        xsecweights = readXSecWeights(jsonfile=options.json)
+        xsecweights = readXSecWeights(jsonfile=options.json,inDir=inDir)
     except:
         print '[WARNING] default normalization as stored in the histos will be used'
 
